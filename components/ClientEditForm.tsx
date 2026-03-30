@@ -7,6 +7,7 @@ import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
 import { useSearchParams } from 'next/navigation'
+import { sendAssignmentEmail } from '@/app/actions/notifications'
 
 type EditableClient = Omit<Client, 'id' | 'client_id' | 'last_name' | 'first_name' | 'category' | 'assigned_to' | 'created_at' | 'updated_at' | 'profiles'>
 
@@ -463,6 +464,10 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
         old_value: client.assigned_to,
         new_value: assignedTo,
       })
+      // Send assignment email notification (fire-and-forget)
+      sendAssignmentEmail(client.id, assignedTo).catch(err =>
+        console.error('[ClientEditForm] Assignment email error:', err)
+      )
       setToast({ type: 'success', message: 'Client reassigned.' })
       setTimeout(() => setToast(null), 3000)
     }
