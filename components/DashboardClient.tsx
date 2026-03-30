@@ -16,6 +16,7 @@ import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
 import PinnedClients from './PinnedClients'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 interface Props {
   clients: Client[]
@@ -320,8 +321,15 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       {/* Pinned */}
       <PinnedClients clients={clients} pinnedIds={pinnedIds} onUnpin={togglePin} />
 
-      {/* Toolbar: export, bulk select */}
+      {/* Toolbar: export, bulk select, add client */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        {(isSupervisor || isTeamManager) && (
+          <Link href="/clients/new" style={{ textDecoration: 'none' }}>
+            <button className="btn-primary" style={{ fontSize: 12, minHeight: 36 }}>
+              + Add Client
+            </button>
+          </Link>
+        )}
         <button
           className="btn-secondary"
           style={{ fontSize: 12, minHeight: 36 }}
