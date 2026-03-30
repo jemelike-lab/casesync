@@ -67,18 +67,7 @@ export default function Header({ user, profile }: Props) {
         {/* Left: Logo + nav */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: 'var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
-            }}>
-              📋
-            </div>
+            <img src="/logo.png" alt="BLH" style={{ width: 36, height: 36, objectFit: 'contain' }} />
             <span style={{ fontSize: 17, fontWeight: 700 }}>CaseSync</span>
           </div>
 
