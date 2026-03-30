@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Client, getDateStatus, getDaysSinceContact, StatusLevel } from '@/lib/types'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel } from '@/lib/types'
 import StatusDot from './StatusDot'
 
 interface Props {
@@ -38,6 +38,49 @@ function DateBadge({ label, date }: { label: string; date: string | null }) {
         {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
       </span>
       <span style={{ color: 'var(--text-secondary)' }}>· {labels[status]}</span>
+    </div>
+  )
+}
+
+function SpmDueBadge({ date }: { date: string | null }) {
+  if (!date) return null
+  const status = getSpmDateStatus(date)
+  if (status === 'none') return null
+
+  const colorMap: Record<StatusLevel, string> = {
+    green: '48,209,88',
+    yellow: '255,214,10',
+    orange: '255,159,10',
+    red: '255,69,58',
+    none: '150,150,150',
+  }
+
+  const labelMap: Record<StatusLevel, string> = {
+    green: 'On track',
+    yellow: '7-14d',
+    orange: '< 7d',
+    red: 'Overdue',
+    none: '',
+  }
+
+  const rgb = colorMap[status]
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 5,
+      fontSize: 11,
+      padding: '3px 8px',
+      borderRadius: 6,
+      background: `rgba(${rgb}, 0.12)`,
+    }}>
+      <StatusDot status={status} size={6} />
+      <span style={{ color: 'var(--text-secondary)' }}>SPM due:</span>
+      <span style={{ color: `var(--${status})`, fontWeight: 500 }}>
+        {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+      </span>
+      <span style={{ color: 'var(--text-secondary)' }}>· {labelMap[status]}</span>
     </div>
   )
 }
@@ -146,6 +189,7 @@ export default function ClientCard({ client: c, isPinned, onTogglePin }: Props) 
         <DateBadge label="MedTech" date={c.med_tech_redet_date} />
         <DateBadge label="POS" date={c.pos_deadline} />
         <DateBadge label="Assess" date={c.assessment_due} />
+        <SpmDueBadge date={c.spm_next_due ?? null} />
       </div>
 
       {/* Contact + goal */}
