@@ -115,66 +115,77 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      {/* Core Dates */}
-      <Section title="Key Dates">
+      {/* Eligibility */}
+      <Section title="Eligibility">
+        <FieldRow label="Eligibility Code" value={c.eligibility_code} />
         <FieldRow label="Eligibility End Date" value={c.eligibility_end_date} dateStatus={getDateStatus(c.eligibility_end_date)} />
-        <FieldRow label="3-Month Visit Date" value={c.three_month_visit_date} dateStatus={getDateStatus(c.three_month_visit_date)} />
-        <FieldRow label="3-Month Visit Due" value={c.three_month_visit_due} dateStatus={getDateStatus(c.three_month_visit_due)} />
-        <FieldRow label="Quarterly Waiver Date" value={c.quarterly_waiver_date} dateStatus={getDateStatus(c.quarterly_waiver_date)} />
-        <FieldRow label="POC Date" value={c.poc_date} dateStatus={getDateStatus(c.poc_date)} />
-        <FieldRow label="LOC Date" value={c.loc_date} dateStatus={getDateStatus(c.loc_date)} />
-        <FieldRow label="Assessment Due" value={c.assessment_due} dateStatus={getDateStatus(c.assessment_due)} />
-        <FieldRow label="POS Deadline" value={c.pos_deadline} dateStatus={getDateStatus(c.pos_deadline)} />
-        <FieldRow label="POS Status" value={c.pos_status} />
       </Section>
 
       {/* Contact */}
-      <Section title="Contact">
+      <Section title="Contact & Visits">
         <FieldRow label="Last Contact Date" value={c.last_contact_date} dateStatus={getDateStatus(c.last_contact_date)} />
         <FieldRow label="Last Contact Type" value={c.last_contact_type} />
         <FieldRow label="Drop-in Visit Date" value={c.drop_in_visit_date} dateStatus={getDateStatus(c.drop_in_visit_date)} />
         <FieldRow label="30-Day Letter Date" value={c.thirty_day_letter_date} dateStatus={getDateStatus(c.thirty_day_letter_date)} />
+        <FieldRow label="3-Month Visit Date" value={c.three_month_visit_date} />
+        <FieldRow label="3-Month Visit Due" value={c.three_month_visit_due} dateStatus={getDateStatus(c.three_month_visit_due)} />
+        <FieldRow label="Quarterly Visit Waiver Date" value={c.quarterly_waiver_date} dateStatus={getDateStatus(c.quarterly_waiver_date)} />
       </Section>
 
       {/* Med Tech */}
       <Section title="Med Tech">
-        <FieldRow label="Med Tech Redet Date" value={c.med_tech_redet_date} dateStatus={getDateStatus(c.med_tech_redet_date)} />
-        <FieldRow label="Med Tech Status" value={c.med_tech_status} />
+        <FieldRow label="Med-Tech Redet Date" value={c.med_tech_redet_date} dateStatus={getDateStatus(c.med_tech_redet_date)} />
+        <FieldRow label="Med/Tech Status" value={c.med_tech_status} />
       </Section>
 
-      {/* CO/CFC Specific */}
-      <Section title="CO/CFC Details">
-        <FieldRow label="CO Financial Redet Date" value={c.co_financial_redet_date} dateStatus={getDateStatus(c.co_financial_redet_date)} />
-        <FieldRow label="CO App Date" value={c.co_app_date} dateStatus={getDateStatus(c.co_app_date)} />
-        <FieldRow label="MFP Consent Date" value={c.mfp_consent_date} dateStatus={getDateStatus(c.mfp_consent_date)} />
-        <FieldRow label="257 Date" value={c.two57_date} dateStatus={getDateStatus(c.two57_date)} />
-        <FieldRow label="Request Letter" value={c.request_letter} />
-      </Section>
-
-      {/* Documentation */}
-      <Section title="Documentation">
+      {/* Plans & Assessments */}
+      <Section title="Plans & Assessments">
+        <FieldRow label="POC Date" value={c.poc_date} />
+        <FieldRow label="LOC Date (If Necessary)" value={c.loc_date} />
+        <FieldRow label="Documentation MDH (45 days)" value={c.doc_mdh_date} dateStatus={getDateStatus(c.doc_mdh_date)} />
+        <FieldRow label="POS Deadline" value={c.pos_deadline} dateStatus={getDateStatus(c.pos_deadline)} />
+        <FieldRow label="POS Status" value={c.pos_status} />
+        <FieldRow label="Assessment Due Date" value={c.assessment_due} dateStatus={getDateStatus(c.assessment_due)} />
         <FieldRow label="SPM Completed" value={c.spm_completed} />
+      </Section>
+
+      {/* Forms & Signatures */}
+      <Section title="Forms & Signatures">
         <FieldRow label="FOC" value={c.foc} />
         <FieldRow label="Provider Forms" value={c.provider_forms} />
         <FieldRow label="Signatures Needed" value={c.signatures_needed} />
-        <FieldRow label="Schedule Docs" value={c.schedule_docs} />
+        <FieldRow label="Schedule/Supporting Documents Attached?" value={c.schedule_docs} />
+      </Section>
+
+      {/* Authorizations */}
+      <Section title="Authorizations & Services">
         <FieldRow label="ATP" value={c.atp} />
         <FieldRow label="SNFs" value={c.snfs} />
         <FieldRow label="Lease" value={c.lease} />
       </Section>
 
-      {/* Events */}
-      <Section title="Events & Review">
+      {/* CO/CFC Specific */}
+      <Section title="CO Details">
+        <FieldRow label="CO Financial Redetermination Due Date" value={c.co_financial_redet_date} dateStatus={getDateStatus(c.co_financial_redet_date)} />
+        <FieldRow label="CO Application Date" value={c.co_app_date} />
+        <FieldRow label="Request Letter" value={c.request_letter} />
+        <FieldRow label="MFP Consent Form Date" value={c.mfp_consent_date} dateStatus={getDateStatus(c.mfp_consent_date)} />
+        <FieldRow label="257 Date" value={c.two57_date} dateStatus={getDateStatus(c.two57_date)} />
+      </Section>
+
+      {/* Reporting */}
+      <Section title="Reporting & Reviews">
         <FieldRow label="Reportable Events" value={c.reportable_events} />
         <FieldRow label="Appeals" value={c.appeals} />
-        <FieldRow label="Audit Review" value={c.audit_review} />
-        <FieldRow label="QA Review" value={c.qa_review} />
+        <FieldRow label="Audit Team Review" value={c.audit_review} />
+        <FieldRow label="QA Team Review" value={c.qa_review} />
       </Section>
 
       {/* Assignment */}
       <Section title="Assignment">
         <FieldRow label="Assigned To" value={c.profiles?.full_name ?? 'Unassigned'} />
         <FieldRow label="Category" value={c.category.toUpperCase()} />
+        <FieldRow label="Goal Progress" value={`${c.goal_pct}%`} />
         <FieldRow label="Created" value={c.created_at ? new Date(c.created_at).toLocaleDateString() : null} />
         <FieldRow label="Updated" value={c.updated_at ? new Date(c.updated_at).toLocaleDateString() : null} />
       </Section>
