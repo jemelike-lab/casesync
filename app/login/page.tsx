@@ -17,13 +17,27 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/dashboard')
+      return
+    }
+
+    if (data.user) {
+      // Check if user has completed onboarding
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarded')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profile && profile.onboarded === false) {
+        router.push('/onboarding')
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     }
   }
