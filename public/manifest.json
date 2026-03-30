@@ -1,0 +1,37 @@
+{
+  "name": "CaseSync – Beatrice Loving Heart",
+  "short_name": "CaseSync",
+  "description": "Case management portal for Beatrice Loving Heart",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f0f11",
+  "theme_color": "#007aff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "business"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your client dashboard"
+    },
+    {
+      "name": "Calendar",
+      "url": "/calendar",
+      "description": "View upcoming deadlines"
+    }
+  ]
+}
