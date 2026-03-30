@@ -10,7 +10,7 @@ import { User } from '@supabase/supabase-js'
 interface Factor {
   id: string
   factor_type: string
-  type?: string
+  type: string
   status: string
   created_at: string
   updated_at: string
