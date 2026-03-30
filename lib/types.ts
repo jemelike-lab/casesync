@@ -20,6 +20,7 @@ export interface Client {
   last_contact_date: string | null
   last_contact_type: string | null
   spm_completed: boolean
+  spm_next_due: string | null
   three_month_visit_date: string | null
   three_month_visit_due: string | null
   quarterly_waiver_date: string | null
@@ -78,6 +79,19 @@ export function getDateStatus(dateStr: string | null): StatusLevel {
   if (diffDays < 0) return 'red'
   if (diffDays <= 7) return 'orange'
   if (diffDays <= 30) return 'yellow'
+  return 'green'
+}
+
+export function getSpmDateStatus(dateStr: string | null): StatusLevel {
+  if (!dateStr) return 'none'
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return 'red'
+  if (diffDays <= 7) return 'orange'
+  if (diffDays <= 14) return 'yellow'
   return 'green'
 }
 
