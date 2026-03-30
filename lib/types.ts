@@ -142,3 +142,9 @@ export function isEligibilityEndingSoon(client: Client): boolean {
   const s = getDateStatus(client.eligibility_end_date)
   return s === 'yellow' || s === 'orange' || s === 'red'
 }
+
+export function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const [year, month, day] = dateStr.split('-')
+  return `${month}/${day}/${year}`
+}
