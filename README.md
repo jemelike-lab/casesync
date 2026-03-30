@@ -67,3 +67,5 @@ npm run dev
 - TypeScript
 
 <!-- Email notifications: Resend integration deployed -->
+
+Live at https://blhcasesync.com
