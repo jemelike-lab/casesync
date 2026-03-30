@@ -3,6 +3,10 @@
     {
       "path": "/api/check-deadlines",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/health",
+      "schedule": "0 * * * *"
     }
   ]
 }
