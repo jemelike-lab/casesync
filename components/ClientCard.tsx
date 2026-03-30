@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate } from '@/lib/types'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel } from '@/lib/types'
 import StatusDot from './StatusDot'
 
 interface Props {
@@ -312,6 +312,22 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
             👤 {c.profiles.full_name}
           </div>
         )}
+
+        {/* Risk badge */}
+        {(() => {
+          const risk = getRiskLevel(c)
+          if (risk === 'high') return (
+            <div style={{ background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#ff453a', display: 'flex', alignItems: 'center', gap: 5 }}>
+              🔴 High Risk
+            </div>
+          )
+          if (risk === 'medium') return (
+            <div style={{ background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#ff9f0a', display: 'flex', alignItems: 'center', gap: 5 }}>
+              🟡 Medium Risk
+            </div>
+          )
+          return null
+        })()}
 
         {/* Log Contact button */}
         <button
