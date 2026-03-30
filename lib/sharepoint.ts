@@ -62,9 +62,10 @@ async function getDriveId(token: string, siteId: string): Promise<string> {
   if (!res.ok) throw new Error(`Failed to get drives: ${await res.text()}`)
   const data = await res.json()
   // Find the "Documents" drive (default document library)
-  const drive = data.value?.find(
-    (d: any) => d.name === 'Documents' || d.driveType === 'documentLibrary'
-  ) ?? data.value?.[0]
+  const drive =
+    (data.value as Array<{ name: string; driveType: string; id: string }>)?.find(
+      (d) => d.name === 'Documents' || d.driveType === 'documentLibrary'
+    ) ?? data.value?.[0]
   if (!drive) throw new Error('No drive found')
   return drive.id
 }
@@ -72,7 +73,7 @@ async function getDriveId(token: string, siteId: string): Promise<string> {
 export async function uploadToSharePoint(
   clientId: string,
   fileName: string,
-  fileBuffer: Buffer,
+  fileBuffer: ArrayBuffer,
   mimeType: string
 ): Promise<{ webUrl: string; itemId: string }> {
   const token = await getAccessToken()
@@ -123,15 +124,28 @@ export async function listClientFiles(clientId: string): Promise<SharePointFile[
   }
 
   const data = await res.json()
-  return (data.value ?? []).map((item: any): SharePointFile => ({
-    id: item.id,
-    name: item.name,
-    size: item.size ?? 0,
-    mimeType: item.file?.mimeType ?? 'application/octet-stream',
-    webUrl: item.webUrl,
-    createdAt: item.createdDateTime,
-    createdBy: item.createdBy?.user?.displayName ?? item.createdBy?.user?.email ?? 'Unknown',
-  }))
+  return (data.value ?? []).map(
+    (item: {
+      id: string
+      name: string
+      size: number
+      file?: { mimeType?: string }
+      webUrl: string
+      createdDateTime: string
+      createdBy?: { user?: { displayName?: string; email?: string } }
+    }): SharePointFile => ({
+      id: item.id,
+      name: item.name,
+      size: item.size ?? 0,
+      mimeType: item.file?.mimeType ?? 'application/octet-stream',
+      webUrl: item.webUrl,
+      createdAt: item.createdDateTime,
+      createdBy:
+        item.createdBy?.user?.displayName ??
+        item.createdBy?.user?.email ??
+        'Unknown',
+    })
+  )
 }
 
 export async function deleteSharePointFile(itemId: string): Promise<void> {
@@ -165,7 +179,7 @@ export async function getDownloadUrl(itemId: string): Promise<string> {
   }
   const data = await res.json()
   // @microsoft.graph.downloadUrl is a pre-authenticated short-lived URL
-  const downloadUrl = data['@microsoft.graph.downloadUrl']
+  const downloadUrl = data['@microsoft.graph.downloadUrl'] as string | undefined
   if (!downloadUrl) throw new Error('No download URL available')
   return downloadUrl
 }
