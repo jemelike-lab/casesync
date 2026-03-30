@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -26,7 +27,6 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Check if user has completed onboarding
       const { data: profile } = await supabase
         .from('profiles')
         .select('onboarded')
@@ -54,21 +54,18 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: '380px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 60,
-            height: 60,
-            borderRadius: 16,
-            background: 'var(--accent)',
-            marginBottom: 16,
-            fontSize: 28,
-          }}>
-            📋
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Beatrice Loving Heart"
+            width={120}
+            height={120}
+            style={{ objectFit: 'contain', marginBottom: 16 }}
+          />
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>CaseSync</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: 13 }}>
+            Beatrice Loving Heart
+          </p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 2, fontSize: 13 }}>
             Sign in to your account
           </p>
         </div>
