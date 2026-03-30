@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Allow public routes
   const publicPaths = ['/login', '/onboarding', '/offline', '/api/', '/security']
   if (publicPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
