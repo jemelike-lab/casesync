@@ -18,12 +18,14 @@ export default async function SecurityPage() {
 
   // Get MFA factors
   const { data: mfaData } = await supabase.auth.mfa.listFactors()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const factors = (mfaData?.all ?? []) as any[]
 
   return (
     <SecurityPageClient
       user={user}
       profile={profile as Profile}
-      factors={mfaData?.all ?? []}
+      factors={factors}
     />
   )
 }
