@@ -27,6 +27,7 @@ export interface Client {
   med_tech_status: string | null
   poc_date: string | null
   loc_date: string | null
+  doc_mdh_date: string | null
   pos_deadline: string | null
   pos_status: string | null
   assessment_due: string | null
@@ -100,6 +101,7 @@ export function isOverdue(client: Client): boolean {
     client.co_app_date,
     client.mfp_consent_date,
     client.two57_date,
+    client.doc_mdh_date,
   ]
   return datesToCheck.some(d => d && getDateStatus(d) === 'red')
 }
@@ -117,6 +119,7 @@ export function isDueThisWeek(client: Client): boolean {
     client.co_app_date,
     client.mfp_consent_date,
     client.two57_date,
+    client.doc_mdh_date,
   ]
   return datesToCheck.some(d => d && getDateStatus(d) === 'orange')
 }
