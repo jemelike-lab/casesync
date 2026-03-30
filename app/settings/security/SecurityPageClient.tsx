@@ -9,11 +9,13 @@ import { User } from '@supabase/supabase-js'
 
 interface Factor {
   id: string
-  type: string
+  factor_type: string
+  type?: string
   status: string
   created_at: string
   updated_at: string
   friendly_name?: string | null
+  last_challenged_at?: string | null
 }
 
 interface Props {
