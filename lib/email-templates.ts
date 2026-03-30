@@ -34,7 +34,7 @@ function baseLayout(content: string): string {
         <tr>
           <td style="padding:20px 0;text-align:center;">
             <p style="margin:0;font-size:11px;color:#555560;">
-              CaseSync · Automated notification · Do not reply to this email
+              CaseSync &middot; Automated notification &middot; Do not reply to this email
             </p>
           </td>
         </tr>
@@ -65,42 +65,42 @@ export function deadlineAlertEmail({
   clientId: string
 }) {
   const urgencyColor = daysUntil === 1 ? '#ff3b30' : daysUntil <= 3 ? '#ff9500' : '#ffcc00'
-  const daysLabel = daysUntil === 1 ? 'tomorrow' : \`in \${daysUntil} days\`
+  const daysLabel = daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`
 
-  const content = \`
-    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:\${urgencyColor};text-transform:uppercase;letter-spacing:0.08em;">
-      ⚠️ Deadline Alert
+  const content = `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${urgencyColor};text-transform:uppercase;letter-spacing:0.08em;">
+      &#9888;&#65039; Deadline Alert
     </p>
     <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
-      \${clientName}
+      ${clientName}
     </h1>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:20px;margin-bottom:24px;">
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">What's due</span>
-          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">\${fieldLabel}</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${fieldLabel}</span>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Due date</span>
-          <span style="font-size:15px;font-weight:600;color:\${urgencyColor};">\${dueDate}</span>
+          <span style="font-size:15px;font-weight:600;color:${urgencyColor};">${dueDate}</span>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 0;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Time remaining</span>
-          <span style="font-size:15px;font-weight:600;color:\${urgencyColor};">\${daysLabel.charAt(0).toUpperCase() + daysLabel.slice(1)}</span>
+          <span style="font-size:15px;font-weight:600;color:${urgencyColor};">${daysLabel.charAt(0).toUpperCase() + daysLabel.slice(1)}</span>
         </td>
       </tr>
     </table>
 
-    \${ctaButton(\`\${BASE_URL}/clients/\${clientId}\`, 'View Client')}
-  \`
+    ${ctaButton(`${BASE_URL}/clients/${clientId}`, 'View Client')}
+  `
 
   return {
-    subject: \`⚠️ Deadline Alert: \${clientName} – \${fieldLabel} due \${dueDate}\`,
+    subject: `⚠️ Deadline Alert: ${clientName} – ${fieldLabel} due ${dueDate}`,
     html: baseLayout(content),
   }
 }
@@ -120,40 +120,40 @@ export function clientAssignedEmail({
   assignedBy: string
   clientId: string
 }) {
-  const content = \`
+  const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#007aff;text-transform:uppercase;letter-spacing:0.08em;">
-      📋 New Assignment
+      &#128203; New Assignment
     </p>
     <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
-      \${clientName}
+      ${clientName}
     </h1>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:20px;margin-bottom:24px;">
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Client ID</span>
-          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">\${clientDisplayId}</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${clientDisplayId}</span>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Category</span>
-          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">\${category.toUpperCase()}</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${category.toUpperCase()}</span>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 0;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Assigned by</span>
-          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">\${assignedBy}</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${assignedBy}</span>
         </td>
       </tr>
     </table>
 
-    \${ctaButton(\`\${BASE_URL}/clients/\${clientId}\`, 'View Client')}
-  \`
+    ${ctaButton(`${BASE_URL}/clients/${clientId}`, 'View Client')}
+  `
 
   return {
-    subject: \`📋 New Client Assigned: \${clientName}\`,
+    subject: `📋 New Client Assigned: ${clientName}`,
     html: baseLayout(content),
   }
 }
@@ -174,34 +174,34 @@ export function dailyDigestEmail({
   recentActivity: Array<{ clientName: string; action: string; when: string }>
 }) {
   const activityRows = recentActivity.length > 0
-    ? recentActivity.map(a => \`
+    ? recentActivity.map(a => `
         <tr>
           <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
-            <span style="font-size:13px;font-weight:600;color:#f5f5f7;">\${a.clientName}</span>
-            <span style="font-size:12px;color:#888;display:block;">\${a.action} · \${a.when}</span>
+            <span style="font-size:13px;font-weight:600;color:#f5f5f7;">${a.clientName}</span>
+            <span style="font-size:12px;color:#888;display:block;">${a.action} &middot; ${a.when}</span>
           </td>
         </tr>
-      \`).join('')
+      `).join('')
     : '<tr><td style="padding:12px 0;font-size:13px;color:#888;">No recent activity.</td></tr>'
 
-  const content = \`
+  const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#007aff;text-transform:uppercase;letter-spacing:0.08em;">
-      📊 Daily Digest
+      &#128202; Daily Digest
     </p>
     <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#f5f5f7;">
-      Good morning, \${userName}
+      Good morning, ${userName}
     </h1>
-    <p style="margin:0 0 24px;font-size:14px;color:#888;">\${date}</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#888;">${date}</p>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <tr>
         <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
-          <span style="font-size:36px;font-weight:700;color:#ff3b30;">\${overdueCount}</span>
+          <span style="font-size:36px;font-weight:700;color:#ff3b30;">${overdueCount}</span>
           <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Overdue</p>
         </td>
         <td width="4%"></td>
         <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
-          <span style="font-size:36px;font-weight:700;color:#ffcc00;">\${dueThisWeekCount}</span>
+          <span style="font-size:36px;font-weight:700;color:#ffcc00;">${dueThisWeekCount}</span>
           <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Due This Week</p>
         </td>
       </tr>
@@ -209,14 +209,14 @@ export function dailyDigestEmail({
 
     <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;">Recent Activity</h2>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;">
-      \${activityRows}
+      ${activityRows}
     </table>
 
-    \${ctaButton(\`\${BASE_URL}/dashboard\`, 'Open Dashboard')}
-  \`
+    ${ctaButton(`${BASE_URL}/dashboard`, 'Open Dashboard')}
+  `
 
   return {
-    subject: \`📊 CaseSync Daily Digest – \${date}\`,
+    subject: `📊 CaseSync Daily Digest – ${date}`,
     html: baseLayout(content),
   }
 }
@@ -233,18 +233,18 @@ export function welcomeEmail({
   loginUrl?: string
 }) {
   const roleDisplay = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-  const loginLink = loginUrl || \`\${BASE_URL}/login\`
+  const loginLink = loginUrl || `${BASE_URL}/login`
 
-  const content = \`
+  const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#007aff;text-transform:uppercase;letter-spacing:0.08em;">
       Welcome to CaseSync
     </p>
     <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
-      Hi \${fullName}, you've been invited!
+      Hi ${fullName}, you've been invited!
     </h1>
 
     <p style="margin:0 0 24px;font-size:15px;color:#b0b0b8;line-height:1.6;">
-      You've been added to CaseSync — a case management platform for coordinating client care.
+      You've been added to CaseSync &mdash; a case management platform for coordinating client care.
       Your account has been set up and you're ready to log in.
     </p>
 
@@ -252,17 +252,17 @@ export function welcomeEmail({
       <tr>
         <td style="padding:8px 0;">
           <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Your role</span>
-          <span style="font-size:15px;font-weight:600;color:#007aff;">\${roleDisplay}</span>
+          <span style="font-size:15px;font-weight:600;color:#007aff;">${roleDisplay}</span>
         </td>
       </tr>
     </table>
 
-    \${ctaButton(loginLink, 'Log In to CaseSync')}
+    ${ctaButton(loginLink, 'Log In to CaseSync')}
 
     <p style="margin:24px 0 0;font-size:12px;color:#555560;">
       If you didn't expect this invitation, you can safely ignore this email.
     </p>
-  \`
+  `
 
   return {
     subject: "You've been invited to CaseSync",
