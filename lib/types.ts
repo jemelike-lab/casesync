@@ -1,4 +1,4 @@
-export type Role = 'case_manager' | 'supervisor'
+export type Role = 'supports_planner' | 'team_manager' | 'supervisor'
 export type Category = 'co' | 'cfc' | 'cpas'
 
 export interface Profile {
@@ -6,6 +6,7 @@ export interface Profile {
   full_name: string | null
   role: Role
   created_at: string
+  team_manager_id?: string | null
 }
 
 export interface Client {
@@ -57,6 +58,27 @@ export interface Client {
   profiles?: Profile | null
 }
 
+export interface ClientNote {
+  id: string
+  client_id: string
+  author_id: string
+  content: string
+  created_at: string
+  profiles?: { full_name: string | null } | null
+}
+
+export interface ActivityLog {
+  id: string
+  client_id: string
+  user_id: string
+  action: string
+  field_name: string | null
+  old_value: string | null
+  new_value: string | null
+  created_at: string
+  profiles?: { full_name: string | null } | null
+}
+
 export type StatusLevel = 'green' | 'yellow' | 'orange' | 'red' | 'none'
 
 export type FilterType =
@@ -68,6 +90,9 @@ export type FilterType =
   | 'co'
   | 'cfc'
   | 'cpas'
+
+export type SortField = 'name' | 'goal_pct' | 'last_contact_date' | 'eligibility_end_date'
+export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
@@ -147,4 +172,34 @@ export function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   const [year, month, day] = dateStr.split('-')
   return `${month}/${day}/${year}`
+}
+
+export function sortClients(clients: Client[], field: SortField, dir: SortDir): Client[] {
+  return [...clients].sort((a, b) => {
+    let valA: string | number | null
+    let valB: string | number | null
+    switch (field) {
+      case 'name':
+        valA = `${a.last_name} ${a.first_name ?? ''}`
+        valB = `${b.last_name} ${b.first_name ?? ''}`
+        break
+      case 'goal_pct':
+        valA = a.goal_pct
+        valB = b.goal_pct
+        break
+      case 'last_contact_date':
+        valA = a.last_contact_date ?? ''
+        valB = b.last_contact_date ?? ''
+        break
+      case 'eligibility_end_date':
+        valA = a.eligibility_end_date ?? ''
+        valB = b.eligibility_end_date ?? ''
+        break
+    }
+    if (valA === null || valA === '') return dir === 'asc' ? 1 : -1
+    if (valB === null || valB === '') return dir === 'asc' ? -1 : 1
+    if (valA < valB) return dir === 'asc' ? -1 : 1
+    if (valA > valB) return dir === 'asc' ? 1 : -1
+    return 0
+  })
 }
