@@ -49,7 +49,7 @@ function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#007aff;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">${label}</a>`
 }
 
-// ─── Deadline Alert ───────────────────────────────────────────────
+// --------------------
 
 export function deadlineAlertEmail({
   clientName,
@@ -100,12 +100,12 @@ export function deadlineAlertEmail({
   `
 
   return {
-    subject: `⚠️ Deadline Alert: ${clientName} – ${fieldLabel} due ${dueDate}`,
+    subject: `-- Deadline Alert: ${clientName} - ${fieldLabel} due ${dueDate}`,
     html: baseLayout(content),
   }
 }
 
-// ─── Client Assigned ─────────────────────────────────────────────
+// --------------------
 
 export function clientAssignedEmail({
   clientName,
@@ -153,12 +153,12 @@ export function clientAssignedEmail({
   `
 
   return {
-    subject: `📋 New Client Assigned: ${clientName}`,
+    subject: `- New Client Assigned: ${clientName}`,
     html: baseLayout(content),
   }
 }
 
-// ─── Daily Digest ─────────────────────────────────────────────────
+// --------------------
 
 export function dailyDigestEmail({
   userName,
@@ -216,12 +216,12 @@ export function dailyDigestEmail({
   `
 
   return {
-    subject: `📊 CaseSync Daily Digest – ${date}`,
+    subject: `- CaseSync Daily Digest - ${date}`,
     html: baseLayout(content),
   }
 }
 
-// ─── Welcome / Invite ─────────────────────────────────────────────
+// --------------------
 
 export function welcomeEmail({
   fullName,
