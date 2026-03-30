@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CaseSync - Case Management Portal
 
-## Getting Started
+A production-ready case management portal built with Next.js 14, Supabase, and Tailwind CSS.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Database Migration
+
+Run the SQL migration in your [Supabase SQL Editor](https://supabase.com/dashboard/project/iiqttbpaufzlinbufsdx/sql/new):
+
+```
+See: supabase/migrations/001_initial_schema.sql
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy and paste the contents of that file into the SQL editor and click **Run**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` (copy from `.env.example`):
 
-## Learn More
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://iiqttbpaufzlinbufsdx.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_Dlv1IjCM62wdF65t4HVHFg_UaOhzsoW
+SUPABASE_SECRET_KEY=sb_secret_YOUR_KEY_HERE
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Run Locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Deploy to Vercel
 
-## Deploy on Vercel
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jemelike-lab/casesync)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 🔐 **Auth** — Email/password via Supabase Auth
+- 📋 **Dashboard** — Client grid with status color coding
+- 🔍 **Search** — By client ID, name, eligibility code
+- 🔽 **Filters** — Overdue, due this week, no contact 7+, eligibility ending, by category
+- 📌 **Pin clients** — localStorage-persisted, max 5
+- ⏱️ **Idle timeout** — Auto-logout after 15 minutes
+- 🌙 **Dark theme** — Custom dark UI
+
+## Color Coding
+
+| Color | Meaning |
+|-------|---------|
+| 🟢 Green | On track / completed |
+| 🟡 Yellow | Due within 30 days |
+| 🟠 Orange | Due within 7 days |
+| 🔴 Red | Overdue |
+
+## Roles
+
+- **Case Manager** — Sees only assigned clients
+- **Supervisor** — Sees all clients + overview analytics tab
+
+## Stack
+
+- Next.js 14 (App Router)
+- @supabase/ssr (server-side auth)
+- Tailwind CSS v4
+- TypeScript
