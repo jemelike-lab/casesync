@@ -24,6 +24,18 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+const selectStyle: React.CSSProperties = {
+  background: '#1c1c1e',
+  border: '1px solid #333336',
+  borderRadius: 6,
+  color: '#f5f5f7',
+  padding: '6px 10px',
+  fontSize: 13,
+  width: '100%',
+  cursor: 'pointer',
+  appearance: 'auto',
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
@@ -35,6 +47,74 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+type SelectOption = { value: string; label: string }
+
+function SelectField({
+  field,
+  value,
+  options,
+  onChange,
+}: {
+  field: string
+  value: string | null | undefined
+  options: SelectOption[]
+  onChange: (field: string, value: string | null) => void
+}) {
+  return (
+    <select
+      value={value ?? ''}
+      onChange={e => onChange(field, e.target.value || null)}
+      style={selectStyle}
+    >
+      <option value="">— Select —</option>
+      {options.map(o => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  )
+}
+
+const POS_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'Pending', label: 'Pending' },
+  { value: 'In-Progress', label: 'In-Progress' },
+  { value: 'Completed', label: 'Completed' },
+]
+
+const MED_TECH_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Expired', label: 'Expired' },
+  { value: 'Not Applicable', label: 'Not Applicable' },
+]
+
+const ATP_OPTIONS: SelectOption[] = [
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'Expired', label: 'Expired' },
+  { value: 'Not Applicable', label: 'Not Applicable' },
+]
+
+const AUDIT_REVIEW_OPTIONS: SelectOption[] = [
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Passed', label: 'Passed' },
+  { value: 'Failed', label: 'Failed' },
+]
+
+const QA_REVIEW_OPTIONS: SelectOption[] = [
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Passed', label: 'Passed' },
+  { value: 'Failed', label: 'Failed' },
+]
+
+const LAST_CONTACT_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'Phone', label: 'Phone' },
+  { value: 'Home Visit', label: 'Home Visit' },
+  { value: 'Email', label: 'Email' },
+  { value: 'Office Visit', label: 'Office Visit' },
+]
+
 function FieldRow({
   label,
   field,
@@ -43,14 +123,18 @@ function FieldRow({
   editing,
   onChange,
   dateStatus,
+  selectOptions,
+  extra,
 }: {
   label: string
   field: string
   value: string | boolean | number | null | undefined
-  type: 'date' | 'text' | 'boolean' | 'number'
+  type: 'date' | 'text' | 'boolean' | 'number' | 'select'
   editing: boolean
   onChange: (field: string, value: string | boolean | number | null) => void
   dateStatus?: 'green' | 'yellow' | 'orange' | 'red' | 'none'
+  selectOptions?: SelectOption[]
+  extra?: React.ReactNode
 }) {
   if (!editing && (value === null || value === undefined || value === '')) return null
 
@@ -99,15 +183,26 @@ function FieldRow({
             />
           )}
           {type === 'boolean' && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={Boolean(value)}
-                onChange={e => onChange(field, e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: '#007aff', cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: 13, color: 'var(--text)' }}>{value ? 'Yes' : 'No'}</span>
-            </label>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(value)}
+                  onChange={e => onChange(field, e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: '#007aff', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--text)' }}>{value ? 'Yes' : 'No'}</span>
+              </label>
+              {extra}
+            </div>
+          )}
+          {type === 'select' && selectOptions && (
+            <SelectField
+              field={field}
+              value={value as string | null}
+              options={selectOptions}
+              onChange={(f, v) => onChange(f, v)}
+            />
           )}
         </div>
       ) : (
@@ -147,6 +242,7 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
     pos_status: client.pos_status,
     assessment_due: client.assessment_due,
     spm_completed: client.spm_completed,
+    spm_next_due: client.spm_next_due,
     foc: client.foc,
     provider_forms: client.provider_forms,
     signatures_needed: client.signatures_needed,
@@ -169,6 +265,18 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
   })
 
   const handleChange = (field: string, value: string | boolean | number | null) => {
+    if (field === 'spm_completed') {
+      const checked = Boolean(value)
+      if (checked) {
+        const nextDue = new Date()
+        nextDue.setDate(nextDue.getDate() + 30)
+        const nextDueStr = nextDue.toISOString().split('T')[0]
+        setFormData(prev => ({ ...prev, spm_completed: true, spm_next_due: nextDueStr }))
+      } else {
+        setFormData(prev => ({ ...prev, spm_completed: false }))
+      }
+      return
+    }
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -212,6 +320,7 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
       pos_status: client.pos_status,
       assessment_due: client.assessment_due,
       spm_completed: client.spm_completed,
+      spm_next_due: client.spm_next_due,
       foc: client.foc,
       provider_forms: client.provider_forms,
       signatures_needed: client.signatures_needed,
@@ -236,6 +345,13 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
   }
 
   const f = formData
+
+  // SPM next-due note shown next to checkbox when editing and spm_completed is true
+  const spmNextDueNote = editing && f.spm_completed && f.spm_next_due ? (
+    <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
+      Next due: <strong style={{ color: '#f5f5f7' }}>{new Date(f.spm_next_due + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+    </span>
+  ) : null
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -374,7 +490,15 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
       {/* Contact & Visits */}
       <Section title="Contact & Visits">
         <FieldRow label="Last Contact Date" field="last_contact_date" value={f.last_contact_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.last_contact_date as string | null)} />
-        <FieldRow label="Last Contact Type" field="last_contact_type" value={f.last_contact_type} type="text" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="Last Contact Type"
+          field="last_contact_type"
+          value={f.last_contact_type}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={LAST_CONTACT_TYPE_OPTIONS}
+        />
         <FieldRow label="Drop-in Visit Date" field="drop_in_visit_date" value={f.drop_in_visit_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.drop_in_visit_date as string | null)} />
         <FieldRow label="30-Day Letter Date" field="thirty_day_letter_date" value={f.thirty_day_letter_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.thirty_day_letter_date as string | null)} />
         <FieldRow label="3-Month Visit Date" field="three_month_visit_date" value={f.three_month_visit_date} type="date" editing={editing} onChange={handleChange} />
@@ -385,7 +509,15 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
       {/* Med Tech */}
       <Section title="Med Tech">
         <FieldRow label="Med-Tech Redet Date" field="med_tech_redet_date" value={f.med_tech_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.med_tech_redet_date as string | null)} />
-        <FieldRow label="Med/Tech Status" field="med_tech_status" value={f.med_tech_status} type="text" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="Med/Tech Status"
+          field="med_tech_status"
+          value={f.med_tech_status}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={MED_TECH_STATUS_OPTIONS}
+        />
       </Section>
 
       {/* Plans & Assessments */}
@@ -394,9 +526,35 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
         <FieldRow label="LOC Date (If Necessary)" field="loc_date" value={f.loc_date} type="date" editing={editing} onChange={handleChange} />
         <FieldRow label="Documentation MDH (45 days)" field="doc_mdh_date" value={f.doc_mdh_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.doc_mdh_date as string | null)} />
         <FieldRow label="POS Deadline" field="pos_deadline" value={f.pos_deadline} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.pos_deadline as string | null)} />
-        <FieldRow label="POS Status" field="pos_status" value={f.pos_status} type="text" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="POS Status"
+          field="pos_status"
+          value={f.pos_status}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={POS_STATUS_OPTIONS}
+        />
         <FieldRow label="Assessment Due Date" field="assessment_due" value={f.assessment_due} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.assessment_due as string | null)} />
-        <FieldRow label="SPM Completed" field="spm_completed" value={f.spm_completed} type="boolean" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="SPM Completed"
+          field="spm_completed"
+          value={f.spm_completed}
+          type="boolean"
+          editing={editing}
+          onChange={handleChange}
+          extra={spmNextDueNote}
+        />
+        {!editing && f.spm_next_due && (
+          <FieldRow
+            label="SPM Next Due"
+            field="spm_next_due"
+            value={f.spm_next_due}
+            type="date"
+            editing={false}
+            onChange={handleChange}
+          />
+        )}
         {editing && (
           <FieldRow label="Goal Progress (%)" field="goal_pct" value={f.goal_pct} type="number" editing={editing} onChange={handleChange} />
         )}
@@ -412,7 +570,15 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
 
       {/* Authorizations */}
       <Section title="Authorizations & Services">
-        <FieldRow label="ATP" field="atp" value={f.atp} type="text" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="ATP"
+          field="atp"
+          value={f.atp}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={ATP_OPTIONS}
+        />
         <FieldRow label="SNFs" field="snfs" value={f.snfs} type="text" editing={editing} onChange={handleChange} />
         <FieldRow label="Lease" field="lease" value={f.lease} type="text" editing={editing} onChange={handleChange} />
       </Section>
@@ -430,8 +596,24 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
       <Section title="Reporting & Reviews">
         <FieldRow label="Reportable Events" field="reportable_events" value={f.reportable_events} type="text" editing={editing} onChange={handleChange} />
         <FieldRow label="Appeals" field="appeals" value={f.appeals} type="text" editing={editing} onChange={handleChange} />
-        <FieldRow label="Audit Team Review" field="audit_review" value={f.audit_review} type="text" editing={editing} onChange={handleChange} />
-        <FieldRow label="QA Team Review" field="qa_review" value={f.qa_review} type="text" editing={editing} onChange={handleChange} />
+        <FieldRow
+          label="Audit Team Review"
+          field="audit_review"
+          value={f.audit_review}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={AUDIT_REVIEW_OPTIONS}
+        />
+        <FieldRow
+          label="QA Team Review"
+          field="qa_review"
+          value={f.qa_review}
+          type={editing ? 'select' : 'text'}
+          editing={editing}
+          onChange={handleChange}
+          selectOptions={QA_REVIEW_OPTIONS}
+        />
       </Section>
 
       {/* Assignment */}
