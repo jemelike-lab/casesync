@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Client, getDateStatus } from '@/lib/types'
+import { Client, getDateStatus, formatDate } from '@/lib/types'
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 
@@ -141,6 +141,7 @@ function FieldRow({
   let displayValue: string
   if (typeof value === 'boolean') displayValue = value ? '✓ Yes' : '✗ No'
   else if (value === null || value === undefined) displayValue = '—'
+  else if (type === 'date') displayValue = formatDate(String(value).split('T')[0])
   else displayValue = String(value)
 
   return (
@@ -349,7 +350,7 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
   // SPM next-due note shown next to checkbox when editing and spm_completed is true
   const spmNextDueNote = editing && f.spm_completed && f.spm_next_due ? (
     <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
-      Next due: <strong style={{ color: '#f5f5f7' }}>{new Date(f.spm_next_due + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+      Next due: <strong style={{ color: '#f5f5f7' }}>{formatDate(f.spm_next_due)}</strong>
     </span>
   ) : null
 
@@ -621,8 +622,8 @@ export default function ClientEditForm({ client }: ClientEditFormProps) {
         <FieldRow label="Assigned To" field="assigned_to" value={client.profiles?.full_name ?? 'Unassigned'} type="text" editing={false} onChange={handleChange} />
         <FieldRow label="Category" field="category" value={client.category.toUpperCase()} type="text" editing={false} onChange={handleChange} />
         <FieldRow label="Goal Progress" field="goal_pct" value={`${f.goal_pct}%`} type="text" editing={false} onChange={handleChange} />
-        <FieldRow label="Created" field="created_at" value={client.created_at ? new Date(client.created_at).toLocaleDateString() : null} type="text" editing={false} onChange={handleChange} />
-        <FieldRow label="Updated" field="updated_at" value={client.updated_at ? new Date(client.updated_at).toLocaleDateString() : null} type="text" editing={false} onChange={handleChange} />
+        <FieldRow label="Created" field="created_at" value={client.created_at ? formatDate(client.created_at.split('T')[0]) : null} type="text" editing={false} onChange={handleChange} />
+        <FieldRow label="Updated" field="updated_at" value={client.updated_at ? formatDate(client.updated_at.split('T')[0]) : null} type="text" editing={false} onChange={handleChange} />
       </Section>
     </div>
   )
