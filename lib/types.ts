@@ -203,3 +203,26 @@ export function sortClients(clients: Client[], field: SortField, dir: SortDir): 
     return 0
   })
 }
+
+export type RiskLevel = 'high' | 'medium' | 'low'
+
+export function getRiskLevel(client: Client): RiskLevel {
+  const datesToCheck = [
+    client.eligibility_end_date,
+    client.three_month_visit_due,
+    client.quarterly_waiver_date,
+    client.med_tech_redet_date,
+    client.pos_deadline,
+    client.assessment_due,
+    client.thirty_day_letter_date,
+    client.co_financial_redet_date,
+    client.co_app_date,
+    client.mfp_consent_date,
+    client.two57_date,
+    client.doc_mdh_date,
+  ]
+  const overdueCount = datesToCheck.filter(d => d && getDateStatus(d) === 'red').length
+  if (overdueCount >= 3) return 'high'
+  if (overdueCount >= 1) return 'medium'
+  return 'low'
+}
