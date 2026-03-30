@@ -53,13 +53,13 @@ export default function LoginPage() {
     }}>
       <div style={{ width: '100%', maxWidth: '380px' }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Image
             src="/logo.png"
             alt="Beatrice Loving Heart"
-            width={120}
-            height={120}
-            style={{ objectFit: 'contain', marginBottom: 16 }}
+            width={140}
+            height={140}
+            style={{ objectFit: 'contain', marginBottom: 12, display: 'block', margin: '0 auto 12px auto' }}
           />
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>CaseSync</h1>
           <p style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: 13 }}>
