@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendEmail } from '@/lib/email'
+import { deadlineAlertEmail } from '@/lib/email-templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +37,7 @@ export async function GET(request: Request) {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split('T')[0]
 
   // Fetch all clients with assigned planner
   const { data: clients, error } = await supabase
@@ -46,7 +49,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  // Fetch planner profiles (email + notification prefs)
+  const assigneeIds = [...new Set((clients ?? []).map(c => c.assigned_to).filter(Boolean))]
+  const { data: profiles } = assigneeIds.length > 0
+    ? await supabase
+        .from('profiles')
+        .select('id, email, full_name, notification_preferences')
+        .in('id', assigneeIds)
+    : { data: [] }
+
+  const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+
+  // Check which notifications were already sent today (to avoid duplicates)
+  const { data: todayNotifs } = await supabase
+    .from('notifications')
+    .select('user_id, body')
+    .gte('created_at', `${todayStr}T00:00:00`)
+    .lte('created_at', `${todayStr}T23:59:59`)
+
+  const sentToday = new Set((todayNotifs ?? []).map(n => `${n.user_id}:${n.body}`))
+
   const notifications: any[] = []
+  let emailsSent = 0
 
   for (const client of clients ?? []) {
     for (const { key, label } of DEADLINE_FIELDS) {
@@ -59,13 +83,43 @@ export async function GET(request: Request) {
       if (NOTIFY_DAYS.includes(diffDays) && client.assigned_to) {
         const clientName = `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`
         const daysLabel = diffDays === 1 ? 'tomorrow' : `in ${diffDays} days`
-        notifications.push({
-          user_id: client.assigned_to,
-          title: `📅 Deadline ${daysLabel}: ${clientName}`,
-          body: `${label} is due ${daysLabel} (${dateStr})`,
-          link: `/clients/${client.id}`,
-          read: false,
-        })
+        const notifBody = `${label} is due ${daysLabel} (${dateStr})`
+        const dedupeKey = `${client.assigned_to}:${notifBody}`
+
+        // Only insert in-app notification if not already sent today
+        if (!sentToday.has(dedupeKey)) {
+          notifications.push({
+            user_id: client.assigned_to,
+            title: `📅 Deadline ${daysLabel}: ${clientName}`,
+            body: notifBody,
+            link: `/clients/${client.id}`,
+            read: false,
+          })
+        }
+
+        // Send email notification if planner has it enabled
+        const profile = profileMap.get(client.assigned_to)
+        if (profile?.email) {
+          const prefs = (profile.notification_preferences as any) ?? {}
+          const emailEnabled = prefs.deadline_7day !== false // default to true unless explicitly disabled
+          const emailDedupeKey = `email:${client.assigned_to}:${key}:${todayStr}`
+
+          if (emailEnabled && !sentToday.has(emailDedupeKey)) {
+            try {
+              const { subject, html } = deadlineAlertEmail({
+                clientName,
+                fieldLabel: label,
+                dueDate: dateStr,
+                daysUntil: diffDays,
+                clientId: client.id,
+              })
+              await sendEmail({ to: profile.email, subject, html })
+              emailsSent++
+            } catch (emailErr) {
+              console.error('[check-deadlines] email send error:', emailErr)
+            }
+          }
+        }
       }
     }
   }
@@ -82,6 +136,7 @@ export async function GET(request: Request) {
     ok: true,
     checked: clients?.length ?? 0,
     notificationsSent: notifications.length,
+    emailsSent,
     timestamp: new Date().toISOString(),
   })
 }
