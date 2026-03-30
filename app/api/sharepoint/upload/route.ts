@@ -15,12 +15,11 @@ export async function POST(req: NextRequest) {
     }
 
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
 
     const { webUrl, itemId } = await uploadToSharePoint(
       clientId,
       file.name,
-      buffer,
+      arrayBuffer,
       file.type || 'application/octet-stream'
     )
 
@@ -51,11 +50,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ id: data.id, name: file.name, webUrl })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Upload failed'
     console.error('SharePoint upload error:', err)
-    return NextResponse.json(
-      { error: err.message ?? 'Upload failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
