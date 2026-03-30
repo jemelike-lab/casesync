@@ -69,3 +69,5 @@ npm run dev
 <!-- Email notifications: Resend integration deployed -->
 
 Live at https://blhcasesync.com
+
+<!-- deploy trigger -->
