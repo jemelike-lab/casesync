@@ -65,3 +65,5 @@ npm run dev
 - @supabase/ssr (server-side auth)
 - Tailwind CSS v4
 - TypeScript
+
+<!-- Email notifications: Resend integration deployed -->
