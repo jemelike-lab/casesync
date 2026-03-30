@@ -46,7 +46,7 @@ export default function Header({ user, profile }: Props) {
   }
 
   const role = profile?.role
-  const roleName = role === 'supervisor' ? 'Supervisor' : role === 'team_manager' ? 'Team Manager' : role === 'supports_planner' ? 'Supports Planner' : role?.replace(/_/g, ' ') ?? ''
+  const roleName = role === 'supervisor' ? 'Supervisor' : role === 'team_manager' ? 'Team Manager' : role === 'supports_planner' ? 'Supports Planner' : (role as string | undefined)?.replace(/_/g, ' ') ?? ''
 
   return (
     <>
