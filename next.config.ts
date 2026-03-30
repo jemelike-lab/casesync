@@ -1,5 +1,4 @@
 import withPWA from 'next-pwa'
-import { withSentryConfig } from '@sentry/nextjs'
 
 const pwaConfig = withPWA({
   dest: 'public',
@@ -17,7 +16,8 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   {
     key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.microsoft.com; frame-ancestors 'none';",
+    value:
+      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.microsoft.com; frame-ancestors 'none';",
   },
 ]
 
@@ -29,10 +29,21 @@ const nextConfig = {
 
 const configWithPWA = pwaConfig(nextConfig)
 
-export default process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(configWithPWA, {
+// Wrap with Sentry only if @sentry/nextjs is installed and DSN is configured
+// Run: npm install @sentry/nextjs --legacy-peer-deps after setting up Sentry
+let finalConfig = configWithPWA
+if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { withSentryConfig } = require('@sentry/nextjs')
+    finalConfig = withSentryConfig(configWithPWA, {
       silent: true,
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
     })
-  : configWithPWA
+  } catch {
+    // @sentry/nextjs not installed yet — that's fine
+  }
+}
+
+export default finalConfig
