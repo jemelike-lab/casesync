@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel } from '@/lib/types'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate } from '@/lib/types'
 import StatusDot from './StatusDot'
 
 interface Props {
@@ -35,7 +35,7 @@ function DateBadge({ label, date }: { label: string; date: string | null }) {
       <StatusDot status={status} size={6} />
       <span style={{ color: 'var(--text-secondary)' }}>{label}:</span>
       <span style={{ color: `var(--${status})`, fontWeight: 500 }}>
-        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {formatDate(date)}
       </span>
       <span style={{ color: 'var(--text-secondary)' }}>· {labels[status]}</span>
     </div>
@@ -78,7 +78,7 @@ function SpmDueBadge({ date }: { date: string | null }) {
       <StatusDot status={status} size={6} />
       <span style={{ color: 'var(--text-secondary)' }}>SPM due:</span>
       <span style={{ color: `var(--${status})`, fontWeight: 500 }}>
-        {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {formatDate(date)}
       </span>
       <span style={{ color: 'var(--text-secondary)' }}>· {labelMap[status]}</span>
     </div>
