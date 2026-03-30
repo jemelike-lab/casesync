@@ -1,4 +1,6 @@
-import withPWA from 'next-pwa'
+/* eslint-disable @typescript-eslint/no-require-imports */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withPWA = require('next-pwa') as (config: any) => (nextConfig: any) => any
 
 const pwaConfig = withPWA({
   dest: 'public',
@@ -22,7 +24,7 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
-  // Turbopack is default in Next.js 16; add empty config to satisfy peer checks
+  // Turbopack is default in Next.js 16; empty config satisfies peer checks from plugins
   turbopack: {},
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
@@ -32,11 +34,10 @@ const nextConfig = {
 const configWithPWA = pwaConfig(nextConfig)
 
 // Wrap with Sentry only if @sentry/nextjs is installed and DSN is configured.
-// To enable: npm install @sentry/nextjs --legacy-peer-deps
+// To enable: npm install @sentry/nextjs --legacy-peer-deps, then set NEXT_PUBLIC_SENTRY_DSN in Vercel.
 let finalConfig = configWithPWA
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { withSentryConfig } = require('@sentry/nextjs')
     finalConfig = withSentryConfig(configWithPWA, {
       silent: true,
@@ -44,7 +45,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
       project: process.env.SENTRY_PROJECT,
     })
   } catch {
-    // @sentry/nextjs not installed yet — that's fine
+    // @sentry/nextjs not installed yet — app works fine without it
   }
 }
 
