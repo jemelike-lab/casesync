@@ -6,6 +6,7 @@ import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate } f
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
+import { useSearchParams } from 'next/navigation'
 
 type EditableClient = Omit<Client, 'id' | 'client_id' | 'last_name' | 'first_name' | 'category' | 'assigned_to' | 'created_at' | 'updated_at' | 'profiles'>
 
@@ -284,10 +285,19 @@ function ActivitySection({ clientId }: { clientId: string }) {
 }
 
 export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [] }: ClientEditFormProps) {
+  const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [assignedTo, setAssignedTo] = useState(client.assigned_to ?? '')
+
+  // Show success toast when client is newly created
+  useEffect(() => {
+    if (searchParams.get('created') === '1') {
+      setToast({ type: 'success', message: 'Client created successfully!' })
+      setTimeout(() => setToast(null), 4000)
+    }
+  }, [])
   const [assignSaving, setAssignSaving] = useState(false)
   const [formData, setFormData] = useState<Partial<EditableClient>>({
     eligibility_code: client.eligibility_code,
