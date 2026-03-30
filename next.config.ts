@@ -22,6 +22,8 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  // Turbopack is default in Next.js 16; add empty config to satisfy peer checks
+  turbopack: {},
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
   },
@@ -29,8 +31,8 @@ const nextConfig = {
 
 const configWithPWA = pwaConfig(nextConfig)
 
-// Wrap with Sentry only if @sentry/nextjs is installed and DSN is configured
-// Run: npm install @sentry/nextjs --legacy-peer-deps after setting up Sentry
+// Wrap with Sentry only if @sentry/nextjs is installed and DSN is configured.
+// To enable: npm install @sentry/nextjs --legacy-peer-deps
 let finalConfig = configWithPWA
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   try {
