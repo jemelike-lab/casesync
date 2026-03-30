@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Profile } from '@/lib/types'
+import NotificationBell from './NotificationBell'
 
 interface Props {
   user: User
@@ -90,14 +91,21 @@ export default function Header({ user, profile }: Props) {
             {role === 'supervisor' && (
               <NavLink href="/supervisor" label="Supervisor" active={pathname === '/supervisor'} />
             )}
+            <NavLink href="/chat" label="Chat" active={pathname?.startsWith('/chat') ?? false} />
+            <NavLink href="/calendar" label="Calendar" active={pathname?.startsWith('/calendar') ?? false} />
             {role === 'supervisor' && (
               <NavLink href="/admin" label="Admin" active={pathname === '/admin'} />
             )}
+            {role === 'supervisor' && (
+              <NavLink href="/admin/audit" label="Audit Log" active={pathname === '/admin/audit'} />
+            )}
+            <NavLink href="/settings/security" label="Settings" active={pathname?.startsWith('/settings') ?? false} />
           </nav>
         </div>
 
-        {/* Right: User info + logout */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Right: notifications + User info + logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {user.id && <NotificationBell userId={user.id} />}
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>{profile?.full_name ?? user.email}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -133,12 +141,15 @@ export default function Header({ user, profile }: Props) {
         {(role === 'team_manager' || role === 'supervisor') && (
           <MobileNavItem href="/team" icon="👥" label="Team" active={pathname === '/team'} />
         )}
+        <MobileNavItem href="/chat" icon="💬" label="Chat" active={pathname?.startsWith('/chat') ?? false} />
+        <MobileNavItem href="/calendar" icon="📅" label="Calendar" active={pathname?.startsWith('/calendar') ?? false} />
         {role === 'supervisor' && (
           <MobileNavItem href="/supervisor" icon="📊" label="Overview" active={pathname === '/supervisor'} />
         )}
         {role === 'supervisor' && (
           <MobileNavItem href="/admin" icon="⚙️" label="Admin" active={pathname === '/admin'} />
         )}
+        <MobileNavItem href="/settings/security" icon="🔐" label="Security" active={pathname?.startsWith('/settings') ?? false} />
       </nav>
     </>
   )
