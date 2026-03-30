@@ -2,6 +2,8 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { sendEmail } from '@/lib/email'
+import { welcomeEmail } from '@/lib/email-templates'
 
 // Admin Supabase client uses service role key for auth.admin APIs
 function createAdminClient() {
@@ -23,6 +25,15 @@ export async function inviteUser(email: string, role: string, fullName: string) 
     data: { role, full_name: fullName }
   })
   if (error) return { error: error.message }
+
+  // Send welcome email (non-blocking — don't fail the invite if email fails)
+  try {
+    const { subject, html } = welcomeEmail({ fullName, role })
+    await sendEmail({ to: email, subject, html })
+  } catch (emailErr) {
+    console.error('[inviteUser] welcome email error:', emailErr)
+  }
+
   return { data }
 }
 
