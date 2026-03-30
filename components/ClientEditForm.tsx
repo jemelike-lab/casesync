@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate } from '@/lib/types'
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
+import ClientDocuments from '@/components/ClientDocuments'
 
 type EditableClient = Omit<Client, 'id' | 'client_id' | 'last_name' | 'first_name' | 'category' | 'assigned_to' | 'created_at' | 'updated_at' | 'profiles'>
 
@@ -668,6 +669,9 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
       {/* Activity Log */}
       <ActivitySection clientId={client.id} />
+
+      {/* Documents */}
+      <ClientDocuments clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
     </div>
   )
 }
