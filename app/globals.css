@@ -51,6 +51,13 @@ input::placeholder {
   color: var(--text-secondary);
 }
 
+/* Dark mode date/time inputs */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
 /* Button */
 .btn-primary {
   background: var(--accent);
