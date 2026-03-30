@@ -69,6 +69,7 @@ input[type="time"] {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, opacity 0.2s;
+  min-height: 44px;
 }
 
 .btn-primary:hover {
@@ -89,6 +90,7 @@ input[type="time"] {
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s;
+  min-height: 44px;
 }
 
 .btn-secondary:hover {
@@ -114,6 +116,7 @@ input[type="time"] {
   color: var(--text-secondary);
   background: transparent;
   border: none;
+  min-height: 44px;
 }
 
 .tab.active {
@@ -145,4 +148,56 @@ input[type="time"] {
 
 .fade-in {
   animation: fadeIn 0.2s ease;
+}
+
+/* Desktop nav - hidden on mobile */
+.desktop-nav {
+  display: flex;
+}
+
+/* Mobile bottom nav - hidden on desktop */
+.mobile-nav {
+  display: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex !important;
+  }
+
+  /* Add padding so content isn't hidden behind mobile nav */
+  main {
+    padding-bottom: 80px !important;
+  }
+
+  /* Single column cards on mobile */
+  .client-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Larger tap targets */
+  button, a, input, select {
+    min-height: 44px;
+  }
+
+  /* Stack forms */
+  .form-row {
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    padding: 0 16px !important;
+  }
+
+  main {
+    padding: 16px !important;
+    padding-bottom: 80px !important;
+  }
 }
