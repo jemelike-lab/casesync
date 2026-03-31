@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import IdleTimeout from '@/components/IdleTimeout'
+import YourCaseAI from '@/components/YourCaseAI'
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +30,7 @@ export default async function DashboardLayout({
       <main style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
         {children}
       </main>
+      <YourCaseAI />
     </div>
   )
 }
