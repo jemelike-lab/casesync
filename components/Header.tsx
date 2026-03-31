@@ -94,6 +94,7 @@ export default function Header({ user, profile }: Props) {
               <NavLink href="/admin/audit" label="Audit Log" active={pathname === '/admin/audit'} />
             )}
             <NavLink href="/settings/security" label="Settings" active={pathname?.startsWith('/settings') ?? false} />
+            <NavLink href="/help" label="📚 Help" active={pathname === '/help'} />
           </nav>
         </div>
 
@@ -197,6 +198,7 @@ export default function Header({ user, profile }: Props) {
           <MobileNavItem href="/admin" icon="⚙️" label="Admin" active={pathname === '/admin'} />
         )}
         <MobileNavItem href="/settings/security" icon="🔐" label="Security" active={pathname?.startsWith('/settings') ?? false} />
+        <MobileNavItem href="/help" icon="📚" label="Help" active={pathname === '/help'} />
         {/* Mobile help button */}
         <button
           onClick={() => setShowTour(true)}
