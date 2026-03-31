@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate } from '@/lib/types'
+import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate, getDaysSinceContact } from '@/lib/types'
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
@@ -437,6 +437,232 @@ function ClientAlertBanner({ formData, onScrollToOverdue }: {
   )
 }
 
+
+// Smart "What to do next" suggestion
+function SmartSuggestion({ formData, client }: { formData: Partial<EditableClient>, client: Client }) {
+  const DATE_FIELDS: Array<{ key: keyof typeof formData; label: string }> = [
+    { key: 'eligibility_end_date', label: 'Eligibility End' },
+    { key: 'three_month_visit_due', label: '3-Month Visit Due' },
+    { key: 'quarterly_waiver_date', label: 'Quarterly Waiver' },
+    { key: 'med_tech_redet_date', label: 'Med Tech Redet' },
+    { key: 'pos_deadline', label: 'POS Deadline' },
+    { key: 'assessment_due', label: 'Assessment Due' },
+    { key: 'thirty_day_letter_date', label: '30-Day Letter' },
+    { key: 'co_financial_redet_date', label: 'CO Financial Redet' },
+    { key: 'co_app_date', label: 'CO App Date' },
+    { key: 'mfp_consent_date', label: 'MFP Consent' },
+    { key: 'two57_date', label: '257 Date' },
+    { key: 'doc_mdh_date', label: 'Doc MDH' },
+    { key: 'spm_next_due', label: 'SPM Next Due' },
+  ]
+
+  // Find most overdue item
+  let mostOverdueField: { label: string; date: string } | null = null
+  let mostOverdueDays = 0
+  for (const { key, label } of DATE_FIELDS) {
+    const d = formData[key] as string | null | undefined
+    if (!d) continue
+    const status = getDateStatus(d)
+    if (status === 'red') {
+      const date = new Date(d)
+      const now = new Date()
+      const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+      if (days > mostOverdueDays) {
+        mostOverdueDays = days
+        mostOverdueField = { label, date: d }
+      }
+    }
+  }
+
+  if (mostOverdueField) {
+    return (
+      <div style={{
+        background: 'rgba(255,69,58,0.06)',
+        border: '1px solid rgba(255,69,58,0.2)',
+        borderRadius: 8,
+        padding: '10px 14px',
+        marginBottom: 16,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 8,
+      }}>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>💡</span>
+        <div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--red)' }}>Suggested next action: </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Update <strong style={{ color: 'var(--text)' }}>{mostOverdueField.label}</strong> — overdue since {formatDate(mostOverdueField.date)} ({mostOverdueDays}d ago)
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // No contact in 7+ days
+  const daysSince = getDaysSinceContact(client.last_contact_date)
+  if (daysSince !== null && daysSince >= 7) {
+    return (
+      <div style={{
+        background: 'rgba(0,122,255,0.06)',
+        border: '1px solid rgba(0,122,255,0.2)',
+        borderRadius: 8,
+        padding: '10px 14px',
+        marginBottom: 16,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 8,
+      }}>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>💡</span>
+        <div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Suggested next action: </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Log a contact — last contact was <strong style={{ color: 'var(--text)' }}>{daysSince} days ago</strong>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // SPM coming up
+  const spmDue = formData.spm_next_due as string | null | undefined
+  if (spmDue) {
+    const status = getDateStatus(spmDue)
+    if (status === 'orange' || status === 'yellow') {
+      const date = new Date(spmDue)
+      const now = new Date()
+      const daysUntil = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      return (
+        <div style={{
+          background: 'rgba(0,122,255,0.06)',
+          border: '1px solid rgba(0,122,255,0.2)',
+          borderRadius: 8,
+          padding: '10px 14px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+        }}>
+          <span style={{ fontSize: 15, flexShrink: 0 }}>💡</span>
+          <div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Suggested next action: </span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              SPM due in <strong style={{ color: 'var(--text)' }}>{daysUntil} days</strong> — schedule now
+            </span>
+          </div>
+        </div>
+      )
+    }
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(48,209,88,0.06)',
+      border: '1px solid rgba(48,209,88,0.2)',
+      borderRadius: 8,
+      padding: '10px 14px',
+      marginBottom: 16,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+    }}>
+      <span style={{ fontSize: 15 }}>✅</span>
+      <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 500 }}>No immediate actions needed</span>
+    </div>
+  )
+}
+
+// AI Summary component
+function AISummary({ clientId }: { clientId: string }) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const generate = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/client-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate summary')
+      setSummary(data.summary)
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate summary')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <button
+        onClick={generate}
+        disabled={loading}
+        style={{
+          background: 'rgba(191,90,242,0.12)',
+          border: '1px solid rgba(191,90,242,0.3)',
+          borderRadius: 8,
+          color: '#bf5af2',
+          fontSize: 12,
+          fontWeight: 600,
+          padding: '6px 12px',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.7 : 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          transition: 'background 0.15s',
+        }}
+      >
+        {loading ? (
+          <>
+            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: 14 }}>⟳</span>
+            Generating…
+          </>
+        ) : '✨ AI Summary'}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--red)' }}>⚠️ {error}</div>
+      )}
+
+      {summary && (
+        <div style={{
+          marginTop: 10,
+          background: 'rgba(191,90,242,0.06)',
+          border: '1px solid rgba(191,90,242,0.2)',
+          borderRadius: 8,
+          padding: '12px 14px',
+          fontSize: 13,
+          color: 'var(--text)',
+          lineHeight: 1.5,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <span>{summary}</span>
+            <button
+              onClick={generate}
+              disabled={loading}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-secondary)', fontSize: 11, padding: '2px 4px', flexShrink: 0,
+              }}
+              title="Regenerate"
+            >
+              🔄
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  )
+}
+
 export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [] }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -694,6 +920,11 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
         <ClientAlertBanner formData={f} onScrollToOverdue={handleScrollToOverdue} />
       )}
 
+      {/* Smart suggestion - view mode only */}
+      {!editing && (
+        <SmartSuggestion formData={f} client={client} />
+      )}
+
       {/* Header */}
       <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -716,12 +947,13 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {!editing && (
-            <div style={{
-              fontSize: 24, fontWeight: 700,
-              color: (f.goal_pct ?? 0) >= 80 ? 'var(--green)' : (f.goal_pct ?? 0) >= 50 ? 'var(--yellow)' : 'var(--red)',
-              marginRight: 8,
-            }}>
-              {f.goal_pct}%
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <div style={{
+                fontSize: 24, fontWeight: 700,
+                color: (f.goal_pct ?? 0) >= 80 ? 'var(--green)' : (f.goal_pct ?? 0) >= 50 ? 'var(--yellow)' : 'var(--red)',
+              }}>
+                {f.goal_pct}%
+              </div>
             </div>
           )}
           {editing ? (
@@ -752,6 +984,13 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           )}
         </div>
       </div>
+
+      {/* AI Summary - view mode only */}
+      {!editing && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <AISummary clientId={client.id} />
+        </div>
+      )}
 
       {/* Eligibility */}
       <Section title="Eligibility">
