@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Header from './Header'
 import Link from 'next/link'
 import { Profile } from '@/lib/types'
 import { User } from '@supabase/supabase-js'
@@ -85,7 +84,6 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
 
   return (
     <>
-      <Header user={currentUser} profile={profile} />
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
