@@ -539,3 +539,29 @@ input[type="time"] {
   border: 1px solid rgba(122, 59, 0, 0.3) !important;
   color: #7a3b00 !important;
 }
+
+/* ===== LIGHT MODE: Nav active tab + eligibility pill ===== */
+
+/* Active nav tab - bright white, bold */
+[data-theme="light"] header nav a[style*="background: var(--surface-2)"],
+[data-theme="light"] header nav a[style*="background:var(--surface-2)"] {
+  background: rgba(255,255,255,0.25) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* All nav links white */
+[data-theme="light"] header nav a {
+  color: #f0e6d8 !important;
+}
+
+[data-theme="light"] header nav a:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.15) !important;
+}
+
+/* Eligibility ending soon pill - deep teal/indigo */
+[data-theme="light"] [style*="eligibility"],
+[data-theme="light"] [style*="Eligibility"] {
+  color: #2d4a6e !important;
+}
