@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate } from '@/lib/types'
 import StatusDot from '@/components/StatusDot'
@@ -42,9 +42,9 @@ const selectStyle: React.CSSProperties = {
   appearance: 'auto',
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card" style={{ marginBottom: 16 }} id={id}>
       <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {title}
       </h3>
@@ -103,12 +103,13 @@ const LAST_CONTACT_TYPE_OPTIONS: SelectOption[] = [
   { value: 'Office Visit', label: 'Office Visit' },
 ]
 
-function FieldRow({ label, field, value, type, editing, onChange, dateStatus, selectOptions, extra }: {
+function FieldRow({ label, field, value, type, editing, onChange, dateStatus, selectOptions, extra, highlighted }: {
   label: string; field: string; value: string | boolean | number | null | undefined;
   type: 'date' | 'text' | 'boolean' | 'number' | 'select'; editing: boolean;
   onChange: (field: string, value: string | boolean | number | null) => void;
   dateStatus?: 'green' | 'yellow' | 'orange' | 'red' | 'none';
-  selectOptions?: SelectOption[]; extra?: React.ReactNode
+  selectOptions?: SelectOption[]; extra?: React.ReactNode;
+  highlighted?: boolean
 }) {
   if (!editing && (value === null || value === undefined || value === '')) return null
 
@@ -118,11 +119,23 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
   else if (type === 'date') displayValue = formatDate(String(value).split('T')[0])
   else displayValue = String(value)
 
+  const isOverdueField = !editing && type === 'date' && dateStatus === 'red'
+  const isDueSoonField = !editing && type === 'date' && dateStatus === 'orange'
+
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12,
-    }}>
+    <div
+      id={highlighted ? `field-${field}` : undefined}
+      style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12,
+        borderLeft: isOverdueField ? '3px solid rgba(255,69,58,0.6)' : isDueSoonField ? '3px solid rgba(255,159,10,0.5)' : '3px solid transparent',
+        paddingLeft: (isOverdueField || isDueSoonField) ? 8 : 0,
+        background: isOverdueField ? 'rgba(255,69,58,0.04)' : isDueSoonField ? 'rgba(255,159,10,0.03)' : 'transparent',
+        borderRadius: (isOverdueField || isDueSoonField) ? 4 : 0,
+        boxShadow: highlighted ? '0 0 0 2px rgba(255,69,58,0.4)' : undefined,
+        transition: 'box-shadow 0.5s ease',
+      }}
+    >
       <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: '0 0 200px' }}>{label}</span>
       {editing ? (
         <div style={{ flex: 1 }}>
@@ -155,14 +168,48 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
           )}
         </div>
       ) : (
-        <span style={{
-          fontSize: 13, fontWeight: 500,
-          color: dateStatus ? `var(--${dateStatus === 'none' ? 'text-secondary' : dateStatus})` : 'var(--text)',
-          textAlign: 'right', flex: 1,
-        }}>
-          {dateStatus && dateStatus !== 'none' && <StatusDot status={dateStatus} style={{ marginRight: 6 }} />}
-          {displayValue}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
+          <span style={{
+            fontSize: 13, fontWeight: 500,
+            color: dateStatus ? `var(--${dateStatus === 'none' ? 'text-secondary' : dateStatus})` : 'var(--text)',
+            textAlign: 'right',
+          }}>
+            {dateStatus && dateStatus !== 'none' && <StatusDot status={dateStatus} style={{ marginRight: 6 }} />}
+            {displayValue}
+          </span>
+          {isOverdueField && (
+            <span style={{
+              background: 'rgba(255,69,58,0.2)',
+              border: '1px solid rgba(255,69,58,0.4)',
+              color: '#ff453a',
+              fontSize: 9,
+              fontWeight: 800,
+              padding: '1px 6px',
+              borderRadius: 4,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              flexShrink: 0,
+            }}>
+              OVERDUE
+            </span>
+          )}
+          {isDueSoonField && (
+            <span style={{
+              background: 'rgba(255,159,10,0.2)',
+              border: '1px solid rgba(255,159,10,0.4)',
+              color: '#ff9f0a',
+              fontSize: 9,
+              fontWeight: 800,
+              padding: '1px 6px',
+              borderRadius: 4,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              flexShrink: 0,
+            }}>
+              DUE SOON
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
@@ -285,12 +332,116 @@ function ActivitySection({ clientId }: { clientId: string }) {
   )
 }
 
+// Alert banner for client detail view
+function ClientAlertBanner({ formData, onScrollToOverdue }: {
+  formData: Partial<EditableClient>
+  onScrollToOverdue: () => void
+}) {
+  const DATE_FIELDS: Array<{ key: keyof typeof formData; label: string }> = [
+    { key: 'eligibility_end_date', label: 'Eligibility End' },
+    { key: 'three_month_visit_due', label: '3-Month Visit' },
+    { key: 'quarterly_waiver_date', label: 'Quarterly Waiver' },
+    { key: 'med_tech_redet_date', label: 'Med Tech Redet' },
+    { key: 'pos_deadline', label: 'POS Deadline' },
+    { key: 'assessment_due', label: 'Assessment Due' },
+    { key: 'thirty_day_letter_date', label: '30-Day Letter' },
+    { key: 'co_financial_redet_date', label: 'CO Financial Redet' },
+    { key: 'co_app_date', label: 'CO App Date' },
+    { key: 'mfp_consent_date', label: 'MFP Consent' },
+    { key: 'two57_date', label: '257 Date' },
+    { key: 'doc_mdh_date', label: 'Doc MDH' },
+    { key: 'spm_next_due', label: 'SPM Next Due' },
+  ]
+
+  let overdueCount = 0
+  let dueThisWeekCount = 0
+  let dueThisMonthCount = 0
+
+  for (const { key } of DATE_FIELDS) {
+    const d = formData[key] as string | null | undefined
+    const status = getDateStatus(d ?? null)
+    if (status === 'red') overdueCount++
+    else if (status === 'orange') dueThisWeekCount++
+    else if (status === 'yellow') dueThisMonthCount++
+  }
+
+  const allCurrent = overdueCount === 0 && dueThisWeekCount === 0 && dueThisMonthCount === 0
+
+  let bg: string, border: string, textColor: string, icon: string
+  if (overdueCount > 0) {
+    bg = 'rgba(255,69,58,0.1)'
+    border = 'rgba(255,69,58,0.35)'
+    textColor = '#ff453a'
+    icon = '⚠️'
+  } else if (dueThisWeekCount > 0) {
+    bg = 'rgba(255,159,10,0.1)'
+    border = 'rgba(255,159,10,0.35)'
+    textColor = '#ff9f0a'
+    icon = '🔔'
+  } else if (dueThisMonthCount > 0) {
+    bg = 'rgba(255,214,10,0.08)'
+    border = 'rgba(255,214,10,0.3)'
+    textColor = '#ffd60a'
+    icon = '📅'
+  } else {
+    bg = 'rgba(48,209,88,0.08)'
+    border = 'rgba(48,209,88,0.25)'
+    textColor = '#30d158'
+    icon = '✅'
+  }
+
+  return (
+    <div className="slide-in-up" style={{
+      background: bg,
+      border: `1px solid ${border}`,
+      borderRadius: 10,
+      padding: '12px 16px',
+      marginBottom: 16,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 16 }}>{icon}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: textColor }}>
+          {allCurrent
+            ? 'All items current'
+            : [
+                overdueCount > 0 ? `${overdueCount} item${overdueCount !== 1 ? 's' : ''} overdue` : null,
+                dueThisWeekCount > 0 ? `${dueThisWeekCount} due this week` : null,
+                dueThisMonthCount > 0 ? `${dueThisMonthCount} due this month` : null,
+              ].filter(Boolean).join(' · ')
+          }
+        </span>
+      </div>
+      {!allCurrent && overdueCount > 0 && (
+        <button
+          onClick={onScrollToOverdue}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: textColor,
+            fontSize: 12,
+            cursor: 'pointer',
+            padding: 0,
+            textDecoration: 'underline',
+            alignSelf: 'flex-start',
+          }}
+        >
+          View overdue items ↓
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [] }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [assignedTo, setAssignedTo] = useState(client.assigned_to ?? '')
+  const [highlightedField, setHighlightedField] = useState<string | null>(null)
 
   // Show success toast when client is newly created
   useEffect(() => {
@@ -474,6 +625,27 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
     setAssignSaving(false)
   }
 
+  // Scroll to first overdue field
+  const handleScrollToOverdue = () => {
+    const OVERDUE_DATE_FIELDS = [
+      'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
+      'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
+      'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due',
+    ]
+    for (const field of OVERDUE_DATE_FIELDS) {
+      const d = formData[field as keyof typeof formData] as string | null | undefined
+      if (getDateStatus(d ?? null) === 'red') {
+        const el = document.getElementById(`field-${field}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          setHighlightedField(field)
+          setTimeout(() => setHighlightedField(null), 3000)
+          return
+        }
+      }
+    }
+  }
+
   const f = formData
   const spmNextDueNote = editing && f.spm_completed && f.spm_next_due ? (
     <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
@@ -514,6 +686,11 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           🖨️ Print
         </Link>
       </div>
+
+      {/* Alert banner - only in view mode */}
+      {!editing && (
+        <ClientAlertBanner formData={f} onScrollToOverdue={handleScrollToOverdue} />
+      )}
 
       {/* Header */}
       <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -577,23 +754,23 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       {/* Eligibility */}
       <Section title="Eligibility">
         <FieldRow label="Eligibility Code" field="eligibility_code" value={f.eligibility_code} type="text" editing={editing} onChange={handleChange} />
-        <FieldRow label="Eligibility End Date" field="eligibility_end_date" value={f.eligibility_end_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.eligibility_end_date as string | null)} />
+        <FieldRow label="Eligibility End Date" field="eligibility_end_date" value={f.eligibility_end_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.eligibility_end_date as string | null)} highlighted={highlightedField === 'eligibility_end_date'} />
       </Section>
 
       {/* Contact & Visits */}
       <Section title="Contact & Visits">
-        <FieldRow label="Last Contact Date" field="last_contact_date" value={f.last_contact_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.last_contact_date as string | null)} />
+        <FieldRow label="Last Contact Date" field="last_contact_date" value={f.last_contact_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.last_contact_date as string | null)} highlighted={highlightedField === 'last_contact_date'} />
         <FieldRow label="Last Contact Type" field="last_contact_type" value={f.last_contact_type} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={LAST_CONTACT_TYPE_OPTIONS} />
-        <FieldRow label="Drop-in Visit Date" field="drop_in_visit_date" value={f.drop_in_visit_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.drop_in_visit_date as string | null)} />
-        <FieldRow label="30-Day Letter Date" field="thirty_day_letter_date" value={f.thirty_day_letter_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.thirty_day_letter_date as string | null)} />
+        <FieldRow label="Drop-in Visit Date" field="drop_in_visit_date" value={f.drop_in_visit_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.drop_in_visit_date as string | null)} highlighted={highlightedField === 'drop_in_visit_date'} />
+        <FieldRow label="30-Day Letter Date" field="thirty_day_letter_date" value={f.thirty_day_letter_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.thirty_day_letter_date as string | null)} highlighted={highlightedField === 'thirty_day_letter_date'} />
         <FieldRow label="3-Month Visit Date" field="three_month_visit_date" value={f.three_month_visit_date} type="date" editing={editing} onChange={handleChange} />
-        <FieldRow label="3-Month Visit Due" field="three_month_visit_due" value={f.three_month_visit_due} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.three_month_visit_due as string | null)} />
-        <FieldRow label="Quarterly Visit Waiver Date" field="quarterly_waiver_date" value={f.quarterly_waiver_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.quarterly_waiver_date as string | null)} />
+        <FieldRow label="3-Month Visit Due" field="three_month_visit_due" value={f.three_month_visit_due} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.three_month_visit_due as string | null)} highlighted={highlightedField === 'three_month_visit_due'} />
+        <FieldRow label="Quarterly Visit Waiver Date" field="quarterly_waiver_date" value={f.quarterly_waiver_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.quarterly_waiver_date as string | null)} highlighted={highlightedField === 'quarterly_waiver_date'} />
       </Section>
 
       {/* Med Tech */}
       <Section title="Med Tech">
-        <FieldRow label="Med-Tech Redet Date" field="med_tech_redet_date" value={f.med_tech_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.med_tech_redet_date as string | null)} />
+        <FieldRow label="Med-Tech Redet Date" field="med_tech_redet_date" value={f.med_tech_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.med_tech_redet_date as string | null)} highlighted={highlightedField === 'med_tech_redet_date'} />
         <FieldRow label="Med/Tech Status" field="med_tech_status" value={f.med_tech_status} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={MED_TECH_STATUS_OPTIONS} />
       </Section>
 
@@ -601,13 +778,13 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       <Section title="Plans & Assessments">
         <FieldRow label="POC Date" field="poc_date" value={f.poc_date} type="date" editing={editing} onChange={handleChange} />
         <FieldRow label="LOC Date (If Necessary)" field="loc_date" value={f.loc_date} type="date" editing={editing} onChange={handleChange} />
-        <FieldRow label="Documentation MDH (45 days)" field="doc_mdh_date" value={f.doc_mdh_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.doc_mdh_date as string | null)} />
-        <FieldRow label="POS Deadline" field="pos_deadline" value={f.pos_deadline} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.pos_deadline as string | null)} />
+        <FieldRow label="Documentation MDH (45 days)" field="doc_mdh_date" value={f.doc_mdh_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.doc_mdh_date as string | null)} highlighted={highlightedField === 'doc_mdh_date'} />
+        <FieldRow label="POS Deadline" field="pos_deadline" value={f.pos_deadline} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.pos_deadline as string | null)} highlighted={highlightedField === 'pos_deadline'} />
         <FieldRow label="POS Status" field="pos_status" value={f.pos_status} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={POS_STATUS_OPTIONS} />
-        <FieldRow label="Assessment Due Date" field="assessment_due" value={f.assessment_due} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.assessment_due as string | null)} />
+        <FieldRow label="Assessment Due Date" field="assessment_due" value={f.assessment_due} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.assessment_due as string | null)} highlighted={highlightedField === 'assessment_due'} />
         <FieldRow label="SPM Completed" field="spm_completed" value={f.spm_completed} type="boolean" editing={editing} onChange={handleChange} extra={spmNextDueNote} />
         {!editing && f.spm_next_due && (
-          <FieldRow label="SPM Next Due" field="spm_next_due" value={f.spm_next_due} type="date" editing={false} onChange={handleChange} />
+          <FieldRow label="SPM Next Due" field="spm_next_due" value={f.spm_next_due} type="date" editing={false} onChange={handleChange} dateStatus={getDateStatus(f.spm_next_due as string | null)} highlighted={highlightedField === 'spm_next_due'} />
         )}
         {editing && (
           <FieldRow label="Goal Progress (%)" field="goal_pct" value={f.goal_pct} type="number" editing={editing} onChange={handleChange} />
@@ -631,11 +808,11 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
       {/* CO Details */}
       <Section title="CO Details">
-        <FieldRow label="CO Financial Redetermination Due Date" field="co_financial_redet_date" value={f.co_financial_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.co_financial_redet_date as string | null)} />
-        <FieldRow label="CO Application Date" field="co_app_date" value={f.co_app_date} type="date" editing={editing} onChange={handleChange} />
+        <FieldRow label="CO Financial Redetermination Due Date" field="co_financial_redet_date" value={f.co_financial_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.co_financial_redet_date as string | null)} highlighted={highlightedField === 'co_financial_redet_date'} />
+        <FieldRow label="CO Application Date" field="co_app_date" value={f.co_app_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.co_app_date as string | null)} highlighted={highlightedField === 'co_app_date'} />
         <FieldRow label="Request Letter" field="request_letter" value={f.request_letter} type="text" editing={editing} onChange={handleChange} />
-        <FieldRow label="MFP Consent Form Date" field="mfp_consent_date" value={f.mfp_consent_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.mfp_consent_date as string | null)} />
-        <FieldRow label="257 Date" field="two57_date" value={f.two57_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.two57_date as string | null)} />
+        <FieldRow label="MFP Consent Form Date" field="mfp_consent_date" value={f.mfp_consent_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.mfp_consent_date as string | null)} highlighted={highlightedField === 'mfp_consent_date'} />
+        <FieldRow label="257 Date" field="two57_date" value={f.two57_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.two57_date as string | null)} highlighted={highlightedField === 'two57_date'} />
       </Section>
 
       {/* Reporting */}
