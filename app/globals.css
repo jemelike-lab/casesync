@@ -503,3 +503,22 @@ input[type="time"] {
 [data-theme="light"] [style*="ffcc00"] {
   color: #5a3a00 !important;
 }
+
+/* ===== LIGHT MODE: Header text visibility ===== */
+[data-theme="light"] header span[style*="fontWeight: 700"],
+[data-theme="light"] header span,
+[data-theme="light"] header .logo,
+[data-theme="light"] header > div > div > span {
+  color: #ffffff !important;
+}
+
+/* Force all header children to white */
+[data-theme="light"] header * {
+  color: #f5ede3 !important;
+}
+
+/* But keep accent/action buttons their own color */
+[data-theme="light"] header button[style*="background"],
+[data-theme="light"] header a[style*="background"] {
+  color: #ffffff !important;
+}
