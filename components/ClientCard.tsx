@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount } from '@/lib/types'
+import { useState, useRef, useCallback } from 'react'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount, getClientHealthScore } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
 import StatusDot from './StatusDot'
+import HealthScoreRing from './HealthScoreRing'
 
 interface Props {
   client: Client
@@ -176,6 +177,8 @@ function ContactModal({ onClose, onSave }: ContactModalProps) {
   )
 }
 
+const SWIPE_THRESHOLD = 60
+
 export default function ClientCard({ client: c, isPinned, onTogglePin, selected, onToggleSelect, showSelect, onContactLogged }: Props) {
   const status = worstStatus(c)
   const daysSince = getDaysSinceContact(c.last_contact_date)
@@ -183,6 +186,40 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
   const [showModal, setShowModal] = useState(false)
   const overdueCount = getOverdueCount(c)
   const isOverdueCard = status === 'red'
+  const healthScore = getClientHealthScore(c)
+
+  // Swipe state
+  const touchStartX = useRef<number>(0)
+  const touchStartY = useRef<number>(0)
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [swipeAction, setSwipeAction] = useState<'contact' | 'pin' | null>(null)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - touchStartX.current
+    const dy = e.touches[0].clientY - touchStartY.current
+    // Only swipe if horizontal > vertical
+    if (Math.abs(dx) < Math.abs(dy)) return
+    const clamped = Math.max(-100, Math.min(100, dx))
+    setSwipeOffset(clamped)
+    if (clamped > SWIPE_THRESHOLD) setSwipeAction('contact')
+    else if (clamped < -SWIPE_THRESHOLD) setSwipeAction('pin')
+    else setSwipeAction(null)
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    if (swipeAction === 'contact') {
+      setShowModal(true)
+    } else if (swipeAction === 'pin') {
+      onTogglePin(c.id)
+    }
+    setSwipeOffset(0)
+    setSwipeAction(null)
+  }, [swipeAction, c.id, onTogglePin])
 
   // Left border color based on urgency
   const leftBorderColor: Record<StatusLevel, string> = {
@@ -217,195 +254,234 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
           onSave={handleContactSave}
         />
       )}
-      <div
-        className="card fade-in"
-        style={{
-          borderColor: selected ? 'var(--accent)' : borderColor[status],
-          borderLeft: `3px solid ${selected ? 'var(--accent)' : leftBorderColor[status]}`,
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          transition: 'border-color 0.2s',
-        }}
-      >
-        {/* Pulsing red dot for overdue */}
-        {isOverdueCard && (
-          <span
-            className="pulse-dot"
-            style={{
-              position: 'absolute',
-              top: 10,
-              right: isPinned ? 40 : 10,
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: '#ff453a',
-              display: 'inline-block',
-              flexShrink: 0,
-              zIndex: 1,
-            }}
-          />
-        )}
 
-        {/* OVERDUE badge for 3+ overdue items */}
-        {overdueCount >= 3 && (
-          <span style={{
-            position: 'absolute',
-            top: -1,
-            right: 36,
-            background: '#ff453a',
-            color: '#fff',
-            fontSize: 9,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            padding: '2px 7px',
-            borderRadius: '0 0 6px 6px',
-            textTransform: 'uppercase',
-            zIndex: 2,
+      {/* Swipe action reveal layer */}
+      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+        {/* Behind: Log Contact (swipe right) */}
+        {swipeOffset > 0 && (
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: '100%', display: 'flex', alignItems: 'center', paddingLeft: 16,
+            background: 'rgba(48,209,88,0.15)',
+            opacity: Math.min(1, swipeOffset / SWIPE_THRESHOLD),
+            borderRadius: 12,
           }}>
-            OVERDUE
-          </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#30d158' }}>📞 Log Contact</span>
+          </div>
+        )}
+        {/* Behind: Pin (swipe left) */}
+        {swipeOffset < 0 && (
+          <div style={{
+            position: 'absolute', right: 0, top: 0, bottom: 0,
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 16,
+            background: 'rgba(0,122,255,0.15)',
+            opacity: Math.min(1, Math.abs(swipeOffset) / SWIPE_THRESHOLD),
+            borderRadius: 12,
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#007aff' }}>📌 {isPinned ? 'Unpin' : 'Pin'}</span>
+          </div>
         )}
 
-        {/* Top row: select + pin */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {showSelect && (
-              <input
-                type="checkbox"
-                checked={selected ?? false}
-                onChange={() => onToggleSelect?.(c.id)}
-                style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
-              />
-            )}
-            <StatusDot status={status} size={10} />
-            <Link href={`/clients/${c.id}`} style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: 'var(--text)',
-              textDecoration: 'none',
+        <div
+          className="card fade-in"
+          style={{
+            borderColor: selected ? 'var(--accent)' : borderColor[status],
+            borderLeft: `3px solid ${selected ? 'var(--accent)' : leftBorderColor[status]}`,
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            transition: swipeOffset === 0 ? 'transform 0.3s ease, border-color 0.2s' : 'border-color 0.2s',
+            transform: `translateX(${swipeOffset}px)`,
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Pulsing red dot for overdue */}
+          {isOverdueCard && (
+            <span
+              className="pulse-dot"
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: isPinned ? 56 : 56,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: '#ff453a',
+                display: 'inline-block',
+                flexShrink: 0,
+                zIndex: 1,
+              }}
+            />
+          )}
+
+          {/* OVERDUE badge for 3+ overdue items */}
+          {overdueCount >= 3 && (
+            <span style={{
+              position: 'absolute',
+              top: -1,
+              right: 36,
+              background: '#ff453a',
+              color: '#fff',
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              padding: '2px 7px',
+              borderRadius: '0 0 6px 6px',
+              textTransform: 'uppercase',
+              zIndex: 2,
             }}>
-              {c.last_name}, {c.first_name}
-            </Link>
+              OVERDUE
+            </span>
+          )}
+
+          {/* Health Score Ring - top right */}
+          <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 3 }}>
+            <HealthScoreRing score={healthScore} size={44} />
           </div>
+
+          {/* Top row: select + name */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingRight: 52 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {showSelect && (
+                <input
+                  type="checkbox"
+                  checked={selected ?? false}
+                  onChange={() => onToggleSelect?.(c.id)}
+                  style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
+                />
+              )}
+              <StatusDot status={status} size={10} />
+              <Link href={`/clients/${c.id}`} style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: 'var(--text)',
+                textDecoration: 'none',
+              }}>
+                {c.last_name}, {c.first_name}
+              </Link>
+            </div>
+            <button
+              onClick={() => onTogglePin(c.id)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                opacity: isPinned ? 1 : 0.3,
+                transition: 'opacity 0.15s',
+                padding: 4,
+                minWidth: 28,
+                minHeight: 28,
+                marginRight: 2,
+              }}
+              title={isPinned ? 'Unpin client' : 'Pin client'}
+            >
+              📌
+            </button>
+          </div>
+
+          {/* Meta info */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.client_id}</span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '1px 7px',
+              borderRadius: 10,
+              background: 'var(--surface-2)',
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}>
+              {c.category}
+            </span>
+            {c.eligibility_code && (
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.eligibility_code}</span>
+            )}
+          </div>
+          {c.eligibility_code && getEligibilityDescription(c.eligibility_code) && (
+            <div style={{ fontSize: 10, color: '#666668', marginTop: -4, marginBottom: 0 }}>
+              {getEligibilityDescription(c.eligibility_code).length > 40
+                ? getEligibilityDescription(c.eligibility_code).slice(0, 40) + '…'
+                : getEligibilityDescription(c.eligibility_code)}
+            </div>
+          )}
+
+          {/* Key dates */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <DateBadge label="Elig" date={c.eligibility_end_date} />
+            <DateBadge label="3mo" date={c.three_month_visit_due} />
+            <DateBadge label="Waiver" date={c.quarterly_waiver_date} />
+            <DateBadge label="MedTech" date={c.med_tech_redet_date} />
+            <DateBadge label="POS" date={c.pos_deadline} />
+            <DateBadge label="Assess" date={c.assessment_due} />
+            <SpmDueBadge date={c.spm_next_due ?? null} />
+          </div>
+
+          {/* Contact + goal */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 11, color: noContact ? 'var(--orange)' : 'var(--text-secondary)' }}>
+              {daysSince !== null
+                ? `Last contact ${daysSince}d ago${noContact ? ' ⚠️' : ''}`
+                : 'No contact recorded'}
+              {c.last_contact_type && (
+                <span style={{ marginLeft: 4, color: 'var(--text-secondary)' }}>({c.last_contact_type})</span>
+              )}
+            </div>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: c.goal_pct >= 80 ? 'var(--green)' : c.goal_pct >= 50 ? 'var(--yellow)' : 'var(--red)',
+            }}>
+              {c.goal_pct}%
+            </div>
+          </div>
+
+          {/* Assigned planner */}
+          {c.profiles?.full_name && (
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              👤 {c.profiles.full_name}
+            </div>
+          )}
+
+          {/* Risk badge */}
+          {(() => {
+            const risk = getRiskLevel(c)
+            if (risk === 'high') return (
+              <div style={{ background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#ff453a', display: 'flex', alignItems: 'center', gap: 5 }}>
+                🔴 High Risk
+              </div>
+            )
+            if (risk === 'medium') return (
+              <div style={{ background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#ff9f0a', display: 'flex', alignItems: 'center', gap: 5 }}>
+                🟡 Medium Risk
+              </div>
+            )
+            return null
+          })()}
+
+          {/* Log Contact button */}
           <button
-            onClick={() => onTogglePin(c.id)}
+            onClick={() => setShowModal(true)}
             style={{
-              background: 'none',
-              border: 'none',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              color: 'var(--text-secondary)',
+              fontSize: 11,
+              padding: '5px 10px',
               cursor: 'pointer',
-              fontSize: 14,
-              opacity: isPinned ? 1 : 0.3,
-              transition: 'opacity 0.15s',
-              padding: 4,
-              minWidth: 28,
+              alignSelf: 'flex-start',
               minHeight: 28,
+              transition: 'color 0.15s',
             }}
-            title={isPinned ? 'Unpin client' : 'Pin client'}
           >
-            📌
+            📞 Log Contact
           </button>
         </div>
-
-        {/* Meta info */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.client_id}</span>
-          <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '1px 7px',
-            borderRadius: 10,
-            background: 'var(--surface-2)',
-            color: 'var(--text-secondary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}>
-            {c.category}
-          </span>
-          {c.eligibility_code && (
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.eligibility_code}</span>
-          )}
-        </div>
-        {c.eligibility_code && getEligibilityDescription(c.eligibility_code) && (
-          <div style={{ fontSize: 10, color: '#666668', marginTop: -4, marginBottom: 0 }}>
-            {getEligibilityDescription(c.eligibility_code).length > 40
-              ? getEligibilityDescription(c.eligibility_code).slice(0, 40) + '…'
-              : getEligibilityDescription(c.eligibility_code)}
-          </div>
-        )}
-
-        {/* Key dates */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          <DateBadge label="Elig" date={c.eligibility_end_date} />
-          <DateBadge label="3mo" date={c.three_month_visit_due} />
-          <DateBadge label="Waiver" date={c.quarterly_waiver_date} />
-          <DateBadge label="MedTech" date={c.med_tech_redet_date} />
-          <DateBadge label="POS" date={c.pos_deadline} />
-          <DateBadge label="Assess" date={c.assessment_due} />
-          <SpmDueBadge date={c.spm_next_due ?? null} />
-        </div>
-
-        {/* Contact + goal */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 11, color: noContact ? 'var(--orange)' : 'var(--text-secondary)' }}>
-            {daysSince !== null
-              ? `Last contact ${daysSince}d ago${noContact ? ' ⚠️' : ''}`
-              : 'No contact recorded'}
-            {c.last_contact_type && (
-              <span style={{ marginLeft: 4, color: 'var(--text-secondary)' }}>({c.last_contact_type})</span>
-            )}
-          </div>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: c.goal_pct >= 80 ? 'var(--green)' : c.goal_pct >= 50 ? 'var(--yellow)' : 'var(--red)',
-          }}>
-            {c.goal_pct}%
-          </div>
-        </div>
-
-        {/* Assigned planner */}
-        {c.profiles?.full_name && (
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-            👤 {c.profiles.full_name}
-          </div>
-        )}
-
-        {/* Risk badge */}
-        {(() => {
-          const risk = getRiskLevel(c)
-          if (risk === 'high') return (
-            <div style={{ background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#ff453a', display: 'flex', alignItems: 'center', gap: 5 }}>
-              🔴 High Risk
-            </div>
-          )
-          if (risk === 'medium') return (
-            <div style={{ background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#ff9f0a', display: 'flex', alignItems: 'center', gap: 5 }}>
-              🟡 Medium Risk
-            </div>
-          )
-          return null
-        })()}
-
-        {/* Log Contact button */}
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            color: 'var(--text-secondary)',
-            fontSize: 11,
-            padding: '5px 10px',
-            cursor: 'pointer',
-            alignSelf: 'flex-start',
-            minHeight: 28,
-            transition: 'color 0.15s',
-          }}
-        >
-          📞 Log Contact
-        </button>
       </div>
     </>
   )
