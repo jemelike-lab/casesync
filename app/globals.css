@@ -140,7 +140,7 @@ input[type="time"] {
 .bg-status-orange { background: rgba(255, 159, 10, 0.15); }
 .bg-status-red { background: rgba(255, 69, 58, 0.15); }
 
-/* Animation */
+/* Animation - fadeIn */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -148,6 +148,40 @@ input[type="time"] {
 
 .fade-in {
   animation: fadeIn 0.2s ease;
+}
+
+/* Animation - pulse (for urgency dots) */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* Animation - bellShake */
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-15deg); }
+  40% { transform: rotate(15deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(10deg); }
+}
+
+/* Animation - slideInUp */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility animation classes */
+.pulse-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.bell-shake {
+  animation: bellShake 0.5s ease-in-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.3s ease-out;
 }
 
 /* Desktop nav - hidden on mobile */
