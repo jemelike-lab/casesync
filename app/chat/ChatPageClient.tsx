@@ -34,8 +34,9 @@ export default function ChatPageClient({ userId, profile, channels, allUsers }: 
           channels={channels}
           selectedId={selectedChannelId}
           onSelect={setSelectedChannelId}
+          currentUser={profile}
         />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#0f0f11' }}>
           {selectedChannelId && selectedChannel ? (
             <ChatWindow
               channelId={selectedChannelId}
@@ -44,8 +45,14 @@ export default function ChatPageClient({ userId, profile, channels, allUsers }: 
               users={allUsers}
             />
           ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-              Select a channel to start messaging
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              color: '#636366', fontSize: 14, gap: 12,
+            }}>
+              <div style={{ fontSize: 40 }}>💬</div>
+              <div style={{ fontWeight: 600, color: '#8e8e93' }}>Select a channel to start messaging</div>
+              <div style={{ fontSize: 13, color: '#48484a' }}>Choose from the sidebar on the left</div>
             </div>
           )}
         </div>
