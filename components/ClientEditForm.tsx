@@ -8,6 +8,8 @@ import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
 import { useSearchParams } from 'next/navigation'
 import { sendAssignmentEmail } from '@/app/actions/notifications'
+import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
+import { getEligibilityDescription } from '@/lib/eligibility-codes'
 
 type EditableClient = Omit<Client, 'id' | 'client_id' | 'last_name' | 'first_name' | 'category' | 'assigned_to' | 'created_at' | 'updated_at' | 'profiles'>
 
@@ -753,7 +755,28 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
       {/* Eligibility */}
       <Section title="Eligibility">
-        <FieldRow label="Eligibility Code" field="eligibility_code" value={f.eligibility_code} type="text" editing={editing} onChange={handleChange} />
+        {editing ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: '0 0 200px' }}>Eligibility Code</span>
+            <div style={{ flex: 1 }}>
+              <EligibilityCodeSelect
+                value={f.eligibility_code}
+                onChange={v => handleChange('eligibility_code', v)}
+                editing={true}
+              />
+            </div>
+          </div>
+        ) : f.eligibility_code ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: '0 0 200px' }}>Eligibility Code</span>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{f.eligibility_code}</span>
+              {getEligibilityDescription(f.eligibility_code as string) && (
+                <div style={{ fontSize: 11, color: '#98989d', marginTop: 2 }}>{getEligibilityDescription(f.eligibility_code as string)}</div>
+              )}
+            </div>
+          </div>
+        ) : null}
         <FieldRow label="Eligibility End Date" field="eligibility_end_date" value={f.eligibility_end_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.eligibility_end_date as string | null)} highlighted={highlightedField === 'eligibility_end_date'} />
       </Section>
 
