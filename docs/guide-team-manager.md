@@ -108,132 +108,7 @@ The week strip shows a 7-day timeline. Each deadline chip shows:
 
 ---
 
-## 3. Working with Clients
-
-### Viewing a Client Profile
-
-1. From the Dashboard, click any client card.
-2. Or use the search bar to find a client by name.
-
-### Understanding the Client Profile
-
-The profile page includes:
-
-**Personal Information**
-- Full legal name, date of birth, Medicaid ID
-- Phone numbers, email, home address
-
-**Emergency Contact**
-- Emergency contact name, relationship, phone
-
-**Service & Eligibility**
-- Eligibility codes (Medicaid waiver services)
-- Service authorization dates and funding source
-
-**Monitoring & Compliance**
-- Date of last contact log and SPM submission
-- Next deadline date
-
-**Notes**
-- Notes visible to you and the assigned planner
-
-### Eligibility Codes
-
-Eligibility codes identify the specific services a client receives. Examples:
-- **CLS** — Community Living Supports
-- **RS** — Respite Services
-- **SE** — Supported Employment
-
-> ⚠️ **Important:** Only change eligibility codes if you've confirmed the change with your Supervisor and the client's service plan.
-
-### Editing a Client Profile
-
-1. Open the client's profile.
-2. Click **Edit** (top-right).
-3. Make your changes using form fields and date pickers.
-4. Click **Save**.
-
-### Client Alert Banner
-
-Yellow or red banners at the top of a client profile indicate:
-- Overdue SPM
-- Expiring service authorization
-- Your own flag on the client
-
-### Flagging a Client for Planner Attention
-
-1. Open the client profile.
-2. Click the **Flag** button (⚑ icon).
-3. Add a short note explaining why you're flagging.
-4. The planner assigned to this client will see a yellow alert on their Dashboard.
-
----
-
-## 4. Logging Contact
-
-As a Team Manager, you may still log contact with clients — especially if you do check-ins or cover for planners.
-
-### How to Log a Contact
-
-1. Open the client's profile.
-2. Scroll to **Contact Log** and click **+ New Contact Entry**.
-3. Fill in:
-   - **Date** — use the date picker
-   - **Type** — Phone Call, Home Visit, Community Visit, Email, Collateral Contact
-   - **Duration** — in minutes
-   - **Notes** — brief summary of the interaction
-   - **Outcome** — whether follow-up is needed
-4. Click **Save Entry**.
-
-> 💡 **Tip:** Log contact as soon as possible after the interaction.
-
----
-
-## 5. Monthly Monitoring (SPM)
-
-The **Service Planning and Monitoring (SPM)** report is due by the **15th of every month** for each active client.
-
-### Your Role in SPMs
-
-As a Team Manager, you are responsible for:
-- Ensuring your planners submit SPMs on time
-- Reviewing SPM quality and completeness
-- Following up with planners who are late or missing submissions
-
-### Reviewing SPMs
-
-1. Open a client's profile.
-2. Click the **Monthly Monitoring** tab.
-3. Review submitted entries for accuracy and completeness.
-4. If you see an issue, use Chat to message the planner directly.
-
-### Submitting an SPM (if you carry a caseload)
-
-1. Open the client's profile.
-2. Click **Monthly Monitoring** → **+ New SPM Entry**.
-3. Complete all required fields and click **Submit SPM**.
-
----
-
-## 6. Documents
-
-### Uploading a Document
-
-1. Open the client's profile.
-2. Scroll to the **Documents** section.
-3. Click **Upload Document** → select file → click **Confirm Upload**.
-
-### Document Naming Best Practice
-
-```
-[LastName]_[DocumentType]_[YYYY-MM].pdf
-```
-
-> ⚠️ **Reminder:** Never upload documents containing passwords, financial account numbers, or SSNs.
-
----
-
-## 7. Calendar
+## 3. Calendar
 
 ### Accessing the Calendar
 
@@ -252,7 +127,7 @@ Click **Calendar** in the top navigation.
 
 ---
 
-## 8. Chat
+## 4. Chat
 
 ### Direct Messages
 
@@ -278,7 +153,7 @@ Click **Calendar** in the top navigation.
 
 ---
 
-## 9. BLH Bot
+## 5. BLH Bot
 
 BLH Bot is your AI assistant, available anytime via the purple button 🟣 in the bottom-right corner.
 
@@ -294,7 +169,7 @@ BLH Bot is your AI assistant, available anytime via the purple button 🟣 in th
 
 ---
 
-## 10. Mobile App
+## 6. Mobile App
 
 ### Installing CaseSync on Your Phone
 
@@ -310,7 +185,7 @@ The CaseSync icon will appear on your home screen and launch in full-screen mode
 
 ---
 
-## 11. Team Dashboard
+## 7. Team Dashboard
 
 The Team Dashboard is your overview of your entire team's activity and compliance.
 
@@ -346,7 +221,7 @@ Click any planner's name to see:
 
 ---
 
-## 12. Assigning Clients to Planners
+## 8. Assigning Clients to Planners
 
 ### Assigning a New Client
 
@@ -379,7 +254,7 @@ From the Team Dashboard, review each planner's client count. Consider reassignin
 
 ---
 
-## 13. Monitoring Your Team's Compliance
+## 9. Monitoring Your Team's Compliance
 
 ### SPM Compliance Check
 
@@ -412,7 +287,7 @@ From the Team Dashboard, review each planner's client count. Consider reassignin
 
 ---
 
-## 14. Using BLH Bot for Team Questions
+## 10. Using BLH Bot for Team Questions
 
 BLH Bot can help you manage your team more efficiently.
 
@@ -435,7 +310,7 @@ BLH Bot is trained on BLH's policies and procedures. Use it to quickly answer pl
 
 ---
 
-## 15. Quick Reference
+## 11. Quick Reference
 
 ### Keyboard Shortcuts (Desktop)
 
