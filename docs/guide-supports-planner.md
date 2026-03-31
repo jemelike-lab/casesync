@@ -7,15 +7,11 @@
 ## Table of Contents
 1. [Getting Started](#1-getting-started)
 2. [Your Dashboard](#2-your-dashboard)
-3. [Working with Clients](#3-working-with-clients)
-4. [Logging Contact](#4-logging-contact)
-5. [Monthly Monitoring (SPM)](#5-monthly-monitoring-spm)
-6. [Documents](#6-documents)
-7. [Calendar](#7-calendar)
-8. [Chat](#8-chat)
-9. [BLH Bot](#9-blh-bot)
-10. [Mobile App](#10-mobile-app)
-11. [Quick Reference](#11-quick-reference)
+3. [Calendar](#7-calendar)
+4. [Chat](#8-chat)
+5. [BLH Bot](#9-blh-bot)
+6. [Mobile App](#10-mobile-app)
+7. [Quick Reference](#11-quick-reference)
 
 ---
 
@@ -109,189 +105,7 @@ The week strip shows a 7-day timeline starting from today. Each deadline chip sh
 
 ---
 
-## 3. Working with Clients
-
-### Viewing a Client Profile
-
-1. From the Dashboard, find the client card.
-2. Click anywhere on the card to open their full profile.
-
-### Understanding the Client Profile
-
-The profile page is organized into sections:
-
-**Personal Information**
-- Full legal name
-- Date of birth
-- Medicaid ID / client ID number
-- Primary phone number
-- Secondary phone number
-- Email address
-- Home address
-
-**Emergency Contact**
-- Emergency contact name
-- Relationship to client
-- Emergency contact phone
-
-**Service & Eligibility**
-- Eligibility codes (the Medicaid waiver services the client is enrolled in)
-- Service authorization dates
-- Funding source
-
-**Monitoring & Compliance**
-- Date of last contact log
-- Date of last SPM submission
-- Next deadline date
-
-**Notes**
-- Freeform notes visible to your Team Manager
-- These are not clinical records — use them for logistical reminders
-
-### What Are Eligibility Codes?
-
-Eligibility codes identify the specific services a client receives under their Medicaid waiver. Examples:
-- **CLS** — Community Living Supports
-- **RS** — Respite Services
-- **SE** — Supported Employment
-- **FCS** — Family Caregiver Support
-
-Hover over any code on the client profile to see a short description. You can also ask BLH Bot: "What does [code] mean?"
-
-> ⚠️ **Important:** Never change a client's eligibility codes unless instructed to do so by your Team Manager or Supervisor. Incorrect codes can affect service authorization and billing.
-
-### Editing a Client Profile
-
-1. Open the client's profile.
-2. Click the **Edit** button (top-right of the profile).
-3. All editable fields will become active.
-4. Make your changes. Use the calendar icon 📅 next to date fields to open a date picker.
-5. Click **Save** when done.
-6. You'll see a green confirmation message at the bottom of the screen.
-
-> 💡 **Tip:** If you need to cancel without saving, click **Cancel** or press **Escape** on your keyboard to discard your changes.
-
-### Client Alert Banner
-
-Some client profiles may show a yellow or red alert banner at the top. This could indicate:
-- An overdue SPM
-- A service authorization expiring within 30 days
-- A note flagged by your Team Manager
-
-Always read client-level alerts before starting your work for that client.
-
-### AI Summary
-
-The **Generate Summary** button (sparkle ✨ icon) on a client profile triggers BLH Bot to create an AI-generated summary of the client's current status. This includes:
-- Recent activity
-- Outstanding deadlines
-- Any open alerts
-
-This is great to review before a client visit or team meeting.
-
----
-
-## 4. Logging Contact
-
-Contact logging is one of your core responsibilities. You must document every meaningful interaction with a client.
-
-### Types of Contact to Log
-- Phone calls (with client or family member)
-- Home visits
-- Community visits
-- Emails
-- Collateral contacts (contacts with providers, guardians, etc.)
-
-### How to Log a Contact
-
-1. Open the client's profile.
-2. Scroll down to the **Contact Log** section (or click the "Log Contact" button if visible).
-3. Click **+ New Contact Entry**.
-4. Fill in:
-   - **Date** — use the date picker
-   - **Type** — select from: Phone Call, Home Visit, Community Visit, Email, Collateral Contact
-   - **Duration** — in minutes
-   - **Notes** — a brief summary of what was discussed or observed
-   - **Outcome** — whether follow-up is needed
-5. Click **Save Entry**.
-
-> 💡 **Tip:** Log contact as soon as possible after the interaction — don't wait until end of day. Timely, accurate documentation protects you and your client.
-
-> ⚠️ **Reminder:** Contact logs are part of the client's official record. Use professional, objective language. Avoid opinions or speculation.
-
----
-
-## 5. Monthly Monitoring (SPM)
-
-The **Service Planning and Monitoring (SPM)** report is your most time-critical recurring responsibility.
-
-### Key Facts
-- **Due date:** 15th of every month
-- **Who submits:** Each Supports Planner submits for all assigned clients
-- **What it covers:** Client progress, service delivery confirmation, any concerns or changes
-
-### How to Submit an SPM
-
-1. Open the client's profile.
-2. Click the **Monthly Monitoring** tab or scroll to that section.
-3. Click **+ New SPM Entry**.
-4. Complete all required fields:
-   - Month/Year
-   - Services delivered (confirm or note any gaps)
-   - Client status (stable, needs attention, crisis)
-   - Progress notes
-   - Any issues or changes to report
-5. Click **Submit SPM**.
-
-You'll see a green confirmation. The system will update the "Last SPM Submitted" date on the client's profile.
-
-### Late SPMs
-
-If you miss the 15th deadline:
-- The client's card will show a 🔴 overdue flag
-- Your Team Manager will be notified automatically
-- You should still submit as soon as possible — late is better than never
-- Reach out to your Team Manager to let them know
-
-> 💡 **Tip:** Set a personal reminder for the 10th of each month to begin reviewing your clients and drafting SPM notes. Don't wait until the 14th!
-
----
-
-## 6. Documents
-
-### Uploading a Document to a Client File
-
-1. Open the client's profile.
-2. Scroll to the **Documents** section.
-3. Click **Upload Document**.
-4. A file browser will open — select the file from your computer.
-5. Optionally add a document name/description.
-6. Click **Confirm Upload**.
-
-The file will be securely stored in SharePoint and linked to the client's record. You and your Team Manager can access it anytime.
-
-### Supported File Types
-- PDF (preferred for official documents)
-- Word documents (.doc, .docx)
-- Images (.jpg, .png) — for scanned forms
-- Excel/CSV — for data exports
-
-### Document Naming Best Practice
-
-Use a consistent naming format:
-```
-[LastName]_[DocumentType]_[YYYY-MM].pdf
-```
-Examples:
-- `Johnson_SPM_2025-03.pdf`
-- `Williams_ServicePlan_2025-01.pdf`
-- `Davis_Authorization_2025-06.pdf`
-
-> ⚠️ **Reminder:** Never upload documents containing passwords, financial account numbers, or social security numbers to CaseSync. Use secure BLH channels for that type of sensitive data.
-
----
-
-## 7. Calendar
+## 3. Calendar
 
 ### Accessing the Calendar
 
@@ -321,7 +135,7 @@ Click the **< >** arrows to move forward or backward in time.
 
 ---
 
-## 8. Chat
+## 4. Chat
 
 ### Accessing Chat
 
@@ -354,7 +168,7 @@ Click **Chat** in the top navigation bar or bottom navigation on mobile.
 
 ---
 
-## 9. BLH Bot
+## 5. BLH Bot
 
 BLH Bot is your AI assistant, available 24/7 inside CaseSync.
 
@@ -383,7 +197,7 @@ Click the **purple button** 🟣 in the bottom-right corner of any page.
 
 ---
 
-## 10. Mobile App
+## 6. Mobile App
 
 ### Installing CaseSync on Your Phone
 
@@ -419,7 +233,7 @@ On mobile, the navigation bar moves to the **bottom of the screen** for easy one
 
 ---
 
-## 11. Quick Reference
+## 7. Quick Reference
 
 ### Keyboard Shortcuts (Desktop)
 
