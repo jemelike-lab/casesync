@@ -19,11 +19,17 @@ const securityHeaders = [
   {
     key: 'Content-Security-Policy',
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.microsoft.com; frame-ancestors 'none';",
+      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https;; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.microsoft.com; frame-ancestors 'none';",
   },
 ]
 
 const nextConfig = {
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
   // Turbopack is default in Next.js 16; empty config satisfies peer checks from plugins
   turbopack: {},
   async headers() {
