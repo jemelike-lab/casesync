@@ -482,3 +482,24 @@ input[type="time"] {
   background: #e8f0fb !important;
   color: #0071e3 !important;
 }
+
+/* ===== LIGHT MODE: Yellow/amber pill fix ===== */
+
+/* "No contact 7d+" yellow pill and any yellow-tinted badge */
+[data-theme="light"] [style*="color: var(--yellow)"],
+[data-theme="light"] [style*="color:var(--yellow)"] {
+  color: #5a3a00 !important;
+}
+
+[data-theme="light"] [style*="background: rgba(255, 204, 0"],
+[data-theme="light"] [style*="background:rgba(255,204,0"],
+[data-theme="light"] [style*="background: rgba(255,204,0"] {
+  background: rgba(90, 58, 0, 0.12) !important;
+  color: #5a3a00 !important;
+  border: 1px solid rgba(90, 58, 0, 0.25) !important;
+}
+
+/* Also catch ffcc00 variant */
+[data-theme="light"] [style*="ffcc00"] {
+  color: #5a3a00 !important;
+}
