@@ -19,13 +19,17 @@ interface Message {
 interface UserInfo {
   id: string
   full_name: string | null
+  role?: string | null
 }
 
 interface Props {
   channelId: string
   channelName: string
+  channelKind?: string
   currentUserId: string
   users: UserInfo[]
+  dmOtherUser?: UserInfo | null
+  onBack?: () => void
 }
 
 function timeStr(dateStr: string) {
@@ -72,12 +76,54 @@ function avatarColor(id: string) {
   return AVATAR_COLORS[hash]
 }
 
-export default function ChatWindow({ channelId, channelName, currentUserId, users }: Props) {
+function roleLabel(role: string | null | undefined) {
+  if (role === 'supports_planner') return 'Supports Planner'
+  if (role === 'team_manager') return 'Team Manager'
+  if (role === 'supervisor') return 'Supervisor'
+  return role ?? ''
+}
+
+export default function ChatWindow({ channelId, channelName, channelKind, currentUserId, users, dmOtherUser, onBack }: Props) {
   const supabase = createClient()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const isDM = channelKind === 'direct'
+  const headerTitle = isDM && dmOtherUser ? dmOtherUser.full_name ?? 'Direct Message' : channelName
+  const headerSubtitle = isDM && dmOtherUser
+    ? roleLabel(dmOtherUser.role)
+    : `${users.length} member${users.length !== 1 ? 's' : ''}`
+
+  const headerAvatar = isDM && dmOtherUser
+    ? (
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: avatarColor(dmOtherUser.id),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+        }}>
+          {getInitials(dmOtherUser.full_name)}
+        </div>
+        <div style={{
+          position: 'absolute', bottom: 0, right: 0,
+          width: 10, height: 10, borderRadius: '50%',
+          background: '#30d158', border: '2px solid #1c1c1e',
+        }} />
+      </div>
+    )
+    : (
+      <div style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: 'linear-gradient(135deg, #007aff, #0050a0)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 16, color: '#fff', fontWeight: 700, flexShrink: 0,
+      }}>
+        #
+      </div>
+    )
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
@@ -160,21 +206,41 @@ export default function ChatWindow({ channelId, channelName, currentUserId, user
         boxShadow: '0 1px 8px rgba(0,0,0,0.3)',
         flexShrink: 0,
       }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: 'linear-gradient(135deg, #007aff, #0050a0)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, color: '#fff', fontWeight: 700, flexShrink: 0,
-        }}>
-          #
-        </div>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{channelName}</div>
+        {/* Back button for mobile */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#007aff', padding: '4px 8px 4px 0',
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 14, fontWeight: 500,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+        )}
+
+        {headerAvatar}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{headerTitle}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#30d158', boxShadow: '0 0 4px #30d158' }} />
-            <span style={{ fontSize: 12, color: '#8e8e93' }}>
-              {onlineCount} member{onlineCount !== 1 ? 's' : ''}
-            </span>
+            {isDM ? (
+              <>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#30d158', boxShadow: '0 0 4px #30d158' }} />
+                <span style={{ fontSize: 12, color: '#8e8e93' }}>{headerSubtitle}</span>
+              </>
+            ) : (
+              <>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#30d158', boxShadow: '0 0 4px #30d158' }} />
+                <span style={{ fontSize: 12, color: '#8e8e93' }}>
+                  {onlineCount} member{onlineCount !== 1 ? 's' : ''}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -190,8 +256,12 @@ export default function ChatWindow({ channelId, channelName, currentUserId, user
           </div>
         ) : messages.length === 0 ? (
           <div style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginTop: 60, lineHeight: 1.8 }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-            No messages yet. Say hello! 👋
+            <div style={{ fontSize: 36, marginBottom: 12 }}>
+              {isDM ? '👤' : '💬'}
+            </div>
+            {isDM && dmOtherUser
+              ? `This is the beginning of your conversation with ${dmOtherUser.full_name ?? 'this person'}.`
+              : 'No messages yet. Say hello! 👋'}
           </div>
         ) : (
           messages.map((msg, idx) => {
@@ -220,16 +290,16 @@ export default function ChatWindow({ channelId, channelName, currentUserId, user
                 onMouseEnter={() => setHoveredId(msg.id)}
                 onMouseLeave={() => setHoveredId(null)}
               >
-                {/* Sender name (first in group, non-me) */}
-                {!isMe && isFirstInGroup && (
+                {/* Sender name (first in group, non-me, not DM) */}
+                {!isMe && isFirstInGroup && !isDM && (
                   <div style={{ marginLeft: 44, marginBottom: 3 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#8e8e93' }}>{senderName}</span>
                   </div>
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, maxWidth: '72%' }}>
-                  {/* Avatar (other users) */}
-                  {!isMe && (
+                  {/* Avatar (other users) — show in team channels */}
+                  {!isMe && !isDM && (
                     <div style={{ width: 32, height: 32, flexShrink: 0, alignSelf: 'flex-end' }}>
                       {isLastInGroup ? (
                         <div style={{
@@ -269,13 +339,13 @@ export default function ChatWindow({ channelId, channelName, currentUserId, user
                   </div>
                 </div>
 
-                {/* Timestamp (hover or last in group) */}
+                {/* Timestamp */}
                 {(isHovered || isLastInGroup) && (
                   <div style={{
                     fontSize: 11,
                     color: '#636366',
                     marginTop: 3,
-                    marginLeft: isMe ? 0 : 44,
+                    marginLeft: isMe ? 0 : (isDM ? 0 : 44),
                     marginRight: 4,
                     opacity: isHovered ? 1 : 0.65,
                     transition: 'opacity 0.15s',
@@ -285,7 +355,7 @@ export default function ChatWindow({ channelId, channelName, currentUserId, user
                   </div>
                 )}
 
-                {/* Read receipts — only on last message from me */}
+                {/* Read receipts */}
                 {isLast && isMe && seenUsers.length > 0 && (
                   <div style={{ display: 'flex', gap: 3, marginTop: 4, justifyContent: 'flex-end' }}>
                     {seenUsers.slice(0, 5).map(u => (
