@@ -22,7 +22,18 @@ export default function NotificationBell({ userId }: Props) {
   const router = useRouter()
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
   const [open, setOpen] = useState(false)
+  const [shake, setShake] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const prevUnreadRef = useRef(unreadCount)
+
+  // Trigger shake animation when new notifications arrive
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
+    }
+    prevUnreadRef.current = unreadCount
+  }, [unreadCount])
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -42,19 +53,34 @@ export default function NotificationBell({ userId }: Props) {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(v => !v)}
+        className={shake ? 'bell-shake' : undefined}
         style={{
           background: 'none', border: 'none', cursor: 'pointer', position: 'relative',
           padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--text)', fontSize: 20, minHeight: 36, minWidth: 36,
+          // Gentle pulse animation on the whole button when there are unread
+          animation: unreadCount > 0 && !shake ? 'bellPulse 3s ease-in-out infinite' : undefined,
         }}
         aria-label={`${unreadCount} notifications`}
       >
+        <style>{`
+          @keyframes bellPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-8deg); }
+            75% { transform: scale(1.1) rotate(8deg); }
+          }
+          @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+          }
+        `}</style>
         🔔
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute', top: 2, right: 2, background: '#ff453a', color: 'white',
             borderRadius: '50%', width: 16, height: 16, fontSize: 10, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+            animation: 'badgePulse 2s ease-in-out infinite',
           }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -62,7 +88,7 @@ export default function NotificationBell({ userId }: Props) {
       </button>
 
       {open && (
-        <div style={{
+        <div className="slide-in-up" style={{
           position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 340, maxHeight: 420,
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 500, overflow: 'hidden',
