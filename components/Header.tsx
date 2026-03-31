@@ -42,7 +42,6 @@ export default function Header({ user, profile }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
-  const { theme } = useTheme()
   const { theme, toggle } = useTheme()
   const [showTour, setShowTour] = useState(false)
 
