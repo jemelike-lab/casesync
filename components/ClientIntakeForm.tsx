@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
 import Link from 'next/link'
+import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
 
 interface Props {
   planners: Profile[]
@@ -423,12 +424,10 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <Field label="Eligibility Code">
-                <input
-                  type="text"
+                <EligibilityCodeSelect
                   value={form.eligibility_code}
-                  onChange={e => set('eligibility_code', e.target.value)}
-                  placeholder="e.g. MA"
-                  style={inputStyle}
+                  onChange={v => set('eligibility_code', v ?? '')}
+                  editing={true}
                 />
               </Field>
               <Field label="Eligibility End Date">
