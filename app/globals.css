@@ -18,17 +18,52 @@
 [data-theme="light"] {
   --bg: #f2f2f7;
   --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --text: #000000;
-  --text-secondary: #6e6e73;
-  --border: #d1d1d6;
-  --accent: #007aff;
-  --accent-hover: #0a84ff;
-  --red: #ff3b30;
-  --orange: #ff9500;
-  --yellow: #ffcc00;
-  --green: #34c759;
-  --gray: #8e8e93;
+  --surface-2: #e5e5ea;
+  --text: #1c1c1e;
+  --text-secondary: #48484a;
+  --border: #c7c7cc;
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --red: #d70015;
+  --orange: #c93400;
+  --yellow: #7d5a00;
+  --green: #1a7f37;
+  --gray: #6c6c70;
+}
+
+/* Light mode card overrides */
+[data-theme="light"] .card {
+  background: #ffffff;
+  border-color: #c7c7cc;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Light mode badge/pill text contrast fixes */
+[data-theme="light"] .filter-btn,
+[data-theme="light"] button {
+  color: #1c1c1e;
+}
+
+/* Light mode week strip */
+[data-theme="light"] .week-strip-day {
+  color: #1c1c1e !important;
+}
+
+/* Light mode search input */
+[data-theme="light"] input[type="search"],
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="date"],
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #ffffff;
+  color: #1c1c1e;
+  border-color: #c7c7cc;
+}
+
+/* Light mode alert badges - ensure dark text on colored backgrounds */
+[data-theme="light"] [style*="background: rgba(255"] {
+  color: #1c1c1e !important;
 }
 
 
