@@ -261,7 +261,7 @@ function renderAIContent(text: string, onNavigate: (path: string) => void): Reac
   return result
 }
 
-export default function YourCaseAI() {
+export default function BLHAssistant() {
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -431,20 +431,20 @@ export default function YourCaseAI() {
           0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
           30% { opacity: 1; transform: translateY(-4px); }
         }
-        .your-case-ai-panel {
+        .blh-assistant-panel {
           animation: slide-up 0.25s ease;
         }
         .typing-dot:nth-child(1) { animation: typing-dot 1.2s infinite 0s; }
         .typing-dot:nth-child(2) { animation: typing-dot 1.2s infinite 0.2s; }
         .typing-dot:nth-child(3) { animation: typing-dot 1.2s infinite 0.4s; }
-        .your-case-ai-msg::-webkit-scrollbar { width: 4px; }
-        .your-case-ai-msg::-webkit-scrollbar-track { background: transparent; }
-        .your-case-ai-msg::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
-        .your-case-ai-prompt-btn:hover { background: rgba(139,92,246,0.25) !important; border-color: rgba(139,92,246,0.5) !important; }
-        .your-case-ai-send:hover:not(:disabled) { background: rgba(124,58,237,0.9) !important; }
-        .your-case-ai-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .blh-assistant-msg::-webkit-scrollbar { width: 4px; }
+        .blh-assistant-msg::-webkit-scrollbar-track { background: transparent; }
+        .blh-assistant-msg::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
+        .blh-assistant-prompt-btn:hover { background: rgba(139,92,246,0.25) !important; border-color: rgba(139,92,246,0.5) !important; }
+        .blh-assistant-send:hover:not(:disabled) { background: rgba(124,58,237,0.9) !important; }
+        .blh-assistant-send:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 480px) {
-          .your-case-ai-panel {
+          .blh-assistant-panel {
             bottom: 0 !important;
             right: 0 !important;
             left: 0 !important;
@@ -477,7 +477,7 @@ export default function YourCaseAI() {
               }}
             />
           )}
-          <div style={{ position: 'relative' }} title="Your Case AI">
+          <div style={{ position: 'relative' }} title="BLH Assistant">
             <button
               onClick={handleOpen}
               style={{
@@ -497,7 +497,7 @@ export default function YourCaseAI() {
                 position: 'relative',
                 zIndex: 1,
               }}
-              aria-label="Open Your Case AI"
+              aria-label="Open BLH Assistant"
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(124, 58, 237, 0.6)'
@@ -528,7 +528,7 @@ export default function YourCaseAI() {
             }}
               className="fab-tooltip"
             >
-              Your Case AI
+              BLH Assistant
             </div>
           </div>
         </div>
@@ -537,7 +537,7 @@ export default function YourCaseAI() {
       {/* Chat Panel */}
       {open && (
         <div
-          className="your-case-ai-panel"
+          className="blh-assistant-panel"
           style={{
             position: 'fixed',
             bottom: 80,
@@ -578,9 +578,9 @@ export default function YourCaseAI() {
                   ✨
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>Your Case AI</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>BLH Assistant</div>
                   <div style={{ fontSize: 11, color: 'rgba(139,92,246,0.8)' }}>
-                    Ask me anything about your cases
+                    Ask me anything about your cases or BLH programs
                   </div>
                 </div>
               </div>
@@ -644,7 +644,7 @@ export default function YourCaseAI() {
 
           {/* Messages area */}
           <div
-            className="your-case-ai-msg"
+            className="blh-assistant-msg"
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -665,7 +665,7 @@ export default function YourCaseAI() {
                 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>✨</div>
                   <div style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>
-                    Hi {userId ? 'there' : ''}! I&apos;m Your Case AI
+                    Hi {userId ? 'there' : ''}! I&apos;m BLH Assistant
                   </div>
                   <div style={{ fontSize: 12 }}>
                     {isClientPage ? 'I have full context for this client.' : 'Ask me about your caseload.'}
@@ -675,7 +675,7 @@ export default function YourCaseAI() {
                   {suggestedPrompts.map((prompt, idx) => (
                     <button
                       key={idx}
-                      className="your-case-ai-prompt-btn"
+                      className="blh-assistant-prompt-btn"
                       onClick={() => sendMessage(prompt)}
                       style={{
                         background: 'rgba(139,92,246,0.1)',
@@ -790,7 +790,7 @@ export default function YourCaseAI() {
               />
               <button
                 type="submit"
-                className="your-case-ai-send"
+                className="blh-assistant-send"
                 disabled={!input.trim() || loading || !userId}
                 style={{
                   width: 38,
