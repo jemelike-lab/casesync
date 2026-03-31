@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
-import { deadlineAlertEmail } from '@/lib/email-templates'
+import { deadlineAlertEmail, dailyDigestEmail } from '@/lib/email-templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,10 +39,14 @@ export async function GET(request: Request) {
   today.setHours(0, 0, 0, 0)
   const todayStr = today.toISOString().split('T')[0]
 
+  // Detect if this is an 8am run (for daily digest)
+  const currentHour = new Date().getHours()
+  const isMorningRun = currentHour >= 7 && currentHour <= 9
+
   // Fetch all clients with assigned planner
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, client_id, first_name, last_name, assigned_to, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date')
+    .select('id, client_id, first_name, last_name, assigned_to, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
     .not('assigned_to', 'is', null)
 
   if (error) {
@@ -71,7 +75,9 @@ export async function GET(request: Request) {
 
   const notifications: any[] = []
   let emailsSent = 0
+  let digestsSent = 0
 
+  // ---- DEADLINE NOTIFICATIONS ----
   for (const client of clients ?? []) {
     for (const { key, label } of DEADLINE_FIELDS) {
       const dateStr = (client as any)[key] as string | null
@@ -124,6 +130,75 @@ export async function GET(request: Request) {
     }
   }
 
+  // ---- DAILY DIGEST (morning run only) ----
+  if (isMorningRun) {
+    // Group clients by assigned_to
+    const clientsByPlanner: Record<string, typeof clients> = {}
+    for (const client of clients ?? []) {
+      if (!client.assigned_to) continue
+      if (!clientsByPlanner[client.assigned_to]) clientsByPlanner[client.assigned_to] = []
+      clientsByPlanner[client.assigned_to]!.push(client)
+    }
+
+    for (const [plannerId, plannerClients] of Object.entries(clientsByPlanner)) {
+      const profile = profileMap.get(plannerId)
+      if (!profile?.email) continue
+
+      const prefs = (profile.notification_preferences as any) ?? {}
+
+      // Calculate overdue + due this week
+      let overdueCount = 0
+      let dueThisWeekCount = 0
+      const now = new Date()
+
+      for (const client of plannerClients ?? []) {
+        let clientOverdue = false
+        let clientDueThisWeek = false
+        for (const { key } of DEADLINE_FIELDS) {
+          const dateStr = (client as any)[key] as string | null
+          if (!dateStr) continue
+          const date = new Date(dateStr)
+          date.setHours(0, 0, 0, 0)
+          const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000)
+          if (diffDays < 0) clientOverdue = true
+          else if (diffDays <= 7) clientDueThisWeek = true
+        }
+        if (clientOverdue) overdueCount++
+        else if (clientDueThisWeek) dueThisWeekCount++
+      }
+
+      // Send digest if:
+      // 1. Planner has daily_digest preference enabled, OR
+      // 2. They have overdue items (always send regardless of preference)
+      const digestEnabled = prefs.daily_digest === true || overdueCount > 0
+      const digestDedupeKey = `digest:${plannerId}:${todayStr}`
+
+      if (digestEnabled && !sentToday.has(digestDedupeKey)) {
+        try {
+          const userName = profile.full_name?.split(' ')[0] ?? 'there'
+          const dateDisplay = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+          const totalNeedAttention = overdueCount + dueThisWeekCount
+
+          const { subject, html } = dailyDigestEmail({
+            userName,
+            date: dateDisplay,
+            overdueCount,
+            dueThisWeekCount,
+            recentActivity: [],
+          })
+
+          // Override subject to include client count
+          const finalSubject = `📋 Good morning ${userName} — ${totalNeedAttention > 0 ? `${totalNeedAttention} clients need attention today` : 'All clients current'}`
+
+          await sendEmail({ to: profile.email, subject: finalSubject, html })
+          digestsSent++
+        } catch (digestErr) {
+          console.error('[check-deadlines] digest send error:', digestErr)
+        }
+      }
+    }
+  }
+
   if (notifications.length > 0) {
     // Batch insert
     const { error: insertError } = await supabase.from('notifications').insert(notifications)
@@ -137,6 +212,7 @@ export async function GET(request: Request) {
     checked: clients?.length ?? 0,
     notificationsSent: notifications.length,
     emailsSent,
+    digestsSent,
     timestamp: new Date().toISOString(),
   })
 }
