@@ -68,15 +68,23 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: '380px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Image
-            src="/logo.png"
-            alt="Beatrice Loving Heart"
-            width={140}
-            height={140}
-            style={{ objectFit: 'contain', marginBottom: 12, display: 'block', margin: '0 auto 12px auto' }}
-          />
+          <div style={{ 
+            background: '#1a1108', 
+            borderRadius: 16, 
+            padding: 8, 
+            display: 'inline-block',
+            marginBottom: 12
+          }}>
+            <Image
+              src="/logo.png"
+              alt="Beatrice Loving Heart"
+              width={120}
+              height={120}
+              style={{ objectFit: 'contain', display: 'block' }}
+            />
+          </div>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>CaseSync</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: 4, fontSize: 13 }}>
+          <p style={{ fontWeight: 700, fontSize: 16, marginTop: 6, color: 'var(--text)' }}>
             Beatrice Loving Heart
           </p>
           <p style={{ color: 'var(--text-secondary)', marginTop: 2, fontSize: 13 }}>
