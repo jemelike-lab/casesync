@@ -455,20 +455,20 @@ export default function BLHAssistant() {
           0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
           30% { opacity: 1; transform: translateY(-4px); }
         }
-        .blh-assistant-panel {
+        .blh-bot-panel {
           animation: slide-up 0.25s ease;
         }
         .typing-dot:nth-child(1) { animation: typing-dot 1.2s infinite 0s; }
         .typing-dot:nth-child(2) { animation: typing-dot 1.2s infinite 0.2s; }
         .typing-dot:nth-child(3) { animation: typing-dot 1.2s infinite 0.4s; }
-        .blh-assistant-msg::-webkit-scrollbar { width: 4px; }
-        .blh-assistant-msg::-webkit-scrollbar-track { background: transparent; }
-        .blh-assistant-msg::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
-        .blh-assistant-prompt-btn:hover { background: rgba(139,92,246,0.25) !important; border-color: rgba(139,92,246,0.5) !important; }
-        .blh-assistant-send:hover:not(:disabled) { background: rgba(124,58,237,0.9) !important; }
-        .blh-assistant-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .blh-bot-msg::-webkit-scrollbar { width: 4px; }
+        .blh-bot-msg::-webkit-scrollbar-track { background: transparent; }
+        .blh-bot-msg::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
+        .blh-bot-prompt-btn:hover { background: rgba(139,92,246,0.25) !important; border-color: rgba(139,92,246,0.5) !important; }
+        .blh-bot-send:hover:not(:disabled) { background: rgba(124,58,237,0.9) !important; }
+        .blh-bot-send:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 480px) {
-          .blh-assistant-panel {
+          .blh-bot-panel {
             bottom: 0 !important;
             right: 0 !important;
             left: 0 !important;
@@ -501,7 +501,7 @@ export default function BLHAssistant() {
               }}
             />
           )}
-          <div style={{ position: 'relative' }} title="BLH Assistant">
+          <div style={{ position: 'relative' }} title="BLH Bot">
             <button
               onClick={handleOpen}
               style={{
@@ -521,7 +521,7 @@ export default function BLHAssistant() {
                 position: 'relative',
                 zIndex: 1,
               }}
-              aria-label="Open BLH Assistant"
+              aria-label="Open BLH Bot"
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(124, 58, 237, 0.6)'
@@ -552,7 +552,7 @@ export default function BLHAssistant() {
             }}
               className="fab-tooltip"
             >
-              BLH Assistant
+              BLH Bot
             </div>
           </div>
         </div>
@@ -561,7 +561,7 @@ export default function BLHAssistant() {
       {/* Chat Panel */}
       {open && (
         <div
-          className="blh-assistant-panel"
+          className="blh-bot-panel"
           style={{
             position: 'fixed',
             bottom: 80,
@@ -602,7 +602,7 @@ export default function BLHAssistant() {
                   ✨
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>BLH Assistant</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>BLH Bot</div>
                   <div style={{ fontSize: 11, color: 'rgba(139,92,246,0.8)' }}>
                     Ask me anything about your cases or BLH programs
                   </div>
@@ -668,7 +668,7 @@ export default function BLHAssistant() {
 
           {/* Messages area */}
           <div
-            className="blh-assistant-msg"
+            className="blh-bot-msg"
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -689,7 +689,7 @@ export default function BLHAssistant() {
                 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>✨</div>
                   <div style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>
-                    Hi {userId ? 'there' : ''}! I&apos;m BLH Assistant
+                    Hi {userId ? 'there' : ''}! I&apos;m BLH Bot
                   </div>
                   <div style={{ fontSize: 12 }}>
                     {isClientPage ? 'I have full context for this client.' : 'Ask me about your caseload.'}
@@ -699,7 +699,7 @@ export default function BLHAssistant() {
                   {suggestedPrompts.map((prompt, idx) => (
                     <button
                       key={idx}
-                      className="blh-assistant-prompt-btn"
+                      className="blh-bot-prompt-btn"
                       onClick={() => sendMessage(prompt)}
                       style={{
                         background: 'rgba(139,92,246,0.1)',
@@ -814,7 +814,7 @@ export default function BLHAssistant() {
               />
               <button
                 type="submit"
-                className="blh-assistant-send"
+                className="blh-bot-send"
                 disabled={!input.trim() || loading || !userId}
                 style={{
                   width: 38,
