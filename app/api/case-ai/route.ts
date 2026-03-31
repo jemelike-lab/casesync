@@ -611,15 +611,76 @@ export async function POST(req: NextRequest) {
       .eq('id', userId)
       .single()
 
-    const { data: allClients } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('assigned_to', userId)
-      .order('last_name')
-
-    const clientCount = allClients?.length ?? 0
     const userName = profile?.full_name ?? 'User'
     const userRole = profile?.role ?? 'unknown'
+
+    // Role-scoped client fetching
+    let allClients: Record<string, unknown>[] = []
+    let plannerContext = ''
+
+    if (userRole === 'supervisor') {
+      // Supervisor sees all clients
+      const { data } = await supabase
+        .from('clients')
+        .select('*, profiles!clients_assigned_to_fkey(full_name)')
+        .order('last_name')
+      allClients = (data as Record<string, unknown>[]) ?? []
+
+      // Get planner stats for supervisor
+      const { data: planners } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'supports_planner')
+      const plannerStats = (planners ?? []).map(p => {
+        const pClients = allClients.filter(c => c.assigned_to === p.id)
+        const overdue = pClients.filter(c => {
+          const fields = ['eligibility_end_date','three_month_visit_due','pos_deadline','assessment_due','thirty_day_letter_date']
+          return fields.some(f => { const d = new Date(c[f] as string); return c[f] && d < new Date() })
+        }).length
+        return `${p.full_name}: ${pClients.length} clients, ${overdue} overdue`
+      })
+      plannerContext = `
+Your org has ${planners?.length ?? 0} Supports Planners:
+${plannerStats.join('
+')}`
+
+    } else if (userRole === 'team_manager') {
+      // Team manager sees their planners' clients
+      const { data: myPlanners } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('team_manager_id', userId)
+      const plannerIds = (myPlanners ?? []).map((p: Record<string, unknown>) => p.id as string)
+      
+      if (plannerIds.length > 0) {
+        const { data } = await supabase
+          .from('clients')
+          .select('*, profiles!clients_assigned_to_fkey(full_name)')
+          .in('assigned_to', plannerIds)
+          .order('last_name')
+        allClients = (data as Record<string, unknown>[]) ?? []
+      }
+      
+      const plannerStats = (myPlanners ?? []).map((p: Record<string, unknown>) => {
+        const pClients = allClients.filter(c => c.assigned_to === p.id)
+        return `${p.full_name}: ${pClients.length} clients`
+      })
+      plannerContext = `
+Your team has ${myPlanners?.length ?? 0} Supports Planners:
+${plannerStats.join('
+')}`
+
+    } else {
+      // Supports planner sees only their assigned clients
+      const { data } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('assigned_to', userId)
+        .order('last_name')
+      allClients = (data as Record<string, unknown>[]) ?? []
+    }
+
+    const clientCount = allClients?.length ?? 0
 
     let clientContextStr = ''
 
