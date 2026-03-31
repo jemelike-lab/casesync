@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import IdleTimeout from '@/components/IdleTimeout'
 import YourCaseAI from '@/components/YourCaseAI'
+import OnboardingTour from '@/components/OnboardingTour'
 
 export default async function DashboardLayout({
   children,
@@ -31,6 +32,8 @@ export default async function DashboardLayout({
         {children}
       </main>
       <YourCaseAI />
+      {/* Onboarding tour — shows automatically on first visit, controlled by localStorage */}
+      <OnboardingTour />
     </div>
   )
 }
