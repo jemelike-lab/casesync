@@ -10,18 +10,42 @@ interface Message {
   content: string
 }
 
-const DASHBOARD_PROMPTS = [
+const ALL_DASHBOARD_PROMPTS = [
   'Which clients need attention today?',
   'Who has the most overdue items?',
   "What's my compliance score?",
   'Show me clients with eligibility ending soon',
+  'What is the SPM deadline?',
+  'Which clients have no contact in 7+ days?',
+  'What does ATP mean?',
+  'How do I submit a POS?',
+  'What documents do I need for transition funds?',
+  'What are the CFC service limitations?',
+  'How many signatures does a POS need?',
+  'What is the income limit for CPAS?',
+  'When is the LOC deadline for POS submission?',
+  'What is a RUG score?',
+  'How do I handle an ACP participant?',
 ]
 
-const CLIENT_PROMPTS = [
+function getRotatingPrompts(prompts: string[], count = 4): string[] {
+  const shuffled = [...prompts].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, count)
+}
+
+const ALL_CLIENT_PROMPTS = [
   "Summarize this client's status",
   "What's overdue for this client?",
-  'What should I do next for this client?',
-  'When was this client last contacted?',
+  "What should I do next for this client?",
+  "When was this client last contacted?",
+  "Is this client's POS ready to submit?",
+  "What signatures are still needed?",
+  "What type of ATP does this client need?",
+  "What is this client's RUG group?",
+  "How many days until this client's eligibility ends?",
+  "What are the next 3 deadlines for this client?",
+  "Is this client's LOC still valid?",
+  "What is this client's eligibility code?",
 ]
 
 // Simple markdown renderer (regex-based, no library)
@@ -281,7 +305,7 @@ export default function BLHAssistant() {
 
   // Determine context-aware prompts
   const isClientPage = !!currentClientId
-  const suggestedPrompts = isClientPage ? CLIENT_PROMPTS : DASHBOARD_PROMPTS
+  const suggestedPrompts = getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : ALL_DASHBOARD_PROMPTS)
 
   // Fetch current user
   useEffect(() => {
