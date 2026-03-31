@@ -189,12 +189,11 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={70}
-                  innerRadius={30}
+                  outerRadius={75}
+                  innerRadius={35}
                   paddingAngle={3}
-                  label={({ name, value, percent }) => `${name} (${value})`}
-                  labelLine={{ stroke: '#8e8e93', strokeWidth: 1 }}
-                  fontSize={11}
+                  label={false}
+                  labelLine={false}
                 >
                   {goalDist.map((entry, i) => (
                     <Cell key={i} fill={entry.fill} stroke="transparent" />
