@@ -7,6 +7,8 @@ import { User } from '@supabase/supabase-js'
 import { Profile } from '@/lib/types'
 import NotificationBell from './NotificationBell'
 import { useTheme } from '@/hooks/useTheme'
+import { useState } from 'react'
+import OnboardingTour from './OnboardingTour'
 
 interface Props {
   user: User
@@ -41,6 +43,7 @@ export default function Header({ user, profile }: Props) {
   const pathname = usePathname()
   const supabase = createClient()
   const { theme, toggle } = useTheme()
+  const [showTour, setShowTour] = useState(false)
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -94,8 +97,36 @@ export default function Header({ user, profile }: Props) {
           </nav>
         </div>
 
-        {/* Right: theme toggle + notifications + user info + logout */}
+        {/* Right: Help & Tour + theme toggle + notifications + user info + logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Help & Tour button */}
+          <button
+            onClick={() => setShowTour(true)}
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              height: 36,
+              padding: '0 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              color: 'var(--text-secondary)',
+              transition: 'all 0.2s',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            }}
+            title="Take a guided tour of CaseSync"
+            aria-label="Help & Tour"
+            className="desktop-only"
+          >
+            <span>❓</span>
+            <span className="desktop-nav-label">Help & Tour</span>
+          </button>
+
           {/* Theme toggle */}
           <button
             onClick={toggle}
@@ -119,7 +150,9 @@ export default function Header({ user, profile }: Props) {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
-          {user.id && <NotificationBell userId={user.id} />}
+          <div data-tour="notification-bell">
+            {user.id && <NotificationBell userId={user.id} />}
+          </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>{profile?.full_name ?? user.email}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -164,7 +197,37 @@ export default function Header({ user, profile }: Props) {
           <MobileNavItem href="/admin" icon="⚙️" label="Admin" active={pathname === '/admin'} />
         )}
         <MobileNavItem href="/settings/security" icon="🔐" label="Security" active={pathname?.startsWith('/settings') ?? false} />
+        {/* Mobile help button */}
+        <button
+          onClick={() => setShowTour(true)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            minWidth: 60,
+            minHeight: 44,
+            justifyContent: 'center',
+            color: 'var(--text-secondary)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+          aria-label="Help & Tour"
+        >
+          <span style={{ fontSize: 20 }}>❓</span>
+          <span style={{ fontSize: 10, fontWeight: 500 }}>Help</span>
+        </button>
       </nav>
+
+      {/* Onboarding Tour (replay) */}
+      {showTour && (
+        <OnboardingTour
+          forceShow={true}
+          onClose={() => setShowTour(false)}
+        />
+      )}
     </>
   )
 }
