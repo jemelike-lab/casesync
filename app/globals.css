@@ -565,3 +565,25 @@ input[type="time"] {
 [data-theme="light"] [style*="Eligibility"] {
   color: #2d4a6e !important;
 }
+
+/* ===== LIGHT MODE: Page headings and titles ===== */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 {
+  color: #1a1108 !important;
+}
+
+/* Team Dashboard, Supervisor Dashboard page titles */
+[data-theme="light"] main h1,
+[data-theme="light"] main h2,
+[data-theme="light"] [style*="fontSize: 24"],
+[data-theme="light"] [style*="fontSize: 28"],
+[data-theme="light"] [style*="fontSize: 32"] {
+  color: #1a1108 !important;
+}
+
+/* Icons next to headings */
+[data-theme="light"] main > div > div > span:first-child {
+  color: #1a1108 !important;
+}
