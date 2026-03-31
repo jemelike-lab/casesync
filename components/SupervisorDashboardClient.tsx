@@ -65,7 +65,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
     const buckets = [
       { name: '0–25%', value: 0, fill: '#ff453a' },
       { name: '26–50%', value: 0, fill: '#ff9f0a' },
-      { name: '51–75%', value: 0, fill: '#ffd60a' },
+      { name: '51–75%', value: 0, fill: '#007aff' },
       { name: '76–100%', value: 0, fill: '#30d158' },
     ]
     clients.forEach(c => {
@@ -183,13 +183,28 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
             </h3>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={goalDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={11}>
+                <Pie
+                  data={goalDist}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  innerRadius={30}
+                  paddingAngle={3}
+                  label={({ name, value, percent }) => `${name} (${value})`}
+                  labelLine={{ stroke: '#8e8e93', strokeWidth: 1 }}
+                  fontSize={11}
+                >
                   {goalDist.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
+                    <Cell key={i} fill={entry.fill} stroke="transparent" />
                   ))}
                 </Pie>
+                <Legend
+                  formatter={(value) => <span style={{ color: '#f5f5f7', fontSize: 12 }}>{value}</span>}
+                />
                 <Tooltip
-                  contentStyle={{ background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: '#2c2c2e', border: '1px solid #48484a', borderRadius: 10, fontSize: 12 }}
                 />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 12, color: '#98989d' }} />
               </PieChart>
