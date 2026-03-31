@@ -42,6 +42,7 @@ export default function Header({ user, profile }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const { theme } = useTheme()
   const { theme, toggle } = useTheme()
   const [showTour, setShowTour] = useState(false)
 
@@ -57,8 +58,8 @@ export default function Header({ user, profile }: Props) {
   return (
     <>
       <header style={{
-        background: 'var(--surface)',
-        borderBottom: '1px solid var(--border)',
+        background: theme === 'light' ? '#3b2a1a' : 'var(--surface)',
+        borderBottom: theme === 'light' ? '1px solid #2a1e10' : '1px solid var(--border)',
         padding: '0 24px',
         height: 60,
         display: 'flex',
