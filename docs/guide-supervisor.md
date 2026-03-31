@@ -83,89 +83,7 @@ In the top navigation bar, you'll see additional links:
 
 ---
 
-## 3. Working with Clients
-
-### Viewing Any Client
-
-As Supervisor, you can view any client record in the system.
-
-1. Use the **Search** bar on the Dashboard to find any client by name.
-2. Or navigate to a Team Manager's Team Dashboard and browse their clients.
-
-### Client Profile Fields
-
-**Personal Information**
-- Full legal name, date of birth, Medicaid ID
-- Phone numbers, email, home address
-
-**Emergency Contact**
-- Name, relationship, phone number
-
-**Service & Eligibility**
-- Eligibility codes and service types
-- Authorization dates and funding source
-
-**Monitoring & Compliance**
-- Last contact log and SPM dates
-- Next deadline
-
-### Editing Client Records
-
-1. Open the client profile.
-2. Click **Edit**.
-3. Make changes and click **Save**.
-
-> ⚠️ **Note:** Changes to client records are logged in the Audit Log. All edits are tracked with your name, timestamp, and the fields changed.
-
-### Flagging Clients
-
-Use the **Flag** (⚑) button to alert a Team Manager or Planner about a specific client. Add a note explaining the reason for the flag.
-
----
-
-## 4. Logging Contact
-
-If you conduct direct client outreach (supervisory visits, quality reviews), log these in the client's Contact Log.
-
-### How to Log a Contact
-
-1. Open the client's profile.
-2. Scroll to **Contact Log** → click **+ New Contact Entry**.
-3. Fill in date, type, duration, notes, and outcome.
-4. Click **Save Entry**.
-
----
-
-## 5. Monthly Monitoring (SPM)
-
-SPMs are due by the **15th of each month** for every active client.
-
-### Your Supervisory Role
-
-- Ensure all Team Managers are monitoring their planners' SPM compliance.
-- Review compliance rates via the Supervisor Dashboard.
-- Follow up with Team Managers who have teams with low compliance.
-- Escalate chronic non-compliance through official BLH channels.
-
-### SPM Compliance Overview
-
-Access this from the Supervisor Dashboard (Section 11) → Compliance tab.
-
----
-
-## 6. Documents
-
-### Uploading Documents
-
-1. Open the client's profile.
-2. Scroll to **Documents** → click **Upload Document**.
-3. Select file, add description, click **Confirm Upload**.
-
-Documents are stored in SharePoint and linked to the client record. All uploads are logged in the Audit Log.
-
----
-
-## 7. Calendar
+## 3. Calendar
 
 ### Accessing the Calendar
 
@@ -175,7 +93,7 @@ As Supervisor, your calendar shows your personal deadlines. For team-wide deadli
 
 ---
 
-## 8. Chat
+## 4. Chat
 
 ### Your Chat Access
 
@@ -192,7 +110,7 @@ As Supervisor, you can:
 
 ---
 
-## 9. BLH Bot
+## 5. BLH Bot
 
 BLH Bot is available via the purple button 🟣 in the bottom-right corner of any page.
 
@@ -209,7 +127,7 @@ BLH Bot is available via the purple button 🟣 in the bottom-right corner of an
 
 ---
 
-## 10. Mobile App
+## 6. Mobile App
 
 ### Installing CaseSync on Your Phone
 
@@ -223,7 +141,7 @@ All Supervisor features are available on mobile, including the Admin Panel and S
 
 ---
 
-## 11. Supervisor Dashboard
+## 7. Supervisor Dashboard
 
 The Supervisor Dashboard gives you a real-time, org-wide view of CaseSync activity.
 
@@ -282,7 +200,7 @@ The Supervisor Dashboard includes a filterable list of all clients in the system
 
 ---
 
-## 12. Admin Panel — Managing Users
+## 8. Admin Panel — Managing Users
 
 The Admin Panel is your tool for managing who has access to CaseSync.
 
@@ -347,7 +265,7 @@ The user will receive a reset email. They must complete the reset within 2 hours
 
 ---
 
-## 13. Audit Log — HIPAA Compliance
+## 9. Audit Log — HIPAA Compliance
 
 The Audit Log records every significant action taken in CaseSync. It is your primary tool for HIPAA compliance review and incident investigation.
 
@@ -408,7 +326,7 @@ When reviewing audit logs, remember the HIPAA Minimum Necessary rule: users shou
 
 ---
 
-## 14. Org-Wide Reporting & CSV Export
+## 10. Org-Wide Reporting & CSV Export
 
 CaseSync includes reporting tools to help you monitor compliance, prepare for audits, and make data-driven staffing decisions.
 
@@ -465,7 +383,7 @@ Some reports can be scheduled for automatic delivery:
 
 ---
 
-## 15. Quick Reference
+## 11. Quick Reference
 
 ### Navigation Summary
 
