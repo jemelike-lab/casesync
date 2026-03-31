@@ -385,6 +385,19 @@ export default function BLHAssistant() {
         }),
       })
 
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        const busyMsg = errData.error ?? 'BLH Bot is currently busy — please try again in a moment'
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantId
+              ? { ...m, content: busyMsg }
+              : m
+          )
+        )
+        return
+      }
+
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`)
       }
