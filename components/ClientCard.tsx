@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel } from '@/lib/types'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount } from '@/lib/types'
 import StatusDot from './StatusDot'
 
 interface Props {
@@ -180,6 +180,17 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
   const daysSince = getDaysSinceContact(c.last_contact_date)
   const noContact = daysSince !== null && daysSince >= 7
   const [showModal, setShowModal] = useState(false)
+  const overdueCount = getOverdueCount(c)
+  const isOverdueCard = status === 'red'
+
+  // Left border color based on urgency
+  const leftBorderColor: Record<StatusLevel, string> = {
+    red: '#ff453a',
+    orange: '#ff9f0a',
+    yellow: '#ffd60a',
+    green: '#30d158',
+    none: 'transparent',
+  }
 
   const borderColor: Record<StatusLevel, string> = {
     red: 'rgba(255,69,58,0.4)',
@@ -209,6 +220,7 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
         className="card fade-in"
         style={{
           borderColor: selected ? 'var(--accent)' : borderColor[status],
+          borderLeft: `3px solid ${selected ? 'var(--accent)' : leftBorderColor[status]}`,
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
@@ -216,6 +228,45 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
           transition: 'border-color 0.2s',
         }}
       >
+        {/* Pulsing red dot for overdue */}
+        {isOverdueCard && (
+          <span
+            className="pulse-dot"
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: isPinned ? 40 : 10,
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#ff453a',
+              display: 'inline-block',
+              flexShrink: 0,
+              zIndex: 1,
+            }}
+          />
+        )}
+
+        {/* OVERDUE badge for 3+ overdue items */}
+        {overdueCount >= 3 && (
+          <span style={{
+            position: 'absolute',
+            top: -1,
+            right: 36,
+            background: '#ff453a',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            padding: '2px 7px',
+            borderRadius: '0 0 6px 6px',
+            textTransform: 'uppercase',
+            zIndex: 2,
+          }}>
+            OVERDUE
+          </span>
+        )}
+
         {/* Top row: select + pin */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
