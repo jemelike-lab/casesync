@@ -18,7 +18,7 @@ interface Props {
 }
 
 const SORT_FIELDS: { field: SortField; label: string }[] = [
-  { field: 'priority', label: '\u{1F525} Priority' },
+  { field: 'priority', label: '📍 Priority' },
   { field: 'name', label: 'Name' },
   { field: 'goal_pct', label: 'Goal %' },
   { field: 'last_contact_date', label: 'Last Contact' },
@@ -96,7 +96,7 @@ export default function ClientGrid({
         color: 'var(--text-secondary)',
         fontSize: 14,
       }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>\u{1F4CD}</div>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>📍</div>
         <div>No clients match your search or filter.</div>
       </div>
     )
