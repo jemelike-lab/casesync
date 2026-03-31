@@ -3,7 +3,7 @@ import { Client, Profile } from '@/lib/types'
 import { redirect } from 'next/navigation'
 import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function SupervisorPage() {
   const supabase = await createClient()
