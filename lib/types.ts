@@ -91,7 +91,7 @@ export type FilterType =
   | 'cfc'
   | 'cpas'
 
-export type SortField = 'name' | 'goal_pct' | 'last_contact_date' | 'eligibility_end_date'
+export type SortField = 'name' | 'goal_pct' | 'last_contact_date' | 'eligibility_end_date' | 'priority'
 export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {
@@ -174,6 +174,42 @@ export function formatDate(dateStr: string | null): string {
   return `${month}/${day}/${year}`
 }
 
+const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
+  'eligibility_end_date',
+  'three_month_visit_due',
+  'quarterly_waiver_date',
+  'med_tech_redet_date',
+  'pos_deadline',
+  'assessment_due',
+  'thirty_day_letter_date',
+  'co_financial_redet_date',
+  'co_app_date',
+  'mfp_consent_date',
+  'two57_date',
+  'doc_mdh_date',
+]
+
+export function clientPriorityScore(client: Client): number {
+  let score = 0
+  for (const field of PRIORITY_DATE_FIELDS) {
+    const d = client[field] as string | null
+    const status = getDateStatus(d)
+    if (status === 'red') score += 10
+    else if (status === 'orange') score += 5
+    else if (status === 'yellow') score += 2
+  }
+  const daysSince = getDaysSinceContact(client.last_contact_date)
+  if (daysSince !== null && daysSince >= 7) score += 8
+  return score
+}
+
+export function getOverdueCount(client: Client): number {
+  return PRIORITY_DATE_FIELDS.filter(field => {
+    const d = client[field] as string | null
+    return getDateStatus(d) === 'red'
+  }).length
+}
+
 export function sortClients(clients: Client[], field: SortField, dir: SortDir): Client[] {
   return [...clients].sort((a, b) => {
     let valA: string | number | null
@@ -194,6 +230,10 @@ export function sortClients(clients: Client[], field: SortField, dir: SortDir): 
       case 'eligibility_end_date':
         valA = a.eligibility_end_date ?? ''
         valB = b.eligibility_end_date ?? ''
+        break
+      case 'priority':
+        valA = clientPriorityScore(a)
+        valB = clientPriorityScore(b)
         break
     }
     if (valA === null || valA === '') return dir === 'asc' ? 1 : -1
