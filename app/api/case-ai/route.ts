@@ -596,6 +596,91 @@ const KNOWLEDGE_NAVIGATION = `
 
 // ─── Route handler ─────────────────────────────────────────────────────────────
 
+
+
+// === MONTHLY CONTACT & QUIZ KNOWLEDGE ===
+
+const KNOWLEDGE_MONTHLY_CONTACT = `
+=== MONTHLY CONTACT REQUIREMENTS ===
+
+Q: Is monthly contact required for non-enrolled AND enrolled participants?
+A: YES — ALL participants require monthly contact.
+
+Q: What are 4 ways monthly contact can be logged in LTSS?
+A: Phone, Email, Home Visit, Mail/Letter
+
+Q: What is required when monthly monitoring shows NO contact was made?
+A: After showing at least 3 attempts to contact, a DROP-IN VISIT and an UNABLE TO CONTACT/30-DAY LETTER are needed.
+
+Q: What option exists for participants who don't want monthly contact?
+A: SP Waiver Form — although SPs should still be making monthly contact.
+
+Q: What is required for a SP Waiver to be active, and how long is it valid?
+A: SP Waiver form must be completed. It is active for ONE YEAR.
+
+Q: How many contact attempts must be made before marking contact unsuccessful?
+A: At least 3 attempts throughout the month.
+
+Q: What are 2 reasons a Supports Planner should NOT complete a Monthly Monitoring?
+A: 1) Client is deceased, 2) Client is out of state.
+
+Q: What reports track monthly monitoring completed by staff?
+A: SPM Tracker and Smartsheets.
+
+Q: What are the quarterly visit months?
+A: March, June, September, December.
+`
+
+const KNOWLEDGE_GENERAL_QUIZ = `
+=== POS, POC, ATP, LOC, ELIGIBILITY — KNOWLEDGE BASE ===
+
+POS (Plan of Service):
+- POS = Plan of Service
+- Before a POS can be started: POC and LOC must be completed/generated
+- Participant's budget comes from: interRAI assessment / RUG score
+- Emergency Backups needed: 2 (preferably one PAA and one family member)
+- If client declines Emergency Backup: list in the narrative that they are declining an EBU
+- Emergency Backup restriction: They CANNOT be a minor
+
+POC (Plan of Care):
+- POC = Plan of Care
+- Assessment is completed by: Local Health Department Nurse Assessor
+- When to submit new POC request: Significant change OR annual/redetermination
+- Key dates to focus on in POC: Due date and request completion date
+
+ATP (Authorization to Participate):
+- ATP = Authorization to Participate
+- When to complete ATP: When starting or stopping services
+
+LOC (Level of Care):
+- NF = Nursing Facility
+- NF level of care qualifies participants for: CFC or CO programs
+- CPAS participants receive ONLY: PAA, NM (Nurse Monitoring), SP (Supports Planning)
+
+ELIGIBILITY:
+- Highlighted eligibility code means: It is an eligible MA code for the client to receive CPAS, CFC, and CO services (reference MA Coverage Group Sheet on Zoho)
+- Before working with any participant, check at least 4 things: Eligibility code, Program type, MA #, LOC, POC, POS
+- Three special CO codes:
+  1. OAA = Assisted Living, NOT MFP eligible
+  2. OAM = Assisted Living, MFP eligible
+  3. OAH = Private residence, NOT MFP eligible
+  4. OHM = Private residence, MFP eligible
+
+CO (Community Options):
+- MFP (Money Follows the Person) eligibility: CO applicants residing in a NF for 60 CONSECUTIVE DAYS
+- Transition funds eligibility: MFP participants transitioning out of a nursing facility
+- ALF bed minimum for transition funds and MFP: 4 beds
+- Advisory Letters for CO participants are sent by: EDD
+- Three requirements for all CO applications: Meet financial, technical, AND medical eligibility guidelines
+- CO application renewal: Yearly, unless stated otherwise on current enrollment tab
+- SP hours for participant in ALF: 20 hours per year
+
+LTSS NAVIGATION:
+- To find participant's language: Client → Profile → Client Demographics
+- Additional contact info/representatives: Client → Profile
+- Most important tab in LTSS (Client Summary) lists: Client eligibility, current enrollment, program snapshot, waiver information, and who is assigned to their case
+`
+
 export async function POST(req: NextRequest) {
   // Rate limiting: max 10 concurrent AI requests
   if (activeRequests >= MAX_CONCURRENT) {
