@@ -6,7 +6,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus } from '@/lib/types'
+import { Client, Profile, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore } from '@/lib/types'
+import HealthScoreRing from './HealthScoreRing'
 
 interface Props {
   clients: Client[]
@@ -20,6 +21,7 @@ interface PlannerStats {
   overdue: number
   dueThisWeek: number
   avgGoalPct: number
+  complianceScore: number
 }
 
 function StatCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
@@ -35,6 +37,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
+      const complianceScore = pc.length > 0
+          ? Math.round(pc.filter(c => getClientHealthScore(c) >= 60).length / pc.length * 100)
+          : 100
       return {
         planner,
         clientCount: pc.length,
@@ -43,6 +48,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
         avgGoalPct: pc.length > 0
           ? Math.round(pc.reduce((sum, c) => sum + (c.goal_pct ?? 0), 0) / pc.length)
           : 0,
+        complianceScore,
       }
     })
   }, [clients, planners])
@@ -313,7 +319,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Planner', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => (
+                  {['Planner', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => (
                     <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {h}
                     </th>
@@ -331,7 +337,16 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
                       window.location.href = `/dashboard?planner=${ps.planner.id}`
                     }}
                   >
-                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>{ps.planner.full_name ?? 'Unknown'}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 500 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {ps.planner.full_name ?? 'Unknown'}
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={`${ps.complianceScore}% of clients have health score ≥ 60`}>
+                        <HealthScoreRing score={ps.complianceScore} size={32} strokeWidth={3} />
+                      </div>
+                    </td>
                     <td style={{ padding: '10px 12px' }}>{ps.clientCount}</td>
                     <td style={{ padding: '10px 12px', color: ps.overdue > 0 ? 'var(--red)' : 'var(--text)' }}>
                       {ps.overdue > 0 ? `🔴 ${ps.overdue}` : ps.overdue}
