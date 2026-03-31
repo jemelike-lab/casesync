@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
+// ─── Rate limiter ─────────────────────────────────────────────────────────────
+let activeRequests = 0
+const MAX_CONCURRENT = 10
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getDateStatus(dateStr: string | null): 'red' | 'orange' | 'yellow' | 'green' | 'none' {
@@ -593,6 +597,15 @@ const KNOWLEDGE_NAVIGATION = `
 // ─── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: max 10 concurrent AI requests
+  if (activeRequests >= MAX_CONCURRENT) {
+    return new Response(
+      JSON.stringify({ error: 'BLH Bot is busy, please try again in a moment' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+  activeRequests++
+
   try {
     const { messages, userId, clientId } = await req.json()
 
@@ -619,14 +632,12 @@ export async function POST(req: NextRequest) {
     let plannerContext = ''
 
     if (userRole === 'supervisor') {
-      // Supervisor sees all clients
       const { data } = await supabase
         .from('clients')
         .select('*, profiles!clients_assigned_to_fkey(full_name)')
         .order('last_name')
       allClients = (data as Record<string, unknown>[]) ?? []
 
-      // Get planner stats for supervisor
       const { data: planners } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -642,7 +653,6 @@ export async function POST(req: NextRequest) {
       plannerContext = `Your org has ${planners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
 
     } else if (userRole === 'team_manager') {
-      // Team manager sees their planners' clients
       const { data: myPlanners } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -665,7 +675,6 @@ export async function POST(req: NextRequest) {
       plannerContext = `Your team has ${myPlanners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
 
     } else {
-      // Supports planner sees only their assigned clients
       const { data } = await supabase
         .from('clients')
         .select('*')
@@ -763,24 +772,42 @@ ${KNOWLEDGE_NAVIGATION}
       return new Response('AI service not configured', { status: 503 })
     }
 
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 1024,
-        stream: true,
-        system: systemPrompt,
-        messages: messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      }),
-    })
+    // 30-second timeout for Anthropic requests
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+    let anthropicRes: Response
+    try {
+      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 1024,
+          stream: true,
+          system: systemPrompt,
+          messages: messages.map((m: { role: string; content: string }) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+        signal: controller.signal,
+      })
+    } catch (fetchErr) {
+      clearTimeout(timeoutId)
+      if ((fetchErr as Error).name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ error: 'BLH Bot took too long to respond. Please try again.' }),
+          { status: 504, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      throw fetchErr
+    }
+    clearTimeout(timeoutId)
 
     if (!anthropicRes.ok) {
       const err = await anthropicRes.text()
@@ -833,5 +860,7 @@ ${KNOWLEDGE_NAVIGATION}
     const msg = err instanceof Error ? err.message : 'Internal error'
     console.error('case-ai error:', msg)
     return new Response(msg, { status: 500 })
+  } finally {
+    activeRequests--
   }
 }
