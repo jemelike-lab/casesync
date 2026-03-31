@@ -17,6 +17,7 @@ interface Props {
 }
 
 const SORT_FIELDS: { field: SortField; label: string }[] = [
+  { field: 'priority', label: '🔥 Priority' },
   { field: 'name', label: 'Name' },
   { field: 'goal_pct', label: 'Goal %' },
   { field: 'last_contact_date', label: 'Last Contact' },
