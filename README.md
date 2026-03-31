@@ -72,3 +72,4 @@ Live at https://blhcasesync.com
 
 <!-- deploy trigger -->
 <!-- sentry configured -->
+<!-- enable ai summary -->
