@@ -66,7 +66,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
       { name: '0–25%', value: 0, fill: '#ff453a' },
       { name: '26–50%', value: 0, fill: '#ff9f0a' },
       { name: '51–75%', value: 0, fill: '#007aff' },
-      { name: '76–100%', value: 0, fill: '#30d158' },
+      { name: '76–100%', value: 0, fill: '#00c853' },
     ]
     clients.forEach(c => {
       const g = c.goal_pct ?? 0
