@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Profile } from '@/lib/types'
 import NotificationBell from './NotificationBell'
+import { useTheme } from '@/hooks/useTheme'
 
 interface Props {
   user: User
@@ -39,6 +40,7 @@ export default function Header({ user, profile }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const { theme, toggle } = useTheme()
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -92,8 +94,31 @@ export default function Header({ user, profile }: Props) {
           </nav>
         </div>
 
-        {/* Right: notifications + User info + logout */}
+        {/* Right: theme toggle + notifications + user info + logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontSize: 16,
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s',
+              flexShrink: 0,
+            }}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
           {user.id && <NotificationBell userId={user.id} />}
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>{profile?.full_name ?? user.email}</div>
