@@ -18,6 +18,11 @@ import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
 import PinnedClients from './PinnedClients'
 import WeekStrip from './WeekStrip'
+import Confetti from './Confetti'
+import QuickActions from './QuickActions'
+import KeyboardShortcutsModal from './KeyboardShortcutsModal'
+import { useCountUp } from '@/hooks/useCountUp'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -31,6 +36,7 @@ interface Props {
 function StatCard({ label, value, color, onClick, active }: {
   label: string; value: number; color?: string; onClick?: () => void; active?: boolean
 }) {
+  const animated = useCountUp(value)
   return (
     <div
       className="card"
@@ -43,7 +49,7 @@ function StatCard({ label, value, color, onClick, active }: {
         transition: 'border-color 0.2s',
       }}
     >
-      <div style={{ fontSize: 28, fontWeight: 700, color: color ?? 'var(--text)' }}>{value}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, color: color ?? 'var(--text)' }}>{animated}</div>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</div>
     </div>
   )
@@ -126,11 +132,13 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
   )
 }
 
-function GreetingCard({ profile, stats, onFilter, activeFilter }: {
+function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, onDismissConfetti }: {
   profile: Profile | null
   stats: { overdue: number; dueThisWeek: number; noContact: number }
   onFilter: (f: FilterType | null) => void
   activeFilter: FilterType | null
+  showConfetti: boolean
+  onDismissConfetti: () => void
 }) {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -140,11 +148,19 @@ function GreetingCard({ profile, stats, onFilter, activeFilter }: {
   const totalNeedAttention = stats.overdue + stats.dueThisWeek
   const allCurrent = totalNeedAttention === 0 && stats.noContact === 0
 
+  const overdueCount = useCountUp(stats.overdue)
+  const dueCount = useCountUp(stats.dueThisWeek)
+  const noContactCount = useCountUp(stats.noContact)
+
   return (
     <div className="card slide-in-up" style={{
       marginBottom: 16,
-      background: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,0,0,0) 100%)',
-      border: '1px solid rgba(0,122,255,0.15)',
+      background: allCurrent
+        ? 'linear-gradient(135deg, rgba(48,209,88,0.08) 0%, rgba(0,0,0,0) 100%)'
+        : 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,0,0,0) 100%)',
+      border: allCurrent
+        ? '1px solid rgba(48,209,88,0.2)'
+        : '1px solid rgba(0,122,255,0.15)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <span style={{ fontSize: 20 }}>{icon}</span>
@@ -154,9 +170,14 @@ function GreetingCard({ profile, stats, onFilter, activeFilter }: {
       </div>
 
       {allCurrent ? (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--green)', fontWeight: 500 }}>
-          ✅ Great work! All your clients are current.
-        </p>
+        <div>
+          <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--green)', fontWeight: 600 }}>
+            ✅ All caught up! Great work!
+          </p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+            🎉 All clients are current — no overdue items, no missed contacts.
+          </p>
+        </div>
       ) : (
         <>
           <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -179,7 +200,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter }: {
                   transition: 'background 0.15s',
                 }}
               >
-                🔴 {stats.overdue} overdue
+                🔴 {overdueCount} overdue
               </button>
             )}
             {stats.dueThisWeek > 0 && (
@@ -198,7 +219,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter }: {
                   transition: 'background 0.15s',
                 }}
               >
-                🟠 {stats.dueThisWeek} due this week
+                🟠 {dueCount} due this week
               </button>
             )}
             {stats.noContact > 0 && (
@@ -217,7 +238,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter }: {
                   transition: 'background 0.15s',
                 }}
               >
-                ⏰ {stats.noContact} no contact 7d+
+                ⏰ {noContactCount} no contact 7d+
               </button>
             )}
           </div>
@@ -257,6 +278,7 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const isSupervisor = profile?.role === 'supervisor'
   const isTeamManager = profile?.role === 'team_manager'
   const canSeeAll = isSupervisor || isTeamManager
+  const canAddClient = isSupervisor || isTeamManager
 
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [filter, setFilter] = useState<FilterType>('all')
@@ -271,6 +293,8 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const [bulkAssignId, setBulkAssignId] = useState('')
   const [bulkAssigning, setBulkAssigning] = useState(false)
   const [activeDayFilter, setActiveDayFilter] = useState<string | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false)
 
   useEffect(() => {
     try {
@@ -345,6 +369,19 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       return d !== null && d >= 7
     }).length,
   }), [baseClients])
+
+  // Confetti: show once per session when all current
+  useEffect(() => {
+    if (stats.overdue === 0 && stats.dueThisWeek === 0 && baseClients.length > 0) {
+      try {
+        const key = `casesync-confetti-${currentUserId}-${new Date().toDateString()}`
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1')
+          setShowConfetti(true)
+        }
+      } catch {}
+    }
+  }, [stats.overdue, stats.dueThisWeek, baseClients.length, currentUserId])
 
   const DEADLINE_DATE_FIELDS: (keyof Client)[] = [
     'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
@@ -434,14 +471,36 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const selectAll = () => setSelectedIds(filtered.map(c => c.id))
   const clearSelect = () => { setSelectedIds([]); setShowSelect(false) }
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    canAddClient,
+    onShowShortcuts: () => setShowShortcutsModal(true),
+    onCloseModal: () => setShowShortcutsModal(false),
+  })
+
   return (
     <div style={{ paddingBottom: 80 }}>
+      {/* Confetti overlay */}
+      {showConfetti && (
+        <Confetti onDone={() => setShowConfetti(false)} />
+      )}
+
+      {/* Keyboard shortcuts modal */}
+      {showShortcutsModal && (
+        <KeyboardShortcutsModal
+          onClose={() => setShowShortcutsModal(false)}
+          canAddClient={canAddClient}
+        />
+      )}
+
       {/* Personalized greeting */}
       <GreetingCard
         profile={profile}
         stats={{ overdue: stats.overdue, dueThisWeek: stats.dueThisWeek, noContact: stats.noContact }}
         onFilter={handleGreetingFilter}
         activeFilter={alertFilter}
+        showConfetti={showConfetti}
+        onDismissConfetti={() => setShowConfetti(false)}
       />
 
       {/* 7-day week strip */}
@@ -532,6 +591,16 @@ export default function DashboardClient({ clients: initialClients, profile, curr
             )}
           </>
         )}
+
+        {/* Keyboard shortcut hint */}
+        <button
+          className="btn-secondary"
+          style={{ fontSize: 12, minHeight: 36, marginLeft: 'auto' }}
+          onClick={() => setShowShortcutsModal(true)}
+          title="Keyboard shortcuts (?)"
+        >
+          ⌨️
+        </button>
       </div>
 
       {/* Filters */}
@@ -574,6 +643,16 @@ export default function DashboardClient({ clients: initialClients, profile, curr
         sortDir={sortDir}
         onSortChange={handleSortChange}
         onContactLogged={handleContactLogged}
+      />
+
+      {/* Quick Actions FAB */}
+      <QuickActions
+        profile={profile}
+        onLogContact={() => {
+          // Focus first client card log contact button or open a global contact modal
+          const btn = document.querySelector('button[title="Log Contact"]') as HTMLButtonElement | null
+          btn?.click()
+        }}
       />
     </div>
   )
