@@ -522,3 +522,20 @@ input[type="time"] {
 [data-theme="light"] header a[style*="background"] {
   color: #ffffff !important;
 }
+
+/* ===== LIGHT MODE: "no contact 7d+" pill - deep orange-brown ===== */
+[data-theme="light"] [style*="ffcc00"],
+[data-theme="light"] [style*="ffd60a"],
+[data-theme="light"] [style*="var(--yellow)"] {
+  color: #7a3b00 !important;
+}
+
+/* Target the pill background specifically */
+[data-theme="light"] [style*="rgba(255, 214"],
+[data-theme="light"] [style*="rgba(255,214"],
+[data-theme="light"] [style*="rgba(255, 204"],
+[data-theme="light"] [style*="rgba(255,204"] {
+  background: rgba(122, 59, 0, 0.12) !important;
+  border: 1px solid rgba(122, 59, 0, 0.3) !important;
+  color: #7a3b00 !important;
+}
