@@ -244,6 +244,55 @@ export function sortClients(clients: Client[], field: SortField, dir: SortDir): 
   })
 }
 
+export function getClientHealthScore(client: Client): number {
+  let score = 100
+
+  const datesToCheck: Array<{ key: keyof Client; label: string }> = [
+    { key: 'eligibility_end_date', label: 'Eligibility End' },
+    { key: 'three_month_visit_due', label: '3-Month Visit' },
+    { key: 'quarterly_waiver_date', label: 'Quarterly Waiver' },
+    { key: 'med_tech_redet_date', label: 'Med Tech Redet' },
+    { key: 'pos_deadline', label: 'POS Deadline' },
+    { key: 'assessment_due', label: 'Assessment Due' },
+    { key: 'thirty_day_letter_date', label: '30-Day Letter' },
+    { key: 'co_financial_redet_date', label: 'CO Financial Redet' },
+    { key: 'co_app_date', label: 'CO App Date' },
+    { key: 'mfp_consent_date', label: 'MFP Consent' },
+    { key: 'two57_date', label: '257 Date' },
+    { key: 'doc_mdh_date', label: 'Doc MDH' },
+    { key: 'spm_next_due', label: 'SPM Next Due' },
+  ]
+
+  const now = new Date()
+
+  for (const { key } of datesToCheck) {
+    const d = client[key] as string | null
+    if (!d) continue
+    const date = new Date(d)
+    const diffMs = date.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 0) {
+      score -= 15 // overdue
+    } else if (diffDays <= 7) {
+      score -= 8 // due within 7 days
+    } else if (diffDays <= 30) {
+      score -= 3 // due within 30 days
+    }
+  }
+
+  const daysSince = getDaysSinceContact(client.last_contact_date)
+  if (daysSince !== null) {
+    if (daysSince >= 14) {
+      score -= 20
+    } else if (daysSince >= 7) {
+      score -= 10
+    }
+  }
+
+  return Math.max(0, score)
+}
+
 export type RiskLevel = 'high' | 'medium' | 'low'
 
 export function getRiskLevel(client: Client): RiskLevel {
