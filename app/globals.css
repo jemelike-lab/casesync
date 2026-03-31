@@ -347,3 +347,85 @@ input[type="time"] {
     padding-bottom: 80px !important;
   }
 }
+
+/* ===== LIGHT MODE CONTRAST FIXES ===== */
+
+/* Active filter buttons - ensure white text on blue */
+[data-theme="light"] button[style*="background: var(--accent)"],
+[data-theme="light"] button[style*="background:var(--accent)"],
+[data-theme="light"] .filter-btn.active {
+  color: #ffffff !important;
+  background: #0071e3 !important;
+}
+
+/* All card text - ensure dark on white */
+[data-theme="light"] .card,
+[data-theme="light"] .card * {
+  color: #1a1108;
+}
+
+/* Override any inline var(--text-secondary) that might be too light */
+[data-theme="light"] [style*="color: var(--text-secondary)"],
+[data-theme="light"] [style*="color:var(--text-secondary)"] {
+  color: #5c4a35 !important;
+}
+
+/* Status dots text labels */
+[data-theme="light"] [style*="color: var(--red)"] { color: #c0001a !important; }
+[data-theme="light"] [style*="color: var(--orange)"] { color: #b84000 !important; }
+[data-theme="light"] [style*="color: var(--yellow)"] { color: #6d4c00 !important; }
+[data-theme="light"] [style*="color: var(--green)"] { color: #1a6e2e !important; }
+[data-theme="light"] [style*="color: var(--gray)"] { color: #5c5248 !important; }
+
+/* Nav active state */
+[data-theme="light"] nav a[style*="background: var(--surface-2)"] {
+  color: #1a1108 !important;
+  background: #e8d5c0 !important;
+}
+
+/* Greeting card */
+[data-theme="light"] [style*="background: var(--surface)"] {
+  background: #ffffff !important;
+}
+
+/* Alert banner pills */
+[data-theme="light"] [style*="background: rgba(255, 69"] { 
+  color: #7a0010 !important; 
+  background: rgba(192, 0, 26, 0.12) !important;
+}
+[data-theme="light"] [style*="background: rgba(255, 149"] { 
+  color: #7a2000 !important;
+  background: rgba(184, 64, 0, 0.12) !important;
+}
+[data-theme="light"] [style*="background: rgba(255, 204"] { 
+  color: #4a3200 !important;
+  background: rgba(109, 76, 0, 0.12) !important;
+}
+[data-theme="light"] [style*="background: rgba(52, 199"] { 
+  color: #0d4a1c !important;
+  background: rgba(26, 110, 46, 0.12) !important;
+}
+
+/* Week strip day cells */
+[data-theme="light"] [style*="background: var(--surface-2)"] {
+  color: #1a1108 !important;
+}
+
+/* Tab active underline */
+[data-theme="light"] [style*="border-bottom-color: var(--accent)"] {
+  color: #0071e3 !important;
+  font-weight: 600;
+}
+
+/* Client card field labels */
+[data-theme="light"] [style*="color: var(--text)"] {
+  color: #1a1108 !important;
+}
+
+/* Ensure all inputs readable */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  color: #1a1108 !important;
+  background: #ffffff !important;
+}
