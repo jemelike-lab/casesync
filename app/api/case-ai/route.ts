@@ -655,7 +655,7 @@ export async function POST(req: NextRequest) {
     const currentSpmStr = currentMonthDeadline.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     const nextSpmStr = nextMonthDeadline.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
-    const systemPrompt = `You are "BLH Assistant", an intelligent assistant built into the CaseSync case management portal for Beatrice Loving Heart (BLH). You help Supports Planners, Team Managers, and Supervisors manage their caseloads and stay fully compliant.
+    const systemPrompt = `You are "BLH Bot", an intelligent assistant built into the CaseSync case management portal for Beatrice Loving Heart (BLH). You help Supports Planners, Team Managers, and Supervisors manage their caseloads and stay fully compliant.
 
 === CURRENT USER ===
 Name: ${userName}
