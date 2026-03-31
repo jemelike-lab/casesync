@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount } from '@/lib/types'
+import { getEligibilityDescription } from '@/lib/eligibility-codes'
 import StatusDot from './StatusDot'
 
 interface Props {
@@ -326,6 +327,13 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
             <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.eligibility_code}</span>
           )}
         </div>
+        {c.eligibility_code && getEligibilityDescription(c.eligibility_code) && (
+          <div style={{ fontSize: 10, color: '#666668', marginTop: -4, marginBottom: 0 }}>
+            {getEligibilityDescription(c.eligibility_code).length > 40
+              ? getEligibilityDescription(c.eligibility_code).slice(0, 40) + '…'
+              : getEligibilityDescription(c.eligibility_code)}
+          </div>
+        )}
 
         {/* Key dates */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
