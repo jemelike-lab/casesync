@@ -71,3 +71,4 @@ npm run dev
 Live at https://blhcasesync.com
 
 <!-- deploy trigger -->
+<!-- sentry configured -->
