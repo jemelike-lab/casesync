@@ -639,10 +639,7 @@ export async function POST(req: NextRequest) {
         }).length
         return `${p.full_name}: ${pClients.length} clients, ${overdue} overdue`
       })
-      plannerContext = `
-Your org has ${planners?.length ?? 0} Supports Planners:
-${plannerStats.join('
-')}`
+      plannerContext = `Your org has ${planners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
 
     } else if (userRole === 'team_manager') {
       // Team manager sees their planners' clients
@@ -665,10 +662,7 @@ ${plannerStats.join('
         const pClients = allClients.filter(c => c.assigned_to === p.id)
         return `${p.full_name}: ${pClients.length} clients`
       })
-      plannerContext = `
-Your team has ${myPlanners?.length ?? 0} Supports Planners:
-${plannerStats.join('
-')}`
+      plannerContext = `Your team has ${myPlanners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
 
     } else {
       // Supports planner sees only their assigned clients
