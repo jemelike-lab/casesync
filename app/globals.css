@@ -429,3 +429,56 @@ input[type="time"] {
   color: #1a1108 !important;
   background: #ffffff !important;
 }
+
+/* ===== LIGHT MODE TARGETED FIXES ===== */
+
+/* Header search input - dark text on white */
+[data-theme="light"] header input[type="search"],
+[data-theme="light"] header input {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+  border: 1px solid #c9b89a !important;
+}
+
+[data-theme="light"] header input::placeholder {
+  color: #9c8470 !important;
+}
+
+/* Dashboard search bar - visible border */
+[data-theme="light"] input[placeholder*="Search"],
+[data-theme="light"] input[placeholder*="search"] {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+/* "All" filter button active state - needs stronger blue */
+[data-theme="light"] button[style*="background: var(--accent)"],
+[data-theme="light"] button[style*="background:var(--accent)"] {
+  background: #0071e3 !important;
+  color: #ffffff !important;
+  border-color: #0071e3 !important;
+}
+
+/* Inactive filter buttons - warm cream with dark border */
+[data-theme="light"] button[style*="background: var(--surface-2)"],
+[data-theme="light"] button[style*="background:var(--surface-2)"] {
+  background: #f5ede3 !important;
+  color: #1a1108 !important;
+  border-color: #c9b89a !important;
+}
+
+/* Stat cards - white background, dark text */
+[data-theme="light"] [style*="background: var(--surface)"] {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+}
+
+/* Week strip TODAY highlight */
+[data-theme="light"] [style*="border: 2px solid var(--accent)"],
+[data-theme="light"] [style*="border:2px solid var(--accent)"] {
+  border-color: #0071e3 !important;
+  background: #e8f0fb !important;
+  color: #0071e3 !important;
+}
