@@ -11,10 +11,13 @@ import {
   isDueThisWeek,
   isEligibilityEndingSoon,
   getDaysSinceContact,
+  clientPriorityScore,
+  sortClients,
 } from '@/lib/types'
 import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
 import PinnedClients from './PinnedClients'
+import WeekStrip from './WeekStrip'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -123,6 +126,107 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
   )
 }
 
+function GreetingCard({ profile, stats, onFilter, activeFilter }: {
+  profile: Profile | null
+  stats: { overdue: number; dueThisWeek: number; noContact: number }
+  onFilter: (f: FilterType | null) => void
+  activeFilter: FilterType | null
+}) {
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const icon = hour < 12 ? '☀️' : hour < 17 ? '🌤️' : '🌙'
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
+
+  const totalNeedAttention = stats.overdue + stats.dueThisWeek
+  const allCurrent = totalNeedAttention === 0 && stats.noContact === 0
+
+  return (
+    <div className="card slide-in-up" style={{
+      marginBottom: 16,
+      background: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,0,0,0) 100%)',
+      border: '1px solid rgba(0,122,255,0.15)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 20 }}>{icon}</span>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+          {greeting}, {firstName}!
+        </h2>
+      </div>
+
+      {allCurrent ? (
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--green)', fontWeight: 500 }}>
+          ✅ Great work! All your clients are current.
+        </p>
+      ) : (
+        <>
+          <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
+            You have <strong style={{ color: 'var(--text)' }}>{totalNeedAttention}</strong> client{totalNeedAttention !== 1 ? 's' : ''} needing attention.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {stats.overdue > 0 && (
+              <button
+                onClick={() => onFilter(activeFilter === 'overdue' ? null : 'overdue')}
+                style={{
+                  background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.15)',
+                  border: '1px solid rgba(255,69,58,0.4)',
+                  borderRadius: 20,
+                  color: '#ff453a',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  cursor: 'pointer',
+                  minHeight: 30,
+                  transition: 'background 0.15s',
+                }}
+              >
+                🔴 {stats.overdue} overdue
+              </button>
+            )}
+            {stats.dueThisWeek > 0 && (
+              <button
+                onClick={() => onFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')}
+                style={{
+                  background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.15)',
+                  border: '1px solid rgba(255,159,10,0.4)',
+                  borderRadius: 20,
+                  color: '#ff9f0a',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  cursor: 'pointer',
+                  minHeight: 30,
+                  transition: 'background 0.15s',
+                }}
+              >
+                🟠 {stats.dueThisWeek} due this week
+              </button>
+            )}
+            {stats.noContact > 0 && (
+              <button
+                onClick={() => onFilter(activeFilter === 'no_contact_7' ? null : 'no_contact_7')}
+                style={{
+                  background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.25)' : 'rgba(255,214,10,0.12)',
+                  border: '1px solid rgba(255,214,10,0.3)',
+                  borderRadius: 20,
+                  color: '#ffd60a',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  cursor: 'pointer',
+                  minHeight: 30,
+                  transition: 'background 0.15s',
+                }}
+              >
+                ⏰ {stats.noContact} no contact 7d+
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function exportToCsv(clients: Client[]) {
   const headers = [
     'Client ID', 'Last Name', 'First Name', 'Category', 'Eligibility Code', 'Eligibility End Date',
@@ -162,10 +266,11 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showSelect, setShowSelect] = useState(false)
   const [activePlannerId, setActivePlannerId] = useState<string | null>(null)
-  const [sortField, setSortField] = useState<SortField>('name')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [sortField, setSortField] = useState<SortField>('priority')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [bulkAssignId, setBulkAssignId] = useState('')
   const [bulkAssigning, setBulkAssigning] = useState(false)
+  const [activeDayFilter, setActiveDayFilter] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -199,7 +304,7 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     } else {
       setSortField(field)
-      setSortDir('asc')
+      setSortDir(field === 'priority' ? 'desc' : 'asc')
     }
   }
 
@@ -207,6 +312,20 @@ export default function DashboardClient({ clients: initialClients, profile, curr
     setAlertFilter(f)
     if (f) setFilter(f)
     else setFilter('all')
+    setActiveDayFilter(null)
+  }
+
+  function handleGreetingFilter(f: FilterType | null) {
+    setAlertFilter(f)
+    if (f) setFilter(f)
+    else setFilter('all')
+    setActiveDayFilter(null)
+  }
+
+  function handleDayFilter(dateStr: string | null) {
+    setActiveDayFilter(dateStr)
+    setAlertFilter(null)
+    setFilter('all')
   }
 
   // Base: my cases for SP, all for managers
@@ -227,6 +346,12 @@ export default function DashboardClient({ clients: initialClients, profile, curr
     }).length,
   }), [baseClients])
 
+  const DEADLINE_DATE_FIELDS: (keyof Client)[] = [
+    'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
+    'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
+    'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due',
+  ]
+
   const filtered = useMemo(() => {
     let result = baseClients
 
@@ -240,21 +365,31 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       )
     }
 
-    const activeFilter = alertFilter ?? filter
-    switch (activeFilter) {
-      case 'overdue': result = result.filter(isOverdue); break
-      case 'due_this_week': result = result.filter(isDueThisWeek); break
-      case 'no_contact_7': result = result.filter(c => {
-        const d = getDaysSinceContact(c.last_contact_date)
-        return d !== null && d >= 7
-      }); break
-      case 'eligibility_ending_soon': result = result.filter(isEligibilityEndingSoon); break
-      case 'co': result = result.filter(c => c.category === 'co'); break
-      case 'cfc': result = result.filter(c => c.category === 'cfc'); break
-      case 'cpas': result = result.filter(c => c.category === 'cpas'); break
+    // Day filter takes precedence
+    if (activeDayFilter) {
+      result = result.filter(c =>
+        DEADLINE_DATE_FIELDS.some(field => {
+          const d = c[field] as string | null
+          return d && d.split('T')[0] === activeDayFilter
+        })
+      )
+    } else {
+      const activeFilter = alertFilter ?? filter
+      switch (activeFilter) {
+        case 'overdue': result = result.filter(isOverdue); break
+        case 'due_this_week': result = result.filter(isDueThisWeek); break
+        case 'no_contact_7': result = result.filter(c => {
+          const d = getDaysSinceContact(c.last_contact_date)
+          return d !== null && d >= 7
+        }); break
+        case 'eligibility_ending_soon': result = result.filter(isEligibilityEndingSoon); break
+        case 'co': result = result.filter(c => c.category === 'co'); break
+        case 'cfc': result = result.filter(c => c.category === 'cfc'); break
+        case 'cpas': result = result.filter(c => c.category === 'cpas'); break
+      }
     }
     return result
-  }, [baseClients, search, filter, alertFilter])
+  }, [baseClients, search, filter, alertFilter, activeDayFilter])
 
   const handleContactLogged = useCallback(async (clientId: string, date: string, type: string, note: string) => {
     const supabase = createClient()
@@ -301,6 +436,21 @@ export default function DashboardClient({ clients: initialClients, profile, curr
 
   return (
     <div style={{ paddingBottom: 80 }}>
+      {/* Personalized greeting */}
+      <GreetingCard
+        profile={profile}
+        stats={{ overdue: stats.overdue, dueThisWeek: stats.dueThisWeek, noContact: stats.noContact }}
+        onFilter={handleGreetingFilter}
+        activeFilter={alertFilter}
+      />
+
+      {/* 7-day week strip */}
+      <WeekStrip
+        clients={baseClients}
+        onDayFilter={handleDayFilter}
+        activeDayFilter={activeDayFilter}
+      />
+
       {/* Alert banner */}
       <AlertBanner
         overdue={stats.overdue}
@@ -388,16 +538,28 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       <FilterBar
         activeFilter={filter}
         search={search}
-        onFilterChange={f => { setFilter(f); setAlertFilter(null) }}
+        onFilterChange={f => { setFilter(f); setAlertFilter(null); setActiveDayFilter(null) }}
         onSearchChange={setSearch}
         planners={canSeeAll ? planners : undefined}
         activePlannerId={activePlannerId}
         onPlannerChange={canSeeAll ? setActivePlannerId : undefined}
       />
 
-      {/* Results count */}
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
-        Showing {filtered.length} of {baseClients.length} clients
+      {/* Results count + active day indicator */}
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span>Showing {filtered.length} of {baseClients.length} clients</span>
+        {activeDayFilter && (
+          <span style={{
+            background: 'rgba(0,122,255,0.15)',
+            border: '1px solid rgba(0,122,255,0.3)',
+            borderRadius: 6,
+            padding: '2px 8px',
+            color: 'var(--accent)',
+            fontSize: 11,
+          }}>
+            📅 {activeDayFilter} · <button onClick={() => setActiveDayFilter(null)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, padding: 0 }}>✕ Clear</button>
+          </span>
+        )}
       </div>
 
       {/* Grid */}
