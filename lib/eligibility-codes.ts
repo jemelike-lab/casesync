@@ -4,6 +4,7 @@ export interface EligibilityCode {
 }
 
 export const ELIGIBILITY_CODES: EligibilityCode[] = [
+  { code: 'CPAS-789', description: 'CPAS (Community Personal Assistance Services)' },
   { code: '*†S04', description: 'Pickle Amendment' },
   { code: '*A02', description: 'Adults Ages 19 to <65, no Medicare; up to 138% FPL (includes Adults with children (<65, no Medicare); 124%–138% FPL)' },
   { code: '*†S05', description: 'Disabled Widowed Beneficiaries (DWB) § 1634(d)' },
@@ -32,5 +33,6 @@ export const ELIGIBILITY_CODES: EligibilityCode[] = [
 ]
 
 export function getEligibilityDescription(code: string): string {
-  return ELIGIBILITY_CODES.find(e => e.code === code)?.description ?? ''
+  const norm = (code ?? '').trim().toUpperCase()
+  return ELIGIBILITY_CODES.find(e => e.code.trim().toUpperCase() === norm)?.description ?? ''
 }
