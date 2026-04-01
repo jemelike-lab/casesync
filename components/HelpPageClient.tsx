@@ -191,7 +191,17 @@ function inlineMarkdown(text: string): string {
   // Inline code
   text = text.replace(/`([^`]+)`/g, '<code>$1</code>')
   // Links
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+  // - Internal anchors (#...) and internal routes (/...) should open in the same tab.
+  // - External links (http/https) open in a new tab.
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, href) => {
+    const url = String(href)
+    const isAnchor = url.startsWith('#')
+    const isInternal = isAnchor || url.startsWith('/')
+    if (isInternal) {
+      return `<a href="${url}" class="help-link-internal">${label}</a>`
+    }
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
+  })
   return text
 }
 
@@ -242,6 +252,28 @@ export default function HelpPageClient({ profile }: Props) {
         setLoading(prev => ({ ...prev, [activeTab]: false }))
       })
   }, [activeTab, activeGuide.url, contents, loading])
+
+  // Smooth-scroll internal anchor links inside rendered markdown
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      const a = target?.closest?.('a.help-link-internal') as HTMLAnchorElement | null
+      if (!a) return
+
+      const href = a.getAttribute('href') || ''
+      if (!href.startsWith('#')) return
+
+      e.preventDefault()
+      const id = href.slice(1)
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [])
 
   function handlePrint() {
     window.print()
