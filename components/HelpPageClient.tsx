@@ -106,9 +106,14 @@ const CONTACTS = [
 ]
 
 function slugifyHeading(text: string): string {
+  // Keep numeric prefixes (e.g. "1. Getting Started") as part of the id.
+  // The guides' Table of Contents links use "#1-getting-started" style anchors.
   return text
     .toLowerCase()
     .trim()
+    // convert numeric prefix like "1." to "1" so ids match the TOC
+    .replace(/^(\d+)\./, '$1')
+    // strip punctuation except spaces/hyphens
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
 }
