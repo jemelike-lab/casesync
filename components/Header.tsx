@@ -104,8 +104,8 @@ export default function Header({ user, profile }: Props) {
           <button
             onClick={() => setShowTour(true)}
             style={{
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
+              background: theme === 'light' ? 'rgba(255,255,255,0.18)' : 'var(--surface-2)',
+              border: theme === 'light' ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--border)',
               borderRadius: 8,
               cursor: 'pointer',
               fontSize: 12,
@@ -115,7 +115,7 @@ export default function Header({ user, profile }: Props) {
               display: 'flex',
               alignItems: 'center',
               gap: 5,
-              color: 'var(--text-secondary)',
+              color: theme === 'light' ? '#ffffff' : 'var(--text-secondary)',
               transition: 'all 0.2s',
               flexShrink: 0,
               whiteSpace: 'nowrap',
@@ -132,8 +132,8 @@ export default function Header({ user, profile }: Props) {
           <button
             onClick={toggle}
             style={{
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
+              background: theme === 'light' ? 'rgba(255,255,255,0.18)' : 'var(--surface-2)',
+              border: theme === 'light' ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--border)',
               borderRadius: 8,
               cursor: 'pointer',
               fontSize: 16,
@@ -155,8 +155,8 @@ export default function Header({ user, profile }: Props) {
             {user.id && <NotificationBell userId={user.id} />}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>{profile?.full_name ?? user.email}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: theme === 'light' ? '#ffffff' : 'var(--text)' }}>{profile?.full_name ?? user.email}</div>
+            <div style={{ fontSize: 11, color: theme === 'light' ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {roleName}
             </div>
           </div>
