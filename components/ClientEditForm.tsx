@@ -571,6 +571,98 @@ function SmartSuggestion({ formData, client }: { formData: Partial<EditableClien
 }
 
 // AI Summary component
+function AIAskClient({ clientId }: { clientId: string }) {
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const ask = async () => {
+    if (!question.trim()) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/blhbot/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: clientId, question: question.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get answer')
+      setAnswer(data.answer)
+    } catch (err: any) {
+      setError(err.message || 'Failed to get answer')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          placeholder="Ask about this client…"
+          style={{
+            ...inputStyle,
+            flex: 1,
+            minWidth: 220,
+            borderColor: 'rgba(191,90,242,0.3)',
+          }}
+        />
+        <button
+          onClick={ask}
+          disabled={loading || !question.trim()}
+          style={{
+            background: 'rgba(191,90,242,0.12)',
+            border: '1px solid rgba(191,90,242,0.3)',
+            borderRadius: 8,
+            color: '#bf5af2',
+            fontSize: 12,
+            fontWeight: 600,
+            padding: '6px 12px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          {loading ? (
+            <>
+              <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: 14 }}>⟳</span>
+              Asking…
+            </>
+          ) : '🟣 Ask BLHBot'}
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--red)' }}>⚠️ {error}</div>
+      )}
+
+      {answer && (
+        <div style={{
+          marginTop: 10,
+          background: 'rgba(191,90,242,0.06)',
+          border: '1px solid rgba(191,90,242,0.2)',
+          borderRadius: 8,
+          padding: '12px 14px',
+          fontSize: 13,
+          color: 'var(--text)',
+          lineHeight: 1.5,
+          whiteSpace: 'pre-wrap',
+        }}>
+          {answer}
+        </div>
+      )}
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 function AISummary({ clientId }: { clientId: string }) {
   const [summary, setSummary] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -988,6 +1080,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       {/* AI Summary - view mode only */}
       {!editing && (
         <div className="card" style={{ marginBottom: 16 }}>
+          <AIAskClient clientId={client.id} />
           <AISummary clientId={client.id} />
         </div>
       )}
