@@ -342,6 +342,16 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
       new_value: form.client_id,
     })
 
+    // Best-effort: create SharePoint folder for this client immediately.
+    // This keeps document storage consistent and avoids relying on the first upload to create it.
+    try {
+      await fetch(`/api/sharepoint/ensure-client-folder?clientId=${encodeURIComponent(data.id)}`, {
+        method: 'POST',
+      })
+    } catch {
+      // ignore
+    }
+
     router.push(`/clients/${data.id}?created=1`)
     router.refresh()
   }

@@ -105,6 +105,35 @@ export async function uploadToSharePoint(
   }
 }
 
+export async function ensureClientFolder(clientId: string): Promise<void> {
+  const token = await getAccessToken()
+  const siteId = await getSiteId(token)
+  const driveId = await getDriveId(token, siteId)
+
+  // Create Clients/<clientId> folder if it doesn't exist.
+  // Graph will return 409 if it already exists.
+  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/root:/Clients:/children`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: clientId,
+      folder: {},
+      '@microsoft.graph.conflictBehavior': 'fail',
+    }),
+  })
+
+  if (res.status === 409) return
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(`Failed to ensure client folder: ${txt}`)
+  }
+}
+
 export async function listClientFiles(clientId: string): Promise<SharePointFile[]> {
   const token = await getAccessToken()
   const siteId = await getSiteId(token)
