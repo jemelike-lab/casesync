@@ -105,6 +105,14 @@ const CONTACTS = [
   },
 ]
 
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+}
+
 function renderMarkdown(md: string): string {
   if (!md) return ''
 
@@ -124,20 +132,26 @@ function renderMarkdown(md: string): string {
     // Headings
     if (line.startsWith('### ')) {
       closeList()
-      const text = inlineMarkdown(line.slice(4))
-      output.push(`<h3>${text}</h3>`)
+      const raw = line.slice(4)
+      const text = inlineMarkdown(raw)
+      const id = slugifyHeading(raw)
+      output.push(`<h3 id="${id}">${text}</h3>`)
       continue
     }
     if (line.startsWith('## ')) {
       closeList()
-      const text = inlineMarkdown(line.slice(3))
-      output.push(`<h2>${text}</h2>`)
+      const raw = line.slice(3)
+      const text = inlineMarkdown(raw)
+      const id = slugifyHeading(raw)
+      output.push(`<h2 id="${id}">${text}</h2>`)
       continue
     }
     if (line.startsWith('# ')) {
       closeList()
-      const text = inlineMarkdown(line.slice(2))
-      output.push(`<h1>${text}</h1>`)
+      const raw = line.slice(2)
+      const text = inlineMarkdown(raw)
+      const id = slugifyHeading(raw)
+      output.push(`<h1 id="${id}">${text}</h1>`)
       continue
     }
 
