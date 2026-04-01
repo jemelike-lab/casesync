@@ -587,3 +587,16 @@ input[type="time"] {
 [data-theme="light"] main > div > div > span:first-child {
   color: #1a1108 !important;
 }
+
+/* ===== LIGHT MODE: Sign Out button in header ===== */
+[data-theme="light"] header .btn-secondary,
+[data-theme="light"] header button.btn-secondary {
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] header .btn-secondary:hover,
+[data-theme="light"] header button.btn-secondary:hover {
+  background: rgba(255,255,255,0.28) !important;
+}
