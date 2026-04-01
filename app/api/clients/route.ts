@@ -1,8 +1,12 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
+// NOTE:
+// Avoid using service role directly with user-supplied ids/roles.
+// We derive the requester identity from the Supabase session cookie.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -10,27 +14,45 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') ?? '20', 10)
     const filter = searchParams.get('filter') ?? 'all'
     const search = searchParams.get('search') ?? ''
-    const userId = searchParams.get('userId') ?? ''
-    const role = searchParams.get('role') ?? ''
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400 })
+    const supabase = await createServerClient()
+    const { data: authData, error: authErr } = await supabase.auth.getUser()
+
+    if (authErr || !authData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
     }
 
-    const supabase = createClient(
+    const userId = authData.user.id
+
+    // Read the caller's role from profiles
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', userId)
+      .single()
+
+    if (profileErr || !profile) {
+      return new Response(JSON.stringify({ error: 'Profile not found' }), { status: 403 })
+    }
+
+    const role = String(profile.role ?? '')
+    const from = page * limit
+    const to = from + limit - 1
+
+    // Use service role ONLY after we have authenticated the caller.
+    // This endpoint returns data scoped by role, so RLS is not required here.
+    // (Alternatively we can rewrite to rely on RLS for all reads.)
+    const admin = createSupabaseJsClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const from = page * limit
-    const to = from + limit - 1
-
-    let query = supabase
+    let query = admin
       .from('clients')
       .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
       .order('last_name')
 
-    // Role-based scoping
+    // Role-based scoping (server-validated)
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
     }
@@ -42,14 +64,12 @@ export async function GET(req: NextRequest) {
     if (filter === 'overdue') {
       query = query.or(
         `eligibility_end_date.lt.${now},pos_deadline.lt.${now},assessment_due.lt.${now},` +
-        `three_month_visit_due.lt.${now},thirty_day_letter_date.lt.${now}`
+          `three_month_visit_due.lt.${now},thirty_day_letter_date.lt.${now}`
       )
     } else if (filter === 'due_this_week') {
-      query = query.or(
-        `eligibility_end_date.gte.${now},pos_deadline.gte.${now},assessment_due.gte.${now}`
-      ).or(
-        `eligibility_end_date.lte.${weekLater},pos_deadline.lte.${weekLater},assessment_due.lte.${weekLater}`
-      )
+      query = query
+        .or(`eligibility_end_date.gte.${now},pos_deadline.gte.${now},assessment_due.gte.${now}`)
+        .or(`eligibility_end_date.lte.${weekLater},pos_deadline.lte.${weekLater},assessment_due.lte.${weekLater}`)
     } else if (filter === 'co') {
       query = query.eq('category', 'co')
     } else if (filter === 'cfc') {
