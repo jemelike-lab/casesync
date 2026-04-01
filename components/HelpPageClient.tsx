@@ -216,9 +216,13 @@ function inlineMarkdown(text: string): string {
     const url = String(href)
     const isAnchor = url.startsWith('#')
     const isInternal = isAnchor || url.startsWith('/')
+
+    // Tag internal anchors so our click handler can smooth-scroll reliably.
+    // (Without this, some anchors may not jump depending on timing/layout.)
     if (isInternal) {
       return `<a href="${url}" class="help-link-internal">${label}</a>`
     }
+
     return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
   })
   return text
@@ -276,12 +280,13 @@ export default function HelpPageClient({ profile }: Props) {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null
-      const a = target?.closest?.('a.help-link-internal') as HTMLAnchorElement | null
+      const a = target?.closest?.('a') as HTMLAnchorElement | null
       if (!a) return
 
       const href = a.getAttribute('href') || ''
       if (!href.startsWith('#')) return
 
+      // Only handle in-page anchors for this help content
       e.preventDefault()
       const id = href.slice(1)
       const el = document.getElementById(id)
