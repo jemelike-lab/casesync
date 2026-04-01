@@ -9,7 +9,7 @@ const GUIDES = [
     label: 'Supports Planner Guide',
     icon: '👤',
     role: 'supports_planner',
-    url: 'https://raw.githubusercontent.com/jemelike-lab/casesync/main/docs/guide-supports-planner.md',
+    url: '/api/guides?guide=supports-planner',
     filename: 'guide-supports-planner.txt',
   },
   {
@@ -17,7 +17,7 @@ const GUIDES = [
     label: 'Team Manager Guide',
     icon: '👥',
     role: 'team_manager',
-    url: 'https://raw.githubusercontent.com/jemelike-lab/casesync/main/docs/guide-team-manager.md',
+    url: '/api/guides?guide=team-manager',
     filename: 'guide-team-manager.txt',
   },
   {
@@ -25,7 +25,7 @@ const GUIDES = [
     label: 'Supervisor Guide',
     icon: '🏢',
     role: 'supervisor',
-    url: 'https://raw.githubusercontent.com/jemelike-lab/casesync/main/docs/guide-supervisor.md',
+    url: '/api/guides?guide=supervisor',
     filename: 'guide-supervisor.txt',
   },
   {
@@ -33,7 +33,7 @@ const GUIDES = [
     label: 'Video Script',
     icon: '🎬',
     role: null,
-    url: 'https://raw.githubusercontent.com/jemelike-lab/casesync/main/docs/video-script.md',
+    url: '/api/guides?guide=video-script',
     filename: 'video-script.txt',
   },
 ]
