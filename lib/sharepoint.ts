@@ -143,12 +143,11 @@ export async function ensureClientFolder(clientFolderName: string): Promise<void
     body: JSON.stringify({
       name: clientFolderName,
       folder: {},
-      '@microsoft.graph.conflictBehavior': 'rename',
+      // Use "fail" so we can gracefully accept 409 and avoid unexpected renames.
+      '@microsoft.graph.conflictBehavior': 'fail',
     }),
   })
 
-  // If conflict behavior is fail, Graph returns 409. With rename, it will succeed.
-  // We'll still allow 409 for safety if Graph changes behavior.
   if (res.status === 409) return
   if (!res.ok) {
     const txt = await res.text()
