@@ -9,10 +9,18 @@ export async function GET(
   try {
     const { clientId } = await params
 
-    const [spFiles, supabase] = await Promise.all([
-      listClientFiles(clientId),
-      createClient(),
-    ])
+    const supabase = await createClient()
+
+    // Resolve the human client_id text for SharePoint folder naming (must match upload route)
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('client_id')
+      .eq('id', clientId)
+      .single()
+
+    const clientFolder = clientRow?.client_id || clientId
+
+    const spFiles = await listClientFiles(clientFolder)
 
     // Get metadata from Supabase for SharePoint files
     const { data: dbDocs } = await supabase
