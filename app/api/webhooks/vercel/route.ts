@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 
 // Simple shared-secret auth:
 // - Vercel supports sending a secret via query param (?secret=...) or custom header.
@@ -16,6 +17,13 @@ function isAuthorized(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Basic abuse protection
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rl = rateLimit(`vercel-webhook:${ip}`, { limit: 30, windowMs: 60_000 })
+  if (!rl.ok) {
+    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 })
+  }
+
   if (!isAuthorized(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }

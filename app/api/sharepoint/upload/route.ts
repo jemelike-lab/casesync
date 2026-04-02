@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadToSharePoint } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rl = rateLimit(`sharepoint-upload:${ip}`, { limit: 20, windowMs: 60_000 })
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
+  }
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
