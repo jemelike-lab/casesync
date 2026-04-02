@@ -130,11 +130,49 @@ export async function ensureClientFolder(clientFolderName: string): Promise<void
   const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
   if (!baseFolderId) throw new Error('SP_CLIENTS_FOLDER_ID is not set')
 
-  // Create CaseSync/Clients/<clientFolderName> if missing.
-  // Using "rename" avoids hard failures if it already exists.
-  const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}/children`
+  const baseItemUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}`
+  const listUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}/children?$filter=name%20eq%20'${encodeURIComponent(
+    clientFolderName.replace(/'/g, "''")
+  )}'`
 
-  const res = await fetch(url, {
+  // 1) Sanity-check we can read the base folder with the app token
+  const baseRes = await fetch(baseItemUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!baseRes.ok) {
+    const txt = await baseRes.text()
+    console.error('SharePoint ensureClientFolder base folder check failed', {
+      clientFolderName,
+      driveId,
+      baseFolderId,
+      status: baseRes.status,
+      body: txt,
+    })
+    throw new Error(`Failed to read base Clients folder: ${txt}`)
+  }
+
+  // 2) Check if folder already exists
+  const listRes = await fetch(listUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!listRes.ok) {
+    const txt = await listRes.text()
+    console.error('SharePoint ensureClientFolder list children failed', {
+      clientFolderName,
+      driveId,
+      baseFolderId,
+      status: listRes.status,
+      body: txt,
+    })
+    throw new Error(`Failed to check existing client folder: ${txt}`)
+  }
+
+  const listData = await listRes.json()
+  if ((listData.value ?? []).length > 0) return
+
+  // 3) Create CaseSync/Clients/<clientFolderName>
+  const createUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}/children`
+  const createRes = await fetch(createUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -143,19 +181,18 @@ export async function ensureClientFolder(clientFolderName: string): Promise<void
     body: JSON.stringify({
       name: clientFolderName,
       folder: {},
-      // Use "fail" so we can gracefully accept 409 and avoid unexpected renames.
       '@microsoft.graph.conflictBehavior': 'fail',
     }),
   })
 
-  if (res.status === 409) return
-  if (!res.ok) {
-    const txt = await res.text()
-    console.error('SharePoint ensureClientFolder failed', {
+  if (createRes.status === 409) return
+  if (!createRes.ok) {
+    const txt = await createRes.text()
+    console.error('SharePoint ensureClientFolder create failed', {
       clientFolderName,
       driveId,
       baseFolderId,
-      status: res.status,
+      status: createRes.status,
       body: txt,
     })
     throw new Error(`Failed to ensure client folder: ${txt}`)
