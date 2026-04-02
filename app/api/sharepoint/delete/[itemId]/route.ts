@@ -9,11 +9,17 @@ export async function DELETE(
   try {
     const { itemId } = await params
 
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Delete from SharePoint
     await deleteSharePointFile(itemId)
 
     // Remove from Supabase (file_path stores the SharePoint item ID)
-    const supabase = await createClient()
+
     await supabase
       .from('client_documents')
       .delete()

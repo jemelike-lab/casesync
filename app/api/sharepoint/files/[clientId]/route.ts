@@ -10,6 +10,10 @@ export async function GET(
     const { clientId } = await params
 
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Resolve the human client_id text for SharePoint folder naming (must match upload route)
     const { data: clientRow } = await supabase
