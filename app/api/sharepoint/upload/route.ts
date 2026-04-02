@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // SharePoint folder naming rules are strict (no \/:*?"<>| etc.).
     // Use a conservative sanitizer.
     const clientFolder = rawFolder
-      .replace(/[\\/:*?"<>|#%&{}~]/g, '')
+      .replace(/[,\\/:*?"<>|#%&{}~]/g, '')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 80) || clientId
