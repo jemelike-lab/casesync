@@ -57,20 +57,17 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const c = client as Client
 
   return (
-    <html>
-      <head>
-        <title>{c.last_name}, {c.first_name} — CaseSync</title>
-        <style>{`
-          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; color: black; }
-          @media print {
-            body { padding: 10px; }
-            button { display: none !important; }
-            @page { margin: 1cm; }
-          }
-        `}</style>
-      </head>
-      <body>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+    <div style={{ background: 'white', color: 'black', minHeight: '100vh', padding: 20 }}>
+      <style>{`
+        body { font-family: Arial, sans-serif; margin: 0; background: white; color: black; }
+        @media print {
+          body { padding: 10px; }
+          button { display: none !important; }
+          @page { margin: 1cm; }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
           {/* Print button */}
           <PrintButton />
 
@@ -147,8 +144,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
             <PrintRow label="Audit Review" value={c.audit_review} />
             <PrintRow label="QA Review" value={c.qa_review} />
           </PrintSection>
-        </div>
-      </body>
-    </html>
+      </div>
+    </div>
   )
 }
