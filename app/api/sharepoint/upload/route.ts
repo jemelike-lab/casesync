@@ -26,7 +26,14 @@ export async function POST(req: NextRequest) {
       .eq('id', clientId)
       .single()
 
-    const clientFolder = clientRow?.client_id || clientId
+    const rawFolder = clientRow?.client_id || clientId
+    // SharePoint folder naming rules are strict (no \/:*?"<>| etc.).
+    // Use a conservative sanitizer.
+    const clientFolder = rawFolder
+      .replace(/[\\/:*?"<>|#%&{}~]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80) || clientId
 
     const { webUrl, itemId } = await uploadToSharePoint(
       clientFolder,
