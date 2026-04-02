@@ -122,16 +122,16 @@ export async function uploadToSharePoint(
   }
 }
 
-export async function ensureClientFolder(clientId: string): Promise<void> {
+export async function ensureClientFolder(clientFolderName: string): Promise<void> {
   const token = await getAccessToken()
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
-  // Create Clients/<clientId> folder if it doesn't exist.
-  // Graph will return 409 if it already exists.
   const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
   if (!baseFolderId) throw new Error('SP_CLIENTS_FOLDER_ID is not set')
 
+  // Create CaseSync/Clients/<clientFolderName> if missing.
+  // Using "rename" avoids hard failures if it already exists.
   const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}/children`
 
   const res = await fetch(url, {
@@ -141,12 +141,14 @@ export async function ensureClientFolder(clientId: string): Promise<void> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      name: clientId,
+      name: clientFolderName,
       folder: {},
-      '@microsoft.graph.conflictBehavior': 'fail',
+      '@microsoft.graph.conflictBehavior': 'rename',
     }),
   })
 
+  // If conflict behavior is fail, Graph returns 409. With rename, it will succeed.
+  // We'll still allow 409 for safety if Graph changes behavior.
   if (res.status === 409) return
   if (!res.ok) {
     const txt = await res.text()

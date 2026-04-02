@@ -16,16 +16,26 @@ export async function POST(req: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer()
 
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Resolve the human client_id text for SharePoint folder naming
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('client_id')
+      .eq('id', clientId)
+      .single()
+
+    const clientFolder = clientRow?.client_id || clientId
+
     const { webUrl, itemId } = await uploadToSharePoint(
-      clientId,
+      clientFolder,
       file.name,
       arrayBuffer,
       file.type || 'application/octet-stream'
     )
 
     // Save metadata to Supabase
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { data, error } = await supabase
       .from('client_documents')
