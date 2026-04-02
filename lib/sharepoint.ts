@@ -91,6 +91,9 @@ export async function uploadToSharePoint(
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
+  // Ensure per-client folder exists first (prevents Graph from throwing on missing path)
+  await ensureClientFolder(clientId)
+
   // Upload into the configured Clients folder.
   const encodedName = encodeURIComponent(fileName)
   const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
