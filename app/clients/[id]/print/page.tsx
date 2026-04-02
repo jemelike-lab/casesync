@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Client, formatDate, getDateStatus } from '@/lib/types'
+import PrintButton from '@/components/PrintButton'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -70,29 +71,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       </head>
       <body>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          {/* Print button (no onClick in server component) */}
-          <a
-            href="#"
-            style={{
-              display: 'inline-block',
-              marginBottom: 20,
-              padding: '8px 16px',
-              background: '#007aff',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: 14,
-              textDecoration: 'none',
-            }}
-          >
-            🖨️ Print
-          </a>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `document.addEventListener('click', function(e){\n  var t=e.target;\n  if(t && t.tagName==='A' && t.getAttribute('href')==='#'){\n    e.preventDefault();\n    window.print();\n  }\n});`,
-            }}
-          />
+          {/* Print button */}
+          <PrintButton />
 
           {/* Header */}
           <div style={{ marginBottom: 24, borderBottom: '2px solid #333', paddingBottom: 12 }}>
