@@ -371,6 +371,14 @@ export default function ClientDocuments({ clientId, currentUserId, currentProfil
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
+                  {isSp && (
+                    <button
+                      onClick={() => window.open((doc as SpDocument).webUrl, '_blank', 'noopener,noreferrer')}
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--text)', cursor: 'pointer' }}
+                    >
+                      👁 View
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDownload(doc)}
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--text)', cursor: 'pointer' }}
