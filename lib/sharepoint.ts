@@ -10,12 +10,12 @@ export interface SharePointFile {
 }
 
 async function getAccessToken(): Promise<string> {
-  const tenantId = process.env.MICROSOFT_TENANT_ID
-  if (!tenantId) throw new Error('MICROSOFT_TENANT_ID is not set')
+  const tenantId = process.env.MS_TENANT_ID || process.env.MICROSOFT_TENANT_ID
+  if (!tenantId) throw new Error('MS_TENANT_ID (or MICROSOFT_TENANT_ID) is not set')
   const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`
   const body = new URLSearchParams({
-    client_id: process.env.MICROSOFT_CLIENT_ID!,
-    client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+    client_id: process.env.MS_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID!,
+    client_secret: process.env.MS_CLIENT_SECRET || process.env.MICROSOFT_CLIENT_SECRET!,
     scope: 'https://graph.microsoft.com/.default',
     grant_type: 'client_credentials',
   })
@@ -34,6 +34,13 @@ let _siteId: string | null = null
 
 async function getSiteId(token: string): Promise<string> {
   if (_siteId) return _siteId
+  // Prefer explicit site id if provided (Sites.Selected setup)
+  const envSiteId = process.env.SP_SITE_ID
+  if (envSiteId) {
+    _siteId = envSiteId
+    return envSiteId
+  }
+
   const siteUrl = process.env.SHAREPOINT_SITE_URL!
   // Extract host and path from the full URL
   // e.g. https://beatricelovingheartinc.sharepoint.com/sites/BeatriceLovingHeart9
@@ -55,6 +62,10 @@ async function getSiteId(token: string): Promise<string> {
 }
 
 async function getDriveId(token: string, siteId: string): Promise<string> {
+  const envDriveId = process.env.SP_DRIVE_ID
+  if (envDriveId) return envDriveId
+
+  // Fallback discovery
   const res = await fetch(
     `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
     { headers: { Authorization: `Bearer ${token}` } }
@@ -64,7 +75,7 @@ async function getDriveId(token: string, siteId: string): Promise<string> {
   // Find the "Documents" drive (default document library)
   const drive =
     (data.value as Array<{ name: string; driveType: string; id: string }>)?.find(
-      (d) => d.name === 'Documents' || d.driveType === 'documentLibrary'
+      (d) => d.name === 'Shared Documents' || d.name === 'Documents' || d.driveType === 'documentLibrary'
     ) ?? data.value?.[0]
   if (!drive) throw new Error('No drive found')
   return drive.id
@@ -80,9 +91,12 @@ export async function uploadToSharePoint(
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
-  // Ensure the folder path exists by uploading directly (Graph creates folders automatically)
+  // Upload into the configured Clients folder.
   const encodedName = encodeURIComponent(fileName)
-  const uploadUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/root:/Clients/${clientId}/${encodedName}:/content`
+  const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
+  if (!baseFolderId) throw new Error('SP_CLIENTS_FOLDER_ID is not set')
+
+  const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}:/${clientId}/${encodedName}:/content`
 
   const res = await fetch(uploadUrl, {
     method: 'PUT',
@@ -112,7 +126,10 @@ export async function ensureClientFolder(clientId: string): Promise<void> {
 
   // Create Clients/<clientId> folder if it doesn't exist.
   // Graph will return 409 if it already exists.
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/root:/Clients:/children`
+  const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
+  if (!baseFolderId) throw new Error('SP_CLIENTS_FOLDER_ID is not set')
+
+  const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}/children`
 
   const res = await fetch(url, {
     method: 'POST',
@@ -139,8 +156,11 @@ export async function listClientFiles(clientId: string): Promise<SharePointFile[
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
-  const folderPath = `Clients/${clientId}`
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/root:/${folderPath}:/children`
+  const baseFolderId = process.env.SP_CLIENTS_FOLDER_ID
+  if (!baseFolderId) throw new Error('SP_CLIENTS_FOLDER_ID is not set')
+
+  const folderPath = `${clientId}`
+  const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${baseFolderId}:/${folderPath}:/children`
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -182,7 +202,7 @@ export async function deleteSharePointFile(itemId: string): Promise<void> {
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/items/${itemId}`
+  const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}`
   const res = await fetch(url, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
@@ -198,7 +218,7 @@ export async function getDownloadUrl(itemId: string): Promise<string> {
   const siteId = await getSiteId(token)
   const driveId = await getDriveId(token, siteId)
 
-  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/items/${itemId}`
+  const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}`
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
