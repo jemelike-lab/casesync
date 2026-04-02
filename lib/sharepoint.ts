@@ -152,6 +152,13 @@ export async function ensureClientFolder(clientFolderName: string): Promise<void
   if (res.status === 409) return
   if (!res.ok) {
     const txt = await res.text()
+    console.error('SharePoint ensureClientFolder failed', {
+      clientFolderName,
+      driveId,
+      baseFolderId,
+      status: res.status,
+      body: txt,
+    })
     throw new Error(`Failed to ensure client folder: ${txt}`)
   }
 }
