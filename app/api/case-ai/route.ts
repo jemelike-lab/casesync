@@ -1,3 +1,4 @@
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
@@ -716,7 +717,7 @@ export async function POST(req: NextRequest) {
     let allClients: Record<string, unknown>[] = []
     let plannerContext = ''
 
-    if (userRole === 'supervisor') {
+    if (isSupervisorLike(userRole)) {
       const { data } = await supabase
         .from('clients')
         .select('*, profiles!clients_assigned_to_fkey(full_name)')

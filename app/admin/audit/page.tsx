@@ -16,7 +16,7 @@ export default async function AuditPage() {
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'supervisor') redirect('/dashboard')
+  if (!(profile?.role === 'supervisor' || profile?.role === 'it')) redirect('/dashboard')
 
   const { data: logs } = await supabase
     .from('activity_log')

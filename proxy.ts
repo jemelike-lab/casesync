@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   // Allow public routes
-  const publicPaths = ['/login', '/onboarding', '/offline', '/api/', '/security']
+  const publicPaths = ['/login', '/accept-invite', '/reset-password', '/onboarding', '/offline', '/api/', '/security']
   if (publicPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
     return NextResponse.next()
   }
@@ -29,6 +29,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (user.user_metadata?.disabled) {
+    await supabase.auth.signOut()
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

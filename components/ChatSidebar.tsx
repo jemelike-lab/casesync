@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState } from 'react'
 
 interface UserInfo {
@@ -54,9 +55,10 @@ function roleBadgeStyle(role: string | null | undefined): React.CSSProperties {
 }
 
 function roleLabel(role: string | null | undefined) {
-  if (role === 'supports_planner') return 'Planner'
-  if (role === 'team_manager') return 'Manager'
+  if (role === 'supports_planner') return 'Support Planner'
+  if (role === 'team_manager') return 'Team Manager'
   if (role === 'supervisor') return 'Supervisor'
+  if (role === 'it') return 'IT'
   return role ?? ''
 }
 

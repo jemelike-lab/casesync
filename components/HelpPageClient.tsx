@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useEffect } from 'react'
 import { Profile } from '@/lib/types'
 
@@ -584,6 +585,46 @@ export default function HelpPageClient({ profile }: Props) {
           )}
         </div>
       </div>
+
+      {isSupervisorLike(role) && (
+        <div style={{ maxWidth: 800, margin: '48px auto 0' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🧭 Assignment Boards
+          </h2>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: 20,
+            display: 'grid',
+            gap: 18,
+          }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Client Transfer Board</div>
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                Go to <strong>Team</strong>, then open <strong>Transfer Board</strong>. Drag a client from the client list or from one Support Planner column to another Support Planner column to reassign them.
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Team Manager Board</div>
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                From the same Team area, open <strong>Team Manager Board</strong>. Drag a Support Planner onto a Team Manager column to update that reporting assignment.
+              </div>
+            </div>
+            <div style={{
+              background: 'rgba(0,122,255,0.06)',
+              border: '1px solid rgba(0,122,255,0.14)',
+              borderRadius: 10,
+              padding: 14,
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+              lineHeight: 1.7,
+            }}>
+              Supervisor-only: these assignment boards are intended for supervisors. Changes save when you drop, so move deliberately.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Reference section */}
       <div className="help-quick-ref" style={{ maxWidth: 800, margin: '48px auto 0' }}>

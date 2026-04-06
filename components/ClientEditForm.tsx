@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate, getDaysSinceContact } from '@/lib/types'
@@ -771,6 +772,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
     }
   }, [])
   const [assignSaving, setAssignSaving] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
   const [formData, setFormData] = useState<Partial<EditableClient>>({
     eligibility_code: client.eligibility_code,
     eligibility_end_date: client.eligibility_end_date,
@@ -810,7 +812,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
     goal_pct: client.goal_pct,
   })
 
-  const canReassign = currentProfile.role === 'supervisor' || currentProfile.role === 'team_manager'
+  const canReassign = currentProfile.role === 'supervisor' || currentProfile.role === 'it' || currentProfile.role === 'team_manager'
 
   const handleChange = (field: string, value: string | boolean | number | null) => {
     if (field === 'spm_completed') {
@@ -945,6 +947,40 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
     setAssignSaving(false)
   }
 
+  const handleMarkDeceased = async () => {
+    if (!(isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager')) return
+    if (!confirm(`Mark ${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} as deceased? This will remove them from active dashboards but keep the record.`)) return
+
+    setDeactivating(true)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        is_active: false,
+        deactivation_reason: 'deceased',
+        deactivated_at: new Date().toISOString(),
+        deactivated_by: currentUserId,
+      })
+      .eq('id', client.id)
+
+    if (!error) {
+      await supabase.from('activity_log').insert({
+        client_id: client.id,
+        user_id: currentUserId,
+        action: 'Deactivated client',
+        field_name: 'deactivation_reason',
+        old_value: null,
+        new_value: 'deceased',
+      })
+      window.location.href = '/dashboard'
+      return
+    }
+
+    setToast({ type: 'error', message: error.message })
+    setTimeout(() => setToast(null), 3000)
+    setDeactivating(false)
+  }
+
   // Scroll to first overdue field
   const handleScrollToOverdue = () => {
     const OVERDUE_DATE_FIELDS = [
@@ -1037,7 +1073,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {!editing && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
               <div style={{
@@ -1066,13 +1102,15 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
               </button>
             </>
           ) : (
-            <button onClick={() => setEditing(true)} style={{
-              background: 'var(--surface-2)', color: 'var(--accent)',
-              border: '1px solid var(--border)', borderRadius: 8,
-              padding: '8px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>
-              Edit
-            </button>
+            <>
+              <button onClick={() => setEditing(true)} style={{
+                background: 'var(--surface-2)', color: 'var(--accent)',
+                border: '1px solid var(--border)', borderRadius: 8,
+                padding: '8px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}>
+                Edit
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1194,7 +1232,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
               onChange={e => setAssignedTo(e.target.value)}
               style={{ minWidth: 200, fontSize: 13 }}
             >
-              <option value="">— Reassign to planner —</option>
+              <option value="">— Reassign to Support Planner —</option>
               {planners.map(p => (
                 <option key={p.id} value={p.id}>{p.full_name}</option>
               ))}
@@ -1219,6 +1257,28 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
       {/* Documents */}
       <ClientDocuments clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
+
+      {/* Status actions */}
+      {(isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager') && (client.is_active ?? true) && !editing && (
+        <div className="card" style={{ marginTop: 16, border: '1px solid rgba(255,69,58,0.14)', background: 'rgba(255,69,58,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Status Actions</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
+                Use only when a client record needs to be closed because the client is deceased.
+              </div>
+            </div>
+            <button onClick={handleMarkDeceased} disabled={deactivating} style={{
+              background: 'transparent', color: 'rgba(255,69,58,0.82)',
+              border: '1px solid rgba(255,69,58,0.22)', borderRadius: 8,
+              padding: '8px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              opacity: deactivating ? 0.7 : 1,
+            }}>
+              {deactivating ? 'Saving…' : 'Mark as Deceased'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

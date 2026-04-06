@@ -8,9 +8,8 @@ function getResend() {
   return new Resend(key)
 }
 
-// NOTE: Using onboarding@resend.dev for testing until blhcasesync.com is verified in Resend.
-// Once verified, change FROM_ADDRESS to 'CaseSync <notifications@blhcasesync.com>'
-const FROM_ADDRESS = 'CaseSync <onboarding@resend.dev>'
+// Verified sender for branded BLH mail.
+const FROM_ADDRESS = 'Beatrice Loving Heart <notifications@blhcasesync.com>'
 
 export async function sendEmail({
   to,

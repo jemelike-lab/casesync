@@ -1,49 +1,90 @@
-import { createClient } from '@/lib/supabase/server'
-import { Client, Profile } from '@/lib/types'
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { Client, Profile, isOverdue, isDueThisWeek, getDaysSinceContact } from '@/lib/types'
 import { redirect } from 'next/navigation'
 import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
+import TransferBoardClient from '@/components/TransferBoardClient'
+import PlannerAssignmentBoardClient from '@/components/PlannerAssignmentBoardClient'
+import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 
 export const revalidate = 60
 
-export default async function TeamPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function TeamPage({ searchParams }: { searchParams: Promise<{ view?: string; filter?: string; category?: string; full?: string }> }) {
+  const { view, filter, category, full } = await searchParams
+  const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || (profile.role !== 'team_manager' && profile.role !== 'supervisor')) {
+  if (!profile || !canManageTeam(profile.role)) {
     redirect('/dashboard')
   }
 
-  // For team manager: only their assigned supports planners
-  let plannerQuery = supabase.from('profiles').select('*').eq('role', 'supports_planner').order('full_name')
-  if (profile.role === 'team_manager') {
-    plannerQuery = plannerQuery.eq('team_manager_id', user.id)
-  }
-  const { data: planners } = await plannerQuery
+  const [planners, teamManagers] = await Promise.all([
+    getPlanners(supabase, profile.role === 'team_manager' ? user.id : undefined),
+    getTeamManagers(supabase),
+  ])
 
-  // Get all clients for those planners
-  const plannerIds = (planners ?? []).map((p: any) => p.id)
+  const plannerIds = planners.map(planner => planner.id)
   let clients: Client[] = []
-  if (plannerIds.length > 0) {
-    const { data } = await supabase
-      .from('clients')
-      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
-      .in('assigned_to', plannerIds)
-      .order('last_name')
-    clients = (data as Client[]) ?? []
+
+  if (isSupervisorLike(profile.role) && view === 'transfer') {
+    clients = await getActiveClients(supabase)
+  } else if (plannerIds.length > 0) {
+    clients = await getActiveClients(supabase, plannerIds)
   }
+
+  if (filter === 'overdue') {
+    clients = clients.filter(client => {
+      const categoryOk = !category || client.category === category
+      return categoryOk && isOverdue(client)
+    })
+  } else if (filter === 'due_this_week') {
+    clients = clients.filter(client => {
+      const categoryOk = !category || client.category === category
+      return categoryOk && isDueThisWeek(client)
+    })
+  } else if (filter === 'no_contact_7') {
+    clients = clients.filter(client => {
+      const categoryOk = !category || client.category === category
+      const days = getDaysSinceContact(client.last_contact_date)
+      return categoryOk && days !== null && days >= 7
+    })
+  } else if (filter === 'all') {
+    if (category) clients = clients.filter(client => client.category === category)
+  }
+
+  if (isSupervisorLike(profile.role) && view === 'transfer') {
+    return (
+      <TransferBoardClient
+        clients={clients}
+        planners={(planners as Profile[]) ?? []}
+      />
+    )
+  }
+
+  if (isSupervisorLike(profile.role) && view === 'assign-planners') {
+    return (
+      <PlannerAssignmentBoardClient
+        planners={(planners as Profile[]) ?? []}
+        teamManagers={(teamManagers as Profile[]) ?? []}
+      />
+    )
+  }
+
+  const fullFilterLabel = full === '1'
+    ? filter === 'overdue'
+      ? category ? `Overdue (${String(category).toUpperCase()})` : 'Overdue'
+      : filter === 'due_this_week'
+        ? 'Due This Week'
+        : filter === 'all'
+          ? category ? `All Active Clients (${String(category).toUpperCase()})` : 'All Active Clients'
+          : 'Filtered Results'
+    : null
 
   return (
     <SupervisorDashboardClient
       clients={clients}
       planners={(planners as Profile[]) ?? []}
-      mode="team_manager"
+      mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
+      fullFilterLabel={fullFilterLabel}
     />
   )
 }

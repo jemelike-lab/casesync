@@ -26,7 +26,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={inter.className} style={{ background: '#0f0f11', color: '#f5f5f7', minHeight: '100vh' }}>
+      <body className={inter.className} style={{ background: '#0f0f11', color: '#f5f5f7', minHeight: '100dvh' }}>
         {children}
         <InstallBanner />
       </body>

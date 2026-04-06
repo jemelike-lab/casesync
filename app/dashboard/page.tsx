@@ -1,47 +1,57 @@
-import { createClient } from '@/lib/supabase/server'
-import { Client, Profile } from '@/lib/types'
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { Profile } from '@/lib/types'
 import DashboardClient from '@/components/DashboardClient'
+import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
+import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
+import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-export default async function DashboardPage() {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ full?: string }> }) {
+  const { full } = await searchParams
+  const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  let planners: Profile[] = []
+  let teamManagers: Profile[] = []
 
-  const { data: clients, error } = await supabase
-    .from('clients')
-    .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
-    .order('last_name')
-
-  if (error) {
-    console.error('Error fetching clients:', error)
+  try {
+    if (isSupervisorLike(profile?.role)) {
+      ;[planners, teamManagers] = await Promise.all([
+        getPlanners(supabase),
+        getTeamManagers(supabase),
+      ])
+    } else if (profile?.role === 'team_manager') {
+      planners = await getPlanners(supabase)
+    }
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error)
   }
 
-  // Fetch supports planners for assignment dropdown
-  let planners: Profile[] = []
-  if (profile?.role === 'supervisor' || profile?.role === 'team_manager') {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'supports_planner')
-      .order('full_name')
-    planners = (data as Profile[]) ?? []
+  if (isSupervisorLike(profile?.role) && full !== '1') {
+    const [summaryMap, globalSummary] = await Promise.all([
+      getAssigneeSummaryMap(planners.map(planner => planner.id)),
+      getGlobalSummary(),
+    ])
+
+    return (
+      <SupervisorControlPanelClient
+        planners={planners}
+        teamManagers={teamManagers}
+        summaryByAssignee={Object.fromEntries(summaryMap)}
+        globalSummary={globalSummary}
+      />
+    )
   }
 
   return (
     <DashboardClient
-      clients={(clients as Client[]) ?? []}
-      profile={profile as Profile}
+      profile={(profile as Profile) ?? null}
       currentUserId={user.id}
       planners={planners}
+      teamManagers={teamManagers}
+      hasProfile={Boolean(profile)}
     />
   )
 }

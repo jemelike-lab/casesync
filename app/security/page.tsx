@@ -6,7 +6,7 @@ export const metadata = {
 export default function SecurityPage() {
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: '#0a0a0a',
       color: '#e5e5e5',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',

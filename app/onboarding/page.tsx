@@ -28,6 +28,7 @@ export default async function OnboardingPage() {
       userId={user.id}
       userEmail={user.email ?? ''}
       role={profile?.role ?? 'supports_planner'}
+      skipPasswordStep
     />
   )
 }

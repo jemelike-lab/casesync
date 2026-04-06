@@ -1,39 +1,33 @@
-import { createClient } from '@/lib/supabase/server'
-import { Client, Profile } from '@/lib/types'
+import { Profile } from '@/lib/types'
 import { redirect } from 'next/navigation'
-import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
+import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
+import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
+import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function SupervisorPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
+  if (!(profile?.role === 'supervisor' || profile?.role === 'it')) redirect('/dashboard')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const [planners, teamManagers] = await Promise.all([
+    getPlanners(supabase),
+    getTeamManagers(supabase),
+  ])
 
-  if (profile?.role !== 'supervisor') redirect('/dashboard')
-
-  const { data: clients } = await supabase
-    .from('clients')
-    .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
-    .order('last_name')
-
-  const { data: planners } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', 'supports_planner')
-    .order('full_name')
+  const [summaryMap, globalSummary] = await Promise.all([
+    getAssigneeSummaryMap(planners.map(planner => planner.id)),
+    getGlobalSummary(),
+  ])
 
   return (
-    <SupervisorDashboardClient
-      clients={(clients as Client[]) ?? []}
+    <SupervisorControlPanelClient
       planners={(planners as Profile[]) ?? []}
-      mode="supervisor"
+      teamManagers={(teamManagers as Profile[]) ?? []}
+      summaryByAssignee={Object.fromEntries(summaryMap)}
+      globalSummary={globalSummary}
     />
   )
 }

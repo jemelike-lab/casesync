@@ -1,4 +1,4 @@
-export type Role = 'supports_planner' | 'team_manager' | 'supervisor'
+export type Role = 'supports_planner' | 'team_manager' | 'supervisor' | 'it'
 export type Category = 'co' | 'cfc' | 'cpas'
 
 export interface Profile {
@@ -7,6 +7,31 @@ export interface Profile {
   role: Role
   created_at: string
   team_manager_id?: string | null
+  joined_at?: string | null
+}
+
+export type InviteStatus = 'pending' | 'accepted' | 'expired'
+
+export interface UserInvite {
+  id: string
+  email: string
+  full_name: string | null
+  role: Role
+  invited_user_id: string | null
+  invited_by: string | null
+  invite_token?: string | null
+  invite_token_expires_at?: string | null
+  accepted_user_id?: string | null
+  accepted_via?: string | null
+  invite_sent_at: string
+  accepted_at: string | null
+  reminder_sent_at: string | null
+  reminder_count: number
+  expires_at: string | null
+  status: InviteStatus
+  computed_status?: InviteStatus
+  created_at: string
+  updated_at: string
 }
 
 export interface Client {
@@ -52,6 +77,10 @@ export interface Client {
   audit_review: string | null
   qa_review: string | null
   goal_pct: number
+  is_active?: boolean
+  deactivation_reason?: string | null
+  deactivated_at?: string | null
+  deactivated_by?: string | null
   created_at: string
   updated_at: string
   // joined
@@ -92,6 +121,12 @@ export type FilterType =
   | 'cpas'
 
 export type SortField = 'name' | 'goal_pct' | 'last_contact_date' | 'eligibility_end_date' | 'priority'
+
+export interface PaginatedClientsResponse {
+  clients: Client[]
+  total: number
+  hasMore: boolean
+}
 export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
+import ClientGrid from './ClientGrid'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
@@ -13,6 +14,7 @@ interface Props {
   clients: Client[]
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
+  fullFilterLabel?: string | null
 }
 
 interface PlannerStats {
@@ -24,16 +26,27 @@ interface PlannerStats {
   complianceScore: number
 }
 
-function StatCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
+function StatCard({ label, value, color, href, active }: { label: string; value: number | string; color?: string; href?: string; active?: boolean }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '20px 24px' }}>
+    <button
+      type="button"
+      onClick={() => { if (href) window.location.href = href }}
+      style={{
+        textAlign: 'center',
+        padding: '20px 24px',
+        cursor: href ? 'pointer' : 'default',
+        border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+        background: active ? 'rgba(0,122,255,0.08)' : 'var(--surface)',
+        borderRadius: 16,
+      }}
+    >
       <div style={{ fontSize: 32, fontWeight: 700, color: color ?? 'var(--text)' }}>{value}</div>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</div>
-    </div>
+    </button>
   )
 }
 
-export default function SupervisorDashboardClient({ clients, planners, mode }: Props) {
+export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel }: Props) {
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
@@ -59,14 +72,12 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
     dueThisWeek: clients.filter(isDueThisWeek).length,
   }), [clients])
 
-  // Chart: overdue by category
   const overdueByCategory = useMemo(() => [
     { name: 'CO', value: clients.filter(c => c.category === 'co' && isOverdue(c)).length, fill: '#ff453a' },
     { name: 'CFC', value: clients.filter(c => c.category === 'cfc' && isOverdue(c)).length, fill: '#ff9f0a' },
     { name: 'CPAS', value: clients.filter(c => c.category === 'cpas' && isOverdue(c)).length, fill: '#ffd60a' },
   ], [clients])
 
-  // Chart: goal distribution
   const goalDist = useMemo(() => {
     const buckets = [
       { name: '0–25%', value: 0, fill: '#ff453a' },
@@ -86,9 +97,6 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
 
   const title = mode === 'supervisor' ? '📊 Supervisor Overview' : '👥 Team Dashboard'
 
-  // Advanced Analytics
-
-  // Compliance rate over time (mock: last 8 weeks)
   const complianceOverTime = useMemo(() => {
     const weeks = []
     const now = new Date()
@@ -96,7 +104,6 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
       const d = new Date(now)
       d.setDate(d.getDate() - i * 7)
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      // Simulate % of clients with all deadlines current (mock decreasing noise)
       const base = clients.filter(c => !isOverdue(c)).length / Math.max(clients.length, 1) * 100
       const noise = (Math.random() - 0.5) * 10
       weeks.push({ week: label, compliance: Math.min(100, Math.max(0, Math.round(base + noise))) })
@@ -104,7 +111,6 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
     return weeks
   }, [clients])
 
-  // Caseload heatmap: planners x deadline types
   const DEADLINE_TYPES = [
     { key: 'eligibility_end_date', short: 'Elig' },
     { key: 'pos_deadline', short: 'POS' },
@@ -128,7 +134,6 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
     })
   }, [clients, planners])
 
-  // Risk distribution
   const riskDist = useMemo(() => {
     const high = clients.filter(c => getRiskLevel(c) === 'high')
     const medium = clients.filter(c => getRiskLevel(c) === 'medium')
@@ -136,81 +141,95 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
     return { high, medium, low }
   }, [clients])
 
-
   return (
-    <div style={{ paddingBottom: 80 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+    <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{title}</h1>
-        <Link href="/dashboard" style={{
-          fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
-          padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
-        }}>
-          ← Dashboard
-        </Link>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {mode === 'supervisor' && (
+            <>
+              <Link href="/team?view=transfer" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
+                Transfer Board →
+              </Link>
+              <Link href="/team?view=assign-planners" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
+                Team Manager Board →
+              </Link>
+            </>
+          )}
+          <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6 }}>
+            ← Dashboard
+          </Link>
+        </div>
       </div>
 
-      {/* Summary cards */}
+      {fullFilterLabel && (
+        <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+            Full filtered team view
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Showing the full team view for: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Total Clients" value={totalStats.clients} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" />
-        <StatCard label="Supports Planners" value={planners.length} />
+        <StatCard label="Total Clients" value={totalStats.clients} href="/team?full=1&filter=all" active={fullFilterLabel === 'All Active Clients'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href="/team?full=1&filter=overdue" active={fullFilterLabel === 'Overdue'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href="/team?full=1&filter=due_this_week" active={fullFilterLabel === 'Due This Week'} />
+        <StatCard label="Supports Planners" value={planners.length} href="/team" active={!fullFilterLabel} />
       </div>
 
-      {/* Charts row */}
+      {fullFilterLabel && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Matching Clients
+          </h3>
+          {clients.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No clients matched this filter.</div>
+          ) : (
+            <ClientGrid clients={clients} pinnedIds={[]} onTogglePin={() => {}} />
+          )}
+        </div>
+      )}
+
       {clients.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
-          {/* Overdue by category */}
           <div className="card">
             <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Overdue by Category
             </h3>
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={overdueByCategory} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <BarChart
+                data={overdueByCategory}
+                margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                onClick={(state: any) => {
+                  const category = state?.activeLabel
+                  if (!category) return
+                  window.location.href = `/team?full=1&filter=overdue&category=${String(category).toLowerCase()}`
+                }}
+              >
                 <XAxis dataKey="name" tick={{ fill: '#98989d', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: '#98989d', fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, fontSize: 12 }}
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                />
+                <Tooltip contentStyle={{ background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {overdueByCategory.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
+                  {overdueByCategory.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Goal distribution */}
           <div className="card">
             <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Goal Progress Distribution
             </h3>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie
-                  data={goalDist}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={75}
-                  innerRadius={35}
-                  paddingAngle={3}
-                  label={false}
-                  labelLine={false}
-                >
-                  {goalDist.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} stroke="transparent" />
-                  ))}
+                <Pie data={goalDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} paddingAngle={3} label={false} labelLine={false}>
+                  {goalDist.map((entry, i) => <Cell key={i} fill={entry.fill} stroke="transparent" />)}
                 </Pie>
-                <Legend
-                  formatter={(value) => <span style={{ color: '#f5f5f7', fontSize: 12 }}>{value}</span>}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#2c2c2e', border: '1px solid #48484a', borderRadius: 10, fontSize: 12 }}
-                />
+                <Legend formatter={(value) => <span style={{ color: '#f5f5f7', fontSize: 12 }}>{value}</span>} />
+                <Tooltip contentStyle={{ background: '#2c2c2e', border: '1px solid #48484a', borderRadius: 10, fontSize: 12 }} />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 12, color: '#98989d' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -218,10 +237,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
         </div>
       )}
 
-
-      {/* Advanced Analytics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 16 }}>
-        {/* Compliance Over Time */}
         <div className="card">
           <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Compliance Rate (Last 8 Weeks)
@@ -237,43 +253,30 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
           </ResponsiveContainer>
         </div>
 
-        {/* Risk Distribution */}
         <div className="card">
           <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Risk Distribution
           </h3>
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1, background: 'rgba(255,69,58,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center' }}>
+            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=overdue' }} style={{ flex: 1, background: 'rgba(255,69,58,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,69,58,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff453a' }}>{riskDist.high.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🔴 High Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>3+ overdue</div>
-            </div>
-            <div style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center' }}>
+            </button>
+            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=due_this_week' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff9f0a' }}>{riskDist.medium.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟡 Medium Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>1-2 overdue</div>
-            </div>
-            <div style={{ flex: 1, background: 'rgba(48,209,88,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center' }}>
+            </button>
+            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=all' }} style={{ flex: 1, background: 'rgba(48,209,88,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(48,209,88,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#30d158' }}>{riskDist.low.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟢 Low Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>0 overdue</div>
-            </div>
+            </button>
           </div>
-          {riskDist.high.length > 0 && (
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#ff453a', marginBottom: 8 }}>High Risk Clients:</div>
-              {riskDist.high.slice(0, 5).map(c => (
-                <a key={c.id} href={`/clients/${c.id}`} style={{ display: 'block', fontSize: 12, color: 'var(--accent)', textDecoration: 'none', padding: '3px 0' }}>
-                  → {c.last_name}{c.first_name ? ', ' + c.first_name : ''} ({c.client_id})
-                </a>
-              ))}
-              {riskDist.high.length > 5 && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>…and {riskDist.high.length - 5} more</div>}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Caseload Heatmap */}
       <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Caseload Heatmap (% Overdue by Planner × Deadline Type)
@@ -282,9 +285,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               <th style={{ padding: '6px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, minWidth: 140 }}>Planner</th>
-              {DEADLINE_TYPES.map(d => (
-                <th key={d.key} style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{d.short}</th>
-              ))}
+              {DEADLINE_TYPES.map(d => <th key={d.key} style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{d.short}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -295,11 +296,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
                   const val = row[short]
                   const bg = val === null ? 'transparent' : val >= 50 ? 'rgba(255,69,58,0.25)' : val >= 25 ? 'rgba(255,159,10,0.2)' : val > 0 ? 'rgba(255,214,10,0.15)' : 'rgba(48,209,88,0.1)'
                   const color = val === null ? 'var(--text-secondary)' : val >= 50 ? '#ff453a' : val >= 25 ? '#ff9f0a' : val > 0 ? '#ffd60a' : '#30d158'
-                  return (
-                    <td key={short} style={{ padding: '8px 8px', textAlign: 'center', background: bg, color, fontWeight: 600 }}>
-                      {val === null ? '—' : `${val}%`}
-                    </td>
-                  )
+                  return <td key={short} style={{ padding: '8px 8px', textAlign: 'center', background: bg, color, fontWeight: 600 }}>{val === null ? '—' : `${val}%`}</td>
                 })}
               </tr>
             ))}
@@ -307,7 +304,6 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
         </table>
       </div>
 
-      {/* Planners table */}
       <div className="card">
         <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Supports Planners
@@ -319,28 +315,14 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Planner', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {h}
-                    </th>
-                  ))}
+                  {['Planner', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {plannerStats.map(ps => (
-                  <tr
-                    key={ps.planner.id}
-                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    onClick={() => {
-                      window.location.href = `/dashboard?planner=${ps.planner.id}`
-                    }}
-                  >
+                  <tr key={ps.planner.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} onClick={() => { window.location.href = `/dashboard?planner=${ps.planner.id}` }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {ps.planner.full_name ?? 'Unknown'}
-                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{ps.planner.full_name ?? 'Unknown'}</div>
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={`${ps.complianceScore}% of clients have health score ≥ 60`}>
@@ -348,15 +330,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode }: P
                       </div>
                     </td>
                     <td style={{ padding: '10px 12px' }}>{ps.clientCount}</td>
-                    <td style={{ padding: '10px 12px', color: ps.overdue > 0 ? 'var(--red)' : 'var(--text)' }}>
-                      {ps.overdue > 0 ? `🔴 ${ps.overdue}` : ps.overdue}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: ps.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}>
-                      {ps.dueThisWeek > 0 ? `🟠 ${ps.dueThisWeek}` : ps.dueThisWeek}
-                    </td>
-                    <td style={{ padding: '10px 12px', color: ps.avgGoalPct >= 75 ? 'var(--green)' : ps.avgGoalPct >= 50 ? 'var(--yellow)' : 'var(--red)', fontWeight: 600 }}>
-                      {ps.avgGoalPct}%
-                    </td>
+                    <td style={{ padding: '10px 12px', color: ps.overdue > 0 ? 'var(--red)' : 'var(--text)' }}>{ps.overdue > 0 ? `🔴 ${ps.overdue}` : ps.overdue}</td>
+                    <td style={{ padding: '10px 12px', color: ps.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}>{ps.dueThisWeek > 0 ? `🟠 ${ps.dueThisWeek}` : ps.dueThisWeek}</td>
+                    <td style={{ padding: '10px 12px', color: ps.avgGoalPct >= 75 ? 'var(--green)' : ps.avgGoalPct >= 50 ? 'var(--yellow)' : 'var(--red)', fontWeight: 600 }}>{ps.avgGoalPct}%</td>
                   </tr>
                 ))}
               </tbody>

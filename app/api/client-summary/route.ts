@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,19 +11,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'clientId required' }, { status: 400 })
     }
 
-    // Fetch client from Supabase
-    const supabase = createClient(
+    const server = await createServerClient()
+    const { data: authData, error: authErr } = await server.auth.getUser()
+
+    if (authErr || !authData?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const supabase = createSupabaseJsClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
     const { data: client, error } = await supabase
       .from('clients')
-      .select('*, profiles(full_name)')
+      .select('*, profiles!clients_assigned_to_fkey(full_name)')
       .eq('id', clientId)
       .single()
 
     if (error || !client) {
+      console.error('client-summary lookup error:', error)
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
@@ -29,7 +39,8 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       // Generate mock summary
       const name = `${client.first_name ?? ''} ${client.last_name}`.trim()
-      const planner = client.profiles?.full_name ?? 'an unassigned planner'
+      const plannerProfile = Array.isArray(client.profiles) ? client.profiles[0] : client.profiles
+      const planner = plannerProfile?.full_name ?? 'an unassigned planner'
       const category = (client.category ?? 'unknown').toUpperCase()
       return NextResponse.json({
         summary: `AI summary unavailable — add ANTHROPIC_API_KEY to Vercel environment variables to enable. (${name} is a ${category} client assigned to ${planner}.)`,
@@ -39,7 +50,8 @@ export async function POST(req: NextRequest) {
 
     // Build prompt
     const name = `${client.first_name ?? ''} ${client.last_name}`.trim()
-    const planner = client.profiles?.full_name ?? 'Unassigned'
+    const plannerProfile = Array.isArray(client.profiles) ? client.profiles[0] : client.profiles
+    const planner = plannerProfile?.full_name ?? 'Unassigned'
     const category = (client.category ?? '').toUpperCase()
 
     const now = new Date()

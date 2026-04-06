@@ -497,7 +497,9 @@ export default function BLHAssistant() {
         <div
           style={{
             position: 'fixed',
-            bottom: 148,
+            bottom: typeof window !== 'undefined' && window.innerWidth <= 768
+              ? 'calc(230px + env(safe-area-inset-bottom))'
+              : 148,
             right: 20,
             zIndex: 600,
           }}
@@ -577,7 +579,9 @@ export default function BLHAssistant() {
           className="blh-bot-panel"
           style={{
             position: 'fixed',
-            bottom: 80,
+            bottom: typeof window !== 'undefined' && window.innerWidth <= 768
+              ? 'calc(150px + env(safe-area-inset-bottom))'
+              : 80,
             right: 20,
             width: 380,
             height: 520,

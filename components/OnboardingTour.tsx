@@ -82,7 +82,7 @@ const TOUR_STEPS: TourStep[] = [
     id: 9,
     emoji: '✅',
     title: "You're all set!",
-    content: "You know the essentials! Explore the Calendar, Chat, and Documents from the navigation. If you ever need help, BLH Bot is always here.",
+    content: "You know the essentials! Explore the Calendar and Documents from the navigation. If you ever need help, BLH Bot is always here.",
     target: undefined,
     position: 'center',
   },

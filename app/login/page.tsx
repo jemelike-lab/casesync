@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
@@ -9,13 +9,65 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    let mounted = true
+
+    async function handleInviteLanding() {
+      const hash = typeof window !== 'undefined' ? window.location.hash : ''
+      const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      const type = params.get('type')
+
+      if (!accessToken || !refreshToken) return
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      if (sessionError) {
+        if (mounted) setError(sessionError.message)
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarded')
+        .eq('id', user.id)
+        .single()
+
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, document.title, '/login')
+      }
+
+      if (type === 'recovery') {
+        router.push('/reset-password')
+      } else if (profile && profile.onboarded === false) {
+        router.push('/onboarding')
+      } else if (type === 'invite' || type === 'magiclink') {
+        router.push('/dashboard')
+      }
+      router.refresh()
+    }
+
+    handleInviteLanding()
+    return () => { mounted = false }
+  }, [router, supabase])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setMessage(null)
     setLoading(true)
 
     // Check rate limit before attempting login
@@ -41,6 +93,13 @@ export default function LoginPage() {
     }
 
     if (data.user) {
+      if (data.user.user_metadata?.disabled) {
+        await supabase.auth.signOut()
+        setError('This account has been removed from active access. Contact an administrator if you think this is a mistake.')
+        setLoading(false)
+        return
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('onboarded')
@@ -56,9 +115,33 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotPassword() {
+    const normalizedEmail = email.trim().toLowerCase()
+    setError(null)
+    setMessage(null)
+
+    if (!normalizedEmail) {
+      setError('Enter your email address first, then tap Forgot password.')
+      return
+    }
+
+    setResetLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setResetLoading(false)
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    setMessage('Password reset email sent. Check your inbox for the secure reset link.')
+  }
+
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -135,6 +218,19 @@ export default function LoginPage() {
             </div>
           )}
 
+          {message && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: 'rgba(48, 209, 88, 0.14)',
+              border: '1px solid rgba(48, 209, 88, 0.25)',
+              color: '#7DFF9B',
+              fontSize: 13,
+            }}>
+              {message}
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn-primary"
@@ -142,6 +238,25 @@ export default function LoginPage() {
             style={{ width: '100%', padding: '12px', fontSize: 15, marginTop: 4 }}
           >
             {loading ? 'Signing in…' : 'Sign In'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={resetLoading}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              fontSize: 14,
+              marginTop: 2,
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid #2c2c2e',
+              borderRadius: 10,
+              cursor: 'pointer',
+            }}
+          >
+            {resetLoading ? 'Sending reset link…' : 'Forgot password?'}
           </button>
         </form>
 

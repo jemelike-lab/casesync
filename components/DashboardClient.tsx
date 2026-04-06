@@ -1,12 +1,15 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Client,
   Profile,
   FilterType,
   SortField,
   SortDir,
+  PaginatedClientsResponse,
   isOverdue,
   isDueThisWeek,
   isEligibilityEndingSoon,
@@ -25,12 +28,14 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import ClientQuickSearch from './ClientQuickSearch'
 
 interface Props {
-  clients: Client[]
   profile: Profile | null
   currentUserId: string
   planners?: Profile[]
+  teamManagers?: Profile[]
+  hasProfile?: boolean
 }
 
 function StatCard({ label, value, color, onClick, active }: {
@@ -73,7 +78,7 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
       flexWrap: 'wrap',
       alignItems: 'center',
     }}>
-      <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>Alerts:</span>
+      <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>Needs attention:</span>
       {overdue > 0 && (
         <button
           onClick={() => onAlert(activeAlert === 'overdue' ? null : 'overdue')}
@@ -152,6 +157,26 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
   const dueCount = useCountUp(stats.dueThisWeek)
   const noContactCount = useCountUp(stats.noContact)
 
+  let summaryHeadline = ''
+  let summaryBody = ''
+
+  if (allCurrent) {
+    summaryHeadline = 'Everything looks good.'
+    summaryBody = 'No overdue items, nothing urgent this week, and your caseload is in a good spot.'
+  } else if (stats.overdue > 0 && stats.dueThisWeek > 0) {
+    summaryHeadline = `You’ve got ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
+    summaryBody = 'Best move: clear the overdue items first, then work through what’s coming up next.'
+  } else if (stats.overdue > 0) {
+    summaryHeadline = `You’ve got ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+    summaryBody = 'Start there first — that’s the fastest way to get back on track.'
+  } else if (stats.dueThisWeek > 0) {
+    summaryHeadline = `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+    summaryBody = 'Nothing is overdue right now, so this is a good time to knock out the next few deadlines.'
+  } else {
+    summaryHeadline = `You’ve got ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
+    summaryBody = 'Worth a quick check so nothing quietly slips.'
+  }
+
   return (
     <div className="card slide-in-up" style={{
       marginBottom: 16,
@@ -165,90 +190,291 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <span style={{ fontSize: 20 }}>{icon}</span>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-          {greeting}, {firstName}!
+          {greeting}, {firstName}
         </h2>
       </div>
 
-      {allCurrent ? (
-        <div>
-          <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--green)', fontWeight: 600 }}>
-            ✅ All caught up! Great work!
-          </p>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
-            🎉 All clients are current — no overdue items, no missed contacts.
-          </p>
-        </div>
-      ) : (
-        <>
-          <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-secondary)' }}>
-            You have <strong style={{ color: 'var(--text)' }}>{totalNeedAttention}</strong> client{totalNeedAttention !== 1 ? 's' : ''} needing attention.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {stats.overdue > 0 && (
-              <button
-                onClick={() => onFilter(activeFilter === 'overdue' ? null : 'overdue')}
-                style={{
-                  background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.15)',
-                  border: '1px solid rgba(255,69,58,0.4)',
-                  borderRadius: 20,
-                  color: '#ff453a',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '5px 12px',
-                  cursor: 'pointer',
-                  minHeight: 30,
-                  transition: 'background 0.15s',
-                }}
-              >
-                🔴 {overdueCount} overdue
-              </button>
-            )}
-            {stats.dueThisWeek > 0 && (
-              <button
-                onClick={() => onFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')}
-                style={{
-                  background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.15)',
-                  border: '1px solid rgba(255,159,10,0.4)',
-                  borderRadius: 20,
-                  color: '#ff9f0a',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '5px 12px',
-                  cursor: 'pointer',
-                  minHeight: 30,
-                  transition: 'background 0.15s',
-                }}
-              >
-                🟠 {dueCount} due this week
-              </button>
-            )}
-            {stats.noContact > 0 && (
-              <button
-                onClick={() => onFilter(activeFilter === 'no_contact_7' ? null : 'no_contact_7')}
-                style={{
-                  background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.25)' : 'rgba(255,214,10,0.12)',
-                  border: '1px solid rgba(255,214,10,0.3)',
-                  borderRadius: 20,
-                  color: '#ffd60a',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '5px 12px',
-                  cursor: 'pointer',
-                  minHeight: 30,
-                  transition: 'background 0.15s',
-                }}
-              >
-                ⏰ {noContactCount} no contact 7d+
-              </button>
-            )}
-          </div>
-        </>
-      )}
+      <div style={{ marginBottom: 12 }}>
+        <p style={{ margin: '0 0 6px', fontSize: 15, color: allCurrent ? 'var(--green)' : 'var(--text)', fontWeight: 700 }}>
+          {allCurrent ? '✅ ' : ''}{summaryHeadline}
+        </p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {summaryBody}
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {stats.overdue > 0 && (
+          <button
+            onClick={() => onFilter(activeFilter === 'overdue' ? null : 'overdue')}
+            style={{
+              background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.15)',
+              border: '1px solid rgba(255,69,58,0.4)',
+              borderRadius: 20,
+              color: '#ff453a',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '5px 12px',
+              cursor: 'pointer',
+              minHeight: 30,
+              transition: 'background 0.15s',
+            }}
+          >
+            🔴 {overdueCount} overdue
+          </button>
+        )}
+        {stats.dueThisWeek > 0 && (
+          <button
+            onClick={() => onFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')}
+            style={{
+              background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.15)',
+              border: '1px solid rgba(255,159,10,0.4)',
+              borderRadius: 20,
+              color: '#ff9f0a',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '5px 12px',
+              cursor: 'pointer',
+              minHeight: 30,
+              transition: 'background 0.15s',
+            }}
+          >
+            🟠 {dueCount} due this week
+          </button>
+        )}
+        {stats.noContact > 0 && (
+          <button
+            onClick={() => onFilter(activeFilter === 'no_contact_7' ? null : 'no_contact_7')}
+            style={{
+              background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.25)' : 'rgba(255,214,10,0.12)',
+              border: '1px solid rgba(255,214,10,0.3)',
+              borderRadius: 20,
+              color: '#ffd60a',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '5px 12px',
+              cursor: 'pointer',
+              minHeight: 30,
+              transition: 'background 0.15s',
+            }}
+          >
+            ⏰ {noContactCount} no contact 7d+
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-function exportToCsv(clients: Client[]) {
+function SupervisorOverviewStrip({
+  clients,
+  planners,
+  teamManagers,
+  onOpenAllClients,
+  onOpenOverdue,
+  onOpenDueThisWeek,
+  onOpenQuiet,
+}: {
+  clients: Client[]
+  planners: Profile[]
+  teamManagers: Profile[]
+  onOpenAllClients?: () => void
+  onOpenOverdue?: () => void
+  onOpenDueThisWeek?: () => void
+  onOpenQuiet?: () => void
+}) {
+  const overdue = clients.filter(isOverdue).length
+  const dueThisWeek = clients.filter(isDueThisWeek).length
+  const quiet = clients.filter(c => {
+    if (!c.last_contact_date) return true
+    const days = getDaysSinceContact(c.last_contact_date)
+    return days !== null && days > 7
+  }).length
+  const unassignedPlanners = planners.filter(p => !p.team_manager_id).length
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 12 }}>
+        <StatCard label="Active Clients" value={clients.length} onClick={onOpenAllClients} />
+        <StatCard label="Overdue" value={overdue} color="var(--red)" onClick={onOpenOverdue} />
+        <StatCard label="Due This Week" value={dueThisWeek} color="var(--orange)" onClick={onOpenDueThisWeek} />
+        <StatCard label="Quiet 7+ Days" value={quiet} color="#ffd60a" onClick={onOpenQuiet} />
+        <StatCard label="Support Planners" value={planners.length} />
+        <StatCard label="Team Managers" value={teamManagers.length} />
+        <StatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} />
+      </div>
+      <div className="card" style={{ background: 'linear-gradient(135deg, rgba(88,86,214,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(88,86,214,0.18)' }}>
+        <div style={{ fontSize: 12, color: '#b7a7ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          Supervisor Overview
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+          Team snapshot at login.
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Use this view for quick oversight, then jump into Transfer Board, Team Manager Board, or the full Supervisor panel when you need to act.
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+          <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            Transfer Board →
+          </Link>
+          <Link href="/team?view=assign-planners" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            Team Manager Board →
+          </Link>
+          <Link href="/supervisor" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            Supervisor Panel →
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TeamManagerSummaryTable({
+  clients,
+  planners,
+  teamManagers,
+}: {
+  clients: Client[]
+  planners: Profile[]
+  teamManagers: Profile[]
+}) {
+  const rows = teamManagers.map(manager => {
+    const managerPlanners = planners.filter(p => p.team_manager_id === manager.id)
+    const managerPlannerIds = new Set(managerPlanners.map(p => p.id))
+    const managerClients = clients.filter(c => c.assigned_to && managerPlannerIds.has(c.assigned_to))
+    const overdue = managerClients.filter(isOverdue).length
+    const dueThisWeek = managerClients.filter(isDueThisWeek).length
+    const quiet = managerClients.filter(c => {
+      if (!c.last_contact_date) return true
+      const days = getDaysSinceContact(c.last_contact_date)
+      return days !== null && days > 7
+    }).length
+
+    return {
+      manager,
+      plannerCount: managerPlanners.length,
+      clientCount: managerClients.length,
+      overdue,
+      dueThisWeek,
+      quiet,
+    }
+  })
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 12, color: '#8ab4ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+            Team Manager Summary
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Quick manager-level breakdown of Support Planner coverage and client load.
+          </div>
+        </div>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {['Team Manager', 'Support Planners', 'Clients', 'Overdue', 'Due This Week', 'Quiet 7+ Days'].map(h => (
+                <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '14px 12px', color: 'var(--text-secondary)' }}>
+                  No team manager data available yet.
+                </td>
+              </tr>
+            ) : rows.map(row => (
+              <tr key={row.manager.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '10px 12px', fontWeight: 600 }}>{row.manager.full_name ?? 'Unknown'}</td>
+                <td style={{ padding: '10px 12px' }}><Link href="/team" style={{ color: 'inherit' }}>{row.plannerCount}</Link></td>
+                <td style={{ padding: '10px 12px' }}><Link href="/team?full=1&filter=all" style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href="/team?full=1&filter=overdue" style={{ color: 'inherit' }}>{row.overdue}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href="/team?full=1&filter=due_this_week" style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href="/team?full=1&filter=no_contact_7" style={{ color: 'inherit' }}>{row.quiet}</Link></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function NextBestMoveCard({ stats, onFilter }: {
+  stats: { overdue: number; dueThisWeek: number; noContact: number; eligibilitySoon: number }
+  onFilter: (f: FilterType | null) => void
+}) {
+  if (stats.overdue === 0 && stats.dueThisWeek === 0 && stats.noContact === 0 && stats.eligibilitySoon === 0) {
+    return null
+  }
+
+  let title = 'Next best move'
+  let body = 'A quick pass through today’s priorities will keep the week clean.'
+  let ctaLabel = 'View priorities'
+  let ctaFilter: FilterType | null = 'due_this_week'
+
+  if (stats.overdue > 0 && stats.dueThisWeek > 0) {
+    title = 'Start with overdue, then knock out what’s due this week.'
+    body = 'That clears the highest-risk items first and keeps the rest of the week from stacking up.'
+    ctaLabel = `Focus overdue (${stats.overdue})`
+    ctaFilter = 'overdue'
+  } else if (stats.overdue > 0) {
+    title = `Start with the ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+    body = 'Once those are cleared, the rest of the board should feel a lot lighter.'
+    ctaLabel = 'View overdue'
+    ctaFilter = 'overdue'
+  } else if (stats.dueThisWeek > 0 && stats.noContact > 0) {
+    title = 'This week is manageable — just don’t let quiet clients slip.'
+    body = `You’ve got ${stats.dueThisWeek} due this week and ${stats.noContact} with no contact in 7+ days.`
+    ctaLabel = 'View due this week'
+    ctaFilter = 'due_this_week'
+  } else if (stats.dueThisWeek > 0) {
+    title = `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+    body = 'Good time to chip away early instead of letting everything bunch up later.'
+    ctaLabel = 'View due this week'
+    ctaFilter = 'due_this_week'
+  } else if (stats.noContact > 0) {
+    title = `A few clients have gone quiet.`
+    body = `${stats.noContact} client${stats.noContact !== 1 ? 's have' : ' has'} no contact in 7+ days. Worth a quick check-in.`
+    ctaLabel = 'View no contact'
+    ctaFilter = 'no_contact_7'
+  } else if (stats.eligibilitySoon > 0) {
+    title = 'Keep an eye on eligibility dates.'
+    body = `${stats.eligibilitySoon} client${stats.eligibilitySoon !== 1 ? 's are' : ' is'} coming up soon.`
+    ctaLabel = 'View eligibility'
+    ctaFilter = 'eligibility_ending_soon'
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, rgba(88,86,214,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(88,86,214,0.18)' }}>
+      <div style={{ fontSize: 12, color: '#b7a7ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        Suggested focus
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+        {body}
+      </div>
+      <button
+        className="btn-secondary"
+        style={{ fontSize: 12, minHeight: 34 }}
+        onClick={() => onFilter(ctaFilter)}
+      >
+        {ctaLabel}
+      </button>
+    </div>
+  )
+}
+
+function exportSelectedToCsv(clients: Client[]) {
   const headers = [
     'Client ID', 'Last Name', 'First Name', 'Category', 'Eligibility Code', 'Eligibility End Date',
     'Last Contact Date', 'Last Contact Type', 'Goal %', 'POS Status', 'Assigned To',
@@ -269,18 +495,20 @@ function exportToCsv(clients: Client[]) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `casesync-export-${new Date().toISOString().split('T')[0]}.csv`
+  a.download = `casesync-selected-export-${new Date().toISOString().split('T')[0]}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-export default function DashboardClient({ clients: initialClients, profile, currentUserId, planners = [] }: Props) {
-  const isSupervisor = profile?.role === 'supervisor'
+export default function DashboardClient({ profile, currentUserId, planners = [], teamManagers = [], hasProfile = true }: Props) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isSupervisor = profile?.role === 'supervisor' || profile?.role === 'it'
   const isTeamManager = profile?.role === 'team_manager'
   const canSeeAll = isSupervisor || isTeamManager
   const canAddClient = isSupervisor || isTeamManager
 
-  const [clients, setClients] = useState<Client[]>(initialClients)
+  const [clients, setClients] = useState<Client[]>([])
   const [filter, setFilter] = useState<FilterType>('all')
   const [alertFilter, setAlertFilter] = useState<FilterType | null>(null)
   const [search, setSearch] = useState('')
@@ -295,6 +523,108 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const [activeDayFilter, setActiveDayFilter] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [weekCounts, setWeekCounts] = useState<Record<string, number>>({})
+  const fullMode = searchParams.get('full') === '1'
+  const queryFilter = (searchParams.get('filter') as FilterType | null) ?? null
+  const queryPlanner = searchParams.get('planner')
+  const queryCategory = searchParams.get('category')
+  const queryDeadlineDate = searchParams.get('deadlineDate')
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+      setPage(0)
+    }, 250)
+
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    if (queryFilter) {
+      setFilter(queryFilter)
+      setAlertFilter(queryFilter === 'all' ? null : queryFilter)
+    }
+    if (queryPlanner) setActivePlannerId(queryPlanner)
+    if (queryDeadlineDate) {
+      setActiveDayFilter(queryDeadlineDate)
+      setAlertFilter(null)
+      setFilter('all')
+    }
+    if (queryCategory && ['co', 'cfc', 'cpas'].includes(queryCategory.toLowerCase())) {
+      const mapped = queryCategory.toLowerCase() as FilterType
+      setFilter(mapped)
+      setAlertFilter(mapped)
+    }
+  }, [queryFilter, queryPlanner, queryCategory, queryDeadlineDate])
+
+  useEffect(() => {
+    setPage(0)
+  }, [filter, activePlannerId, sortField, sortDir])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+    params.set('limit', activeDayFilter ? '50' : '24')
+    params.set('filter', activeDayFilter ? 'all' : (alertFilter ?? filter))
+    params.set('search', debouncedSearch)
+    params.set('sortField', sortField)
+    params.set('sortDir', sortDir)
+    if (activeDayFilter) params.set('deadlineDate', activeDayFilter)
+    if (canSeeAll && activePlannerId) params.set('assignedTo', activePlannerId)
+
+    setLoading(true)
+
+    fetch(`/api/clients?${params.toString()}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to load clients (${res.status})`)
+        return res.json() as Promise<PaginatedClientsResponse>
+      })
+      .then((payload) => {
+        setClients(payload.clients ?? [])
+        setTotal(payload.total ?? 0)
+        setHasMore(Boolean(payload.hasMore))
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        console.error('Error loading paginated clients:', error)
+        setClients([])
+        setTotal(0)
+        setHasMore(false)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [page, filter, alertFilter, debouncedSearch, canSeeAll, activePlannerId, sortField, sortDir, activeDayFilter])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    if (canSeeAll && activePlannerId) params.set('assignedTo', activePlannerId)
+
+    fetch(`/api/dashboard/summary?${params.toString()}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to load dashboard summary (${res.status})`)
+        return res.json() as Promise<{ counts?: Record<string, number> }>
+      })
+      .then((payload) => {
+        setWeekCounts(payload.counts ?? {})
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        console.error('Error loading week strip summary:', error)
+        setWeekCounts({})
+      })
+
+    return () => controller.abort()
+  }, [canSeeAll, activePlannerId])
 
   useEffect(() => {
     try {
@@ -332,32 +662,44 @@ export default function DashboardClient({ clients: initialClients, profile, curr
     }
   }
 
+  function pushResultsState(next: { filter?: string | null; deadlineDate?: string | null }) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('full', '1')
+
+    if (next.filter && next.filter !== 'all') params.set('filter', next.filter)
+    else params.delete('filter')
+
+    if (next.deadlineDate) params.set('deadlineDate', next.deadlineDate)
+    else params.delete('deadlineDate')
+
+    router.push(`/dashboard?${params.toString()}`)
+  }
+
   function handleAlertClick(f: FilterType | null) {
+    const nextFilter = f ?? 'all'
     setAlertFilter(f)
-    if (f) setFilter(f)
-    else setFilter('all')
+    setFilter(nextFilter)
     setActiveDayFilter(null)
+    pushResultsState({ filter: nextFilter, deadlineDate: null })
   }
 
   function handleGreetingFilter(f: FilterType | null) {
+    const nextFilter = f ?? 'all'
     setAlertFilter(f)
-    if (f) setFilter(f)
-    else setFilter('all')
+    setFilter(nextFilter)
     setActiveDayFilter(null)
+    pushResultsState({ filter: nextFilter, deadlineDate: null })
   }
 
   function handleDayFilter(dateStr: string | null) {
     setActiveDayFilter(dateStr)
     setAlertFilter(null)
     setFilter('all')
+    pushResultsState({ filter: 'all', deadlineDate: dateStr })
   }
 
-  // Base: my cases for SP, all for managers
-  const baseClients = useMemo(() => {
-    if (!canSeeAll) return clients.filter(c => c.assigned_to === currentUserId)
-    if (activePlannerId) return clients.filter(c => c.assigned_to === activePlannerId)
-    return clients
-  }, [clients, canSeeAll, currentUserId, activePlannerId])
+  // Base: current page from API
+  const baseClients = useMemo(() => clients, [clients])
 
   const stats = useMemo(() => ({
     total: baseClients.length,
@@ -383,12 +725,6 @@ export default function DashboardClient({ clients: initialClients, profile, curr
     }
   }, [stats.overdue, stats.dueThisWeek, baseClients.length, currentUserId])
 
-  const DEADLINE_DATE_FIELDS: (keyof Client)[] = [
-    'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
-    'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
-    'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due',
-  ]
-
   const filtered = useMemo(() => {
     let result = baseClients
 
@@ -402,15 +738,7 @@ export default function DashboardClient({ clients: initialClients, profile, curr
       )
     }
 
-    // Day filter takes precedence
-    if (activeDayFilter) {
-      result = result.filter(c =>
-        DEADLINE_DATE_FIELDS.some(field => {
-          const d = c[field] as string | null
-          return d && d.split('T')[0] === activeDayFilter
-        })
-      )
-    } else {
+    if (!activeDayFilter) {
       const activeFilter = alertFilter ?? filter
       switch (activeFilter) {
         case 'overdue': result = result.filter(isOverdue); break
@@ -471,6 +799,15 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   const selectAll = () => setSelectedIds(filtered.map(c => c.id))
   const clearSelect = () => { setSelectedIds([]); setShowSelect(false) }
 
+  function exportCurrentView() {
+    const params = new URLSearchParams()
+    params.set('filter', activeDayFilter ? 'all' : (alertFilter ?? filter))
+    params.set('search', debouncedSearch)
+    if (activeDayFilter) params.set('deadlineDate', activeDayFilter)
+    if (canSeeAll && activePlannerId) params.set('assignedTo', activePlannerId)
+    window.open(`/api/reports/clients?${params.toString()}`, '_blank')
+  }
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     canAddClient,
@@ -479,7 +816,7 @@ export default function DashboardClient({ clients: initialClients, profile, curr
   })
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
       {/* Confetti overlay */}
       {showConfetti && (
         <Confetti onDone={() => setShowConfetti(false)} />
@@ -503,9 +840,30 @@ export default function DashboardClient({ clients: initialClients, profile, curr
         onDismissConfetti={() => setShowConfetti(false)}
       />
 
+      {isSupervisorLike(profile?.role) && (
+        <>
+          <SupervisorOverviewStrip
+            clients={clients}
+            planners={planners}
+            teamManagers={teamManagers}
+            onOpenAllClients={() => { window.location.href = '/team?full=1&filter=all' }}
+            onOpenOverdue={() => { window.location.href = '/team?full=1&filter=overdue' }}
+            onOpenDueThisWeek={() => { window.location.href = '/team?full=1&filter=due_this_week' }}
+            onOpenQuiet={() => { window.location.href = '/team?full=1&filter=no_contact_7' }}
+          />
+          <TeamManagerSummaryTable clients={clients} planners={planners} teamManagers={teamManagers} />
+        </>
+      )}
+
+      <ClientQuickSearch
+        assignedTo={canSeeAll ? activePlannerId : currentUserId}
+        helperText={profile?.role === 'team_manager' ? 'Search clients in your current scope.' : 'Search your current scope.'}
+        maxResults={6}
+      />
+
       {/* 7-day week strip */}
       <WeekStrip
-        clients={baseClients}
+        countsByDate={weekCounts}
         onDayFilter={handleDayFilter}
         activeDayFilter={activeDayFilter}
       />
@@ -519,13 +877,43 @@ export default function DashboardClient({ clients: initialClients, profile, curr
         onAlert={handleAlertClick}
       />
 
+      {/* Suggested focus */}
+      <NextBestMoveCard
+        stats={{ overdue: stats.overdue, dueThisWeek: stats.dueThisWeek, noContact: stats.noContact, eligibilitySoon: stats.eligibilitySoon }}
+        onFilter={handleGreetingFilter}
+      />
+
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 24 }}>
-        <StatCard label="Total" value={stats.total} />
+        <StatCard label="Caseload" value={stats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
         <StatCard label="Overdue" value={stats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
         <StatCard label="Due This Week" value={stats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
-        <StatCard label="No Contact 7+" value={stats.noContact} color="var(--yellow)" />
+        <StatCard label="Quiet 7+ Days" value={stats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
       </div>
+
+      {fullMode && (
+        <div className="card" style={{ marginBottom: 16, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+            Full filtered view
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            You’re in the full dashboard view for this filter. Use paging, search, and filters here instead of the compact preview.
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8, fontWeight: 600 }}>
+            Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'Quiet 7+ Days' : filter.toUpperCase()}
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ fontSize: 12, minHeight: 34 }}
+              onClick={() => pushResultsState({ filter: 'all', deadlineDate: null })}
+            >
+              Clear filter
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pinned */}
       <PinnedClients clients={clients} pinnedIds={pinnedIds} onUnpin={togglePin} />
@@ -542,9 +930,9 @@ export default function DashboardClient({ clients: initialClients, profile, curr
         <button
           className="btn-secondary"
           style={{ fontSize: 12, minHeight: 36 }}
-          onClick={() => exportToCsv(filtered)}
+          onClick={exportCurrentView}
         >
-          📥 Export CSV
+          📥 Export view
         </button>
         <button
           className="btn-secondary"
@@ -554,13 +942,13 @@ export default function DashboardClient({ clients: initialClients, profile, curr
             if (showSelect) clearSelect()
           }}
         >
-          ☑️ {showSelect ? 'Cancel Select' : 'Select'}
+          ☑️ {showSelect ? 'Done selecting' : 'Select'}
         </button>
         {showSelect && (
           <>
-            <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }} onClick={selectAll}>Select All ({filtered.length})</button>
+            <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }} onClick={selectAll}>Select all in view ({filtered.length})</button>
             {selectedIds.length > 0 && (
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{selectedIds.length} selected</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{selectedIds.length} selected in this view</span>
             )}
           </>
         )}
@@ -569,14 +957,14 @@ export default function DashboardClient({ clients: initialClients, profile, curr
             <button
               className="btn-secondary"
               style={{ fontSize: 12, minHeight: 36 }}
-              onClick={() => exportToCsv(clients.filter(c => selectedIds.includes(c.id)))}
+              onClick={() => exportSelectedToCsv(clients.filter(c => selectedIds.includes(c.id)))}
             >
-              📥 Export Selected
+              📥 Export selected
             </button>
             {canSeeAll && planners.length > 0 && (
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <select value={bulkAssignId} onChange={e => setBulkAssignId(e.target.value)} style={{ fontSize: 12 }}>
-                  <option value="">Assign to planner…</option>
+                  <option value="">Assign to Support Planner…</option>
                   {planners.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                 </select>
                 <button
@@ -616,7 +1004,13 @@ export default function DashboardClient({ clients: initialClients, profile, curr
 
       {/* Results count + active day indicator */}
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span>Showing {filtered.length} of {baseClients.length} clients</span>
+        <span>
+          {filtered.length === 0
+            ? 'Nothing is showing in this view right now.'
+            : activeDayFilter
+              ? `Showing ${filtered.length} of ${total} client${total !== 1 ? 's' : ''} with deadlines on ${activeDayFilter}${hasMore ? ' • more pages available' : ''}`
+              : `Showing ${filtered.length} of ${total} client${total !== 1 ? 's' : ''}${hasMore ? ' • more pages available' : ''}`}
+        </span>
         {activeDayFilter && (
           <span style={{
             background: 'rgba(0,122,255,0.15)',
@@ -643,7 +1037,59 @@ export default function DashboardClient({ clients: initialClients, profile, curr
         sortDir={sortDir}
         onSortChange={handleSortChange}
         onContactLogged={handleContactLogged}
+        loading={loading}
       />
+
+      {!loading && filtered.length === 0 && (
+        <div className="card" style={{ marginTop: 12, background: 'linear-gradient(135deg, rgba(0,122,255,0.05) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(0,122,255,0.12)' }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+            {baseClients.length === 0 ? 'Quiet start.' : 'Nothing matches this view.'}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+            {baseClients.length === 0
+              ? 'Once clients are assigned, this dashboard will start surfacing what needs attention first.'
+              : 'Try clearing a filter, switching the day view, or searching a broader name, code, or client ID.'}
+          </div>
+          {(filter !== 'all' || alertFilter || activeDayFilter || search.trim()) && (
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 12, minHeight: 34 }}
+              onClick={() => {
+                setFilter('all')
+                setAlertFilter(null)
+                setActiveDayFilter(null)
+                setSearch('')
+              }}
+            >
+              Clear filters and search
+            </button>
+          )}
+        </div>
+      )}
+
+      {!activeDayFilter && (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginTop: 18, flexWrap: 'wrap' }}>
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 12, minHeight: 36 }}
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0 || loading}
+          >
+            ← Previous
+          </button>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Page {page + 1}{total > 0 ? ` of ${Math.max(1, Math.ceil(total / 24))}` : ''}
+          </span>
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 12, minHeight: 36 }}
+            onClick={() => setPage(p => p + 1)}
+            disabled={!hasMore || loading}
+          >
+            Next →
+          </button>
+        </div>
+      )}
 
       {/* Quick Actions FAB */}
       <QuickActions

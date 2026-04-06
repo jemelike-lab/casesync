@@ -25,7 +25,7 @@ export default async function DashboardLayout({
     .single()
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
       <Header user={user} profile={profile} />
       <IdleTimeout timeoutMs={15 * 60 * 1000} />
       <main style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>

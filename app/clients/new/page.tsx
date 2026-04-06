@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Profile } from '@/lib/types'
+import { canManageTeam } from '@/lib/roles'
 import ClientIntakeForm from '@/components/ClientIntakeForm'
 import { redirect } from 'next/navigation'
 
@@ -17,8 +18,8 @@ export default async function NewClientPage() {
     .eq('id', user.id)
     .single()
 
-  // Only team_manager and supervisor can add clients
-  if (profile?.role !== 'team_manager' && profile?.role !== 'supervisor') {
+  // Only team_manager, supervisor, and IT can add clients
+  if (!canManageTeam(profile?.role)) {
     redirect('/dashboard')
   }
 

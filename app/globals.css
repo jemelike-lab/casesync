@@ -82,14 +82,30 @@
 
 /* Bottom mobile nav */
 [data-theme="light"] .mobile-nav {
-  background: #3b2a1a !important;
-  border-top-color: #2a1e10 !important;
+  background: #2a1e10 !important;
+  border-top-color: #1b1209 !important;
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.18) !important;
 }
 
 [data-theme="light"] .mobile-nav a,
-[data-theme="light"] .mobile-nav button,
+[data-theme="light"] .mobile-nav button {
+  color: #2f2418 !important;
+}
+
 [data-theme="light"] .mobile-nav span {
-  color: #f5ede3 !important;
+  color: #2f2418 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="light"] .mobile-nav a[aria-current="page"] {
+  background: rgba(255,255,255,0.58) !important;
+  border-color: rgba(59,42,26,0.18) !important;
+}
+
+[data-theme="light"] .mobile-nav a[aria-current="page"],
+[data-theme="light"] .mobile-nav a[aria-current="page"] span {
+  color: #1b1209 !important;
 }
 
 /* Stat cards */
@@ -136,6 +152,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background 0.3s, color 0.3s;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Scrollbar */
@@ -256,6 +278,35 @@ input[type="time"] {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-nav,
+  .desktop-only,
+  .header-user-meta,
+  .header-signout {
+    display: none !important;
+  }
+
+  .header-right {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-nav {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .fade-in {

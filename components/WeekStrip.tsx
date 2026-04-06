@@ -1,35 +1,18 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Client, getDateStatus } from '@/lib/types'
 
 interface Props {
-  clients: Client[]
+  countsByDate?: Record<string, number>
   onDayFilter?: (dateStr: string | null) => void
   activeDayFilter?: string | null
 }
-
-const DEADLINE_DATE_FIELDS: (keyof Client)[] = [
-  'eligibility_end_date',
-  'three_month_visit_due',
-  'quarterly_waiver_date',
-  'med_tech_redet_date',
-  'pos_deadline',
-  'assessment_due',
-  'thirty_day_letter_date',
-  'co_financial_redet_date',
-  'co_app_date',
-  'mfp_consent_date',
-  'two57_date',
-  'doc_mdh_date',
-  'spm_next_due',
-]
 
 function toDateKey(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
-export default function WeekStrip({ clients, onDayFilter, activeDayFilter }: Props) {
+export default function WeekStrip({ countsByDate = {}, onDayFilter, activeDayFilter }: Props) {
   const days = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -39,20 +22,6 @@ export default function WeekStrip({ clients, onDayFilter, activeDayFilter }: Pro
       return d
     })
   }, [])
-
-  const countsByDate = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const client of clients) {
-      for (const field of DEADLINE_DATE_FIELDS) {
-        const dateStr = client[field] as string | null
-        if (!dateStr) continue
-        const key = dateStr.split('T')[0]
-        // Only count dates within the 7-day window
-        map[key] = (map[key] ?? 0) + 1
-      }
-    }
-    return map
-  }, [clients])
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -69,7 +38,6 @@ export default function WeekStrip({ clients, onDayFilter, activeDayFilter }: Pro
         const isToday = i === 0
         const isActive = activeDayFilter === key
 
-        // Color based on count
         let bg: string
         let color: string
         let border: string

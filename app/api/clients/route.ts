@@ -1,3 +1,4 @@
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -14,6 +15,10 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') ?? '20', 10)
     const filter = searchParams.get('filter') ?? 'all'
     const search = searchParams.get('search') ?? ''
+    const assignedTo = searchParams.get('assignedTo') ?? ''
+    const sortField = searchParams.get('sortField') ?? 'name'
+    const sortDir = (searchParams.get('sortDir') ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc'
+    const deadlineDate = searchParams.get('deadlineDate') ?? ''
 
     const supabase = await createServerClient()
     const { data: authData, error: authErr } = await supabase.auth.getUser()
@@ -50,18 +55,39 @@ export async function GET(req: NextRequest) {
     let query = admin
       .from('clients')
       .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
-      .order('last_name')
 
     // Role-based scoping (server-validated)
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
+    } else if (role === 'team_manager' || isSupervisorLike(role)) {
+      if (assignedTo) {
+        query = query.eq('assigned_to', assignedTo)
+      }
     }
 
     // Filter
     const now = new Date().toISOString().split('T')[0]
     const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-    if (filter === 'overdue') {
+    if (deadlineDate) {
+      query = query.or(
+        [
+          `eligibility_end_date.eq.${deadlineDate}`,
+          `three_month_visit_due.eq.${deadlineDate}`,
+          `quarterly_waiver_date.eq.${deadlineDate}`,
+          `med_tech_redet_date.eq.${deadlineDate}`,
+          `pos_deadline.eq.${deadlineDate}`,
+          `assessment_due.eq.${deadlineDate}`,
+          `thirty_day_letter_date.eq.${deadlineDate}`,
+          `co_financial_redet_date.eq.${deadlineDate}`,
+          `co_app_date.eq.${deadlineDate}`,
+          `mfp_consent_date.eq.${deadlineDate}`,
+          `two57_date.eq.${deadlineDate}`,
+          `doc_mdh_date.eq.${deadlineDate}`,
+          `spm_next_due.eq.${deadlineDate}`,
+        ].join(',')
+      )
+    } else if (filter === 'overdue') {
       query = query.or(
         `eligibility_end_date.lt.${now},pos_deadline.lt.${now},assessment_due.lt.${now},` +
           `three_month_visit_due.lt.${now},thirty_day_letter_date.lt.${now}`
@@ -84,6 +110,17 @@ export async function GET(req: NextRequest) {
       query = query.or(
         `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
       )
+    }
+
+    // Sort
+    if (sortField === 'goal_pct') {
+      query = query.order('goal_pct', { ascending: sortDir === 'asc' }).order('last_name')
+    } else if (sortField === 'last_contact_date') {
+      query = query.order('last_contact_date', { ascending: sortDir === 'asc', nullsFirst: false }).order('last_name')
+    } else if (sortField === 'eligibility_end_date') {
+      query = query.order('eligibility_end_date', { ascending: sortDir === 'asc', nullsFirst: false }).order('last_name')
+    } else {
+      query = query.order('last_name', { ascending: sortDir === 'asc' })
     }
 
     // Paginate

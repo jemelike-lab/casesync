@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Profile } from '@/lib/types'
@@ -20,7 +21,7 @@ export default function QuickActions({ profile, onLogContact }: Props) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
-  const canManage = profile?.role === 'team_manager' || profile?.role === 'supervisor'
+  const canManage = profile?.role === 'team_manager' || isSupervisorLike(profile?.role)
 
   const actions: Action[] = [
     {
@@ -82,7 +83,9 @@ export default function QuickActions({ profile, onLogContact }: Props) {
       ref={containerRef}
       style={{
         position: 'fixed',
-        bottom: 80,
+        bottom: typeof window !== 'undefined' && window.innerWidth <= 768
+          ? 'calc(150px + env(safe-area-inset-bottom))'
+          : 80,
         right: 20,
         zIndex: 500,
         display: 'flex',

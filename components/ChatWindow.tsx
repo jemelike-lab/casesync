@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import MessageInput from './MessageInput'
@@ -80,6 +81,7 @@ function roleLabel(role: string | null | undefined) {
   if (role === 'supports_planner') return 'Supports Planner'
   if (role === 'team_manager') return 'Team Manager'
   if (role === 'supervisor') return 'Supervisor'
+  if (role === 'it') return 'IT'
   return role ?? ''
 }
 

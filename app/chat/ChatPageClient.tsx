@@ -1,5 +1,6 @@
 'use client'
 
+import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
 import ChatSidebar from '@/components/ChatSidebar'
@@ -48,6 +49,7 @@ function roleLabel(role: string | null | undefined) {
   if (role === 'supports_planner') return 'Supports Planner'
   if (role === 'team_manager') return 'Team Manager'
   if (role === 'supervisor') return 'Supervisor'
+  if (role === 'it') return 'IT'
   return role ?? ''
 }
 
@@ -160,7 +162,7 @@ export default function ChatPageClient({ userId, profile, channels: initialChann
     <>
       <Header user={userLike} profile={profile} />
 
-      <div style={{ height: 'calc(100vh - 60px)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ height: 'calc(100dvh - 60px)', minHeight: 'calc(100dvh - 60px)', display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
         {/* Sidebar */}
         {(!isMobile || !showChat) && (
