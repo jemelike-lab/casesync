@@ -579,7 +579,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     const controller = new AbortController()
     const params = new URLSearchParams()
     params.set('page', String(page))
-    params.set('limit', activeDayFilter ? '50' : '24')
+    params.set('limit', fullMode ? '250' : (activeDayFilter ? '50' : '24'))
     params.set('filter', activeDayFilter ? 'all' : (alertFilter ?? filter))
     params.set('search', debouncedSearch)
     params.set('sortField', sortField)
@@ -611,7 +611,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       })
 
     return () => controller.abort()
-  }, [page, filter, alertFilter, debouncedSearch, canSeeAll, activePlannerId, sortField, sortDir, activeDayFilter])
+  }, [page, filter, alertFilter, debouncedSearch, canSeeAll, activePlannerId, sortField, sortDir, activeDayFilter, fullMode])
 
   useEffect(() => {
     const controller = new AbortController()
