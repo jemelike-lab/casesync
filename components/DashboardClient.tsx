@@ -349,6 +349,8 @@ function TeamManagerSummaryTable({
       const days = getDaysSinceContact(c.last_contact_date)
       return days !== null && days > 7
     }).length
+    const plannerQuery = managerPlanners.map(planner => `planner=${encodeURIComponent(planner.id)}`).join('&')
+    const managerScopedBase = plannerQuery ? `/team?full=1&${plannerQuery}` : '/team?full=1'
 
     return {
       manager,
@@ -357,6 +359,13 @@ function TeamManagerSummaryTable({
       overdue,
       dueThisWeek,
       quiet,
+      links: {
+        planners: managerScopedBase,
+        all: `${managerScopedBase}&filter=all`,
+        overdue: `${managerScopedBase}&filter=overdue`,
+        dueThisWeek: `${managerScopedBase}&filter=due_this_week`,
+        quiet: `${managerScopedBase}&filter=no_contact_7`,
+      },
     }
   })
 
@@ -393,11 +402,11 @@ function TeamManagerSummaryTable({
             ) : rows.map(row => (
               <tr key={row.manager.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '10px 12px', fontWeight: 600 }}>{row.manager.full_name ?? 'Unknown'}</td>
-                <td style={{ padding: '10px 12px' }}><Link href="/team" style={{ color: 'inherit' }}>{row.plannerCount}</Link></td>
-                <td style={{ padding: '10px 12px' }}><Link href="/team?full=1&filter=all" style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
-                <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href="/team?full=1&filter=overdue" style={{ color: 'inherit' }}>{row.overdue}</Link></td>
-                <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href="/team?full=1&filter=due_this_week" style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
-                <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href="/team?full=1&filter=no_contact_7" style={{ color: 'inherit' }}>{row.quiet}</Link></td>
+                <td style={{ padding: '10px 12px' }}><Link href={row.links.planners} style={{ color: 'inherit' }}>{row.plannerCount}</Link></td>
+                <td style={{ padding: '10px 12px' }}><Link href={row.links.all} style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href={row.links.overdue} style={{ color: 'inherit' }}>{row.overdue}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href={row.links.dueThisWeek} style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href={row.links.quiet} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
               </tr>
             ))}
           </tbody>

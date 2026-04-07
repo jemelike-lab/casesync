@@ -8,7 +8,7 @@ import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManager
 
 export const revalidate = 60
 
-export default async function TeamPage({ searchParams }: { searchParams: Promise<{ view?: string; filter?: string; category?: string; full?: string; planner?: string }> }) {
+export default async function TeamPage({ searchParams }: { searchParams: Promise<{ view?: string; filter?: string; category?: string; full?: string; planner?: string | string[] }> }) {
   const { view, filter, category, full, planner } = await searchParams
   const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
@@ -31,8 +31,11 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     clients = await getActiveClients(supabase, plannerIds)
   }
 
-  if (planner) {
-    clients = clients.filter(client => client.assigned_to === planner)
+  const plannerFilters = Array.isArray(planner) ? planner.filter(Boolean) : planner ? [planner] : []
+
+  if (plannerFilters.length > 0) {
+    const plannerFilterSet = new Set(plannerFilters)
+    clients = clients.filter(client => client.assigned_to && plannerFilterSet.has(client.assigned_to))
   }
 
   if (filter === 'overdue') {
@@ -83,10 +86,16 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
           ? category ? `All Active Clients (${String(category).toUpperCase()})` : 'All Active Clients'
           : 'Filtered Results'
 
-  const plannerScopeLabel = planner
+  const plannerScopeLabel = plannerFilters.length > 0
     ? (() => {
-        const plannerProfile = planners.find(p => p.id === planner)
-        return plannerProfile?.full_name ? ` · ${plannerProfile.full_name}` : ''
+        const scopedPlannerNames = planners
+          .filter(p => plannerFilters.includes(p.id))
+          .map(p => p.full_name)
+          .filter(Boolean)
+
+        if (scopedPlannerNames.length === 1) return ` · ${scopedPlannerNames[0]}`
+        if (scopedPlannerNames.length > 1) return ` · ${scopedPlannerNames.length} planners`
+        return ''
       })()
     : ''
 
