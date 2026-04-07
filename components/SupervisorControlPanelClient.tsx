@@ -115,6 +115,14 @@ function FocusCard({
   )
 }
 
+function teamLink(filter: ClientFilter, plannerId?: string) {
+  const params = new URLSearchParams()
+  params.set('full', '1')
+  params.set('filter', filter)
+  if (plannerId) params.set('planner', plannerId)
+  return `/team?${params.toString()}`
+}
+
 export default function SupervisorControlPanelClient({ planners, teamManagers, summaryByAssignee, globalSummary }: Props) {
   const [clientFilter, setClientFilter] = useState<ClientFilter>('all')
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all')
@@ -199,9 +207,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
     window.setTimeout(() => rosterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30)
   }
 
-  const fullResultsHref = clientFilter === 'all'
-    ? '/dashboard?full=1&filter=all'
-    : `/dashboard?full=1&filter=${clientFilter}`
+  const fullResultsHref = teamLink(clientFilter)
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 80 }}>
@@ -367,10 +373,10 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                   <tr key={row.planner.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500 }}>{row.planner.full_name ?? 'Unknown'}</td>
                     <td style={{ padding: '10px 12px' }}>{row.teamManager?.full_name ?? 'Unassigned'}</td>
-                    <td style={{ padding: '10px 12px' }}><Link href={`/dashboard?full=1&planner=${row.planner.id}&filter=all`} style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
-                    <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href={`/dashboard?full=1&planner=${row.planner.id}&filter=overdue`} style={{ color: 'inherit' }}>{row.overdue}</Link></td>
-                    <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href={`/dashboard?full=1&planner=${row.planner.id}&filter=due_this_week`} style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
-                    <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href={`/dashboard?full=1&planner=${row.planner.id}&filter=no_contact_7`} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
+                    <td style={{ padding: '10px 12px' }}><Link href={teamLink('all', row.planner.id)} style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
+                    <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href={teamLink('overdue', row.planner.id)} style={{ color: 'inherit' }}>{row.overdue}</Link></td>
+                    <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href={teamLink('due_this_week', row.planner.id)} style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
+                    <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href={teamLink('no_contact_7', row.planner.id)} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
                   </tr>
                 ))}
               </tbody>
@@ -403,7 +409,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                     <td style={{ padding: '10px 12px', fontWeight: 500 }}>{planner.full_name ?? 'Unknown'}</td>
                     <td style={{ padding: '10px 12px' }}><RoleBadge role={planner.role} /></td>
                     <td style={{ padding: '10px 12px' }}>{tm?.full_name ?? 'Unassigned'}</td>
-                    <td style={{ padding: '10px 12px' }}><Link href={`/dashboard?full=1&planner=${planner.id}&filter=all`} style={{ color: 'inherit' }}>{clientCount} clients</Link></td>
+                    <td style={{ padding: '10px 12px' }}><Link href={teamLink('all', planner.id)} style={{ color: 'inherit' }}>{clientCount} clients</Link></td>
                   </tr>
                 )
               })}
