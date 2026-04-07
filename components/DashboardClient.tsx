@@ -538,6 +538,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const [loading, setLoading] = useState(true)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [weekCounts, setWeekCounts] = useState<Record<string, number>>({})
+  const [summaryStats, setSummaryStats] = useState({ total: 0, overdue: 0, dueThisWeek: 0, eligibilitySoon: 0, noContact: 0 })
   const fullMode = searchParams.get('full') === '1'
   const queryFilter = (searchParams.get('filter') as FilterType | null) ?? null
   const queryPlanner = searchParams.get('planner')
@@ -598,6 +599,16 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         setClients(payload.clients ?? [])
         setTotal(payload.total ?? 0)
         setHasMore(Boolean(payload.hasMore))
+        setSummaryStats(payload.summary ?? {
+          total: payload.total ?? 0,
+          overdue: (payload.clients ?? []).filter(isOverdue).length,
+          dueThisWeek: (payload.clients ?? []).filter(isDueThisWeek).length,
+          eligibilitySoon: (payload.clients ?? []).filter(isEligibilityEndingSoon).length,
+          noContact: (payload.clients ?? []).filter(c => {
+            const d = getDaysSinceContact(c.last_contact_date)
+            return d !== null && d >= 7
+          }).length,
+        })
       })
       .catch((error) => {
         if (controller.signal.aborted) return
@@ -605,6 +616,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         setClients([])
         setTotal(0)
         setHasMore(false)
+        setSummaryStats({ total: 0, overdue: 0, dueThisWeek: 0, eligibilitySoon: 0, noContact: 0 })
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
@@ -710,16 +722,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   // Base: current page from API
   const baseClients = useMemo(() => clients, [clients])
 
-  const stats = useMemo(() => ({
-    total: baseClients.length,
-    overdue: baseClients.filter(isOverdue).length,
-    dueThisWeek: baseClients.filter(isDueThisWeek).length,
-    eligibilitySoon: baseClients.filter(isEligibilityEndingSoon).length,
-    noContact: baseClients.filter(c => {
-      const d = getDaysSinceContact(c.last_contact_date)
-      return d !== null && d >= 7
-    }).length,
-  }), [baseClients])
+  const stats = useMemo(() => summaryStats, [summaryStats])
 
   // Confetti: show once per session when all current
   useEffect(() => {

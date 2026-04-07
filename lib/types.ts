@@ -126,6 +126,13 @@ export interface PaginatedClientsResponse {
   clients: Client[]
   total: number
   hasMore: boolean
+  summary?: {
+    total: number
+    overdue: number
+    dueThisWeek: number
+    eligibilitySoon: number
+    noContact: number
+  }
 }
 export type SortDir = 'asc' | 'desc'
 

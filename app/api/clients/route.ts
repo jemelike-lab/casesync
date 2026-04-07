@@ -2,6 +2,7 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,10 +134,21 @@ export async function GET(req: NextRequest) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500 })
     }
 
+    const pageClients = clients ?? []
     const total = count ?? 0
     const hasMore = from + limit < total
+    const summary = {
+      total,
+      overdue: pageClients.filter(isOverdue).length,
+      dueThisWeek: pageClients.filter(isDueThisWeek).length,
+      eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
+      noContact: pageClients.filter(client => {
+        const days = getDaysSinceContact(client.last_contact_date)
+        return days !== null && days >= 7
+      }).length,
+    }
 
-    return new Response(JSON.stringify({ clients: clients ?? [], total, hasMore }), {
+    return new Response(JSON.stringify({ clients: pageClients, total, hasMore, summary }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (err) {
