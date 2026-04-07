@@ -163,6 +163,37 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
     return teamManagers
   }, [teamManagers, rosterFilter])
 
+  const scopedSummary = useMemo(() => {
+    const rows = Object.values(summaryByAssignee ?? {})
+
+    if (rows.length === 0) {
+      return globalSummary ?? {
+        total_clients: 0,
+        overdue_clients: 0,
+        due_this_week_clients: 0,
+        eligibility_ending_soon_clients: 0,
+        no_contact_7_days_clients: 0,
+      }
+    }
+
+    return rows.reduce(
+      (acc, row) => ({
+        total_clients: acc.total_clients + (row.total_clients ?? 0),
+        overdue_clients: acc.overdue_clients + (row.overdue_clients ?? 0),
+        due_this_week_clients: acc.due_this_week_clients + (row.due_this_week_clients ?? 0),
+        eligibility_ending_soon_clients: acc.eligibility_ending_soon_clients + (row.eligibility_ending_soon_clients ?? 0),
+        no_contact_7_days_clients: acc.no_contact_7_days_clients + (row.no_contact_7_days_clients ?? 0),
+      }),
+      {
+        total_clients: 0,
+        overdue_clients: 0,
+        due_this_week_clients: 0,
+        eligibility_ending_soon_clients: 0,
+        no_contact_7_days_clients: 0,
+      }
+    )
+  }, [summaryByAssignee, globalSummary])
+
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
@@ -227,10 +258,10 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <ClickableStatCard label="Active Clients" value={globalSummary?.total_clients ?? 0} active={clientFilter === 'all'} onClick={() => openClientFilter('all')} />
-        <ClickableStatCard label="Overdue" value={globalSummary?.overdue_clients ?? 0} color="var(--red)" active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
-        <ClickableStatCard label="Due This Week" value={globalSummary?.due_this_week_clients ?? 0} color="var(--orange)" active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-        <ClickableStatCard label="No Contact 7+ Days" value={globalSummary?.no_contact_7_days_clients ?? 0} color="#ffd60a" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
+        <ClickableStatCard label="Active Clients" value={scopedSummary.total_clients} active={clientFilter === 'all'} onClick={() => openClientFilter('all')} />
+        <ClickableStatCard label="Overdue" value={scopedSummary.overdue_clients} color="var(--red)" active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
+        <ClickableStatCard label="Due This Week" value={scopedSummary.due_this_week_clients} color="var(--orange)" active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
+        <ClickableStatCard label="No Contact 7+ Days" value={scopedSummary.no_contact_7_days_clients} color="#ffd60a" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
         <ClickableStatCard label="Support Planners" value={planners.length} active={rosterFilter === 'planners'} onClick={() => openRosterFilter('planners')} />
         <ClickableStatCard label="Team Managers" value={teamManagers.length} active={rosterFilter === 'team_managers'} onClick={() => openRosterFilter('team_managers')} />
         <ClickableStatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} active={rosterFilter === 'unassigned_planners'} onClick={() => openRosterFilter('unassigned_planners')} />
@@ -242,9 +273,9 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             Team Health Summary
           </h2>
           <div style={{ display: 'grid', gap: 12 }}>
-            <FocusCard tone="red" title={`${globalSummary?.overdue_clients ?? 0} overdue client${(globalSummary?.overdue_clients ?? 0) !== 1 ? 's' : ''}`} body="Priority one: clear overdue work before the rest of the week piles up." active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
-            <FocusCard tone="orange" title={`${globalSummary?.due_this_week_clients ?? 0} due this week`} body="Good place to rebalance planners if one caseload is getting too heavy." active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-            <FocusCard tone="yellow" title={`${globalSummary?.no_contact_7_days_clients ?? 0} no-contact client${(globalSummary?.no_contact_7_days_clients ?? 0) !== 1 ? 's' : ''} (7+ days)`} body="Worth checking for silent drift before those cases become urgent." active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
+            <FocusCard tone="red" title={`${scopedSummary.overdue_clients} overdue client${scopedSummary.overdue_clients !== 1 ? 's' : ''}`} body="Priority one: clear overdue work before the rest of the week piles up." active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
+            <FocusCard tone="orange" title={`${scopedSummary.due_this_week_clients} due this week`} body="Good place to rebalance planners if one caseload is getting too heavy." active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
+            <FocusCard tone="yellow" title={`${scopedSummary.no_contact_7_days_clients} no-contact client${scopedSummary.no_contact_7_days_clients !== 1 ? 's' : ''} (7+ days)`} body="Worth checking for silent drift before those cases become urgent." active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
           </div>
         </div>
 
