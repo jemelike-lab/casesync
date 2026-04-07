@@ -298,7 +298,7 @@ function SupervisorOverviewStrip({
         <StatCard label="Active Clients" value={clients.length} onClick={onOpenAllClients} />
         <StatCard label="Overdue" value={overdue} color="var(--red)" onClick={onOpenOverdue} />
         <StatCard label="Due This Week" value={dueThisWeek} color="var(--orange)" onClick={onOpenDueThisWeek} />
-        <StatCard label="Quiet 7+ Days" value={quiet} color="#ffd60a" onClick={onOpenQuiet} />
+        <StatCard label="No Contact 7+ Days" value={quiet} color="#ffd60a" onClick={onOpenQuiet} />
         <StatCard label="Support Planners" value={planners.length} />
         <StatCard label="Team Managers" value={teamManagers.length} />
         <StatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} />
@@ -376,7 +376,7 @@ function TeamManagerSummaryTable({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Team Manager', 'Support Planners', 'Clients', 'Overdue', 'Due This Week', 'Quiet 7+ Days'].map(h => (
+              {['Team Manager', 'Support Planners', 'Clients', 'Overdue', 'Due This Week', 'No Contact 7+ Days'].map(h => (
                 <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {h}
                 </th>
@@ -888,7 +888,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         <StatCard label="Caseload" value={stats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
         <StatCard label="Overdue" value={stats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
         <StatCard label="Due This Week" value={stats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
-        <StatCard label="Quiet 7+ Days" value={stats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
+        <StatCard label="No Contact 7+ Days" value={stats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
       </div>
 
       {fullMode && (
@@ -900,7 +900,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
             You’re in the full dashboard view for this filter. Use paging, search, and filters here instead of the compact preview.
           </div>
           <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8, fontWeight: 600 }}>
-            Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'Quiet 7+ Days' : filter.toUpperCase()}
+            Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'No Contact 7+ Days' : filter.toUpperCase()}
           </div>
           <div style={{ marginTop: 10 }}>
             <button

@@ -78,7 +78,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     : filter === 'due_this_week'
       ? 'Due This Week'
       : filter === 'no_contact_7'
-        ? 'Quiet 7+ Days'
+        ? 'No Contact 7+ Days'
         : filter === 'all'
           ? category ? `All Active Clients (${String(category).toUpperCase()})` : 'All Active Clients'
           : 'Filtered Results'

@@ -177,7 +177,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         <StatCard label="Total Clients" value={totalStats.clients} href="/team?full=1&filter=all" active={fullFilterLabel === 'All Active Clients'} />
         <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href="/team?full=1&filter=overdue" active={fullFilterLabel === 'Overdue'} />
         <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href="/team?full=1&filter=due_this_week" active={fullFilterLabel === 'Due This Week'} />
-        <StatCard label="Supports Planners" value={planners.length} href="/team" active={!fullFilterLabel} />
+        <StatCard label="Supports Planners" value={planners.length} href="/supervisor" active={!fullFilterLabel} />
       </div>
 
       {fullFilterLabel && (
@@ -263,7 +263,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🔴 High Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>3+ overdue</div>
             </button>
-            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=due_this_week' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
+            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=overdue' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff9f0a' }}>{riskDist.medium.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟡 Medium Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>1-2 overdue</div>

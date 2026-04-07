@@ -224,7 +224,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         <ClickableStatCard label="Active Clients" value={globalSummary?.total_clients ?? 0} active={clientFilter === 'all'} onClick={() => openClientFilter('all')} />
         <ClickableStatCard label="Overdue" value={globalSummary?.overdue_clients ?? 0} color="var(--red)" active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
         <ClickableStatCard label="Due This Week" value={globalSummary?.due_this_week_clients ?? 0} color="var(--orange)" active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-        <ClickableStatCard label="Quiet 7+ Days" value={globalSummary?.no_contact_7_days_clients ?? 0} color="#ffd60a" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
+        <ClickableStatCard label="No Contact 7+ Days" value={globalSummary?.no_contact_7_days_clients ?? 0} color="#ffd60a" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
         <ClickableStatCard label="Support Planners" value={planners.length} active={rosterFilter === 'planners'} onClick={() => openRosterFilter('planners')} />
         <ClickableStatCard label="Team Managers" value={teamManagers.length} active={rosterFilter === 'team_managers'} onClick={() => openRosterFilter('team_managers')} />
         <ClickableStatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} active={rosterFilter === 'unassigned_planners'} onClick={() => openRosterFilter('unassigned_planners')} />
@@ -238,7 +238,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           <div style={{ display: 'grid', gap: 12 }}>
             <FocusCard tone="red" title={`${globalSummary?.overdue_clients ?? 0} overdue client${(globalSummary?.overdue_clients ?? 0) !== 1 ? 's' : ''}`} body="Priority one: clear overdue work before the rest of the week piles up." active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
             <FocusCard tone="orange" title={`${globalSummary?.due_this_week_clients ?? 0} due this week`} body="Good place to rebalance planners if one caseload is getting too heavy." active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-            <FocusCard tone="yellow" title={`${globalSummary?.no_contact_7_days_clients ?? 0} quiet/no-contact client${(globalSummary?.no_contact_7_days_clients ?? 0) !== 1 ? 's' : ''}`} body="Worth checking for silent drift before those cases become urgent." active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
+            <FocusCard tone="yellow" title={`${globalSummary?.no_contact_7_days_clients ?? 0} no-contact client${(globalSummary?.no_contact_7_days_clients ?? 0) !== 1 ? 's' : ''} (7+ days)`} body="Worth checking for silent drift before those cases become urgent." active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
           </div>
         </div>
 
@@ -302,7 +302,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           </div>
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-          Current filter: <strong style={{ color: 'var(--text)' }}>{clientFilter === 'all' ? 'Active Clients' : clientFilter === 'overdue' ? 'Overdue' : clientFilter === 'due_this_week' ? 'Due This Week' : 'Quiet 7+ Days'}</strong>
+          Current filter: <strong style={{ color: 'var(--text)' }}>{clientFilter === 'all' ? 'Active Clients' : clientFilter === 'overdue' ? 'Overdue' : clientFilter === 'due_this_week' ? 'Due This Week' : 'No Contact 7+ Days'}</strong>
         </div>
         <div style={{ display: 'grid', gap: 10, maxHeight: 520, overflowY: 'auto', paddingRight: 4 }}>
           {clients.map(client => (
@@ -355,7 +355,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Support Planner', 'Team Manager', 'Clients', 'Overdue', 'Due This Week', 'Quiet 7+'].map(h => (
+                  {['Support Planner', 'Team Manager', 'Clients', 'Overdue', 'Due This Week', 'No Contact 7+'].map(h => (
                     <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {h}
                     </th>
