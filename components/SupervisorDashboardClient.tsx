@@ -263,7 +263,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🔴 High Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>3+ overdue</div>
             </button>
-            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=overdue' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
+            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=due_this_week' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff9f0a' }}>{riskDist.medium.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟡 Medium Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>1-2 overdue</div>
