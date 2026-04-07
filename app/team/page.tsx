@@ -8,8 +8,8 @@ import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManager
 
 export const revalidate = 60
 
-export default async function TeamPage({ searchParams }: { searchParams: Promise<{ view?: string; filter?: string; category?: string; full?: string }> }) {
-  const { view, filter, category, full } = await searchParams
+export default async function TeamPage({ searchParams }: { searchParams: Promise<{ view?: string; filter?: string; category?: string; full?: string; planner?: string }> }) {
+  const { view, filter, category, full, planner } = await searchParams
   const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
 
@@ -29,6 +29,10 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     clients = await getActiveClients(supabase)
   } else if (plannerIds.length > 0) {
     clients = await getActiveClients(supabase, plannerIds)
+  }
+
+  if (planner) {
+    clients = clients.filter(client => client.assigned_to === planner)
   }
 
   if (filter === 'overdue') {
@@ -69,14 +73,25 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     )
   }
 
-  const fullFilterLabel = full === '1'
-    ? filter === 'overdue'
-      ? category ? `Overdue (${String(category).toUpperCase()})` : 'Overdue'
-      : filter === 'due_this_week'
-        ? 'Due This Week'
+  const fullFilterBaseLabel = filter === 'overdue'
+    ? category ? `Overdue (${String(category).toUpperCase()})` : 'Overdue'
+    : filter === 'due_this_week'
+      ? 'Due This Week'
+      : filter === 'no_contact_7'
+        ? 'Quiet 7+ Days'
         : filter === 'all'
           ? category ? `All Active Clients (${String(category).toUpperCase()})` : 'All Active Clients'
           : 'Filtered Results'
+
+  const plannerScopeLabel = planner
+    ? (() => {
+        const plannerProfile = planners.find(p => p.id === planner)
+        return plannerProfile?.full_name ? ` · ${plannerProfile.full_name}` : ''
+      })()
+    : ''
+
+  const fullFilterLabel = full === '1'
+    ? `${fullFilterBaseLabel}${plannerScopeLabel}`
     : null
 
   return (
