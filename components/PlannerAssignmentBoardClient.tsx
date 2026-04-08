@@ -64,6 +64,11 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
     return planners.filter(p => (p.full_name ?? '').toLowerCase().includes(q))
   }, [planners, search])
 
+  const unassignedPlanners = useMemo(
+    () => filteredPlanners.filter(p => !p.team_manager_id),
+    [filteredPlanners]
+  )
+
   async function assignPlanner(plannerId: string, teamManagerId: string) {
     const planner = planners.find(p => p.id === plannerId)
     const manager = teamManagers.find(tm => tm.id === teamManagerId)
@@ -161,17 +166,17 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Support Planners</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-              {filteredPlanners.length} visible support planner{filteredPlanners.length !== 1 ? 's' : ''}
+              {unassignedPlanners.length} unassigned support planner{unassignedPlanners.length !== 1 ? 's' : ''}
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-            {filteredPlanners.length === 0 ? (
+            {unassignedPlanners.length === 0 ? (
               <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
-                No support planners match this search.
+                No unassigned support planners match this search.
               </div>
             ) : (
-              filteredPlanners.map(planner => (
+              unassignedPlanners.map(planner => (
                 <PlannerCard
                   key={`pool-${planner.id}`}
                   planner={planner}
