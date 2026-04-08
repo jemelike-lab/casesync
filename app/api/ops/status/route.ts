@@ -1,62 +1,8 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isSupervisorLike } from '@/lib/roles'
-import { promises as fs } from 'fs'
-import path from 'path'
 
 export const dynamic = 'force-dynamic'
-
-const BACKUP_DIR = '/opt/casesync-backups'
-const VERIFY_LOG = path.join(BACKUP_DIR, 'logs', 'verify.log')
-
-async function getBackupStatus() {
-  try {
-    const verifyLog = await fs.readFile(VERIFY_LOG, 'utf8')
-    const verifyLines = verifyLog
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-
-    const latestVerifyLine = verifyLines.at(-1) ?? null
-
-    const backupFiles = (await fs.readdir(BACKUP_DIR))
-      .filter((name) => /^casesync-.*\.sql\.gz$/.test(name))
-      .sort()
-
-    const latestBackupFile = backupFiles.at(-1) ?? null
-    if (!latestBackupFile) {
-      return {
-        ok: false,
-        source: 'vps-backup-verification',
-        reason: 'no-backup-artifact-found',
-      }
-    }
-
-    const latestBackupPath = path.join(BACKUP_DIR, latestBackupFile)
-    const stats = await fs.stat(latestBackupPath)
-    const sizeBytes = stats.size
-    const ageHours = Math.floor((Date.now() - stats.mtimeMs) / (1000 * 60 * 60))
-
-    const latestVerifyOk = latestVerifyLine?.startsWith('OK:') ?? false
-    const latestVerifyFail = latestVerifyLine?.startsWith('FAIL:') ?? false
-
-    return {
-      ok: latestVerifyOk ? true : latestVerifyFail ? false : null,
-      source: 'vps-backup-verification',
-      latest_artifact: latestBackupFile,
-      latest_artifact_path: latestBackupPath,
-      latest_artifact_size_bytes: sizeBytes,
-      latest_artifact_age_hours: ageHours,
-      last_verified_line: latestVerifyLine,
-    }
-  } catch (error) {
-    return {
-      ok: null,
-      source: 'vps-backup-verification',
-      reason: error instanceof Error ? error.message : 'backup-status-unavailable',
-    }
-  }
-}
 
 export async function GET() {
   try {
@@ -84,12 +30,16 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const [{ data: countsRow, error: countsError }, backupStatus] = await Promise.all([
+    const [{ data: countsRow, error: countsError }, { data: backupRow, error: backupError }] = await Promise.all([
       admin
         .from('ops_client_counts')
         .select('active_client_count, real_client_count, trial_client_count, test_client_count')
         .single(),
-      getBackupStatus(),
+      admin
+        .from('ops_backup_status')
+        .select('ok, source, latest_artifact, latest_artifact_path, latest_artifact_size_bytes, latest_artifact_age_hours, last_verified_line, checked_at, updated_at')
+        .eq('key', 'casesync-db-backup')
+        .single(),
     ])
 
     if (countsError) {
@@ -111,7 +61,16 @@ export async function GET() {
         reached: realClientCount >= 15,
         remaining: Math.max(0, 15 - realClientCount),
       },
-      backup_status: backupStatus,
+      backup_status: backupError
+        ? {
+            ok: null,
+            source: 'ops-backup-status-read-failed',
+            reason: backupError.message,
+          }
+        : backupRow ?? {
+            ok: null,
+            source: 'pending-vps-sync',
+          },
       production_version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'dev',
     }), {
       headers: { 'Content-Type': 'application/json' },
