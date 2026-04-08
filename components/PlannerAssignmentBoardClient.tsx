@@ -26,6 +26,8 @@ function PlannerCard({
       draggable
       onDragStart={e => onDragStart(planner.id, e)}
       onDragEnd={onDragEnd}
+      onDragOver={e => e.stopPropagation()}
+      onDrop={e => e.stopPropagation()}
       style={{
         border: '1px solid var(--border)',
         borderRadius: 10,
@@ -221,9 +223,35 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
                 </div>
 
                 <div style={{ display: 'grid', gap: 8 }}>
+                  <div
+                    onDragOver={e => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setActiveManagerId(manager.id)
+                    }}
+                    onDrop={async e => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const plannerId = draggedPlannerId || e.dataTransfer.getData('text/plain')
+                      setActiveManagerId(null)
+                      setDraggedPlannerId(null)
+                      if (plannerId) await assignPlanner(plannerId, manager.id)
+                    }}
+                    style={{
+                      border: '1px dashed var(--border)',
+                      borderRadius: 10,
+                      padding: 10,
+                      fontSize: 11,
+                      color: 'var(--text-secondary)',
+                      background: isActiveDrop ? 'rgba(0,122,255,0.06)' : 'transparent',
+                    }}
+                  >
+                    Drop here to assign to {manager.full_name ?? 'this team manager'}.
+                  </div>
+
                   {managerPlanners.length === 0 ? (
                     <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 12, color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
-                      Drop a support planner here to assign them to {manager.full_name ?? 'this team manager'}.
+                      No assigned support planners yet.
                     </div>
                   ) : (
                     managerPlanners.map(planner => (

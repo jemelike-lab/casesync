@@ -28,6 +28,8 @@ function ClientCard({
       draggable
       onDragStart={e => onDragStart(client.id, e)}
       onDragEnd={onDragEnd}
+      onDragOver={e => e.stopPropagation()}
+      onDrop={e => e.stopPropagation()}
       style={{
         border: '1px solid var(--border)',
         borderRadius: 10,
@@ -246,9 +248,35 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                 </div>
 
                 <div style={{ display: 'grid', gap: 8 }}>
+                  <div
+                    onDragOver={e => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setActivePlannerId(planner.id)
+                    }}
+                    onDrop={async e => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const clientId = draggedClientId || e.dataTransfer.getData('text/plain')
+                      setActivePlannerId(null)
+                      setDraggedClientId(null)
+                      if (clientId) await reassignClient(clientId, planner.id)
+                    }}
+                    style={{
+                      border: '1px dashed var(--border)',
+                      borderRadius: 10,
+                      padding: 10,
+                      fontSize: 11,
+                      color: 'var(--text-secondary)',
+                      background: isActiveDrop ? 'rgba(0,122,255,0.06)' : 'transparent',
+                    }}
+                  >
+                    Drop here to assign to {planner.full_name ?? 'this Support Planner'}.
+                  </div>
+
                   {plannerClients.length === 0 ? (
                     <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 12, color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
-                      Drop a client here to assign them to {planner.full_name ?? 'this Support Planner'}.
+                      No assigned clients yet.
                     </div>
                   ) : (
                     plannerClients.map(client => (
