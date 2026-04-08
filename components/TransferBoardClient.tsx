@@ -82,6 +82,11 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     })
   }, [clients, search])
 
+  const unassignedClients = useMemo(
+    () => filteredClients.filter(c => !c.assigned_to),
+    [filteredClients]
+  )
+
   async function reassignClient(clientId: string, plannerId: string) {
     const client = clients.find(c => c.id === clientId)
     const planner = planners.find(p => p.id === plannerId)
@@ -183,17 +188,17 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Client List</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-              {filteredClients.length} visible client{filteredClients.length !== 1 ? 's' : ''}
+              {unassignedClients.length} unassigned client{unassignedClients.length !== 1 ? 's' : ''}
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-            {filteredClients.length === 0 ? (
+            {unassignedClients.length === 0 ? (
               <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
-                No clients match this search.
+                No unassigned clients match this search.
               </div>
             ) : (
-              filteredClients.map(client => (
+              unassignedClients.map(client => (
                 <ClientCard
                   key={`pool-${client.id}`}
                   client={client}
