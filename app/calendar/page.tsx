@@ -20,7 +20,7 @@ export default async function CalendarPage() {
   if (!profile) redirect('/login')
 
   const p = profile as Profile
-  const canSeeAll = isSupervisorLike(p.role) || p.role === 'team_manager'
+  const canSeeAll = isSupervisorLike(p.role)
 
   return (
     <CalendarPageClient

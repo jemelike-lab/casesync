@@ -30,7 +30,7 @@ export default function CalendarPageClient({ userId, profile, canSeeAll }: Props
           </div>
           {canSeeAll && (
             <button onClick={() => setShowAll(v => !v)} className="btn-secondary" style={{ fontSize: 12 }}>
-              {showAll ? '👤 My Clients' : '👥 All Clients'}
+              {showAll ? '👤 Scoped View' : '👥 All Clients'}
             </button>
           )}
         </div>

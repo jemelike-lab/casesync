@@ -78,7 +78,28 @@ export async function GET(req: Request) {
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
-    } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
+    } else if (role === 'team_manager') {
+      const { data: planners, error: plannerErr } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('role', 'supports_planner')
+        .eq('team_manager_id', userId)
+
+      if (plannerErr) {
+        return new Response(JSON.stringify({ error: plannerErr.message }), { status: 500 })
+      }
+
+      const plannerIds = (planners ?? []).map((p) => p.id).filter(Boolean)
+      if (assignedTo) {
+        query = query.eq('assigned_to', assignedTo)
+      } else if (plannerIds.length > 0) {
+        query = query.in('assigned_to', plannerIds)
+      } else {
+        return new Response(JSON.stringify({ events: [] }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    } else if (isSupervisorLike(role) && assignedTo) {
       query = query.eq('assigned_to', assignedTo)
     }
 
