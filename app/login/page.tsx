@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
@@ -13,7 +13,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+      return null
+    }
+    return createClient()
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -26,6 +31,8 @@ export default function LoginPage() {
       const type = params.get('type')
 
       if (!accessToken || !refreshToken) return
+
+      if (!supabase) return
 
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
@@ -69,6 +76,12 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
     setLoading(true)
+
+    if (!supabase) {
+      setError('CaseSync is temporarily unavailable. Missing client configuration.')
+      setLoading(false)
+      return
+    }
 
     // Check rate limit before attempting login
     try {
@@ -116,6 +129,11 @@ export default function LoginPage() {
   }
 
   async function handleForgotPassword() {
+    if (!supabase) {
+      setError('CaseSync is temporarily unavailable. Missing client configuration.')
+      return
+    }
+
     const normalizedEmail = email.trim().toLowerCase()
     setError(null)
     setMessage(null)

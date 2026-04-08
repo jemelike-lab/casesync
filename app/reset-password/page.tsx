@@ -6,7 +6,12 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+      return null
+    }
+    return createClient()
+  }, [])
   const router = useRouter()
 
   const [ready, setReady] = useState(false)
@@ -26,6 +31,14 @@ export default function ResetPasswordPage() {
       const accessToken = params.get('access_token')
       const refreshToken = params.get('refresh_token')
       const type = params.get('type')
+
+      if (!supabase) {
+        if (active) {
+          setError('CaseSync is temporarily unavailable. Missing client configuration.')
+          setReady(true)
+        }
+        return
+      }
 
       if (accessToken && refreshToken && type === 'recovery') {
         const { error: sessionError } = await supabase.auth.setSession({
@@ -65,6 +78,10 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!supabase) {
+      setError('CaseSync is temporarily unavailable. Missing client configuration.')
+      return
+    }
     setError(null)
     setMessage(null)
 
@@ -123,13 +140,13 @@ export default function ResetPasswordPage() {
             <div style={{
               padding: '10px 14px',
               borderRadius: 8,
-              background: 'rgba(255, 159, 10, 0.12)',
-              border: '1px solid rgba(255, 159, 10, 0.25)',
-              color: '#ffb340',
+              background: error ? 'rgba(255, 69, 58, 0.15)' : 'rgba(255, 159, 10, 0.12)',
+              border: error ? '1px solid rgba(255, 69, 58, 0.3)' : '1px solid rgba(255, 159, 10, 0.25)',
+              color: error ? 'var(--red)' : '#ffb340',
               fontSize: 13,
               lineHeight: 1.6,
             }}>
-              This reset link is missing, expired, or already used. Go back to login and request a fresh password reset email.
+              {error ?? 'This reset link is missing, expired, or already used. Go back to login and request a fresh password reset email.'}
             </div>
           </div>
         ) : (

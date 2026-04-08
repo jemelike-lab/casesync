@@ -49,8 +49,9 @@ export function useNotifications(userId: string | null) {
   }
 
   useEffect(() => {
+    let active = true
     if (!userId) return
-    fetchNotifications()
+    void fetchNotifications()
 
     const channel = supabase
       .channel(`notifications:${userId}`)
@@ -66,7 +67,7 @@ export function useNotifications(userId: string | null) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [userId])
+  }, [userId, supabase])
 
   return { notifications, unreadCount, markAllRead, markRead, refetch: fetchNotifications }
 }

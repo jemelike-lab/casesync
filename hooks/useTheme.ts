@@ -14,6 +14,7 @@ export function useTheme() {
         setThemeState(stored)
         document.documentElement.setAttribute('data-theme', stored)
       } else {
+        setThemeState('dark')
         document.documentElement.setAttribute('data-theme', 'dark')
       }
     } catch {}
