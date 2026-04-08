@@ -15,6 +15,9 @@ interface Props {
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
   fullFilterLabel?: string | null
+  currentFilter?: 'all' | 'overdue' | 'due_this_week' | 'no_contact_7' | null
+  plannerFilters?: string[]
+  category?: string | null
 }
 
 interface PlannerStats {
@@ -46,7 +49,7 @@ function StatCard({ label, value, color, href, active }: { label: string; value:
   )
 }
 
-export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel }: Props) {
+export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category }: Props) {
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
@@ -149,18 +152,12 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     const params = new URLSearchParams()
     params.set('full', '1')
     params.set('filter', filter)
+    plannerFilters.forEach((plannerId) => params.append('planner', plannerId))
+    if (category && (filter === 'all' || filter === 'overdue')) {
+      params.set('category', category)
+    }
     return `/team?${params.toString()}`
   }
-
-  const fullFilterKind = fullFilterLabel?.startsWith('Overdue')
-    ? 'overdue'
-    : fullFilterLabel?.startsWith('Due This Week')
-      ? 'due_this_week'
-      : fullFilterLabel?.startsWith('No Contact 7+ Days')
-        ? 'no_contact_7'
-        : fullFilterLabel?.startsWith('All Active Clients')
-          ? 'all'
-          : null
 
   return (
     <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
@@ -195,9 +192,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Total Clients" value={totalStats.clients} href={fullViewHref('all')} active={fullFilterKind === 'all'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullViewHref('overdue')} active={fullFilterKind === 'overdue'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={fullFilterKind === 'due_this_week'} />
+        <StatCard label="Total Clients" value={totalStats.clients} href={fullViewHref('all')} active={currentFilter === 'all'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
         <StatCard label="Supports Planners" value={planners.length} href="/supervisor" active={!fullFilterLabel} />
       </div>
 
@@ -225,9 +222,14 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
                 data={overdueByCategory}
                 margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
                 onClick={(state: any) => {
-                  const category = state?.activeLabel
-                  if (!category) return
-                  window.location.href = `/team?full=1&filter=overdue&category=${String(category).toLowerCase()}`
+                  const categoryValue = state?.activeLabel
+                  if (!categoryValue) return
+                  const params = new URLSearchParams()
+                  params.set('full', '1')
+                  params.set('filter', 'overdue')
+                  params.set('category', String(categoryValue).toLowerCase())
+                  plannerFilters.forEach((plannerId) => params.append('planner', plannerId))
+                  window.location.href = `/team?${params.toString()}`
                 }}
               >
                 <XAxis dataKey="name" tick={{ fill: '#98989d', fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -279,17 +281,17 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
             Risk Distribution
           </h3>
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=overdue' }} style={{ flex: 1, background: 'rgba(255,69,58,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,69,58,0.16)', cursor: 'pointer' }}>
+            <button type="button" onClick={() => { window.location.href = fullViewHref('overdue') }} style={{ flex: 1, background: 'rgba(255,69,58,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,69,58,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff453a' }}>{riskDist.high.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🔴 High Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>3+ overdue</div>
             </button>
-            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=due_this_week' }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
+            <button type="button" onClick={() => { window.location.href = fullViewHref('due_this_week') }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#ff9f0a' }}>{riskDist.medium.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟡 Medium Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>1-2 overdue</div>
             </button>
-            <button type="button" onClick={() => { window.location.href = '/team?full=1&filter=all' }} style={{ flex: 1, background: 'rgba(48,209,88,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(48,209,88,0.16)', cursor: 'pointer' }}>
+            <button type="button" onClick={() => { window.location.href = fullViewHref('all') }} style={{ flex: 1, background: 'rgba(48,209,88,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(48,209,88,0.16)', cursor: 'pointer' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#30d158' }}>{riskDist.low.length}</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟢 Low Risk</div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>0 overdue</div>

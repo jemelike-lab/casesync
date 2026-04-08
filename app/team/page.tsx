@@ -109,6 +109,9 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       planners={(planners as Profile[]) ?? []}
       mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
       fullFilterLabel={fullFilterLabel}
+      currentFilter={filter === 'overdue' || filter === 'due_this_week' || filter === 'no_contact_7' || filter === 'all' ? filter : null}
+      plannerFilters={plannerFilters}
+      category={category ?? null}
     />
   )
 }
