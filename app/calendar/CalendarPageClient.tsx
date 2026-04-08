@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function CalendarPageClient({ userId, profile, canSeeAll }: Props) {
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(canSeeAll)
 
   const userLike = { id: userId, email: '' } as any
   const assignedTo = canSeeAll ? (showAll ? null : userId) : userId
