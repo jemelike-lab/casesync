@@ -206,6 +206,24 @@ export default function CalendarView({ assignedTo }: Props) {
     setSelectedDate(null)
   }
 
+  useEffect(() => {
+    if (view !== 'month') return
+    if (selectedDate && eventsMap.has(selectedDate)) return
+
+    const todayMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+    const eventKeysInMonth = Array.from(eventsMap.keys())
+      .filter((key) => key.startsWith(todayMonthKey))
+      .sort()
+
+    if (!eventKeysInMonth.length) {
+      setSelectedDate(null)
+      return
+    }
+
+    const preferredToday = eventKeysInMonth.find((key) => key >= todayKey)
+    setSelectedDate(preferredToday ?? eventKeysInMonth[0])
+  }, [view, year, month, eventsMap, selectedDate, todayKey])
+
   const selectedEvents = selectedDate ? (eventsMap.get(selectedDate) ?? []) : []
 
   return (
@@ -375,20 +393,24 @@ export default function CalendarView({ assignedTo }: Props) {
             })}
           </div>
 
-          {selectedDate && (
-            <div style={{ marginTop: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-                Deadlines on {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </h3>
-              {selectedEvents.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No deadlines</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {selectedEvents.map((evt, i) => <DeadlineItem key={i} evt={evt} />)}
-                </div>
-              )}
-            </div>
-          )}
+          <div style={{ marginTop: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+              {selectedDate
+                ? `Deadlines on ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+                : 'Deadlines'}
+            </h3>
+            {selectedDate == null ? (
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                {loading ? 'Loading deadlines…' : 'No due clients found in this month.'}
+              </div>
+            ) : selectedEvents.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No deadlines</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {selectedEvents.map((evt, i) => <DeadlineItem key={i} evt={evt} />)}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
