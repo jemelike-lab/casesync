@@ -762,6 +762,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [assignedTo, setAssignedTo] = useState(client.assigned_to ?? '')
+  const [plannerSearch, setPlannerSearch] = useState('')
   const [highlightedField, setHighlightedField] = useState<string | null>(null)
 
   // Show success toast when client is newly created
@@ -813,6 +814,12 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
   })
 
   const canReassign = currentProfile.role === 'supervisor' || currentProfile.role === 'it' || currentProfile.role === 'team_manager'
+
+  const filteredPlanners = planners.filter((planner) => {
+    const q = plannerSearch.trim().toLowerCase()
+    if (!q) return true
+    return (planner.full_name ?? '').toLowerCase().includes(q)
+  })
 
   const handleChange = (field: string, value: string | boolean | number | null) => {
     if (field === 'spm_completed') {
@@ -1227,13 +1234,20 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
         {/* Reassign UI */}
         {canReassign && planners.length > 0 && (
           <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={plannerSearch}
+              onChange={e => setPlannerSearch(e.target.value)}
+              placeholder="Search support planner..."
+              style={{ minWidth: 220, fontSize: 13 }}
+            />
             <select
               value={assignedTo}
               onChange={e => setAssignedTo(e.target.value)}
-              style={{ minWidth: 200, fontSize: 13 }}
+              style={{ minWidth: 240, fontSize: 13 }}
             >
               <option value="">— Reassign to Support Planner —</option>
-              {planners.map(p => (
+              {filteredPlanners.map(p => (
                 <option key={p.id} value={p.id}>{p.full_name}</option>
               ))}
             </select>
