@@ -230,12 +230,14 @@ function inlineMarkdown(text: string): string {
 }
 
 function LoadingSkeleton() {
+  const widths = ['60%', '80%', '72%', '88%', '64%']
+
   return (
     <div style={{ padding: '24px 0' }}>
-      {[1, 2, 3, 4, 5].map(i => (
+      {widths.map((width, i) => (
         <div key={i} style={{
-          height: i === 1 ? 32 : i === 2 ? 20 : 16,
-          width: i === 1 ? '60%' : i === 2 ? '80%' : `${50 + Math.random() * 40}%`,
+          height: i === 0 ? 32 : i === 1 ? 20 : 16,
+          width,
           background: 'var(--surface-2)',
           borderRadius: 6,
           marginBottom: 16,

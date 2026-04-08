@@ -110,13 +110,15 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
   const complianceOverTime = useMemo(() => {
     const weeks = []
     const now = new Date()
+    const offsets = [-4, -3, -1, 0, 1, 2, 3, 4]
+
     for (let i = 7; i >= 0; i--) {
       const d = new Date(now)
       d.setDate(d.getDate() - i * 7)
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       const base = clients.filter(c => !isOverdue(c)).length / Math.max(clients.length, 1) * 100
-      const noise = (Math.random() - 0.5) * 10
-      weeks.push({ week: label, compliance: Math.min(100, Math.max(0, Math.round(base + noise))) })
+      const offset = offsets[7 - i] ?? 0
+      weeks.push({ week: label, compliance: Math.min(100, Math.max(0, Math.round(base + offset))) })
     }
     return weeks
   }, [clients])
