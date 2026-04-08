@@ -7,7 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore } from '@/lib/types'
+import { Client, Profile, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
 import HealthScoreRing from './HealthScoreRing'
 
 interface Props {
@@ -70,6 +70,10 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     clients: clients.length,
     overdue: clients.filter(isOverdue).length,
     dueThisWeek: clients.filter(isDueThisWeek).length,
+    noContact7: clients.filter(client => {
+      const days = getDaysSinceContact(client.last_contact_date)
+      return days !== null && days >= 7
+    }).length,
   }), [clients])
 
   const overdueByCategory = useMemo(() => [
@@ -141,6 +145,23 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     return { high, medium, low }
   }, [clients])
 
+  const fullViewHref = (filter: 'all' | 'overdue' | 'due_this_week' | 'no_contact_7') => {
+    const params = new URLSearchParams()
+    params.set('full', '1')
+    params.set('filter', filter)
+    return `/team?${params.toString()}`
+  }
+
+  const fullFilterKind = fullFilterLabel?.startsWith('Overdue')
+    ? 'overdue'
+    : fullFilterLabel?.startsWith('Due This Week')
+      ? 'due_this_week'
+      : fullFilterLabel?.startsWith('No Contact 7+ Days')
+        ? 'no_contact_7'
+        : fullFilterLabel?.startsWith('All Active Clients')
+          ? 'all'
+          : null
+
   return (
     <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
@@ -174,9 +195,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Total Clients" value={totalStats.clients} href="/team?full=1&filter=all" active={fullFilterLabel === 'All Active Clients'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href="/team?full=1&filter=overdue" active={fullFilterLabel === 'Overdue'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href="/team?full=1&filter=due_this_week" active={fullFilterLabel === 'Due This Week'} />
+        <StatCard label="Total Clients" value={totalStats.clients} href={fullViewHref('all')} active={fullFilterKind === 'all'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullViewHref('overdue')} active={fullFilterKind === 'overdue'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={fullFilterKind === 'due_this_week'} />
         <StatCard label="Supports Planners" value={planners.length} href="/supervisor" active={!fullFilterLabel} />
       </div>
 
