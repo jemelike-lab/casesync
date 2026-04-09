@@ -648,6 +648,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const queryPlanner = searchParams.get('planner')
   const queryCategory = searchParams.get('category')
   const queryDeadlineDate = searchParams.get('deadlineDate')
+  const queryViewId = searchParams.get('view')
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -659,22 +660,52 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }, [search])
 
   useEffect(() => {
+    if (queryViewId) {
+      const matched = savedViews.find(view => view.id === queryViewId)
+      if (matched) {
+        const dueStates = matched.filter_definition?.dueStates ?? []
+        const categories = matched.filter_definition?.categories ?? []
+        const searchTerm = matched.filter_definition?.searchTerm ?? ''
+        const sortDefinition = matched.sort_definition
+
+        setActiveSavedViewId(matched.id)
+        setSavedViewName(matched.name)
+        setSavedViewDescription(matched.description ?? '')
+        setActiveDayFilter(null)
+        setAlertFilter(null)
+        setActivePlannerId(matched.filter_definition?.assignedToUserId ?? null)
+
+        if (dueStates.includes('overdue')) setFilter('overdue')
+        else if (dueStates.includes('due_this_week')) setFilter('due_this_week')
+        else if (categories.includes('co') || categories.includes('cfc') || categories.includes('cpas')) setFilter(categories[0])
+        else setFilter('all')
+
+        setSearch(searchTerm)
+        if (sortDefinition?.field) setSortField(sortDefinition.field)
+        if (sortDefinition?.dir) setSortDir(sortDefinition.dir)
+        return
+      }
+    }
+
     if (queryFilter) {
+      clearSavedViewSelection()
       setFilter(queryFilter)
       setAlertFilter(queryFilter === 'all' ? null : queryFilter)
     }
     if (queryPlanner) setActivePlannerId(queryPlanner)
     if (queryDeadlineDate) {
+      clearSavedViewSelection()
       setActiveDayFilter(queryDeadlineDate)
       setAlertFilter(null)
       setFilter('all')
     }
     if (queryCategory && ['co', 'cfc', 'cpas'].includes(queryCategory.toLowerCase())) {
+      clearSavedViewSelection()
       const mapped = queryCategory.toLowerCase() as FilterType
       setFilter(mapped)
       setAlertFilter(mapped)
     }
-  }, [queryFilter, queryPlanner, queryCategory, queryDeadlineDate])
+  }, [queryFilter, queryPlanner, queryCategory, queryDeadlineDate, queryViewId, savedViews])
 
   useEffect(() => {
     setPage(0)
@@ -787,15 +818,21 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     }
   }
 
-  function pushResultsState(next: { filter?: string | null; deadlineDate?: string | null }) {
+  function pushResultsState(next: { filter?: string | null; deadlineDate?: string | null; viewId?: string | null; plannerId?: string | null }) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('full', '1')
+
+    if (next.viewId) params.set('view', next.viewId)
+    else params.delete('view')
 
     if (next.filter && next.filter !== 'all') params.set('filter', next.filter)
     else params.delete('filter')
 
     if (next.deadlineDate) params.set('deadlineDate', next.deadlineDate)
     else params.delete('deadlineDate')
+
+    if (next.plannerId) params.set('planner', next.plannerId)
+    else params.delete('planner')
 
     router.push(`/dashboard?${params.toString()}`)
   }
@@ -810,7 +847,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setAlertFilter(f)
     setFilter(nextFilter)
     setActiveDayFilter(null)
-    pushResultsState({ filter: nextFilter, deadlineDate: null })
+    pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
   }
 
   function handleGreetingFilter(f: FilterType | null) {
@@ -819,7 +856,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setAlertFilter(f)
     setFilter(nextFilter)
     setActiveDayFilter(null)
-    pushResultsState({ filter: nextFilter, deadlineDate: null })
+    pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
   }
 
   function handleDayFilter(dateStr: string | null) {
@@ -827,7 +864,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setActiveDayFilter(dateStr)
     setAlertFilter(null)
     setFilter('all')
-    pushResultsState({ filter: 'all', deadlineDate: dateStr })
+    pushResultsState({ filter: 'all', deadlineDate: dateStr, viewId: null, plannerId: activePlannerId })
   }
 
   function handleSavedViewSelect(view: DashboardSavedView) {
@@ -837,10 +874,25 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setSavedViewDescription('')
     setActiveDayFilter(null)
     setAlertFilter(null)
-    setActivePlannerId(view.plannerId ?? null)
-    const nextFilter = view.filter ?? 'all'
+
+    const dueStates = view.definition?.dueStates ?? []
+    const categories = view.definition?.categories ?? []
+    const searchTerm = view.definition?.searchTerm ?? ''
+    const assignedToUserId = view.definition?.assignedToUserId ?? view.plannerId ?? null
+
+    setActivePlannerId(assignedToUserId)
+
+    const nextFilter = dueStates.includes('overdue')
+      ? 'overdue'
+      : dueStates.includes('due_this_week')
+        ? 'due_this_week'
+        : categories.includes('co') || categories.includes('cfc') || categories.includes('cpas')
+          ? categories[0]
+          : (view.filter ?? 'all')
+
     setFilter(nextFilter)
-    pushResultsState({ filter: nextFilter, deadlineDate: null })
+    setSearch(searchTerm)
+    pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: view.id, plannerId: assignedToUserId })
   }
 
   function buildCurrentSavedViewPayload() {
@@ -913,6 +965,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         setSavedViewName('')
         setSavedViewDescription('')
         setSavedViewMessage('Saved view deleted.')
+        pushResultsState({ filter: 'all', deadlineDate: null, viewId: null, plannerId: null })
         router.refresh()
       } catch (error) {
         setSavedViewMessage(error instanceof Error ? error.message : 'Failed to delete view')
