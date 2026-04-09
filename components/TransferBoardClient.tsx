@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { Client, Profile } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,34 +13,17 @@ interface Props {
   planners: Profile[]
 }
 
-function ClientCard({
-  client,
-  isDragging,
-  isSaving,
-  onDragStart,
-  onDragEnd,
-}: {
-  client: Client
-  isDragging: boolean
-  isSaving: boolean
-  onDragStart: (clientId: string, e: React.DragEvent<HTMLDivElement>) => void
-  onDragEnd: () => void
-}) {
+function ClientCardView({ client, dragging, saving }: { client: Client; dragging?: boolean; saving?: boolean }) {
   return (
     <div
-      draggable
-      onDragStart={e => onDragStart(client.id, e)}
-      onDragEnd={onDragEnd}
-      onDragOver={e => e.stopPropagation()}
-      onDrop={e => e.stopPropagation()}
       style={{
         border: '1px solid var(--border)',
         borderRadius: 10,
         padding: '10px 10px',
         background: 'var(--surface-2)',
         cursor: 'grab',
-        opacity: isSaving ? 0.6 : 1,
-        boxShadow: isDragging ? '0 8px 20px rgba(0,0,0,0.18)' : 'none',
+        opacity: saving ? 0.6 : 1,
+        boxShadow: dragging ? '0 8px 20px rgba(0,0,0,0.18)' : 'none',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
@@ -60,14 +46,67 @@ function ClientCard({
   )
 }
 
+function DraggableClientCard({ client, saving }: { client: Client; saving?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: client.id })
+  const style = {
+    transform: CSS.Translate.toString(transform),
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <ClientCardView client={client} dragging={isDragging} saving={saving} />
+    </div>
+  )
+}
+
+function DropColumn({ id, title, subtitle, children }: { id: string; title: string; subtitle: string; children: React.ReactNode }) {
+  const { isOver, setNodeRef } = useDroppable({ id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="card"
+      style={{
+        minHeight: 420,
+        background: isOver ? 'rgba(0,122,255,0.08)' : undefined,
+        border: isOver ? '1px solid rgba(0,122,255,0.35)' : undefined,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{title}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{subtitle}</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: 8 }}>
+        <div
+          style={{
+            border: '1px dashed var(--border)',
+            borderRadius: 10,
+            padding: 10,
+            fontSize: 11,
+            color: 'var(--text-secondary)',
+            background: isOver ? 'rgba(0,122,255,0.06)' : 'transparent',
+          }}
+        >
+          Drop here
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function TransferBoardClient({ clients: initialClients, planners }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [clients, setClients] = useState<Client[]>(initialClients)
-  const [draggedClientId, setDraggedClientId] = useState<string | null>(null)
-  const [activePlannerId, setActivePlannerId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [savingClientId, setSavingClientId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [activeClientId, setActiveClientId] = useState<string | null>(null)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   function showToast(type: 'success' | 'error', message: string) {
     setToast({ type, message })
@@ -84,10 +123,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     })
   }, [clients, search])
 
-  const unassignedClients = useMemo(
-    () => filteredClients.filter(c => !c.assigned_to),
-    [filteredClients]
-  )
+  const unassignedClients = useMemo(() => filteredClients.filter(c => !c.assigned_to), [filteredClients])
 
   async function reassignClient(clientId: string, plannerId: string) {
     const client = clients.find(c => c.id === clientId)
@@ -114,16 +150,22 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     showToast('success', `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} moved to ${planner.full_name ?? 'Support Planner'}.`)
   }
 
-  function handleDragStart(clientId: string, e: React.DragEvent<HTMLDivElement>) {
-    setDraggedClientId(clientId)
-    e.dataTransfer.setData('text/plain', clientId)
-    e.dataTransfer.effectAllowed = 'move'
+  function handleDragStart(event: DragStartEvent) {
+    setActiveClientId(String(event.active.id))
   }
 
-  function handleDragEnd() {
-    setDraggedClientId(null)
-    setActivePlannerId(null)
+  async function handleDragEnd(event: DragEndEvent) {
+    const clientId = String(event.active.id)
+    const overId = event.over ? String(event.over.id) : null
+    setActiveClientId(null)
+    if (!overId) return
+    if (overId.startsWith('planner:')) {
+      const plannerId = overId.replace('planner:', '')
+      await reassignClient(clientId, plannerId)
+    }
   }
+
+  const activeClient = activeClientId ? clients.find(c => c.id === activeClientId) ?? null : null
 
   return (
     <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
@@ -148,24 +190,13 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link href="/team?view=assign-planners" style={{
-            fontSize: 13, color: 'var(--text)', textDecoration: 'none',
-            padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
-            background: 'var(--surface-2)',
-          }}>
+          <Link href="/team?view=assign-planners" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
             Team Manager Board →
           </Link>
-          <Link href="/team" style={{
-            fontSize: 13, color: 'var(--text)', textDecoration: 'none',
-            padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
-            background: 'var(--surface-2)',
-          }}>
+          <Link href="/team" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
             Team View
           </Link>
-          <Link href="/dashboard" style={{
-            fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
-            padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
-          }}>
+          <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6 }}>
             ← Dashboard
           </Link>
         </div>
@@ -185,117 +216,62 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
-        <div className="card" style={{ position: 'sticky', top: 12 }}>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Client List</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-              {unassignedClients.length} unassigned client{unassignedClients.length !== 1 ? 's' : ''}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
+          <div className="card" style={{ position: 'sticky', top: 12 }}>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Client List</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                {unassignedClients.length} unassigned client{unassignedClients.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
+              {unassignedClients.length === 0 ? (
+                <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
+                  No unassigned clients match this search.
+                </div>
+              ) : (
+                unassignedClients.map(client => (
+                  <DraggableClientCard key={`pool-${client.id}`} client={client} saving={savingClientId === client.id} />
+                ))
+              )}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-            {unassignedClients.length === 0 ? (
-              <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
-                No unassigned clients match this search.
-              </div>
-            ) : (
-              unassignedClients.map(client => (
-                <ClientCard
-                  key={`pool-${client.id}`}
-                  client={client}
-                  isDragging={draggedClientId === client.id}
-                  isSaving={savingClientId === client.id}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(planners.length, 1)}, minmax(190px, 220px))`, gap: 10, alignItems: 'start', overflowX: 'auto' }}>
-          {planners.map(planner => {
-            const plannerClients = filteredClients.filter(c => c.assigned_to === planner.id)
-            const isActiveDrop = activePlannerId === planner.id
-            return (
-              <div
-                key={planner.id}
-                className="card"
-                onDragOver={e => {
-                  e.preventDefault()
-                  setActivePlannerId(planner.id)
-                }}
-                onDragLeave={() => setActivePlannerId(prev => prev === planner.id ? null : prev)}
-                onDrop={async e => {
-                  e.preventDefault()
-                  const clientId = draggedClientId || e.dataTransfer.getData('text/plain')
-                  setActivePlannerId(null)
-                  setDraggedClientId(null)
-                  if (clientId) await reassignClient(clientId, planner.id)
-                }}
-                style={{
-                  minHeight: 420,
-                  background: isActiveDrop ? 'rgba(0,122,255,0.08)' : undefined,
-                  border: isActiveDrop ? '1px solid rgba(0,122,255,0.35)' : undefined,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{planner.full_name ?? 'Unknown Planner'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{plannerClients.length} client{plannerClients.length !== 1 ? 's' : ''}</div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gap: 8 }}>
-                  <div
-                    onDragOver={e => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setActivePlannerId(planner.id)
-                    }}
-                    onDrop={async e => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      const clientId = draggedClientId || e.dataTransfer.getData('text/plain')
-                      setActivePlannerId(null)
-                      setDraggedClientId(null)
-                      if (clientId) await reassignClient(clientId, planner.id)
-                    }}
-                    style={{
-                      border: '1px dashed var(--border)',
-                      borderRadius: 10,
-                      padding: 10,
-                      fontSize: 11,
-                      color: 'var(--text-secondary)',
-                      background: isActiveDrop ? 'rgba(0,122,255,0.06)' : 'transparent',
-                    }}
-                  >
-                    Drop here to assign to {planner.full_name ?? 'this Support Planner'}.
-                  </div>
-
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(planners.length, 1)}, minmax(190px, 220px))`, gap: 10, alignItems: 'start', overflowX: 'auto' }}>
+            {planners.map(planner => {
+              const plannerClients = filteredClients.filter(c => c.assigned_to === planner.id)
+              return (
+                <DropColumn
+                  key={planner.id}
+                  id={`planner:${planner.id}`}
+                  title={planner.full_name ?? 'Unknown Planner'}
+                  subtitle={`${plannerClients.length} client${plannerClients.length !== 1 ? 's' : ''}`}
+                >
                   {plannerClients.length === 0 ? (
                     <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 12, color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
                       No assigned clients yet.
                     </div>
                   ) : (
                     plannerClients.map(client => (
-                      <ClientCard
+                      <DraggableClientCard
                         key={`planner-${planner.id}-${client.id}`}
                         client={client}
-                        isDragging={draggedClientId === client.id}
-                        isSaving={savingClientId === client.id}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
+                        saving={savingClientId === client.id}
                       />
                     ))
                   )}
-                </div>
-              </div>
-            )
-          })}
+                </DropColumn>
+              )
+            })}
+          </div>
         </div>
-      </div>
+
+        <DragOverlay>
+          {activeClient ? <ClientCardView client={activeClient} dragging saving={savingClientId === activeClient.id} /> : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   )
 }
