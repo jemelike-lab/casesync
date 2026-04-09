@@ -10,6 +10,7 @@ import {
   SortField,
   SortDir,
   PaginatedClientsResponse,
+  SavedViewRecord,
   isOverdue,
   isDueThisWeek,
   isEligibilityEndingSoon,
@@ -23,7 +24,7 @@ import PinnedClients from './PinnedClients'
 import WeekStrip from './WeekStrip'
 import Confetti from './Confetti'
 import QuickActions from './QuickActions'
-import SavedViewsBar from './SavedViewsBar'
+import SavedViewsBar, { type DashboardSavedView } from './SavedViewsBar'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -36,6 +37,7 @@ interface Props {
   currentUserId: string
   planners?: Profile[]
   teamManagers?: Profile[]
+  savedViews?: SavedViewRecord[]
   hasProfile?: boolean
 }
 
@@ -158,24 +160,68 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
   const dueCount = useCountUp(stats.dueThisWeek)
   const noContactCount = useCountUp(stats.noContact)
 
+  const role = profile?.role
+  const isSupervisorRole = role === 'supervisor' || role === 'it'
+  const isTeamManagerRole = role === 'team_manager'
+
   let summaryHeadline = ''
   let summaryBody = ''
 
   if (allCurrent) {
-    summaryHeadline = 'Everything looks good.'
-    summaryBody = 'No overdue items, nothing urgent this week, and your caseload is in a good spot.'
+    summaryHeadline = isSupervisorRole
+      ? 'Team looks good.'
+      : isTeamManagerRole
+        ? 'Your team is in good shape.'
+        : 'Everything looks good.'
+    summaryBody = isSupervisorRole
+      ? 'No overdue pressure is surfacing right now, and the team queue looks steady.'
+      : isTeamManagerRole
+        ? 'No overdue pressure is bubbling up right now, and your planners look under control.'
+        : 'No overdue items, nothing urgent this week, and your caseload is in a good spot.'
   } else if (stats.overdue > 0 && stats.dueThisWeek > 0) {
-    summaryHeadline = `You’ve got ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
-    summaryBody = 'Best move: clear the overdue items first, then work through what’s coming up next.'
+    summaryHeadline = isSupervisorRole
+      ? `The team has ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
+        : `You’ve got ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
+    summaryBody = isSupervisorRole
+      ? 'Best move: check the pressure points first, then work the queues that are coming up next.'
+      : isTeamManagerRole
+        ? 'Best move: rebalance overdue pressure first, then clear what’s stacking up this week.'
+        : 'Best move: clear the overdue items first, then work through what’s coming up next.'
   } else if (stats.overdue > 0) {
-    summaryHeadline = `You’ve got ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
-    summaryBody = 'Start there first — that’s the fastest way to get back on track.'
+    summaryHeadline = isSupervisorRole
+      ? `The team has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+        : `You’ve got ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+    summaryBody = isSupervisorRole
+      ? 'Start with the team members carrying the most pressure.'
+      : isTeamManagerRole
+        ? 'Start there first — that’s the fastest way to steady the team workload.'
+        : 'Start there first — that’s the fastest way to get back on track.'
   } else if (stats.dueThisWeek > 0) {
-    summaryHeadline = `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
-    summaryBody = 'Nothing is overdue right now, so this is a good time to knock out the next few deadlines.'
+    summaryHeadline = isSupervisorRole
+      ? `The team has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+        : `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+    summaryBody = isSupervisorRole
+      ? 'Nothing is overdue right now, so this is a good window to stay ahead of the next queue.'
+      : isTeamManagerRole
+        ? 'Nothing is overdue right now, so this is a good time to keep the team from bunching up later.'
+        : 'Nothing is overdue right now, so this is a good time to knock out the next few deadlines.'
   } else {
-    summaryHeadline = `You’ve got ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
-    summaryBody = 'Worth a quick check so nothing quietly slips.'
+    summaryHeadline = isSupervisorRole
+      ? `The team has ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
+        : `You’ve got ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
+    summaryBody = isSupervisorRole
+      ? 'Worth a quick pass so quiet cases don’t turn into overdue cases.'
+      : isTeamManagerRole
+        ? 'Worth a quick check so quiet cases don’t slip across your planner team.'
+        : 'Worth a quick check so nothing quietly slips.'
   }
 
   return (
@@ -417,7 +463,8 @@ function TeamManagerSummaryTable({
   )
 }
 
-function NextBestMoveCard({ stats, onFilter }: {
+function NextBestMoveCard({ profile, stats, onFilter }: {
+  profile: Profile | null
   stats: { overdue: number; dueThisWeek: number; noContact: number; eligibilitySoon: number }
   onFilter: (f: FilterType | null) => void
 }) {
@@ -425,34 +472,82 @@ function NextBestMoveCard({ stats, onFilter }: {
     return null
   }
 
-  let title = 'Next best move'
-  let body = 'A quick pass through today’s priorities will keep the week clean.'
+  const role = profile?.role
+  const isSupervisorRole = role === 'supervisor' || role === 'it'
+  const isTeamManagerRole = role === 'team_manager'
+
+  let title = isSupervisorRole ? 'Org-wide next best move' : isTeamManagerRole ? 'Team next best move' : 'Next best move'
+  let body = isSupervisorRole
+    ? 'A quick pass through the main pressure points will keep the org view clean.'
+    : isTeamManagerRole
+      ? 'A quick pass through the team queues will keep planner workload under control.'
+      : 'A quick pass through today’s priorities will keep the week clean.'
   let ctaLabel = 'View priorities'
   let ctaFilter: FilterType | null = 'due_this_week'
 
   if (stats.overdue > 0 && stats.dueThisWeek > 0) {
-    title = 'Start with overdue, then knock out what’s due this week.'
-    body = 'That clears the highest-risk items first and keeps the rest of the week from stacking up.'
+    title = isSupervisorRole
+      ? 'Start with overdue pressure, then work the upcoming queue.'
+      : isTeamManagerRole
+        ? 'Start with overdue team pressure, then clear what’s due this week.'
+        : 'Start with overdue, then knock out what’s due this week.'
+    body = isSupervisorRole
+      ? 'That shows where the org is slipping first, then where the next wave is forming.'
+      : isTeamManagerRole
+        ? 'That clears the highest-risk team items first and keeps the rest of the week from stacking up.'
+        : 'That clears the highest-risk items first and keeps the rest of the week from stacking up.'
     ctaLabel = `Focus overdue (${stats.overdue})`
     ctaFilter = 'overdue'
   } else if (stats.overdue > 0) {
-    title = `Start with the ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
-    body = 'Once those are cleared, the rest of the board should feel a lot lighter.'
+    title = isSupervisorRole
+      ? `The main pressure point is ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+        : `Start with the ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+    body = isSupervisorRole
+      ? 'Use that queue to see where intervention or rebalancing is needed.'
+      : isTeamManagerRole
+        ? 'Clear those first, then the rest of the team board should feel lighter.'
+        : 'Once those are cleared, the rest of the board should feel a lot lighter.'
     ctaLabel = 'View overdue'
     ctaFilter = 'overdue'
   } else if (stats.dueThisWeek > 0 && stats.noContact > 0) {
-    title = 'This week is manageable — just don’t let quiet clients slip.'
-    body = `You’ve got ${stats.dueThisWeek} due this week and ${stats.noContact} with no contact in 7+ days.`
+    title = isSupervisorRole
+      ? 'The week is manageable — just don’t let quiet cases turn into misses.'
+      : isTeamManagerRole
+        ? 'The week is manageable — just don’t let quiet planner queues drift.'
+        : 'This week is manageable — just don’t let quiet clients slip.'
+    body = isSupervisorRole
+      ? `You’ve got ${stats.dueThisWeek} due this week and ${stats.noContact} quiet cases across the org.`
+      : isTeamManagerRole
+        ? `You’ve got ${stats.dueThisWeek} due this week and ${stats.noContact} quiet cases across your team.`
+        : `You’ve got ${stats.dueThisWeek} due this week and ${stats.noContact} with no contact in 7+ days.`
     ctaLabel = 'View due this week'
     ctaFilter = 'due_this_week'
   } else if (stats.dueThisWeek > 0) {
-    title = `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
-    body = 'Good time to chip away early instead of letting everything bunch up later.'
+    title = isSupervisorRole
+      ? `There are ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+      : isTeamManagerRole
+        ? `Your team has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+        : `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+    body = isSupervisorRole
+      ? 'Good time to stay ahead of the next queue before it becomes overdue pressure.'
+      : isTeamManagerRole
+        ? 'Good time to chip away early instead of letting the team bunch up later.'
+        : 'Good time to chip away early instead of letting everything bunch up later.'
     ctaLabel = 'View due this week'
     ctaFilter = 'due_this_week'
   } else if (stats.noContact > 0) {
-    title = `A few clients have gone quiet.`
-    body = `${stats.noContact} client${stats.noContact !== 1 ? 's have' : ' has'} no contact in 7+ days. Worth a quick check-in.`
+    title = isSupervisorRole
+      ? 'Some cases have gone quiet.'
+      : isTeamManagerRole
+        ? 'A few team cases have gone quiet.'
+        : 'A few clients have gone quiet.'
+    body = isSupervisorRole
+      ? `${stats.noContact} client${stats.noContact !== 1 ? 's have' : ' has'} no contact in 7+ days. Worth a quick org-level check.`
+      : isTeamManagerRole
+        ? `${stats.noContact} client${stats.noContact !== 1 ? 's have' : ' has'} no contact in 7+ days across your team. Worth a quick check-in.`
+        : `${stats.noContact} client${stats.noContact !== 1 ? 's have' : ' has'} no contact in 7+ days. Worth a quick check-in.`
     ctaLabel = 'View no contact'
     ctaFilter = 'no_contact_7'
   } else if (stats.eligibilitySoon > 0) {
@@ -510,7 +605,7 @@ function exportSelectedToCsv(clients: Client[]) {
   URL.revokeObjectURL(url)
 }
 
-export default function DashboardClient({ profile, currentUserId, planners = [], teamManagers = [], hasProfile = true }: Props) {
+export default function DashboardClient({ profile, currentUserId, planners = [], teamManagers = [], savedViews = [], hasProfile = true }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isSupervisor = profile?.role === 'supervisor' || profile?.role === 'it'
@@ -720,7 +815,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     pushResultsState({ filter: 'all', deadlineDate: dateStr })
   }
 
-  function handleSavedViewSelect(view: { filter?: FilterType; plannerId?: string | null }) {
+  function handleSavedViewSelect(view: DashboardSavedView) {
     setActiveDayFilter(null)
     setAlertFilter(null)
     setActivePlannerId(view.plannerId ?? null)
@@ -862,6 +957,31 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         onDismissConfetti={() => setShowConfetti(false)}
       />
 
+      {isTeamManager && !fullMode && (
+        <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, rgba(255,159,10,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(255,159,10,0.18)' }}>
+          <div style={{ fontSize: 12, color: '#ffb340', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Team Manager Focus
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+            Watch team pressure, then rebalance fast.
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Use the overdue and due-this-week queues to spot load issues early, then jump into planner assignment and transfer flows when something is stacking up.
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+            <Link href="/team?full=1&filter=overdue" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+              Overdue Queue →
+            </Link>
+            <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+              Transfer Board →
+            </Link>
+            <Link href="/team?view=assign-planners" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+              Team Manager Board →
+            </Link>
+          </div>
+        </div>
+      )}
+
       {isSupervisorLike(profile?.role) && (
         <>
           <SupervisorOverviewStrip
@@ -879,7 +999,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       <ClientQuickSearch
         assignedTo={canSeeAll ? activePlannerId : currentUserId}
-        helperText={profile?.role === 'team_manager' ? 'Search clients in your current scope.' : 'Search your current scope.'}
+        helperText={profile?.role === 'team_manager'
+          ? 'Search clients in your team scope.'
+          : isSupervisorLike(profile?.role)
+            ? 'Search across the current org/team scope.'
+            : 'Search your current client scope.'}
         maxResults={6}
       />
 
@@ -887,6 +1011,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         profile={profile}
         activeFilter={filter}
         activePlannerId={activePlannerId}
+        views={savedViews}
         onSelect={handleSavedViewSelect}
       />
 
@@ -908,6 +1033,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Suggested focus */}
       <NextBestMoveCard
+        profile={profile}
         stats={{ overdue: stats.overdue, dueThisWeek: stats.dueThisWeek, noContact: stats.noContact, eligibilitySoon: stats.eligibilitySoon }}
         onFilter={handleGreetingFilter}
       />

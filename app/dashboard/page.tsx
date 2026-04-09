@@ -4,6 +4,7 @@ import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
+import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -15,15 +16,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   let planners: Profile[] = []
   let teamManagers: Profile[] = []
+  let savedViews = []
 
   try {
+    const savedViewsPromise = listSavedViewsForCurrentUser().then(result => result.views)
+
     if (isSupervisorLike(profile?.role)) {
-      ;[planners, teamManagers] = await Promise.all([
+      ;[planners, teamManagers, savedViews] = await Promise.all([
         getPlanners(supabase),
         getTeamManagers(supabase),
+        savedViewsPromise,
       ])
     } else if (profile?.role === 'team_manager') {
-      planners = await getPlanners(supabase)
+      ;[planners, savedViews] = await Promise.all([
+        getPlanners(supabase),
+        savedViewsPromise,
+      ])
+    } else {
+      savedViews = await savedViewsPromise
     }
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
@@ -51,6 +61,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       currentUserId={user.id}
       planners={planners}
       teamManagers={teamManagers}
+      savedViews={savedViews}
       hasProfile={Boolean(profile)}
     />
   )
