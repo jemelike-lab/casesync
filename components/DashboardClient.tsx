@@ -354,7 +354,7 @@ function SupervisorOverviewStrip({
         <StatCard label="Active Clients" value={clients.length} onClick={onOpenAllClients} />
         <StatCard label="Overdue" value={overdue} color="var(--red)" onClick={onOpenOverdue} />
         <StatCard label="Due This Week" value={dueThisWeek} color="var(--orange)" onClick={onOpenDueThisWeek} />
-        <StatCard label="No Contact 7+ Days" value={quiet} color="#ffd60a" onClick={onOpenQuiet} />
+        <StatCard label="No Contact 7+ Days" value={quiet} color="var(--yellow)" onClick={onOpenQuiet} />
         <StatCard label="Support Planners" value={planners.length} />
         <StatCard label="Team Managers" value={teamManagers.length} />
         <StatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} />
@@ -462,7 +462,7 @@ function TeamManagerSummaryTable({
                 <td style={{ padding: '10px 12px' }}><Link href={row.links.all} style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
                 <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href={row.links.overdue} style={{ color: 'inherit' }}>{row.overdue}</Link></td>
                 <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href={row.links.dueThisWeek} style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
-                <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href={row.links.quiet} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
+                <td style={{ padding: '10px 12px', color: row.quiet > 0 ? 'var(--yellow)' : 'var(--text)' }}><Link href={row.links.quiet} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
               </tr>
             ))}
           </tbody>
@@ -624,6 +624,13 @@ function ClientOpsTable({
   sortField,
   sortDir,
   onSortChange,
+  total,
+  page,
+  hasMore,
+  onPrevPage,
+  onNextPage,
+  activeFilterLabel,
+  searchLabel,
 }: {
   clients: Client[]
   selectedIds: string[]
@@ -634,40 +641,60 @@ function ClientOpsTable({
   sortField: SortField
   sortDir: SortDir
   onSortChange: (field: SortField) => void
+  total: number
+  page: number
+  hasMore: boolean
+  onPrevPage: () => void
+  onNextPage: () => void
+  activeFilterLabel: string
+  searchLabel?: string
 }) {
   const sorted = useMemo(() => sortClients(clients, sortField, sortDir), [clients, sortField, sortDir])
 
   const sortLabel = (field: SortField) => sortField === field ? ` ${sortDir === 'asc' ? '↑' : '↓'}` : ''
 
+  const pageStart = total === 0 ? 0 : page * clients.length + 1
+  const pageEnd = total === 0 ? 0 : pageStart + clients.length - 1
+
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sort:</span>
-        {[
-          { field: 'priority' as const, label: 'Priority' },
-          { field: 'name' as const, label: 'Name' },
-          { field: 'goal_pct' as const, label: 'Goal %' },
-          { field: 'last_contact_date' as const, label: 'Last Contact' },
-          { field: 'eligibility_end_date' as const, label: 'Elig. End' },
-        ].map(option => (
-          <button
-            key={option.field}
-            onClick={() => onSortChange(option.field)}
-            style={{
-              background: sortField === option.field ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
-              border: '1px solid',
-              borderColor: sortField === option.field ? 'var(--accent)' : 'var(--border)',
-              borderRadius: 6,
-              color: sortField === option.field ? 'var(--accent)' : 'var(--text-secondary)',
-              fontSize: 11,
-              padding: '4px 10px',
-              cursor: 'pointer',
-              minHeight: 28,
-            }}
-          >
-            {option.label}{sortLabel(option.field)}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: 12, padding: '12px 14px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 2 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Ops table</span>
+          <span style={{ fontSize: 12, color: 'var(--text)' }}>{activeFilterLabel}</span>
+          {searchLabel ? <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Search: “{searchLabel}”</span> : null}
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pageStart}-{pageEnd} of {total}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sort:</span>
+          {[
+            { field: 'priority' as const, label: 'Priority' },
+            { field: 'name' as const, label: 'Name' },
+            { field: 'goal_pct' as const, label: 'Goal %' },
+            { field: 'last_contact_date' as const, label: 'Last Contact' },
+            { field: 'eligibility_end_date' as const, label: 'Elig. End' },
+          ].map(option => (
+            <button
+              key={option.field}
+              onClick={() => onSortChange(option.field)}
+              style={{
+                background: sortField === option.field ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
+                border: '1px solid',
+                borderColor: sortField === option.field ? 'var(--accent)' : 'var(--border)',
+                borderRadius: 6,
+                color: sortField === option.field ? 'var(--accent)' : 'var(--text-secondary)',
+                fontSize: 11,
+                padding: '4px 10px',
+                cursor: 'pointer',
+                minHeight: 28,
+              }}
+            >
+              {option.label}{sortLabel(option.field)}
+            </button>
+          ))}
+          <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={onPrevPage} disabled={page === 0}>← Prev</button>
+          <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={onNextPage} disabled={!hasMore}>Next →</button>
+        </div>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -1430,7 +1457,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 24 }}>
-        <StatCard label="Caseload" value={stats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
+        <StatCard label="Active Clients" value={stats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
         <StatCard label="Overdue" value={stats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
         <StatCard label="Due This Week" value={stats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
         <StatCard label="No Contact 7+ Days" value={stats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
@@ -1447,7 +1474,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
                 You’re in the full dashboard view for this filter. Use paging, search, and filters here instead of the compact preview.
               </div>
               <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8, fontWeight: 600 }}>
-                Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'No Contact 7+ Days' : filter.toUpperCase()}
+                Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'No Contact 7+ Days' : filter.toUpperCase()}
               </div>
             </div>
           </div>
@@ -1604,6 +1631,13 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
           sortField={sortField}
           sortDir={sortDir}
           onSortChange={handleSortChange}
+          total={total}
+          page={page}
+          hasMore={hasMore}
+          onPrevPage={() => setPage(current => Math.max(0, current - 1))}
+          onNextPage={() => setPage(current => current + 1)}
+          activeFilterLabel={activeSavedViewId ? (savedViews.find(view => view.id === activeSavedViewId)?.name ?? 'Saved View') : (alertFilter ?? filter).replaceAll('_', ' ')}
+          searchLabel={debouncedSearch}
         />
       ) : (
         <ClientGrid

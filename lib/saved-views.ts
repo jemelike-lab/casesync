@@ -24,6 +24,114 @@ const SAVED_VIEW_FIELDS = `
   updated_at
 `
 
+const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 'visibility_type' | 'allowed_roles' | 'entity_type' | 'filter_definition' | 'sort_definition' | 'is_favorite_default'>> = [
+  {
+    name: 'My Clients',
+    description: 'Starter queue for supports planners to reopen their active assigned clients.',
+    visibility_type: 'system',
+    allowed_roles: ['supports_planner'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'me' },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'My Overdue',
+    description: 'Starter queue for supports planners focused on overdue work.',
+    visibility_type: 'system',
+    allowed_roles: ['supports_planner'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'me', dueStates: ['overdue'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'My Due This Week',
+    description: 'Starter queue for supports planners focused on work due soon.',
+    visibility_type: 'system',
+    allowed_roles: ['supports_planner'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'me', dueStates: ['due_this_week'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'Team Overdue',
+    description: 'Starter queue for team managers focused on overdue team work.',
+    visibility_type: 'system',
+    allowed_roles: ['team_manager'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'my_team', dueStates: ['overdue'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'Team Due Next 14 Days',
+    description: 'Starter queue for team managers to stay ahead of upcoming deadlines.',
+    visibility_type: 'system',
+    allowed_roles: ['team_manager'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'my_team', dueStates: ['due_next_14_days'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'Org Overdue',
+    description: 'Starter operational queue for supervisors and IT focused on org-wide overdue work.',
+    visibility_type: 'system',
+    allowed_roles: ['supervisor', 'it'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'org', dueStates: ['overdue'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'Org Due Next 14 Days',
+    description: 'Starter operational queue for supervisors and IT focused on upcoming due work.',
+    visibility_type: 'system',
+    allowed_roles: ['supervisor', 'it'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'org', dueStates: ['due_next_14_days'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+  {
+    name: 'Unassigned',
+    description: 'Starter queue for users allowed to work unassigned cases.',
+    visibility_type: 'system',
+    allowed_roles: ['team_manager', 'supervisor', 'it'],
+    entity_type: 'clients',
+    filter_definition: { ownershipScope: 'org', assignmentStates: ['unassigned'] },
+    sort_definition: { field: 'priority', dir: 'desc' },
+    is_favorite_default: true,
+  },
+]
+
+function getFallbackSavedViewsForRole(role?: Role | null): SavedViewRecord[] {
+  if (!role) return []
+  return STARTER_SAVED_VIEWS
+    .filter((view) => !view.allowed_roles || view.allowed_roles.includes(role))
+    .map((view, index) => ({
+      id: `fallback-${role}-${index}`,
+      name: view.name,
+      description: view.description ?? null,
+      owner_user_id: null,
+      visibility_type: view.visibility_type,
+      allowed_roles: view.allowed_roles ?? null,
+      entity_type: view.entity_type,
+      filter_definition: view.filter_definition,
+      sort_definition: view.sort_definition,
+      is_favorite_default: view.is_favorite_default,
+      created_at: '',
+      updated_at: '',
+    }))
+}
+
+export function isSavedViewsUnavailableError(error: { code?: string | null; message?: string | null } | null | undefined) {
+  if (!error) return false
+  return error.code === 'PGRST205' || /saved_views/i.test(error.message ?? '')
+}
+
 export function getStarterViewNamesForRole(role?: Role | null): string[] {
   if (role === 'supports_planner') return ['My Clients', 'My Overdue', 'My Due This Week']
   if (role === 'team_manager') return ['Team Overdue', 'Team Due Next 14 Days', 'Unassigned']
@@ -120,18 +228,27 @@ export async function listSavedViewsForCurrentUser() {
     .order('name', { ascending: true })
 
   if (error) {
-    if (error.code === 'PGRST205' || /saved_views/i.test(error.message ?? '')) {
+    if (isSavedViewsUnavailableError(error)) {
       return {
         profile,
-        views: [] as SavedViewRecord[],
+        views: getFallbackSavedViewsForRole(profile.role as Role),
       }
     }
     throw error
   }
 
+  const views = (data ?? []) as SavedViewRecord[]
+  if (views.length === 0) {
+    return {
+      profile,
+      views: getFallbackSavedViewsForRole(profile.role as Role),
+    }
+  }
+ 
+
   return {
     profile,
-    views: (data ?? []) as SavedViewRecord[],
+    views,
   }
 }
 

@@ -20,6 +20,7 @@ export default function TeamSavedViewsBar({ views, activeSavedViewId }: Props) {
           {views.length} available
         </div>
       </div>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>Team starter queues</div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
         {views.map((view) => {
           const active = view.id === activeSavedViewId

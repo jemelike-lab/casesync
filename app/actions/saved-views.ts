@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import {
   assertSavedViewEditable,
   getCurrentSavedViewContext,
+  isSavedViewsUnavailableError,
   sanitizeSavedViewDescription,
   sanitizeSavedViewName,
   validateSavedViewFilterForRole,
@@ -31,6 +32,13 @@ function normalizeActionInput(input: SavedViewActionInput) {
   }
 }
 
+function mapSavedViewActionError(error: { code?: string | null; message?: string | null }) {
+  if (isSavedViewsUnavailableError(error)) {
+    throw new Error('Saved views are not deployed in this environment yet')
+  }
+  throw new Error(error.message ?? 'Saved view action failed')
+}
+
 export async function createSavedView(input: SavedViewActionInput) {
   const { supabase, user, profile } = await getCurrentSavedViewContext()
   const normalized = normalizeActionInput(input)
@@ -55,7 +63,8 @@ export async function createSavedView(input: SavedViewActionInput) {
     .select('id')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) mapSavedViewActionError(error)
+  if (!data?.id) throw new Error('Saved view creation returned no id')
 
   revalidatePath('/dashboard')
   revalidatePath('/clients')
@@ -79,7 +88,7 @@ export async function updateSavedView(savedViewId: string, input: SavedViewActio
     })
     .eq('id', view.id)
 
-  if (error) throw new Error(error.message)
+  if (error) mapSavedViewActionError(error)
 
   revalidatePath('/dashboard')
   revalidatePath('/clients')
@@ -94,7 +103,7 @@ export async function deleteSavedView(savedViewId: string) {
     .delete()
     .eq('id', view.id)
 
-  if (error) throw new Error(error.message)
+  if (error) mapSavedViewActionError(error)
 
   revalidatePath('/dashboard')
   revalidatePath('/clients')

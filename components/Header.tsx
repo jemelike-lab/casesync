@@ -55,6 +55,13 @@ export default function Header({ user, profile }: Props) {
 
   const role = profile?.role
   const roleName = getRoleLabel(role)
+  const dashboardActive = pathname === '/' || pathname?.startsWith('/dashboard')
+  const teamActive = pathname?.startsWith('/team') ?? false
+  const supervisorActive = pathname?.startsWith('/supervisor') ?? false
+  const adminActive = pathname === '/admin'
+  const auditActive = pathname?.startsWith('/admin/audit') ?? false
+  const settingsActive = pathname?.startsWith('/settings') ?? false
+  const helpActive = pathname?.startsWith('/help') ?? false
 
   return (
     <>
@@ -83,22 +90,22 @@ export default function Header({ user, profile }: Props) {
 
           {/* Nav links - desktop only */}
           <nav style={{ display: 'flex', gap: 4 }} className="desktop-nav">
-            <NavLink href="/dashboard" label="Dashboard" active={pathname === '/dashboard'} />
+            <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
             {(role === 'team_manager' || isSupervisorLike(role)) && (
-              <NavLink href="/team" label="Team" active={pathname === '/team'} />
+              <NavLink href="/team" label="Team" active={teamActive} />
             )}
             {isSupervisorLike(role) && (
-              <NavLink href="/supervisor" label="Supervisor" active={pathname === '/supervisor'} />
+              <NavLink href="/supervisor" label="Supervisor" active={supervisorActive} />
             )}
             <NavLink href="/calendar" label="Calendar" active={pathname?.startsWith('/calendar') ?? false} />
             {isSupervisorLike(role) && (
-              <NavLink href="/admin" label="Admin" active={pathname === '/admin'} />
+              <NavLink href="/admin" label="Admin" active={adminActive} />
             )}
             {isSupervisorLike(role) && (
-              <NavLink href="/admin/audit" label="Audit Log" active={pathname === '/admin/audit'} />
+              <NavLink href="/admin/audit" label="Audit Log" active={auditActive} />
             )}
-            <NavLink href="/settings/security" label="Settings" active={pathname?.startsWith('/settings') ?? false} />
-            <NavLink href="/help" label="📚 Help" active={pathname === '/help'} />
+            <NavLink href="/settings/security" label="Settings" active={settingsActive} />
+            <NavLink href="/help" label="📚 Help" active={helpActive} />
           </nav>
         </div>
 
@@ -201,19 +208,19 @@ export default function Header({ user, profile }: Props) {
         gap: 2,
         boxSizing: 'border-box',
       }}>
-        <MobileNavItem href="/dashboard" icon="🏠" label="Home" active={pathname === '/dashboard'} />
+        <MobileNavItem href="/dashboard" icon="🏠" label="Home" active={dashboardActive} />
         {(role === 'team_manager' || isSupervisorLike(role)) && (
-          <MobileNavItem href="/team" icon="👥" label="Team" active={pathname === '/team'} />
+          <MobileNavItem href="/team" icon="👥" label="Team" active={teamActive} />
         )}
         <MobileNavItem href="/calendar" icon="📅" label="Cal" active={pathname?.startsWith('/calendar') ?? false} />
         {isSupervisorLike(role) && (
-          <MobileNavItem href="/supervisor" icon="📊" label="Stats" active={pathname === '/supervisor'} />
+          <MobileNavItem href="/supervisor" icon="📊" label="Stats" active={supervisorActive} />
         )}
         {isSupervisorLike(role) && (
-          <MobileNavItem href="/admin" icon="⚙️" label="Admin" active={pathname === '/admin'} />
+          <MobileNavItem href="/admin" icon="⚙️" label="Admin" active={adminActive || auditActive} />
         )}
-        <MobileNavItem href="/settings/security" icon="🔐" label="Prefs" active={pathname?.startsWith('/settings') ?? false} />
-        <MobileNavItem href="/help" icon="📚" label="Help" active={pathname === '/help'} />
+        <MobileNavItem href="/settings/security" icon="🔐" label="Prefs" active={settingsActive} />
+        <MobileNavItem href="/help" icon="📚" label="Help" active={helpActive} />
         {/* Mobile help button */}
         <button
           onClick={() => setShowTour(true)}

@@ -261,7 +261,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         <ClickableStatCard label="Active Clients" value={scopedSummary.total_clients} active={clientFilter === 'all'} onClick={() => openClientFilter('all')} />
         <ClickableStatCard label="Overdue" value={scopedSummary.overdue_clients} color="var(--red)" active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
         <ClickableStatCard label="Due This Week" value={scopedSummary.due_this_week_clients} color="var(--orange)" active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-        <ClickableStatCard label="No Contact 7+ Days" value={scopedSummary.no_contact_7_days_clients} color="#ffd60a" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
+        <ClickableStatCard label="No Contact 7+ Days" value={scopedSummary.no_contact_7_days_clients} color="var(--yellow)" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
         <ClickableStatCard label="Support Planners" value={planners.length} active={rosterFilter === 'planners'} onClick={() => openRosterFilter('planners')} />
         <ClickableStatCard label="Team Managers" value={teamManagers.length} active={rosterFilter === 'team_managers'} onClick={() => openRosterFilter('team_managers')} />
         <ClickableStatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} active={rosterFilter === 'unassigned_planners'} onClick={() => openRosterFilter('unassigned_planners')} />
@@ -407,7 +407,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                     <td style={{ padding: '10px 12px' }}><Link href={teamLink('all', row.planner.id)} style={{ color: 'inherit' }}>{row.clientCount}</Link></td>
                     <td style={{ padding: '10px 12px', color: row.overdue > 0 ? 'var(--red)' : 'var(--text)' }}><Link href={teamLink('overdue', row.planner.id)} style={{ color: 'inherit' }}>{row.overdue}</Link></td>
                     <td style={{ padding: '10px 12px', color: row.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}><Link href={teamLink('due_this_week', row.planner.id)} style={{ color: 'inherit' }}>{row.dueThisWeek}</Link></td>
-                    <td style={{ padding: '10px 12px', color: row.quiet > 0 ? '#ffd60a' : 'var(--text)' }}><Link href={teamLink('no_contact_7', row.planner.id)} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
+                    <td style={{ padding: '10px 12px', color: row.quiet > 0 ? 'var(--yellow)' : 'var(--text)' }}><Link href={teamLink('no_contact_7', row.planner.id)} style={{ color: 'inherit' }}>{row.quiet}</Link></td>
                   </tr>
                 ))}
               </tbody>

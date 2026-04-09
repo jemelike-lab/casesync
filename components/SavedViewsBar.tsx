@@ -56,6 +56,8 @@ function mapSavedViewToDashboardView(view: SavedViewRecord): DashboardSavedView 
 
 export default function SavedViewsBar({ profile, activeFilter, activePlannerId, views = [], activeSavedViewId, onSelect }: Props) {
   const mappedViews = views.length > 0 ? views.map(mapSavedViewToDashboardView) : LEGACY_VIEWS
+  const systemViews = mappedViews.filter(view => view.source === 'system' || view.source === 'legacy')
+  const personalViews = mappedViews.filter(view => view.source === 'personal')
 
   return (
     <div className="card" style={{ marginBottom: 16, padding: 14 }}>
@@ -69,37 +71,78 @@ export default function SavedViewsBar({ profile, activeFilter, activePlannerId, 
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-        {mappedViews.map((view) => {
-          const active = activeSavedViewId
-            ? view.id === activeSavedViewId
-            : (view.filter ?? 'all') === activeFilter && (view.plannerId ?? null) === (activePlannerId ?? null)
+      {systemViews.length > 0 && (
+        <div style={{ marginBottom: personalViews.length > 0 ? 10 : 0 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>Starter queues</div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+            {systemViews.map((view) => {
+              const active = activeSavedViewId
+                ? view.id === activeSavedViewId
+                : (view.filter ?? 'all') === activeFilter && (view.plannerId ?? null) === (activePlannerId ?? null)
 
-          return (
-            <button
-              key={view.id}
-              type="button"
-              onClick={() => onSelect(view)}
-              title={view.source === 'system' ? 'System starter view' : view.source === 'personal' ? 'Saved personal view' : undefined}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 999,
-                border: '1px solid',
-                borderColor: active ? 'var(--accent)' : 'var(--border)',
-                background: active ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
-                color: active ? 'var(--accent)' : 'var(--text-secondary)',
-                whiteSpace: 'nowrap',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                minHeight: 36,
-              }}
-            >
-              {view.label}
-            </button>
-          )
-        })}
-      </div>
+              return (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => onSelect(view)}
+                  title={view.source === 'system' ? 'System starter view' : undefined}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    border: '1px solid',
+                    borderColor: active ? 'var(--accent)' : 'var(--border)',
+                    background: active ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
+                    color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                    whiteSpace: 'nowrap',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    minHeight: 36,
+                  }}
+                >
+                  {view.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {personalViews.length > 0 && (
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>My saved views</div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+            {personalViews.map((view) => {
+              const active = activeSavedViewId
+                ? view.id === activeSavedViewId
+                : (view.filter ?? 'all') === activeFilter && (view.plannerId ?? null) === (activePlannerId ?? null)
+
+              return (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => onSelect(view)}
+                  title="Saved personal view"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 999,
+                    border: '1px solid',
+                    borderColor: active ? 'var(--accent)' : 'var(--border)',
+                    background: active ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
+                    color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                    whiteSpace: 'nowrap',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    minHeight: 36,
+                  }}
+                >
+                  {view.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -224,7 +224,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
               Working queue: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <QueueSwitchButton label="All Active" href={fullViewHref('all')} active={currentFilter === 'all'} />
+              <QueueSwitchButton label="Active Clients" href={fullViewHref('all')} active={currentFilter === 'all'} />
               <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
               <QueueSwitchButton label="📍 Due Today" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
               <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
@@ -236,7 +236,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Total Clients" value={totalStats.clients} href={fullFilterLabel ? undefined : fullViewHref('all')} active={currentFilter === 'all'} />
+        <StatCard label="Active Clients" value={totalStats.clients} href={fullFilterLabel ? undefined : fullViewHref('all')} active={currentFilter === 'all'} />
         <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullFilterLabel ? undefined : fullViewHref('overdue')} active={currentFilter === 'overdue'} />
         <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullFilterLabel ? undefined : fullViewHref('due_today')} active={currentFilter === 'due_today'} />
         <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullFilterLabel ? undefined : fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
