@@ -119,7 +119,15 @@ export async function listSavedViewsForCurrentUser() {
     .order('is_favorite_default', { ascending: false })
     .order('name', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'PGRST205' || /saved_views/i.test(error.message ?? '')) {
+      return {
+        profile,
+        views: [] as SavedViewRecord[],
+      }
+    }
+    throw error
+  }
 
   return {
     profile,
