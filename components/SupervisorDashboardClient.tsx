@@ -20,6 +20,29 @@ interface Props {
   category?: string | null
 }
 
+function QueueSwitchButton({ label, href, active }: { label: string; href: string; active?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={() => { window.location.href = href }}
+      style={{
+        padding: '8px 12px',
+        borderRadius: 999,
+        border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+        background: active ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
+        color: active ? 'var(--accent)' : 'var(--text-secondary)',
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        minHeight: 36,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 interface PlannerStats {
   planner: Profile
   clientCount: number
@@ -188,10 +211,16 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       {fullFilterLabel && (
         <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-            Full filtered team view
+            Queue view
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            Showing the full team view for: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+            Working queue: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <QueueSwitchButton label="All Active" href={fullViewHref('all')} active={currentFilter === 'all'} />
+            <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+            <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
+            <QueueSwitchButton label="📵 No Contact 7+ Days" href={fullViewHref('no_contact_7')} active={currentFilter === 'no_contact_7'} />
           </div>
         </div>
       )}
@@ -205,11 +234,16 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
 
       {fullFilterLabel && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Matching Clients
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Queue Items
+            </h3>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              {clients.length} client{clients.length !== 1 ? 's' : ''} in this queue
+            </div>
+          </div>
           {clients.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No clients matched this filter.</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No clients matched this queue.</div>
           ) : (
             <ClientGrid clients={clients} pinnedIds={[]} onTogglePin={() => {}} />
           )}
