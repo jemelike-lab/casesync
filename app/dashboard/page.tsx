@@ -1,5 +1,5 @@
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
-import { Profile } from '@/lib/types'
+import { Profile, SavedViewRecord } from '@/lib/types'
 import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
@@ -16,7 +16,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   let planners: Profile[] = []
   let teamManagers: Profile[] = []
-  let savedViews = []
+  let savedViews: SavedViewRecord[] = []
 
   try {
     const savedViewsPromise = listSavedViewsForCurrentUser().then(result => result.views)

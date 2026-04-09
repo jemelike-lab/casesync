@@ -16,6 +16,7 @@ interface Props {
   activeFilter: FilterType
   activePlannerId?: string | null
   views?: SavedViewRecord[]
+  activeSavedViewId?: string | null
   onSelect: (view: DashboardSavedView) => void
 }
 
@@ -53,7 +54,7 @@ function mapSavedViewToDashboardView(view: SavedViewRecord): DashboardSavedView 
   }
 }
 
-export default function SavedViewsBar({ profile, activeFilter, activePlannerId, views = [], onSelect }: Props) {
+export default function SavedViewsBar({ profile, activeFilter, activePlannerId, views = [], activeSavedViewId, onSelect }: Props) {
   const mappedViews = views.length > 0 ? views.map(mapSavedViewToDashboardView) : LEGACY_VIEWS
 
   return (
@@ -70,7 +71,9 @@ export default function SavedViewsBar({ profile, activeFilter, activePlannerId, 
       </div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
         {mappedViews.map((view) => {
-          const active = (view.filter ?? 'all') === activeFilter && (view.plannerId ?? null) === (activePlannerId ?? null)
+          const active = activeSavedViewId
+            ? view.id === activeSavedViewId
+            : (view.filter ?? 'all') === activeFilter && (view.plannerId ?? null) === (activePlannerId ?? null)
 
           return (
             <button

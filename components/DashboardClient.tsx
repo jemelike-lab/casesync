@@ -1,7 +1,7 @@
 'use client'
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Client,
@@ -10,6 +10,8 @@ import {
   SortField,
   SortDir,
   PaginatedClientsResponse,
+  SavedViewFilter,
+  SavedViewOwnershipScope,
   SavedViewRecord,
   isOverdue,
   isDueThisWeek,
@@ -31,6 +33,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ClientQuickSearch from './ClientQuickSearch'
+import { createSavedView, updateSavedView, deleteSavedView } from '@/app/actions/saved-views'
 
 interface Props {
   profile: Profile | null
@@ -633,6 +636,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null)
+  const [savedViewName, setSavedViewName] = useState('')
+  const [savedViewDescription, setSavedViewDescription] = useState('')
+  const [savedViewMessage, setSavedViewMessage] = useState<string | null>(null)
+  const [isSavingView, startSavingView] = useTransition()
   const [weekCounts, setWeekCounts] = useState<Record<string, number>>({})
   const [summaryStats, setSummaryStats] = useState({ total: 0, overdue: 0, dueThisWeek: 0, eligibilitySoon: 0, noContact: 0 })
   const fullMode = searchParams.get('full') === '1'
@@ -792,7 +800,12 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     router.push(`/dashboard?${params.toString()}`)
   }
 
+  function clearSavedViewSelection() {
+    setActiveSavedViewId(null)
+  }
+
   function handleAlertClick(f: FilterType | null) {
+    clearSavedViewSelection()
     const nextFilter = f ?? 'all'
     setAlertFilter(f)
     setFilter(nextFilter)
@@ -801,6 +814,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }
 
   function handleGreetingFilter(f: FilterType | null) {
+    clearSavedViewSelection()
     const nextFilter = f ?? 'all'
     setAlertFilter(f)
     setFilter(nextFilter)
@@ -809,6 +823,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }
 
   function handleDayFilter(dateStr: string | null) {
+    clearSavedViewSelection()
     setActiveDayFilter(dateStr)
     setAlertFilter(null)
     setFilter('all')
@@ -816,12 +831,93 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }
 
   function handleSavedViewSelect(view: DashboardSavedView) {
+    setSavedViewMessage(null)
+    setActiveSavedViewId(view.id)
+    setSavedViewName(view.label)
+    setSavedViewDescription('')
     setActiveDayFilter(null)
     setAlertFilter(null)
     setActivePlannerId(view.plannerId ?? null)
     const nextFilter = view.filter ?? 'all'
     setFilter(nextFilter)
     pushResultsState({ filter: nextFilter, deadlineDate: null })
+  }
+
+  function buildCurrentSavedViewPayload() {
+    const ownershipScope: SavedViewOwnershipScope = canSeeAll
+      ? (activePlannerId ? 'specific_planner' : (isTeamManager ? 'my_team' : isSupervisor ? 'org' : 'me'))
+      : 'me'
+
+    const dueStates: SavedViewFilter['dueStates'] = filter === 'overdue'
+      ? ['overdue']
+      : filter === 'due_this_week'
+        ? ['due_this_week']
+        : undefined
+
+    const assignmentStates: SavedViewFilter['assignmentStates'] = activePlannerId ? ['assigned'] : undefined
+
+    const filterDefinition: SavedViewFilter = {
+      ownershipScope,
+      assignedToUserId: canSeeAll ? activePlannerId : currentUserId,
+      dueStates,
+      assignmentStates,
+      categories: filter === 'co' || filter === 'cfc' || filter === 'cpas' ? [filter] : undefined,
+      searchTerm: debouncedSearch || undefined,
+    }
+
+    return {
+      name: savedViewName.trim() || 'Saved view',
+      description: savedViewDescription.trim() || null,
+      filterDefinition,
+      sortDefinition: { field: sortField, dir: sortDir },
+      visibilityType: 'personal' as const,
+    }
+  }
+
+  function handleSaveCurrentView() {
+    setSavedViewMessage(null)
+    startSavingView(async () => {
+      try {
+        const payload = buildCurrentSavedViewPayload()
+        const result = await createSavedView(payload)
+        setActiveSavedViewId(result.id)
+        setSavedViewMessage('Saved view created.')
+        router.refresh()
+      } catch (error) {
+        setSavedViewMessage(error instanceof Error ? error.message : 'Failed to save view')
+      }
+    })
+  }
+
+  function handleUpdateCurrentView() {
+    if (!activeSavedViewId) return
+    setSavedViewMessage(null)
+    startSavingView(async () => {
+      try {
+        await updateSavedView(activeSavedViewId, buildCurrentSavedViewPayload())
+        setSavedViewMessage('Saved view updated.')
+        router.refresh()
+      } catch (error) {
+        setSavedViewMessage(error instanceof Error ? error.message : 'Failed to update view')
+      }
+    })
+  }
+
+  function handleDeleteCurrentView() {
+    if (!activeSavedViewId || !window.confirm('Delete this saved view?')) return
+    setSavedViewMessage(null)
+    startSavingView(async () => {
+      try {
+        await deleteSavedView(activeSavedViewId)
+        clearSavedViewSelection()
+        setSavedViewName('')
+        setSavedViewDescription('')
+        setSavedViewMessage('Saved view deleted.')
+        router.refresh()
+      } catch (error) {
+        setSavedViewMessage(error instanceof Error ? error.message : 'Failed to delete view')
+      }
+    })
   }
 
   // Base: current page from API
@@ -1012,8 +1108,72 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         activeFilter={filter}
         activePlannerId={activePlannerId}
         views={savedViews}
+        activeSavedViewId={activeSavedViewId}
         onSelect={handleSavedViewSelect}
       />
+
+      <div className="card" style={{ marginBottom: 16, padding: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
+              Manage current view
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+              Save this filter/search/sort state for one-click reuse.
+            </div>
+          </div>
+          {savedViewMessage && (
+            <div style={{ fontSize: 12, color: 'var(--accent)' }}>{savedViewMessage}</div>
+          )}
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <input
+            value={savedViewName}
+            onChange={e => setSavedViewName(e.target.value)}
+            placeholder="Saved view name"
+            style={{ width: '100%' }}
+          />
+          <input
+            value={savedViewDescription}
+            onChange={e => setSavedViewDescription(e.target.value)}
+            placeholder="Description (optional)"
+            style={{ width: '100%' }}
+          />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ fontSize: 12, minHeight: 36 }}
+              onClick={handleSaveCurrentView}
+              disabled={isSavingView}
+            >
+              {isSavingView ? 'Saving…' : 'Save current view'}
+            </button>
+            {activeSavedViewId && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: 12, minHeight: 36 }}
+                  onClick={handleUpdateCurrentView}
+                  disabled={isSavingView}
+                >
+                  Update selected view
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: 12, minHeight: 36, borderColor: 'rgba(255,69,58,0.4)', color: 'var(--red)' }}
+                  onClick={handleDeleteCurrentView}
+                  disabled={isSavingView}
+                >
+                  Delete selected view
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* 7-day week strip */}
       <WeekStrip
