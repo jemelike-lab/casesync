@@ -7,8 +7,9 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
+import { Client, Profile, SavedViewRecord, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
 import HealthScoreRing from './HealthScoreRing'
+import TeamSavedViewsBar from './TeamSavedViewsBar'
 
 interface Props {
   clients: Client[]
@@ -18,6 +19,8 @@ interface Props {
   currentFilter?: 'all' | 'overdue' | 'due_this_week' | 'no_contact_7' | null
   plannerFilters?: string[]
   category?: string | null
+  savedViews?: SavedViewRecord[]
+  activeSavedViewId?: string | null
 }
 
 function QueueSwitchButton({ label, href, active }: { label: string; href: string; active?: boolean }) {
@@ -75,7 +78,7 @@ function StatCard({ label, value, color, href, active }: { label: string; value:
   )
 }
 
-export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category }: Props) {
+export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category, savedViews = [], activeSavedViewId = null }: Props) {
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
@@ -209,20 +212,23 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       </div>
 
       {fullFilterLabel && (
-        <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-            Queue view
+        <>
+          <TeamSavedViewsBar views={savedViews} activeSavedViewId={activeSavedViewId} />
+          <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+              Queue view
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+              Working queue: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <QueueSwitchButton label="All Active" href={fullViewHref('all')} active={currentFilter === 'all'} />
+              <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+              <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
+              <QueueSwitchButton label="📵 No Contact 7+ Days" href={fullViewHref('no_contact_7')} active={currentFilter === 'no_contact_7'} />
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
-            Working queue: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <QueueSwitchButton label="All Active" href={fullViewHref('all')} active={currentFilter === 'all'} />
-            <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
-            <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
-            <QueueSwitchButton label="📵 No Contact 7+ Days" href={fullViewHref('no_contact_7')} active={currentFilter === 'no_contact_7'} />
-          </div>
-        </div>
+        </>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
