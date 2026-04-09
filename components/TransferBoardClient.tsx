@@ -125,14 +125,15 @@ export default function TransferBoardClient({ clients: initialClients, planners 
 
   const unassignedClients = useMemo(() => filteredClients.filter(c => !c.assigned_to), [filteredClients])
 
-  async function reassignClient(clientId: string, plannerId: string) {
+  async function reassignClient(clientId: string, plannerId: string | null) {
     const client = clients.find(c => c.id === clientId)
     const planner = planners.find(p => p.id === plannerId)
-    if (!client || !planner || client.assigned_to === plannerId) return
+    if (!client) return
+    if ((client.assigned_to ?? null) === plannerId) return
 
     const previousClients = clients
     setSavingClientId(clientId)
-    setClients(prev => prev.map(c => c.id === clientId ? { ...c, assigned_to: plannerId, profiles: planner } : c))
+    setClients(prev => prev.map(c => c.id === clientId ? { ...c, assigned_to: plannerId, profiles: planner ?? null } : c))
 
     const { error } = await supabase
       .from('clients')
@@ -147,7 +148,11 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return
     }
 
-    showToast('success', `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} moved to ${planner.full_name ?? 'Support Planner'}.`)
+    if (plannerId) {
+      showToast('success', `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} moved to ${planner?.full_name ?? 'Support Planner'}.`)
+    } else {
+      showToast('success', `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} moved back to unassigned.`)
+    }
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -159,6 +164,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     const overId = event.over ? String(event.over.id) : null
     setActiveClientId(null)
     if (!overId) return
+    if (overId === 'pool:unassigned-clients') {
+      await reassignClient(clientId, null)
+      return
+    }
     if (overId.startsWith('planner:')) {
       const plannerId = overId.replace('planner:', '')
       await reassignClient(clientId, plannerId)
@@ -218,14 +227,11 @@ export default function TransferBoardClient({ clients: initialClients, planners 
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
-          <div className="card" style={{ position: 'sticky', top: 12 }}>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>Client List</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                {unassignedClients.length} unassigned client{unassignedClients.length !== 1 ? 's' : ''}
-              </div>
-            </div>
-
+          <DropColumn
+            id="pool:unassigned-clients"
+            title="Client List"
+            subtitle={`${unassignedClients.length} unassigned client${unassignedClients.length !== 1 ? 's' : ''}`}
+          >
             <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
               {unassignedClients.length === 0 ? (
                 <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
@@ -237,7 +243,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                 ))
               )}
             </div>
-          </div>
+          </DropColumn>
 
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(planners.length, 1)}, minmax(190px, 220px))`, gap: 10, alignItems: 'start', overflowX: 'auto' }}>
             {planners.map(planner => {
