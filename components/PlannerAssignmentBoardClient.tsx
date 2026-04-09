@@ -123,7 +123,6 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
     const manager = teamManagers.find(tm => tm.id === teamManagerId)
     if (!planner) return
     if ((planner.team_manager_id ?? null) === teamManagerId) return
-    if (!teamManagerId) return
 
     const previous = planners
     setSavingPlannerId(plannerId)
@@ -138,7 +137,11 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
       return
     }
 
-    showToast('success', `${planner.full_name ?? 'Support Planner'} moved to ${manager?.full_name ?? 'Team Manager'}.`)
+    if (teamManagerId) {
+      showToast('success', `${planner.full_name ?? 'Support Planner'} moved to ${manager?.full_name ?? 'Team Manager'}.`)
+    } else {
+      showToast('success', `${planner.full_name ?? 'Support Planner'} moved back to unassigned.`)
+    }
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -150,6 +153,10 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
     const overId = event.over ? String(event.over.id) : null
     setActivePlannerId(null)
     if (!overId) return
+    if (overId === 'pool:unassigned') {
+      await assignPlanner(plannerId, null)
+      return
+    }
     if (overId.startsWith('manager:')) {
       const managerId = overId.replace('manager:', '')
       await assignPlanner(plannerId, managerId)
@@ -202,14 +209,11 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
-          <div className="card" style={{ position: 'sticky', top: 12 }}>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>Support Planners</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                {unassignedPlanners.length} unassigned support planner{unassignedPlanners.length !== 1 ? 's' : ''}
-              </div>
-            </div>
-
+          <DropColumn
+            id="pool:unassigned"
+            title="Support Planners"
+            subtitle={`${unassignedPlanners.length} unassigned support planner${unassignedPlanners.length !== 1 ? 's' : ''}`}
+          >
             <div style={{ display: 'grid', gap: 8, maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
               {unassignedPlanners.length === 0 ? (
                 <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
@@ -219,7 +223,7 @@ export default function PlannerAssignmentBoardClient({ planners: initialPlanners
                 unassignedPlanners.map(planner => <DraggablePlannerCard key={`pool-${planner.id}`} planner={planner} />)
               )}
             </div>
-          </div>
+          </DropColumn>
 
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(teamManagers.length, 1)}, minmax(190px, 220px))`, gap: 10, alignItems: 'start', overflowX: 'auto' }}>
             {teamManagers.map(manager => {
