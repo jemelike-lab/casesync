@@ -262,120 +262,13 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         </div>
       )}
 
-      {clients.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
-          <div className="card">
-            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Overdue by Category
-            </h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart
-                data={overdueByCategory}
-                margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-                onClick={(state: any) => {
-                  const categoryValue = state?.activeLabel
-                  if (!categoryValue) return
-                  const params = new URLSearchParams()
-                  params.set('full', '1')
-                  params.set('filter', 'overdue')
-                  params.set('category', String(categoryValue).toLowerCase())
-                  plannerFilters.forEach((plannerId) => params.append('planner', plannerId))
-                  window.location.href = `/team?${params.toString()}`
-                }}
-              >
-                <XAxis dataKey="name" tick={{ fill: '#98989d', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#98989d', fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, fontSize: 12 }} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {overdueByCategory.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="card">
-            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Goal Progress Distribution
-            </h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={goalDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} paddingAngle={3} label={false} labelLine={false}>
-                  {goalDist.map((entry, i) => <Cell key={i} fill={entry.fill} stroke="transparent" />)}
-                </Pie>
-                <Legend formatter={(value) => <span style={{ color: '#f5f5f7', fontSize: 12 }}>{value}</span>} />
-                <Tooltip contentStyle={{ background: '#2c2c2e', border: '1px solid #48484a', borderRadius: 10, fontSize: 12 }} />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 12, color: '#98989d' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+      <div className="card" style={{ marginBottom: 16, background: 'rgba(255,159,10,0.08)', border: '1px solid rgba(255,159,10,0.18)' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+          Team analytics temporarily simplified
         </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 16 }}>
-        <div className="card">
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Compliance Rate (Last 8 Weeks)
-          </h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={complianceOverTime}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3c" />
-              <XAxis dataKey="week" tick={{ fill: '#98989d', fontSize: 10 }} />
-              <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fill: '#98989d', fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, fontSize: 12 }} formatter={(v) => [`${v}%`, 'Compliance']} />
-              <Line type="monotone" dataKey="compliance" stroke="#007aff" strokeWidth={2} dot={{ fill: '#007aff', r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          The queue and planner surfaces stay available while the richer analytics widgets are stabilized.
         </div>
-
-        <div className="card">
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Risk Distribution
-          </h3>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <button type="button" onClick={() => { window.location.href = fullViewHref('overdue') }} style={{ flex: 1, background: 'rgba(255,69,58,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,69,58,0.16)', cursor: 'pointer' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#ff453a' }}>{riskDist.high.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🔴 High Risk</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>3+ overdue</div>
-            </button>
-            <button type="button" onClick={() => { window.location.href = fullViewHref('due_this_week') }} style={{ flex: 1, background: 'rgba(255,159,10,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(255,159,10,0.16)', cursor: 'pointer' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#ff9f0a' }}>{riskDist.medium.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟡 Medium Risk</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>1-2 overdue</div>
-            </button>
-            <button type="button" onClick={() => { window.location.href = fullViewHref('all') }} style={{ flex: 1, background: 'rgba(48,209,88,0.1)', borderRadius: 10, padding: '16px 12px', textAlign: 'center', textDecoration: 'none', color: 'inherit', border: '1px solid rgba(48,209,88,0.16)', cursor: 'pointer' }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#30d158' }}>{riskDist.low.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>🟢 Low Risk</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>0 overdue</div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Caseload Heatmap (% Overdue by Planner × Deadline Type)
-        </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '6px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, minWidth: 140 }}>Planner</th>
-              {DEADLINE_TYPES.map(d => <th key={d.key} style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{d.short}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {heatmapData.map((row, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>{row.plannerName}</td>
-                {DEADLINE_TYPES.map(({ short }) => {
-                  const val = row[short]
-                  const bg = val === null ? 'transparent' : val >= 50 ? 'rgba(255,69,58,0.25)' : val >= 25 ? 'rgba(255,159,10,0.2)' : val > 0 ? 'rgba(255,214,10,0.15)' : 'rgba(48,209,88,0.1)'
-                  const color = val === null ? 'var(--text-secondary)' : val >= 50 ? '#ff453a' : val >= 25 ? '#ff9f0a' : val > 0 ? '#ffd60a' : '#30d158'
-                  return <td key={short} style={{ padding: '8px 8px', textAlign: 'center', background: bg, color, fontWeight: 600 }}>{val === null ? '—' : `${val}%`}</td>
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       <div className="card">
