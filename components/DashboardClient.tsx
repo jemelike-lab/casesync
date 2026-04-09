@@ -19,6 +19,10 @@ import {
   getDaysSinceContact,
   clientPriorityScore,
   sortClients,
+  formatDate,
+  getOverdueCount,
+  getClientHealthScore,
+  getRiskLevel,
 } from '@/lib/types'
 import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
@@ -43,6 +47,8 @@ interface Props {
   savedViews?: SavedViewRecord[]
   hasProfile?: boolean
 }
+
+type DashboardViewMode = 'grid' | 'table'
 
 function StatCard({ label, value, color, onClick, active }: {
   label: string; value: number; color?: string; onClick?: () => void; active?: boolean
@@ -608,6 +614,145 @@ function exportSelectedToCsv(clients: Client[]) {
   URL.revokeObjectURL(url)
 }
 
+function ClientOpsTable({
+  clients,
+  selectedIds,
+  onToggleSelect,
+  showSelect,
+  pinnedIds,
+  onTogglePin,
+  sortField,
+  sortDir,
+  onSortChange,
+}: {
+  clients: Client[]
+  selectedIds: string[]
+  onToggleSelect: (id: string) => void
+  showSelect: boolean
+  pinnedIds: string[]
+  onTogglePin: (id: string) => void
+  sortField: SortField
+  sortDir: SortDir
+  onSortChange: (field: SortField) => void
+}) {
+  const sorted = useMemo(() => sortClients(clients, sortField, sortDir), [clients, sortField, sortDir])
+
+  const sortLabel = (field: SortField) => sortField === field ? ` ${sortDir === 'asc' ? '↑' : '↓'}` : ''
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sort:</span>
+        {[
+          { field: 'priority' as const, label: 'Priority' },
+          { field: 'name' as const, label: 'Name' },
+          { field: 'goal_pct' as const, label: 'Goal %' },
+          { field: 'last_contact_date' as const, label: 'Last Contact' },
+          { field: 'eligibility_end_date' as const, label: 'Elig. End' },
+        ].map(option => (
+          <button
+            key={option.field}
+            onClick={() => onSortChange(option.field)}
+            style={{
+              background: sortField === option.field ? 'rgba(0,122,255,0.15)' : 'var(--surface-2)',
+              border: '1px solid',
+              borderColor: sortField === option.field ? 'var(--accent)' : 'var(--border)',
+              borderRadius: 6,
+              color: sortField === option.field ? 'var(--accent)' : 'var(--text-secondary)',
+              fontSize: 11,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              minHeight: 28,
+            }}
+          >
+            {option.label}{sortLabel(option.field)}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 1120 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+              {showSelect && <th style={{ padding: '10px 12px', textAlign: 'left', width: 40 }}>Sel</th>}
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Client</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Planner</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Priority</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Risk</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Overdue</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Last Contact</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Eligibility</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>SPM Due</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Goal</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Health</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(client => {
+              const daysSince = getDaysSinceContact(client.last_contact_date)
+              const overdueCount = getOverdueCount(client)
+              const health = getClientHealthScore(client)
+              const risk = getRiskLevel(client)
+              const priority = clientPriorityScore(client)
+              const riskColor = risk === 'high' ? 'var(--red)' : risk === 'medium' ? 'var(--orange)' : 'var(--green)'
+
+              return (
+                <tr key={client.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  {showSelect && (
+                    <td style={{ padding: '10px 12px' }}>
+                      <input type="checkbox" checked={selectedIds.includes(client.id)} onChange={() => onToggleSelect(client.id)} />
+                    </td>
+                  )}
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={() => onTogglePin(client.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 15 }}
+                        title={pinnedIds.includes(client.id) ? 'Unpin client' : 'Pin client'}
+                      >
+                        {pinnedIds.includes(client.id) ? '📌' : '📍'}
+                      </button>
+                      <div>
+                        <Link href={`/clients/${client.id}`} style={{ color: 'var(--text)', textDecoration: 'none', fontWeight: 700 }}>
+                          {client.last_name}{client.first_name ? `, ${client.first_name}` : ''}
+                        </Link>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {client.client_id} · {client.category.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{client.profiles?.full_name ?? 'Unassigned'}</td>
+                  <td style={{ padding: '10px 12px', fontWeight: 700 }}>{priority}</td>
+                  <td style={{ padding: '10px 12px', color: riskColor, fontWeight: 700, textTransform: 'capitalize' }}>{risk}</td>
+                  <td style={{ padding: '10px 12px', color: overdueCount > 0 ? 'var(--red)' : 'var(--text-secondary)', fontWeight: overdueCount > 0 ? 700 : 500 }}>{overdueCount}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div>{formatDate(client.last_contact_date)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                      {daysSince === null ? 'No contact logged' : `${daysSince}d ago`}
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>{formatDate(client.eligibility_end_date)}</td>
+                  <td style={{ padding: '10px 12px' }}>{formatDate(client.spm_next_due)}</td>
+                  <td style={{ padding: '10px 12px' }}>{client.goal_pct}%</td>
+                  <td style={{ padding: '10px 12px', fontWeight: 700 }}>{health}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <Link href={`/clients/${client.id}`} style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Open</Link>
+                      <Link href={`/clients/${client.id}/print`} style={{ fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none' }}>Print</Link>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardClient({ profile, currentUserId, planners = [], teamManagers = [], savedViews = [], hasProfile = true }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -637,6 +782,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const [loading, setLoading] = useState(true)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<DashboardViewMode>('grid')
   const [savedViewName, setSavedViewName] = useState('')
   const [savedViewDescription, setSavedViewDescription] = useState('')
   const [savedViewMessage, setSavedViewMessage] = useState<string | null>(null)
@@ -1288,6 +1434,22 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Toolbar: export, bulk select, add client */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginRight: 4 }}>
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'grid' ? 'var(--accent)' : undefined }}
+            onClick={() => setViewMode('grid')}
+          >
+            Grid
+          </button>
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'table' ? 'var(--accent)' : undefined }}
+            onClick={() => setViewMode('table')}
+          >
+            Ops table
+          </button>
+        </div>
         {(isSupervisor || isTeamManager) && (
           <Link href="/clients/new" style={{ textDecoration: 'none' }}>
             <button className="btn-primary" style={{ fontSize: 12, minHeight: 36 }}>
@@ -1393,20 +1555,34 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         )}
       </div>
 
-      {/* Grid */}
-      <ClientGrid
-        clients={filtered}
-        pinnedIds={pinnedIds}
-        onTogglePin={togglePin}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        showSelect={showSelect}
-        sortField={sortField}
-        sortDir={sortDir}
-        onSortChange={handleSortChange}
-        onContactLogged={handleContactLogged}
-        loading={loading}
-      />
+      {/* Results surface */}
+      {viewMode === 'table' ? (
+        <ClientOpsTable
+          clients={filtered}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          showSelect={showSelect}
+          pinnedIds={pinnedIds}
+          onTogglePin={togglePin}
+          sortField={sortField}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
+        />
+      ) : (
+        <ClientGrid
+          clients={filtered}
+          pinnedIds={pinnedIds}
+          onTogglePin={togglePin}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          showSelect={showSelect}
+          sortField={sortField}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
+          onContactLogged={handleContactLogged}
+          loading={loading}
+        />
+      )}
 
       {!loading && filtered.length === 0 && (
         <div className="card" style={{ marginTop: 12, background: 'linear-gradient(135deg, rgba(0,122,255,0.05) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(0,122,255,0.12)' }}>
