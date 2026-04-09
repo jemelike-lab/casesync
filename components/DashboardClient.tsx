@@ -1277,16 +1277,16 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         </div>
       )}
 
-      {isSupervisorLike(profile?.role) && (
+      {isSupervisorLike(profile?.role) && !fullMode && (
         <>
           <SupervisorOverviewStrip
             clients={clients}
             planners={planners}
             teamManagers={teamManagers}
-            onOpenAllClients={() => { window.location.href = `/team?full=1&planner=${currentUserId}&filter=all` }}
-            onOpenOverdue={() => { window.location.href = `/team?full=1&planner=${currentUserId}&filter=overdue` }}
-            onOpenDueThisWeek={() => { window.location.href = `/team?full=1&planner=${currentUserId}&filter=due_this_week` }}
-            onOpenQuiet={() => { window.location.href = `/team?full=1&planner=${currentUserId}&filter=no_contact_7` }}
+            onOpenAllClients={() => { window.location.href = `/team?full=1&filter=all` }}
+            onOpenOverdue={() => { window.location.href = `/team?full=1&filter=overdue` }}
+            onOpenDueThisWeek={() => { window.location.href = `/team?full=1&filter=due_this_week` }}
+            onOpenQuiet={() => { window.location.href = `/team?full=1&filter=no_contact_7` }}
           />
           <TeamManagerSummaryTable clients={clients} planners={planners} teamManagers={teamManagers} />
         </>
