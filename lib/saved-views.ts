@@ -3,6 +3,8 @@ import type {
   SavedViewFilter,
   SavedViewOwnershipScope,
   SavedViewRecord,
+  SavedViewSortDefinition,
+  SavedViewVisibilityType,
 } from '@/lib/types'
 import { createClient } from '@/lib/supabase/server'
 import { isSupervisorLike } from '@/lib/roles'
@@ -78,6 +80,24 @@ export function validateSavedViewFilterForRole(role: Role, filter: SavedViewFilt
   return normalized
 }
 
+export interface SavedViewMutationInput {
+  name: string
+  description?: string | null
+  filterDefinition: SavedViewFilter
+  sortDefinition?: SavedViewSortDefinition | null
+  visibilityType?: SavedViewVisibilityType
+}
+
+export function sanitizeSavedViewName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').slice(0, 80)
+}
+
+export function sanitizeSavedViewDescription(description?: string | null): string | null {
+  if (!description) return null
+  const trimmed = description.trim().replace(/\s+/g, ' ')
+  return trimmed ? trimmed.slice(0, 240) : null
+}
+
 export async function listSavedViewsForCurrentUser() {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
@@ -105,4 +125,36 @@ export async function listSavedViewsForCurrentUser() {
     profile,
     views: (data ?? []) as SavedViewRecord[],
   }
+}
+
+export async function getCurrentSavedViewContext() {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  const user = auth.user
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, team_manager_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.role) throw new Error('Profile not found')
+
+  return { supabase, user, profile: { id: profile.id, role: profile.role as Role, team_manager_id: profile.team_manager_id ?? null } }
+}
+
+export async function assertSavedViewEditable(savedViewId: string) {
+  const { supabase, user } = await getCurrentSavedViewContext()
+  const { data, error } = await supabase
+    .from('saved_views')
+    .select(SAVED_VIEW_FIELDS)
+    .eq('id', savedViewId)
+    .eq('owner_user_id', user.id)
+    .eq('visibility_type', 'personal')
+    .single()
+
+  if (error || !data) throw new Error('Saved view not found or not editable')
+
+  return { supabase, user, view: data as SavedViewRecord }
 }
