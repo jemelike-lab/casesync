@@ -1407,14 +1407,39 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {fullMode && (
         <div className="card" style={{ marginBottom: 16, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-            Full filtered view
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            You’re in the full dashboard view for this filter. Use paging, search, and filters here instead of the compact preview.
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8, fontWeight: 600 }}>
-            Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'No Contact 7+ Days' : filter.toUpperCase()}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                Full filtered view
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                You’re in the full dashboard view for this filter. Use paging, search, and filters here instead of the compact preview.
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8, fontWeight: 600 }}>
+                Active result set: {activeDayFilter ? `Deadlines on ${activeDayFilter}` : filter === 'all' ? 'All Active Clients' : filter === 'overdue' ? 'Overdue' : filter === 'due_this_week' ? 'Due This Week' : filter === 'no_contact_7' ? 'No Contact 7+ Days' : filter.toUpperCase()}
+              </div>
+            </div>
+            <div style={{ minWidth: 210 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                View mode
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'grid' ? 'var(--accent)' : undefined }}
+                  onClick={() => setViewMode('grid')}
+                >
+                  Grid
+                </button>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'table' ? 'var(--accent)' : undefined }}
+                  onClick={() => setViewMode('table')}
+                >
+                  Ops table
+                </button>
+              </div>
+            </div>
           </div>
           <div style={{ marginTop: 10 }}>
             <button
