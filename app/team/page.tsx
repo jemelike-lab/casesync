@@ -1,5 +1,5 @@
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
-import { Client, Profile, SavedViewRecord, isOverdue, isDueThisWeek, getDaysSinceContact } from '@/lib/types'
+import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getDaysSinceContact } from '@/lib/types'
 import { redirect } from 'next/navigation'
 import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
 import TransferBoardClient from '@/components/TransferBoardClient'
@@ -31,9 +31,13 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const derivedFilter = activeSavedView
     ? (activeSavedView.filter_definition?.dueStates?.includes('overdue')
         ? 'overdue'
-        : activeSavedView.filter_definition?.dueStates?.includes('due_this_week')
-          ? 'due_this_week'
-          : activeSavedView.filter_definition?.categories?.[0] ?? filter)
+        : activeSavedView.filter_definition?.dueStates?.includes('due_today')
+          ? 'due_today'
+          : activeSavedView.filter_definition?.dueStates?.includes('due_this_week')
+            ? 'due_this_week'
+            : activeSavedView.filter_definition?.dueStates?.includes('due_next_14_days')
+              ? 'due_next_14_days'
+              : activeSavedView.filter_definition?.categories?.[0] ?? filter)
     : filter
 
   const derivedCategory = activeSavedView?.filter_definition?.categories?.[0] ?? category
@@ -60,6 +64,11 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       const categoryOk = !derivedCategory || client.category === derivedCategory
       return categoryOk && isOverdue(client)
     })
+  } else if (derivedFilter === 'due_today') {
+    clients = clients.filter(client => {
+      const categoryOk = !derivedCategory || client.category === derivedCategory
+      return categoryOk && isDueToday(client)
+    })
   } else if (derivedFilter === 'due_this_week') {
     clients = clients.filter(client => {
       const categoryOk = !derivedCategory || client.category === derivedCategory
@@ -70,6 +79,11 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       const categoryOk = !derivedCategory || client.category === derivedCategory
       const days = getDaysSinceContact(client.last_contact_date)
       return categoryOk && days !== null && days >= 7
+    })
+  } else if (derivedFilter === 'due_next_14_days') {
+    clients = clients.filter(client => {
+      const categoryOk = !derivedCategory || client.category === derivedCategory
+      return categoryOk && isDueNext14Days(client)
     })
   } else if (derivedFilter === 'all') {
     if (derivedCategory) clients = clients.filter(client => client.category === derivedCategory)
@@ -97,13 +111,17 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     ? activeSavedView.name
     : derivedFilter === 'overdue'
       ? derivedCategory ? `Overdue (${String(derivedCategory).toUpperCase()})` : 'Overdue'
-      : derivedFilter === 'due_this_week'
-        ? 'Due This Week'
-        : derivedFilter === 'no_contact_7'
-          ? 'No Contact 7+ Days'
-          : derivedFilter === 'all'
-            ? derivedCategory ? `All Active Clients (${String(derivedCategory).toUpperCase()})` : 'All Active Clients'
-            : 'Filtered Results'
+      : derivedFilter === 'due_today'
+        ? 'Due Today'
+        : derivedFilter === 'due_this_week'
+          ? 'Due This Week'
+          : derivedFilter === 'no_contact_7'
+            ? 'No Contact 7+ Days'
+            : derivedFilter === 'due_next_14_days'
+              ? 'Due Next 14 Days'
+              : derivedFilter === 'all'
+              ? derivedCategory ? `All Active Clients (${String(derivedCategory).toUpperCase()})` : 'All Active Clients'
+              : 'Filtered Results'
 
   const plannerScopeLabel = plannerFilters.length > 0
     ? (() => {
@@ -128,7 +146,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       planners={(planners as Profile[]) ?? []}
       mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
       fullFilterLabel={fullFilterLabel}
-      currentFilter={derivedFilter === 'overdue' || derivedFilter === 'due_this_week' || derivedFilter === 'no_contact_7' || derivedFilter === 'all' ? derivedFilter : null}
+      currentFilter={derivedFilter === 'overdue' || derivedFilter === 'due_today' || derivedFilter === 'due_this_week' || derivedFilter === 'due_next_14_days' || derivedFilter === 'no_contact_7' || derivedFilter === 'all' ? derivedFilter : null}
       plannerFilters={plannerFilters}
       category={derivedCategory ?? null}
       savedViews={savedViews as SavedViewRecord[]}

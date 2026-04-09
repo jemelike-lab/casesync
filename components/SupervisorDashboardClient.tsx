@@ -7,7 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, SavedViewRecord, isOverdue, isDueThisWeek, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
+import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
 
@@ -16,7 +16,7 @@ interface Props {
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
   fullFilterLabel?: string | null
-  currentFilter?: 'all' | 'overdue' | 'due_this_week' | 'no_contact_7' | null
+  currentFilter?: 'all' | 'overdue' | 'due_today' | 'due_this_week' | 'due_next_14_days' | 'no_contact_7' | null
   plannerFilters?: string[]
   category?: string | null
   savedViews?: SavedViewRecord[]
@@ -101,7 +101,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
   const totalStats = useMemo(() => ({
     clients: clients.length,
     overdue: clients.filter(isOverdue).length,
+    dueToday: clients.filter(isDueToday).length,
     dueThisWeek: clients.filter(isDueThisWeek).length,
+    dueNext14Days: clients.filter(client => isDueNext14Days(client) && !isOverdue(client) && !isDueToday(client) && !isDueThisWeek(client)).length,
     noContact7: clients.filter(client => {
       const days = getDaysSinceContact(client.last_contact_date)
       return days !== null && days >= 7
@@ -179,7 +181,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     return { high, medium, low }
   }, [clients])
 
-  const fullViewHref = (filter: 'all' | 'overdue' | 'due_this_week' | 'no_contact_7') => {
+  const fullViewHref = (filter: 'all' | 'overdue' | 'due_today' | 'due_this_week' | 'due_next_14_days' | 'no_contact_7') => {
     const params = new URLSearchParams()
     params.set('full', '1')
     params.set('filter', filter)
@@ -224,7 +226,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <QueueSwitchButton label="All Active" href={fullViewHref('all')} active={currentFilter === 'all'} />
               <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+              <QueueSwitchButton label="📍 Due Today" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
               <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
+              <QueueSwitchButton label="🗓️ Next 14 Days" href={fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
               <QueueSwitchButton label="📵 No Contact 7+ Days" href={fullViewHref('no_contact_7')} active={currentFilter === 'no_contact_7'} />
             </div>
           </div>
@@ -234,7 +238,9 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
         <StatCard label="Total Clients" value={totalStats.clients} href={fullFilterLabel ? undefined : fullViewHref('all')} active={currentFilter === 'all'} />
         <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullFilterLabel ? undefined : fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullFilterLabel ? undefined : fullViewHref('due_today')} active={currentFilter === 'due_today'} />
         <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullFilterLabel ? undefined : fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
+        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" href={fullFilterLabel ? undefined : fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
         <StatCard label="Supports Planners" value={planners.length} href={fullFilterLabel ? undefined : '/supervisor'} active={!fullFilterLabel} />
       </div>
 

@@ -113,7 +113,9 @@ export type StatusLevel = 'green' | 'yellow' | 'orange' | 'red' | 'none'
 export type FilterType =
   | 'all'
   | 'overdue'
+  | 'due_today'
   | 'due_this_week'
+  | 'due_next_14_days'
   | 'no_contact_7'
   | 'eligibility_ending_soon'
   | 'co'
@@ -229,6 +231,26 @@ export function isOverdue(client: Client): boolean {
   return datesToCheck.some(d => d && getDateStatus(d) === 'red')
 }
 
+export function isDueToday(client: Client): boolean {
+  const datesToCheck = [
+    client.eligibility_end_date,
+    client.three_month_visit_due,
+    client.quarterly_waiver_date,
+    client.med_tech_redet_date,
+    client.pos_deadline,
+    client.assessment_due,
+    client.thirty_day_letter_date,
+    client.co_financial_redet_date,
+    client.co_app_date,
+    client.mfp_consent_date,
+    client.two57_date,
+    client.doc_mdh_date,
+  ]
+
+  const today = new Date().toISOString().split('T')[0]
+  return datesToCheck.some(d => d === today)
+}
+
 export function isDueThisWeek(client: Client): boolean {
   const datesToCheck = [
     client.eligibility_end_date,
@@ -245,6 +267,33 @@ export function isDueThisWeek(client: Client): boolean {
     client.doc_mdh_date,
   ]
   return datesToCheck.some(d => d && getDateStatus(d) === 'orange')
+}
+
+export function isDueNext14Days(client: Client): boolean {
+  const datesToCheck = [
+    client.eligibility_end_date,
+    client.three_month_visit_due,
+    client.quarterly_waiver_date,
+    client.med_tech_redet_date,
+    client.pos_deadline,
+    client.assessment_due,
+    client.thirty_day_letter_date,
+    client.co_financial_redet_date,
+    client.co_app_date,
+    client.mfp_consent_date,
+    client.two57_date,
+    client.doc_mdh_date,
+  ]
+
+  const now = new Date()
+  const in14 = new Date(now)
+  in14.setDate(in14.getDate() + 14)
+
+  return datesToCheck.some((d) => {
+    if (!d) return false
+    const date = new Date(d)
+    return date >= now && date <= in14
+  })
 }
 
 export function isEligibilityEndingSoon(client: Client): boolean {
