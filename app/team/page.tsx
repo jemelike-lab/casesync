@@ -1,4 +1,4 @@
-import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { isSupervisorLike, canManageTeam } from '@/lib/roles'
 import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getDaysSinceContact } from '@/lib/types'
 import { redirect } from 'next/navigation'
 import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
@@ -18,11 +18,14 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     redirect('/dashboard')
   }
 
-  const [{ views: savedViews }, planners, teamManagers] = await Promise.all([
+  const [{ views: savedViews }, plannerResults, teamManagerResults] = await Promise.all([
     listSavedViewsForCurrentUser(),
     getPlanners(supabase, profile.role === 'team_manager' ? user.id : undefined),
     getTeamManagers(supabase),
   ])
+
+  const planners = Array.isArray(plannerResults) ? plannerResults : []
+  const teamManagers = Array.isArray(teamManagerResults) ? teamManagerResults : []
 
   const activeSavedView = view && view !== 'transfer' && view !== 'assign-planners'
     ? (savedViews.find(savedView => savedView.id === view) ?? null)
@@ -43,7 +46,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const derivedCategory = activeSavedView?.filter_definition?.categories?.[0] ?? category
   const derivedPlanner = activeSavedView?.filter_definition?.assignedToUserId ?? planner
 
-  const plannerIds = planners.map(planner => planner.id)
+  const plannerIds = planners.map(planner => planner.id).filter(Boolean)
   let clients: Client[] = []
 
   if (isSupervisorLike(profile.role) && view === 'transfer') {
