@@ -10,6 +10,7 @@ import NotificationBell from './NotificationBell'
 import { useTheme } from '@/hooks/useTheme'
 import { useState } from 'react'
 import OnboardingTour from './OnboardingTour'
+import GlobalSearch from './GlobalSearch'
 
 interface Props {
   user: User
@@ -101,8 +102,11 @@ export default function Header({ user, profile }: Props) {
           </nav>
         </div>
 
-        {/* Right: Help & Tour + theme toggle + notifications + user info + logout */}
+        {/* Right: global search + Help & Tour + theme toggle + notifications + user info + logout */}
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
+          <div className="desktop-only" style={{ minWidth: 0, flex: '1 1 320px', maxWidth: 420 }}>
+            <GlobalSearch userId={user.id} profile={profile} />
+          </div>
           {/* Help & Tour button */}
           <button
             onClick={() => setShowTour(true)}

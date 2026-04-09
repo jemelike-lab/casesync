@@ -23,6 +23,7 @@ import PinnedClients from './PinnedClients'
 import WeekStrip from './WeekStrip'
 import Confetti from './Confetti'
 import QuickActions from './QuickActions'
+import SavedViewsBar from './SavedViewsBar'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -719,6 +720,15 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     pushResultsState({ filter: 'all', deadlineDate: dateStr })
   }
 
+  function handleSavedViewSelect(view: { filter?: FilterType; plannerId?: string | null }) {
+    setActiveDayFilter(null)
+    setAlertFilter(null)
+    setActivePlannerId(view.plannerId ?? null)
+    const nextFilter = view.filter ?? 'all'
+    setFilter(nextFilter)
+    pushResultsState({ filter: nextFilter, deadlineDate: null })
+  }
+
   // Base: current page from API
   const baseClients = useMemo(() => clients, [clients])
 
@@ -871,6 +881,13 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         assignedTo={canSeeAll ? activePlannerId : currentUserId}
         helperText={profile?.role === 'team_manager' ? 'Search clients in your current scope.' : 'Search your current scope.'}
         maxResults={6}
+      />
+
+      <SavedViewsBar
+        profile={profile}
+        activeFilter={filter}
+        activePlannerId={activePlannerId}
+        onSelect={handleSavedViewSelect}
       />
 
       {/* 7-day week strip */}
