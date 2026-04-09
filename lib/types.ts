@@ -120,6 +120,48 @@ export type FilterType =
   | 'cfc'
   | 'cpas'
 
+export type SavedViewEntityType = 'clients'
+export type SavedViewVisibilityType = 'personal' | 'system'
+export type SavedViewOwnershipScope = 'me' | 'my_team' | 'org' | 'specific_planner' | 'specific_team_manager'
+export type SavedViewDueState = 'overdue' | 'due_today' | 'due_this_week' | 'due_next_14_days' | 'no_due_date'
+export type SavedViewAssignmentState = 'assigned' | 'unassigned' | 'needs_reassignment'
+export type ClientClassification = 'real' | 'trial' | 'test'
+
+export interface SavedViewFilter {
+  ownershipScope?: SavedViewOwnershipScope
+  assignedToUserId?: string | null
+  teamManagerId?: string | null
+  dueStates?: SavedViewDueState[]
+  categories?: Category[]
+  clientStatuses?: string[]
+  documentationStates?: string[]
+  assignmentStates?: SavedViewAssignmentState[]
+  clientClassifications?: ClientClassification[]
+  recentActivityDays?: number | null
+  searchTerm?: string | null
+  includeInactive?: boolean
+}
+
+export interface SavedViewSortDefinition {
+  field: SortField
+  dir: SortDir
+}
+
+export interface SavedViewRecord {
+  id: string
+  name: string
+  description: string | null
+  owner_user_id: string | null
+  visibility_type: SavedViewVisibilityType
+  allowed_roles: Role[] | null
+  entity_type: SavedViewEntityType
+  filter_definition: SavedViewFilter
+  sort_definition: SavedViewSortDefinition | null
+  is_favorite_default: boolean
+  created_at: string
+  updated_at: string
+}
+
 export type SortField = 'name' | 'goal_pct' | 'last_contact_date' | 'eligibility_end_date' | 'priority'
 
 export interface PaginatedClientsResponse {
