@@ -193,6 +193,32 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     return { donors, receivers }
   }, [plannerSignals])
 
+  const recommendedMoves = useMemo(() => {
+    if (rebalanceHints.donors.length === 0 || rebalanceHints.receivers.length === 0) return []
+
+    return rebalanceHints.donors.flatMap((donor, donorIndex) => {
+      const receiver = rebalanceHints.receivers[donorIndex % rebalanceHints.receivers.length]
+      const suggestedCount = Math.min(
+        2,
+        Math.max(
+          1,
+          Math.ceil((donor.pressureScore - receiver.pressureScore) / 6)
+        )
+      )
+
+      return [{
+        donor,
+        receiver,
+        suggestedCount,
+        reason: donor.overdue > 0
+          ? `${donor.overdue} overdue driving pressure`
+          : donor.dueThisWeek > 0
+            ? `${donor.dueThisWeek} due this week`
+            : `${donor.clientCount} total clients`,
+      }]
+    })
+  }, [rebalanceHints])
+
   async function reassignClient(clientId: string, plannerId: string | null) {
     const client = clients.find(c => c.id === clientId)
     const planner = planners.find(p => p.id === plannerId)
@@ -305,6 +331,20 @@ export default function TransferBoardClient({ clients: initialClients, planners 
             )
             : 'No strong donor/receiver split right now — use the board normally.'}
         </div>
+        {recommendedMoves.length > 0 && (
+          <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+            {recommendedMoves.map((move, index) => (
+              <div key={`${move.donor.planner.id}-${move.receiver.planner.id}-${index}`} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                  Recommended move: {move.suggestedCount} client{move.suggestedCount !== 1 ? 's' : ''} from {move.donor.planner.full_name ?? 'Unknown'} → {move.receiver.planner.full_name ?? 'Unknown'}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  Why: {move.reason}. Receiver pressure is {move.receiver.pressureScore} with {move.receiver.clientCount} total clients.
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
