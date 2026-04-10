@@ -123,6 +123,20 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     }).length,
   }), [clients])
 
+  const rebalanceSuggestions = useMemo(() => {
+    const donors = plannerStats
+      .filter(planner => planner.loadStatus === 'rebalance')
+      .sort((a, b) => b.pressureScore - a.pressureScore)
+      .slice(0, 2)
+
+    const receivers = plannerStats
+      .filter(planner => planner.loadStatus === 'balanced')
+      .sort((a, b) => a.pressureScore - b.pressureScore || a.clientCount - b.clientCount)
+      .slice(0, 3)
+
+    return { donors, receivers }
+  }, [plannerStats])
+
   const overdueByCategory = useMemo(() => [
     { name: 'CO', value: clients.filter(c => c.category === 'co' && isOverdue(c)).length, fill: '#ff453a' },
     { name: 'CFC', value: clients.filter(c => c.category === 'cfc' && isOverdue(c)).length, fill: '#ff9f0a' },
@@ -281,6 +295,20 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10 }}>
           Pressure score weights overdue work first, then due-this-week load, then raw caseload above 35. Use rebalance rows to spot where manager intervention is most likely needed.
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 12 }}>
+          {rebalanceSuggestions.donors.length > 0
+            ? (
+              <>
+                Most likely donors: <strong style={{ color: 'var(--text)' }}>{rebalanceSuggestions.donors.map(planner => planner.planner.full_name ?? 'Unknown').join(', ')}</strong>
+                {rebalanceSuggestions.receivers.length > 0 && (
+                  <>
+                    {' '}• Best room right now: <strong style={{ color: 'var(--text)' }}>{rebalanceSuggestions.receivers.map(planner => planner.planner.full_name ?? 'Unknown').join(', ')}</strong>
+                  </>
+                )}
+              </>
+            )
+            : 'No urgent donor/receiver split right now — the planner table still shows who to watch.'}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
