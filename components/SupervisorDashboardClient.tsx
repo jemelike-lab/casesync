@@ -53,6 +53,8 @@ interface PlannerStats {
   dueThisWeek: number
   avgGoalPct: number
   complianceScore: number
+  pressureScore: number
+  loadStatus: 'balanced' | 'watch' | 'rebalance'
 }
 
 function StatCard({ label, value, color, href, active }: { label: string; value: number | string; color?: string; href?: string; active?: boolean }) {
@@ -85,15 +87,26 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       const complianceScore = pc.length > 0
           ? Math.round(pc.filter(c => getClientHealthScore(c) >= 60).length / pc.length * 100)
           : 100
+      const overdue = pc.filter(isOverdue).length
+      const dueThisWeek = pc.filter(isDueThisWeek).length
+      const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, pc.length - 35)
+      const loadStatus: PlannerStats['loadStatus'] = pressureScore >= 12
+        ? 'rebalance'
+        : pressureScore >= 6
+          ? 'watch'
+          : 'balanced'
+
       return {
         planner,
         clientCount: pc.length,
-        overdue: pc.filter(isOverdue).length,
-        dueThisWeek: pc.filter(isDueThisWeek).length,
+        overdue,
+        dueThisWeek,
         avgGoalPct: pc.length > 0
           ? Math.round(pc.reduce((sum, c) => sum + (c.goal_pct ?? 0), 0) / pc.length)
           : 0,
         complianceScore,
+        pressureScore,
+        loadStatus,
       }
     })
   }, [clients, planners])
@@ -262,12 +275,12 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16, background: 'rgba(255,159,10,0.08)', border: '1px solid rgba(255,159,10,0.18)' }}>
+      <div className="card" style={{ marginBottom: 16, background: 'rgba(88,86,214,0.08)', border: '1px solid rgba(88,86,214,0.18)' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-          Team analytics temporarily simplified
+          Workload + rebalance readout
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          The queue and planner surfaces stay available while the richer analytics widgets are stabilized.
+          Pressure score weights overdue work first, then due-this-week load, then raw caseload above 35. Use rebalance rows to spot where manager intervention is most likely needed.
         </div>
       </div>
 
@@ -282,7 +295,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Planner', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}
+                  {['Planner', 'Load', 'Pressure', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -290,6 +303,25 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
                   <tr key={ps.planner.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} onClick={() => { window.location.href = `/dashboard?planner=${ps.planner.id}` }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{ps.planner.full_name ?? 'Unknown'}</div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        borderRadius: 999,
+                        padding: '4px 8px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        color: ps.loadStatus === 'rebalance' ? '#ff453a' : ps.loadStatus === 'watch' ? '#ff9f0a' : '#30d158',
+                        background: ps.loadStatus === 'rebalance' ? 'rgba(255,69,58,0.12)' : ps.loadStatus === 'watch' ? 'rgba(255,159,10,0.12)' : 'rgba(48,209,88,0.12)',
+                      }}>
+                        {ps.loadStatus === 'rebalance' ? 'Rebalance' : ps.loadStatus === 'watch' ? 'Watch' : 'Balanced'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: ps.loadStatus === 'rebalance' ? 'var(--red)' : ps.loadStatus === 'watch' ? 'var(--orange)' : 'var(--green)' }}>
+                      {ps.pressureScore}
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={`${ps.complianceScore}% of clients have health score ≥ 60`}>
