@@ -178,18 +178,18 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
 
   if (allCurrent) {
     summaryHeadline = isSupervisorRole
-      ? 'Team looks good.'
+      ? 'Org view looks good.'
       : isTeamManagerRole
         ? 'Your team is in good shape.'
         : 'Everything looks good.'
     summaryBody = isSupervisorRole
-      ? 'No overdue pressure is surfacing right now, and the team queue looks steady.'
+      ? 'No overdue pressure is surfacing right now, and the org queue looks steady.'
       : isTeamManagerRole
         ? 'No overdue pressure is bubbling up right now, and your planners look under control.'
         : 'No overdue items, nothing urgent this week, and your caseload is in a good spot.'
   } else if (stats.overdue > 0 && stats.dueThisWeek > 0) {
     summaryHeadline = isSupervisorRole
-      ? `The team has ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
+      ? `The org has ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
       : isTeamManagerRole
         ? `Your team has ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
         : `You’ve got ${stats.overdue} overdue and ${stats.dueThisWeek} due this week.`
@@ -200,7 +200,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
         : 'Best move: clear the overdue items first, then work through what’s coming up next.'
   } else if (stats.overdue > 0) {
     summaryHeadline = isSupervisorRole
-      ? `The team has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
+      ? `The org has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
       : isTeamManagerRole
         ? `Your team has ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
         : `You’ve got ${stats.overdue} overdue item${stats.overdue !== 1 ? 's' : ''}.`
@@ -211,7 +211,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
         : 'Start there first — that’s the fastest way to get back on track.'
   } else if (stats.dueThisWeek > 0) {
     summaryHeadline = isSupervisorRole
-      ? `The team has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
+      ? `The org has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
       : isTeamManagerRole
         ? `Your team has ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
         : `You’ve got ${stats.dueThisWeek} thing${stats.dueThisWeek !== 1 ? 's' : ''} due this week.`
@@ -222,7 +222,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
         : 'Nothing is overdue right now, so this is a good time to knock out the next few deadlines.'
   } else {
     summaryHeadline = isSupervisorRole
-      ? `The team has ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
+      ? `The org has ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
       : isTeamManagerRole
         ? `Your team has ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
         : `You’ve got ${stats.noContact} client${stats.noContact !== 1 ? 's' : ''} with no contact in 7+ days.`
