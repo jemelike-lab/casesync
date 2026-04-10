@@ -231,11 +231,32 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       })
     }
 
+    function daysSinceContact(client: Client) {
+      if (!client.last_contact_date) return null
+      const last = new Date(client.last_contact_date)
+      if (Number.isNaN(last.getTime())) return null
+      const today = new Date()
+      const diffMs = today.getTime() - last.getTime()
+      return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    }
+
+    function donorCategoryPressure(client: Client) {
+      return clients.filter(other => other.assigned_to === client.assigned_to && other.category === client.category).length
+    }
+
     function candidateScore(client: Client) {
       let score = 0
       if (isClientOverdue(client)) score += 100
       if (isClientDueSoon(client)) score += 40
       score += Math.max(0, (client.goal_pct ?? 0) - 60)
+
+      const days = daysSinceContact(client)
+      if (days !== null) {
+        if (days <= 7) score += 15
+        else if (days >= 30) score -= 10
+      }
+
+      score += Math.min(20, donorCategoryPressure(client))
       return score
     }
 
@@ -259,6 +280,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           overdue: isClientOverdue(client),
           dueSoon: isClientDueSoon(client),
           goalPct: client.goal_pct ?? 0,
+          category: client.category,
+          daysSinceContact: daysSinceContact(client),
         }))
 
       return [{
@@ -404,6 +427,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                         • {candidate.name} ({candidate.clientId})
                         {candidate.overdue ? ' • overdue' : candidate.dueSoon ? ' • due soon' : ' • lower urgency'}
                         {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
+                        {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
+                        {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
                       </div>
                     ))}
                   </div>
