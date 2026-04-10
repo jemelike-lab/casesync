@@ -103,6 +103,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
   const [savingClientId, setSavingClientId] = useState<string | null>(null)
+  const [applyingMoveKey, setApplyingMoveKey] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
 
@@ -328,6 +329,33 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     }
   }
 
+  async function applyRecommendedMove(move: NonNullable<typeof recommendedMoves[number]>, moveKey: string) {
+    const candidateIds = move.candidates.slice(0, move.suggestedCount).map(candidate => candidate.id)
+    if (candidateIds.length === 0) return
+
+    const receiverPlanner = move.receiver.planner
+    const previousClients = clients
+    setApplyingMoveKey(moveKey)
+    setClients(prev => prev.map(client => candidateIds.includes(client.id)
+      ? { ...client, assigned_to: receiverPlanner.id, profiles: receiverPlanner }
+      : client))
+
+    const { error } = await supabase
+      .from('clients')
+      .update({ assigned_to: receiverPlanner.id })
+      .in('id', candidateIds)
+
+    setApplyingMoveKey(null)
+
+    if (error) {
+      setClients(previousClients)
+      showToast('error', error.message)
+      return
+    }
+
+    showToast('success', `Moved ${candidateIds.length} recommended client${candidateIds.length !== 1 ? 's' : ''} to ${receiverPlanner.full_name ?? 'Support Planner'}.`)
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveClientId(String(event.active.id))
   }
@@ -414,11 +442,33 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
             {recommendedMoves.map((move, index) => (
               <div key={`${move.donor.planner.id}-${move.receiver.planner.id}-${index}`} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
-                  Recommended move: {move.suggestedCount} client{move.suggestedCount !== 1 ? 's' : ''} from {move.donor.planner.full_name ?? 'Unknown'} → {move.receiver.planner.full_name ?? 'Unknown'}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-                  Why: {move.reason}. Receiver pressure is {move.receiver.pressureScore} with {move.receiver.clientCount} total clients.
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                      Recommended move: {move.suggestedCount} client{move.suggestedCount !== 1 ? 's' : ''} from {move.donor.planner.full_name ?? 'Unknown'} → {move.receiver.planner.full_name ?? 'Unknown'}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+                      Why: {move.reason}. Receiver pressure is {move.receiver.pressureScore} with {move.receiver.clientCount} total clients.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => applyRecommendedMove(move, `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`)}
+                    disabled={applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` || move.candidates.length === 0}
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      background: 'var(--accent)',
+                      color: 'white',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'wait' : 'pointer',
+                      opacity: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 0.7 : 1,
+                    }}
+                  >
+                    {applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'Applying…' : 'Apply move'}
+                  </button>
                 </div>
                 {move.candidates.length > 0 && (
                   <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
