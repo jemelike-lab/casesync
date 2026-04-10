@@ -125,6 +125,74 @@ export default function TransferBoardClient({ clients: initialClients, planners 
 
   const unassignedClients = useMemo(() => filteredClients.filter(c => !c.assigned_to), [filteredClients])
 
+  const plannerSignals = useMemo(() => {
+    return planners.map(planner => {
+      const plannerClients = clients.filter(c => c.assigned_to === planner.id)
+      const overdue = plannerClients.filter(c => {
+        const dates = [
+          c.eligibility_end_date,
+          c.three_month_visit_due,
+          c.quarterly_waiver_date,
+          c.med_tech_redet_date,
+          c.pos_deadline,
+          c.assessment_due,
+          c.thirty_day_letter_date,
+          c.spm_next_due,
+          c.co_financial_redet_date,
+          c.co_app_date,
+          c.mfp_consent_date,
+          c.two57_date,
+          c.doc_mdh_date,
+        ].filter(Boolean)
+        const today = new Date().toISOString().split('T')[0]
+        return dates.some(date => String(date) < today)
+      }).length
+      const dueThisWeek = plannerClients.filter(c => {
+        const today = new Date()
+        const start = new Date(today)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start)
+        end.setDate(end.getDate() + 7)
+        const dates = [
+          c.eligibility_end_date,
+          c.three_month_visit_due,
+          c.quarterly_waiver_date,
+          c.med_tech_redet_date,
+          c.pos_deadline,
+          c.assessment_due,
+          c.thirty_day_letter_date,
+          c.spm_next_due,
+          c.co_financial_redet_date,
+          c.co_app_date,
+          c.mfp_consent_date,
+          c.two57_date,
+          c.doc_mdh_date,
+        ].filter(Boolean)
+        return dates.some(date => {
+          const d = new Date(String(date))
+          return d >= start && d <= end
+        })
+      }).length
+      const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, plannerClients.length - 35)
+      const loadStatus = pressureScore >= 12 ? 'rebalance' : pressureScore >= 6 ? 'watch' : 'balanced'
+
+      return {
+        planner,
+        clientCount: plannerClients.length,
+        overdue,
+        dueThisWeek,
+        pressureScore,
+        loadStatus,
+      }
+    })
+  }, [clients, planners])
+
+  const rebalanceHints = useMemo(() => {
+    const donors = plannerSignals.filter(row => row.loadStatus === 'rebalance').sort((a, b) => b.pressureScore - a.pressureScore).slice(0, 2)
+    const receivers = plannerSignals.filter(row => row.loadStatus === 'balanced').sort((a, b) => a.pressureScore - b.pressureScore || a.clientCount - b.clientCount).slice(0, 3)
+    return { donors, receivers }
+  }, [plannerSignals])
+
   async function reassignClient(clientId: string, plannerId: string | null) {
     const client = clients.find(c => c.id === clientId)
     const planner = planners.find(p => p.id === plannerId)
@@ -223,6 +291,20 @@ export default function TransferBoardClient({ clients: initialClients, planners 
             Supervisors only. Drag from the list or between Support Planner columns.
           </div>
         </div>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, marginTop: 12 }}>
+          {rebalanceHints.donors.length > 0
+            ? (
+              <>
+                Suggested donors: <strong style={{ color: 'var(--text)' }}>{rebalanceHints.donors.map(row => row.planner.full_name ?? 'Unknown').join(', ')}</strong>
+                {rebalanceHints.receivers.length > 0 && (
+                  <>
+                    {' '}• Suggested receivers: <strong style={{ color: 'var(--text)' }}>{rebalanceHints.receivers.map(row => row.planner.full_name ?? 'Unknown').join(', ')}</strong>
+                  </>
+                )}
+              </>
+            )
+            : 'No strong donor/receiver split right now — use the board normally.'}
+        </div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -253,7 +335,13 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                   key={planner.id}
                   id={`planner:${planner.id}`}
                   title={planner.full_name ?? 'Unknown Planner'}
-                  subtitle={`${plannerClients.length} client${plannerClients.length !== 1 ? 's' : ''}`}
+                  subtitle={`${plannerClients.length} client${plannerClients.length !== 1 ? 's' : ''}${(() => {
+                    const signal = plannerSignals.find(row => row.planner.id === planner.id)
+                    if (!signal) return ''
+                    if (signal.loadStatus === 'rebalance') return ` • Rebalance (${signal.pressureScore})`
+                    if (signal.loadStatus === 'watch') return ` • Watch (${signal.pressureScore})`
+                    return ` • Balanced (${signal.pressureScore})`
+                  })()}`}
                 >
                   {plannerClients.length === 0 ? (
                     <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: 12, color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
