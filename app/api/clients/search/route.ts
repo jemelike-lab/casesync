@@ -1,4 +1,5 @@
 import { isSupervisorLike } from '@/lib/roles'
+import { getStarterViewNamesForRole, listSavedViewsForCurrentUser } from '@/lib/saved-views'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
@@ -12,6 +13,14 @@ const QUEUE_RESULTS = [
   { id: 'queue:my_due_this_week', label: 'My Due This Week', description: 'Your work due this week', href: '/dashboard?filter=due_this_week', roles: ['supports_planner'] },
   { id: 'queue:my_all', label: 'My Active Clients', description: 'All active clients on your caseload', href: '/dashboard?filter=all', roles: ['supports_planner'] },
 ]
+
+interface SearchResultQueue {
+  id: string
+  label: string
+  description: string
+  href: string
+  kind: 'queue' | 'saved_view'
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +57,7 @@ export async function GET(req: Request) {
     }
 
     const role = String(profile.role ?? '')
+    const qLower = q.toLowerCase()
 
     const admin = createSupabaseJsClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,7 +78,11 @@ export async function GET(req: Request) {
       clientQuery = clientQuery.eq('assigned_to', assignedTo)
     }
 
-    const [{ data: clients, error: clientError }, { data: rawStaff, error: staffError }] = await Promise.all([
+    const [
+      { data: clients, error: clientError },
+      { data: rawStaff, error: staffError },
+      savedViewsResult,
+    ] = await Promise.all([
       clientQuery,
       admin
         .from('profiles')
@@ -77,6 +91,7 @@ export async function GET(req: Request) {
         .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it'] : ['supports_planner', 'team_manager', 'supervisor', 'it'])
         .order('full_name')
         .limit(limit),
+      listSavedViewsForCurrentUser(),
     ])
 
     if (clientError) {
@@ -93,10 +108,24 @@ export async function GET(req: Request) {
       return true
     })
 
-    const queues = QUEUE_RESULTS
+    const baseQueues: SearchResultQueue[] = QUEUE_RESULTS
       .filter((queue) => queue.roles.includes(role))
-      .filter((queue) => `${queue.label} ${queue.description}`.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 6)
+      .filter((queue) => `${queue.label} ${queue.description}`.toLowerCase().includes(qLower))
+      .map((queue) => ({ ...queue, kind: 'queue' as const }))
+
+    const starterNames = new Set(getStarterViewNamesForRole(profile.role ?? null))
+    const savedViewQueues: SearchResultQueue[] = (savedViewsResult.views ?? [])
+      .filter((view) => !starterNames.has(view.name))
+      .filter((view) => `${view.name} ${view.description ?? ''}`.toLowerCase().includes(qLower))
+      .map((view) => ({
+        id: `saved-view:${view.id}`,
+        label: view.name,
+        description: view.description ?? 'Saved view',
+        href: `/dashboard?savedView=${encodeURIComponent(view.id)}`,
+        kind: 'saved_view' as const,
+      }))
+
+    const queues = [...baseQueues, ...savedViewQueues].slice(0, 6)
 
     return new Response(JSON.stringify({ clients: clients ?? [], staff, queues }), {
       headers: { 'Content-Type': 'application/json' },

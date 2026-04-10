@@ -30,6 +30,7 @@ interface SearchResultQueue {
   label: string
   description: string
   href: string
+  kind?: 'queue' | 'saved_view'
 }
 
 interface SearchPayload {
@@ -168,7 +169,7 @@ export default function GlobalSearch({ userId, profile }: Props) {
         }}
         aria-label="Open global search"
       >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Search clients, staff, or queues</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Search clients, staff, queues, or saved views</span>
         <span style={{ fontSize: 11, opacity: 0.8 }}>/</span>
       </button>
 
@@ -191,7 +192,7 @@ export default function GlobalSearch({ userId, profile }: Props) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a client name, client ID, staff name, or queue"
+            placeholder="Type a client name, client ID, staff name, queue, or saved view"
             type="search"
             style={{ width: '100%', marginBottom: 10 }}
           />
@@ -199,12 +200,12 @@ export default function GlobalSearch({ userId, profile }: Props) {
           <div style={{ maxHeight: 420, overflowY: 'auto', display: 'grid', gap: 10 }}>
             {!query.trim() ? (
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 6px' }}>
-                Search from anywhere. Results are grouped into clients, staff, and queues.
+                Search from anywhere. Results are grouped into clients, staff, and jump targets.
               </div>
             ) : loading ? (
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 6px' }}>Searching…</div>
             ) : !hasResults ? (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 6px' }}>No matching clients, staff, or queues.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 6px' }}>No matching clients, staff, queues, or saved views.</div>
             ) : (
               <>
                 {results.clients.length > 0 && (
@@ -248,7 +249,7 @@ export default function GlobalSearch({ userId, profile }: Props) {
                 )}
 
                 {results.queues.length > 0 && (
-                  <SearchSection title="Queues">
+                  <SearchSection title="Queues & Views">
                     {results.queues.map((queue) => (
                       <Link
                         key={queue.id}
@@ -259,6 +260,9 @@ export default function GlobalSearch({ userId, profile }: Props) {
                         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{queue.label}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                           {queue.description}
+                          <span style={{ marginLeft: 6, color: 'var(--text-tertiary)' }}>
+                            {queue.kind === 'saved_view' ? '• Saved view' : '• Queue'}
+                          </span>
                         </div>
                       </Link>
                     ))}
