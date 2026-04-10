@@ -1,4 +1,4 @@
-import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { isSupervisorLike } from '@/lib/roles'
 import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -67,8 +67,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter
-    const now = new Date().toISOString().split('T')[0]
-    const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const nowDate = new Date()
+    const now = nowDate.toISOString().split('T')[0]
+    const todayStart = new Date(nowDate)
+    todayStart.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(todayStart)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const weekLater = new Date(todayStart)
+    weekLater.setDate(weekLater.getDate() + 7)
+    const twoWeeksLater = new Date(todayStart)
+    twoWeeksLater.setDate(twoWeeksLater.getDate() + 14)
 
     if (deadlineDate) {
       query = query.or(
@@ -90,13 +98,76 @@ export async function GET(req: NextRequest) {
       )
     } else if (filter === 'overdue') {
       query = query.or(
-        `eligibility_end_date.lt.${now},pos_deadline.lt.${now},assessment_due.lt.${now},` +
-          `three_month_visit_due.lt.${now},thirty_day_letter_date.lt.${now}`
+        [
+          `eligibility_end_date.lt.${now}`,
+          `three_month_visit_due.lt.${now}`,
+          `quarterly_waiver_date.lt.${now}`,
+          `med_tech_redet_date.lt.${now}`,
+          `pos_deadline.lt.${now}`,
+          `assessment_due.lt.${now}`,
+          `thirty_day_letter_date.lt.${now}`,
+          `spm_next_due.lt.${now}`,
+          `co_financial_redet_date.lt.${now}`,
+          `co_app_date.lt.${now}`,
+          `mfp_consent_date.lt.${now}`,
+          `two57_date.lt.${now}`,
+          `doc_mdh_date.lt.${now}`,
+        ].join(',')
+      )
+    } else if (filter === 'due_today') {
+      query = query.or(
+        [
+          `eligibility_end_date.eq.${now}`,
+          `three_month_visit_due.eq.${now}`,
+          `quarterly_waiver_date.eq.${now}`,
+          `med_tech_redet_date.eq.${now}`,
+          `pos_deadline.eq.${now}`,
+          `assessment_due.eq.${now}`,
+          `thirty_day_letter_date.eq.${now}`,
+          `spm_next_due.eq.${now}`,
+          `co_financial_redet_date.eq.${now}`,
+          `co_app_date.eq.${now}`,
+          `mfp_consent_date.eq.${now}`,
+          `two57_date.eq.${now}`,
+          `doc_mdh_date.eq.${now}`,
+        ].join(',')
       )
     } else if (filter === 'due_this_week') {
-      query = query
-        .or(`eligibility_end_date.gte.${now},pos_deadline.gte.${now},assessment_due.gte.${now}`)
-        .or(`eligibility_end_date.lte.${weekLater},pos_deadline.lte.${weekLater},assessment_due.lte.${weekLater}`)
+      query = query.or(
+        [
+          `and(eligibility_end_date.gte.${tomorrow.toISOString().split('T')[0]},eligibility_end_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(three_month_visit_due.gte.${tomorrow.toISOString().split('T')[0]},three_month_visit_due.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(quarterly_waiver_date.gte.${tomorrow.toISOString().split('T')[0]},quarterly_waiver_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(med_tech_redet_date.gte.${tomorrow.toISOString().split('T')[0]},med_tech_redet_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(pos_deadline.gte.${tomorrow.toISOString().split('T')[0]},pos_deadline.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(assessment_due.gte.${tomorrow.toISOString().split('T')[0]},assessment_due.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(thirty_day_letter_date.gte.${tomorrow.toISOString().split('T')[0]},thirty_day_letter_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(spm_next_due.gte.${tomorrow.toISOString().split('T')[0]},spm_next_due.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(co_financial_redet_date.gte.${tomorrow.toISOString().split('T')[0]},co_financial_redet_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(co_app_date.gte.${tomorrow.toISOString().split('T')[0]},co_app_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(mfp_consent_date.gte.${tomorrow.toISOString().split('T')[0]},mfp_consent_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(two57_date.gte.${tomorrow.toISOString().split('T')[0]},two57_date.lte.${weekLater.toISOString().split('T')[0]})`,
+          `and(doc_mdh_date.gte.${tomorrow.toISOString().split('T')[0]},doc_mdh_date.lte.${weekLater.toISOString().split('T')[0]})`,
+        ].join(',')
+      )
+    } else if (filter === 'due_next_14_days') {
+      query = query.or(
+        [
+          `and(eligibility_end_date.gte.${tomorrow.toISOString().split('T')[0]},eligibility_end_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(three_month_visit_due.gte.${tomorrow.toISOString().split('T')[0]},three_month_visit_due.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(quarterly_waiver_date.gte.${tomorrow.toISOString().split('T')[0]},quarterly_waiver_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(med_tech_redet_date.gte.${tomorrow.toISOString().split('T')[0]},med_tech_redet_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(pos_deadline.gte.${tomorrow.toISOString().split('T')[0]},pos_deadline.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(assessment_due.gte.${tomorrow.toISOString().split('T')[0]},assessment_due.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(thirty_day_letter_date.gte.${tomorrow.toISOString().split('T')[0]},thirty_day_letter_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(spm_next_due.gte.${tomorrow.toISOString().split('T')[0]},spm_next_due.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(co_financial_redet_date.gte.${tomorrow.toISOString().split('T')[0]},co_financial_redet_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(co_app_date.gte.${tomorrow.toISOString().split('T')[0]},co_app_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(mfp_consent_date.gte.${tomorrow.toISOString().split('T')[0]},mfp_consent_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(two57_date.gte.${tomorrow.toISOString().split('T')[0]},two57_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+          `and(doc_mdh_date.gte.${tomorrow.toISOString().split('T')[0]},doc_mdh_date.lte.${twoWeeksLater.toISOString().split('T')[0]})`,
+        ].join(',')
+      )
     } else if (filter === 'co') {
       query = query.eq('category', 'co')
     } else if (filter === 'cfc') {
