@@ -196,6 +196,49 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const recommendedMoves = useMemo(() => {
     if (rebalanceHints.donors.length === 0 || rebalanceHints.receivers.length === 0) return []
 
+    function getClientDates(client: Client) {
+      return [
+        client.eligibility_end_date,
+        client.three_month_visit_due,
+        client.quarterly_waiver_date,
+        client.med_tech_redet_date,
+        client.pos_deadline,
+        client.assessment_due,
+        client.thirty_day_letter_date,
+        client.spm_next_due,
+        client.co_financial_redet_date,
+        client.co_app_date,
+        client.mfp_consent_date,
+        client.two57_date,
+        client.doc_mdh_date,
+      ].filter(Boolean).map(value => String(value))
+    }
+
+    function isClientOverdue(client: Client) {
+      const today = new Date().toISOString().split('T')[0]
+      return getClientDates(client).some(date => date < today)
+    }
+
+    function isClientDueSoon(client: Client) {
+      const today = new Date()
+      const start = new Date(today)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(start)
+      end.setDate(end.getDate() + 7)
+      return getClientDates(client).some(date => {
+        const d = new Date(date)
+        return d >= start && d <= end
+      })
+    }
+
+    function candidateScore(client: Client) {
+      let score = 0
+      if (isClientOverdue(client)) score += 100
+      if (isClientDueSoon(client)) score += 40
+      score += Math.max(0, (client.goal_pct ?? 0) - 60)
+      return score
+    }
+
     return rebalanceHints.donors.flatMap((donor, donorIndex) => {
       const receiver = rebalanceHints.receivers[donorIndex % rebalanceHints.receivers.length]
       const suggestedCount = Math.min(
@@ -205,6 +248,18 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           Math.ceil((donor.pressureScore - receiver.pressureScore) / 6)
         )
       )
+      const candidateClients = clients
+        .filter(client => client.assigned_to === donor.planner.id)
+        .sort((a, b) => candidateScore(a) - candidateScore(b))
+        .slice(0, suggestedCount + 1)
+        .map(client => ({
+          id: client.id,
+          clientId: client.client_id,
+          name: `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''}`,
+          overdue: isClientOverdue(client),
+          dueSoon: isClientDueSoon(client),
+          goalPct: client.goal_pct ?? 0,
+        }))
 
       return [{
         donor,
@@ -215,9 +270,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           : donor.dueThisWeek > 0
             ? `${donor.dueThisWeek} due this week`
             : `${donor.clientCount} total clients`,
+        candidates: candidateClients,
       }]
     })
-  }, [rebalanceHints])
+  }, [clients, rebalanceHints])
 
   async function reassignClient(clientId: string, plannerId: string | null) {
     const client = clients.find(c => c.id === clientId)
@@ -341,6 +397,17 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
                   Why: {move.reason}. Receiver pressure is {move.receiver.pressureScore} with {move.receiver.clientCount} total clients.
                 </div>
+                {move.candidates.length > 0 && (
+                  <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                    {move.candidates.map(candidate => (
+                      <div key={candidate.id} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        • {candidate.name} ({candidate.clientId})
+                        {candidate.overdue ? ' • overdue' : candidate.dueSoon ? ' • due soon' : ' • lower urgency'}
+                        {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
