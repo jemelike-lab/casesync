@@ -279,8 +279,16 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
           Workload + rebalance readout
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10 }}>
           Pressure score weights overdue work first, then due-this-week load, then raw caseload above 35. Use rebalance rows to spot where manager intervention is most likely needed.
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            Open Transfer Board →
+          </Link>
+          <Link href="/team?full=1&filter=overdue" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            Review Overdue Queue →
+          </Link>
         </div>
       </div>
 
@@ -295,7 +303,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Planner', 'Load', 'Pressure', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Avg Goal %'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}
+                  {['Planner', 'Load', 'Pressure', 'Pressure Mix', 'Compliance', 'Clients', 'Overdue', 'Due This Week', 'Action', 'Avg Goal %'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -323,6 +331,15 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
                     <td style={{ padding: '10px 12px', fontWeight: 700, color: ps.loadStatus === 'rebalance' ? 'var(--red)' : ps.loadStatus === 'watch' ? 'var(--orange)' : 'var(--green)' }}>
                       {ps.pressureScore}
                     </td>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                      {ps.overdue > 0
+                        ? `${ps.overdue} overdue ×5`
+                        : ps.dueThisWeek > 0
+                          ? `${ps.dueThisWeek} due ×2`
+                          : ps.clientCount > 35
+                            ? `${ps.clientCount - 35} over cap`
+                            : 'Light queue'}
+                    </td>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={`${ps.complianceScore}% of clients have health score ≥ 60`}>
                         <HealthScoreRing score={ps.complianceScore} size={32} strokeWidth={3} />
@@ -331,6 +348,19 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
                     <td style={{ padding: '10px 12px' }}>{ps.clientCount}</td>
                     <td style={{ padding: '10px 12px', color: ps.overdue > 0 ? 'var(--red)' : 'var(--text)' }}>{ps.overdue > 0 ? `🔴 ${ps.overdue}` : ps.overdue}</td>
                     <td style={{ padding: '10px 12px', color: ps.dueThisWeek > 0 ? 'var(--orange)' : 'var(--text)' }}>{ps.dueThisWeek > 0 ? `🟠 ${ps.dueThisWeek}` : ps.dueThisWeek}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      {ps.loadStatus === 'rebalance' ? (
+                        <Link href="/team?view=transfer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
+                          Rebalance →
+                        </Link>
+                      ) : ps.loadStatus === 'watch' ? (
+                        <Link href={`/team?full=1&filter=due_this_week&planner=${encodeURIComponent(ps.planner.id)}`} style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
+                          Review queue →
+                        </Link>
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Steady</span>
+                      )}
+                    </td>
                     <td style={{ padding: '10px 12px', color: ps.avgGoalPct >= 75 ? 'var(--green)' : ps.avgGoalPct >= 50 ? 'var(--yellow)' : 'var(--red)', fontWeight: 600 }}>{ps.avgGoalPct}%</td>
                   </tr>
                 ))}
