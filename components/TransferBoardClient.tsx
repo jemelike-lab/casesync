@@ -258,19 +258,38 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return getClientDates(client).length
     }
 
-    function complexityPenalty(client: Client) {
+    function documentationFriction(client: Client) {
+      let friction = 0
+      if (client.signatures_needed) friction += 10
+      if (client.provider_forms) friction += 6
+      if (client.request_letter) friction += 6
+      if (client.schedule_docs) friction += 5
+      if (client.reportable_events) friction += 12
+      if (client.appeals) friction += 12
+      if (client.audit_review) friction += 8
+      if (client.qa_review) friction += 8
+      return friction
+    }
+
+    function programComplexityPenalty(client: Client) {
       let penalty = 0
       const totalDates = dateCount(client)
       penalty += Math.max(0, totalDates - 3) * 8
 
       const category = String(client.category ?? '').toLowerCase()
-      if (category === 'co' || category === 'cfc') penalty += 10
-      if (category === 'cpas') penalty += 6
+      if (category === 'co') penalty += 12
+      else if (category === 'cfc') penalty += 9
+      else if (category === 'cpas') penalty += 6
+
+      if (!client.spm_completed && client.spm_next_due) penalty += 12
+      if (client.pos_status && String(client.pos_status).toLowerCase() !== 'complete') penalty += 6
+      if (client.med_tech_status && String(client.med_tech_status).toLowerCase() !== 'complete') penalty += 6
 
       const goalPct = client.goal_pct ?? 0
       if (goalPct >= 90) penalty += 12
       else if (goalPct >= 75) penalty += 6
 
+      penalty += documentationFriction(client)
       return penalty
     }
 
@@ -289,25 +308,31 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       if (goalPct <= 45) bonus += 10
       else if (goalPct <= 60) bonus += 4
 
+      if (client.spm_completed) bonus += 8
+      if (!client.signatures_needed && !client.provider_forms && !client.request_letter) bonus += 6
+      if (!client.reportable_events && !client.appeals) bonus += 4
+
       return bonus
     }
 
     function urgencyScore(client: Client) {
       let score = 0
-      if (isClientOverdue(client)) score += 80
-      if (isClientDueSoon(client)) score += 35
-
+      const overdue = isClientOverdue(client)
+      const dueSoon = isClientDueSoon(client)
       const days = daysSinceContact(client)
-      if (days !== null && days >= 21 && (isClientOverdue(client) || isClientDueSoon(client))) {
-        score += 12
-      }
+
+      if (overdue) score += 80
+      if (dueSoon) score += 35
+      if (!client.spm_completed && client.spm_next_due) score += 14
+      if (days !== null && days >= 21 && (overdue || dueSoon)) score += 12
+      if (days !== null && days >= 30) score += 6
 
       score += Math.min(18, donorCategoryPressure(client))
       return score
     }
 
     function candidateScore(client: Client) {
-      return urgencyScore(client) + handoffReadinessBonus(client) - complexityPenalty(client)
+      return urgencyScore(client) + handoffReadinessBonus(client) - programComplexityPenalty(client)
     }
 
     return rebalanceHints.donors.flatMap((donor, donorIndex) => {
@@ -333,8 +358,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           category: client.category,
           daysSinceContact: daysSinceContact(client),
           score: candidateScore(client),
-          complexityPenalty: complexityPenalty(client),
+          complexityPenalty: programComplexityPenalty(client),
           handoffReadiness: handoffReadinessBonus(client),
+          documentationFriction: documentationFriction(client),
+          spmCompleted: client.spm_completed,
         }))
 
       return [{
@@ -591,6 +618,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                         {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
                         {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
                         {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                        {candidate.spmCompleted ? ' • SPM complete' : ' • SPM open'}
+                        {typeof candidate.documentationFriction === 'number' && candidate.documentationFriction > 0 ? ` • doc friction ${candidate.documentationFriction}` : ''}
                         {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
                       </div>
                     ))}
@@ -628,6 +657,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                           {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
                           {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
                           {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                          {candidate.spmCompleted ? ' • SPM complete' : ' • SPM open'}
+                          {typeof candidate.documentationFriction === 'number' && candidate.documentationFriction > 0 ? ` • doc friction ${candidate.documentationFriction}` : ''}
                           {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
                         </div>
                       ))}
