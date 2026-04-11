@@ -59,6 +59,36 @@ function getActionTone(action: string) {
   return { background: 'rgba(0,122,255,0.12)', color: '#007aff' }
 }
 
+function getOutcomeTone(label: string) {
+  if (/helped/i.test(label)) {
+    return { background: 'rgba(48,209,88,0.14)', color: '#30d158' }
+  }
+  if (/worse/i.test(label)) {
+    return { background: 'rgba(255,69,58,0.14)', color: '#ff453a' }
+  }
+  if (/higher load accepted/i.test(label)) {
+    return { background: 'rgba(10,132,255,0.14)', color: '#0a84ff' }
+  }
+  return { background: 'rgba(142,142,147,0.16)', color: '#8e8e93' }
+}
+
+function inferOutcomeLabel(entry: AuditEntry) {
+  const raw = `${entry.action} ${entry.old_value ?? ''} ${entry.new_value ?? ''}`.toLowerCase()
+  if (raw.includes('higher load accepted')) return 'higher load accepted'
+  if (raw.includes('helped')) return 'helped'
+  if (raw.includes('worse')) return 'worse'
+  if (raw.includes('neutral')) return 'neutral'
+  return null
+}
+
+function parsePlannerNames(entry: AuditEntry) {
+  if (entry.field_name !== 'assigned_to') return null
+  return {
+    from: formatPlannerValue(entry.old_value),
+    to: formatPlannerValue(entry.new_value),
+  }
+}
+
 export default function AuditLogClient({ logs, users, currentUser, profile }: Props) {
   const [filterUser, setFilterUser] = useState('')
   const [filterAction, setFilterAction] = useState('')
@@ -109,7 +139,34 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
       .sort((a, b) => a[0].localeCompare(b[0]))
       .slice(-7)
       .map(([day, counts]) => ({ day, ...counts, net: counts.applied - counts.undone }))
-    return { applied, undone, uniqueClients, latest, netMoves, successRate, trendDays }
+
+    const outcomeCounts = rebalanceEntries.reduce<Record<string, number>>((acc, entry) => {
+      const label = inferOutcomeLabel(entry)
+      if (!label) return acc
+      acc[label] = (acc[label] ?? 0) + 1
+      return acc
+    }, {})
+
+    const plannerCounts = rebalanceEntries.reduce<Record<string, { inbound: number, outbound: number, helped: number, neutral: number, worse: number, higherLoadAccepted: number }>>((acc, entry) => {
+      const planners = parsePlannerNames(entry)
+      if (!planners) return acc
+      acc[planners.from] ??= { inbound: 0, outbound: 0, helped: 0, neutral: 0, worse: 0, higherLoadAccepted: 0 }
+      acc[planners.to] ??= { inbound: 0, outbound: 0, helped: 0, neutral: 0, worse: 0, higherLoadAccepted: 0 }
+      acc[planners.from].outbound += 1
+      acc[planners.to].inbound += 1
+      const label = inferOutcomeLabel(entry)
+      if (label === 'helped') acc[planners.to].helped += 1
+      if (label === 'neutral') acc[planners.to].neutral += 1
+      if (label === 'worse') acc[planners.to].worse += 1
+      if (label === 'higher load accepted') acc[planners.to].higherLoadAccepted += 1
+      return acc
+    }, {})
+
+    const plannerRows = Object.entries(plannerCounts)
+      .map(([planner, counts]) => ({ planner, ...counts }))
+      .sort((a, b) => (b.helped + b.inbound) - (a.helped + a.inbound))
+
+    return { applied, undone, uniqueClients, latest, netMoves, successRate, trendDays, outcomeCounts, plannerRows }
   }, [rebalanceEntries])
 
   function exportCSV() {
@@ -234,6 +291,39 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
               </div>
             </div>
 
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              {['helped', 'neutral', 'worse', 'higher load accepted'].map(label => (
+                <div key={label} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: getOutcomeTone(label).color, marginTop: 4 }}>
+                    {rebalanceSummary.outcomeCounts[label] ?? 0}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Visible in current filtered rebalance history</div>
+                </div>
+              ))}
+            </div>
+
+            {rebalanceSummary.plannerRows.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Planner impact snapshot</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {rebalanceSummary.plannerRows.slice(0, 8).map(row => (
+                    <div key={row.planner} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', background: 'var(--surface-2)' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600 }}>{row.planner}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <span>{row.inbound} in</span>
+                        <span>{row.outbound} out</span>
+                        <span style={{ color: '#30d158' }}>{row.helped} helped</span>
+                        <span>{row.neutral} neutral</span>
+                        <span style={{ color: '#ff453a' }}>{row.worse} worse</span>
+                        <span style={{ color: '#0a84ff' }}>{row.higherLoadAccepted} higher load accepted</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {rebalanceSummary.trendDays.length > 0 && (
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Last 7 active days</div>
@@ -276,14 +366,29 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{formatDateTime(l.created_at)}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{l.profiles?.full_name ?? '—'}</td>
                     <td style={{ padding: '8px 12px' }}>
-                      <span style={{
-                        ...getActionTone(l.action),
-                        borderRadius: 4,
-                        padding: '1px 6px',
-                        fontWeight: 600,
-                      }}>
-                        {l.action}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{
+                          ...getActionTone(l.action),
+                          borderRadius: 4,
+                          padding: '1px 6px',
+                          fontWeight: 600,
+                        }}>
+                          {l.action}
+                        </span>
+                        {inferOutcomeLabel(l) && (
+                          <span style={{
+                            ...getOutcomeTone(inferOutcomeLabel(l) as string),
+                            borderRadius: 999,
+                            padding: '1px 8px',
+                            fontWeight: 700,
+                            fontSize: 10,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.03em',
+                          }}>
+                            {inferOutcomeLabel(l)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '8px 12px' }}>
                       {l.clients ? (
