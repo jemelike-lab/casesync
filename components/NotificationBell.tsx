@@ -98,16 +98,28 @@ export default function NotificationBell({ userId }: Props) {
         onPointerUp={(event) => {
           event.preventDefault()
           event.stopPropagation()
+          if (isMobileViewport) {
+            router.push('/notifications')
+            return
+          }
           setOpen(v => !v)
         }}
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
-          if (!isMobileViewport) setOpen(v => !v)
+          if (isMobileViewport) {
+            router.push('/notifications')
+            return
+          }
+          setOpen(v => !v)
         }}
         onTouchEnd={(event) => {
           event.preventDefault()
           event.stopPropagation()
+          if (isMobileViewport) {
+            router.push('/notifications')
+            return
+          }
           setOpen(v => !v)
         }}
         className={shake ? 'bell-shake' : undefined}
