@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { useDraggable } from '@dnd-kit/core'
@@ -123,8 +123,33 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
   const [mobileTab, setMobileTab] = useState<'recommendations' | 'unassigned' | 'planners' | 'recent'>('recommendations')
+  const [isMobileLayout, setIsMobileLayout] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia('(max-width: 820px)')
+    const sync = () => setIsMobileLayout(media.matches || window.innerWidth <= 820)
+    sync()
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', sync)
+      window.addEventListener('resize', sync)
+      return () => {
+        media.removeEventListener('change', sync)
+        window.removeEventListener('resize', sync)
+      }
+    }
+
+    media.addListener(sync)
+    window.addEventListener('resize', sync)
+    return () => {
+      media.removeListener(sync)
+      window.removeEventListener('resize', sync)
+    }
+  }, [])
 
   async function getCurrentUserId() {
     const { data } = await supabase.auth.getUser()
@@ -890,7 +915,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         )}
       </div>
 
-      <div className="transfer-mobile-shell" style={{ display: 'none' }}>
+      {isMobileLayout && (
+      <div className="transfer-mobile-shell">
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
           {[
             ['recommendations', 'Recommendations'],
@@ -1062,7 +1088,9 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           </div>
         )}
       </div>
+      )}
 
+      {!isMobileLayout && (
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="transfer-desktop-shell" style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
           <DropColumn
@@ -1122,13 +1150,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           {activeClient ? <ClientCardView client={activeClient} dragging saving={savingClientId === activeClient.id} /> : null}
         </DragOverlay>
       </DndContext>
-
-      <style>{`
-        @media (max-width: 820px) {
-          .transfer-mobile-shell { display: block !important; }
-          .transfer-desktop-shell { display: none !important; }
-        }
-      `}</style>
+      )}
     </div>
   )
 }
