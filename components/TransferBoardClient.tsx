@@ -104,6 +104,14 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const [search, setSearch] = useState('')
   const [savingClientId, setSavingClientId] = useState<string | null>(null)
   const [applyingMoveKey, setApplyingMoveKey] = useState<string | null>(null)
+  const [undoingMove, setUndoingMove] = useState(false)
+  const [lastAppliedMove, setLastAppliedMove] = useState<null | {
+    clientIds: string[]
+    fromPlannerId: string | null
+    toPlannerId: string | null
+    fromPlannerName: string
+    toPlannerName: string
+  }>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
 
@@ -353,7 +361,42 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return
     }
 
+    setLastAppliedMove({
+      clientIds: candidateIds,
+      fromPlannerId: move.donor.planner.id,
+      toPlannerId: receiverPlanner.id,
+      fromPlannerName: move.donor.planner.full_name ?? 'Unknown',
+      toPlannerName: receiverPlanner.full_name ?? 'Support Planner',
+    })
+
     showToast('success', `Moved ${candidateIds.length} recommended client${candidateIds.length !== 1 ? 's' : ''} to ${receiverPlanner.full_name ?? 'Support Planner'}.`)
+  }
+
+  async function undoLastAppliedMove() {
+    if (!lastAppliedMove || undoingMove) return
+
+    const previousClients = clients
+    const fromPlanner = planners.find(planner => planner.id === lastAppliedMove.fromPlannerId) ?? null
+    setUndoingMove(true)
+    setClients(prev => prev.map(client => lastAppliedMove.clientIds.includes(client.id)
+      ? { ...client, assigned_to: lastAppliedMove.fromPlannerId, profiles: fromPlanner }
+      : client))
+
+    const { error } = await supabase
+      .from('clients')
+      .update({ assigned_to: lastAppliedMove.fromPlannerId })
+      .in('id', lastAppliedMove.clientIds)
+
+    setUndoingMove(false)
+
+    if (error) {
+      setClients(previousClients)
+      showToast('error', error.message)
+      return
+    }
+
+    showToast('success', `Undid move from ${lastAppliedMove.fromPlannerName} to ${lastAppliedMove.toPlannerName}.`)
+    setLastAppliedMove(null)
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -423,6 +466,26 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             Supervisors only. Drag from the list or between Support Planner columns.
           </div>
+          {lastAppliedMove && (
+            <button
+              type="button"
+              onClick={undoLastAppliedMove}
+              disabled={undoingMove}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '8px 10px',
+                background: 'var(--surface-2)',
+                color: 'var(--text)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: undoingMove ? 'wait' : 'pointer',
+                opacity: undoingMove ? 0.7 : 1,
+              }}
+            >
+              {undoingMove ? 'Undoing…' : 'Undo last applied move'}
+            </button>
+          )}
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, marginTop: 12 }}>
           {rebalanceHints.donors.length > 0
