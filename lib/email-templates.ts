@@ -223,6 +223,71 @@ export function dailyDigestEmail({
 
 // --------------------
 
+export function teamManagerPlannerAlertEmail({
+  managerName,
+  plannerName,
+  overdueClientCount,
+  dueSoonClientCount,
+  topIssues,
+  queueHref,
+}: {
+  managerName: string
+  plannerName: string
+  overdueClientCount: number
+  dueSoonClientCount: number
+  topIssues: Array<{ clientName: string; issue: string; dueDate: string }>
+  queueHref: string
+}) {
+  const issueRows = topIssues.length > 0
+    ? topIssues.map(issue => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
+            <span style="font-size:13px;font-weight:600;color:#f5f5f7;">${issue.clientName}</span>
+            <span style="font-size:12px;color:#888;display:block;">${issue.issue} · ${issue.dueDate}</span>
+          </td>
+        </tr>
+      `).join('')
+    : '<tr><td style="padding:12px 0;font-size:13px;color:#888;">No client details available.</td></tr>'
+
+  const content = `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#ff9500;text-transform:uppercase;letter-spacing:0.08em;">
+      &#9888;&#65039; Planner Deadline Escalation
+    </p>
+    <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#f5f5f7;">
+      ${plannerName} needs attention
+    </h1>
+    <p style="margin:0 0 24px;font-size:14px;color:#888;">Hi ${managerName}, one of your planners has client deadlines that need follow-up.</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
+          <span style="font-size:36px;font-weight:700;color:#ff3b30;">${overdueClientCount}</span>
+          <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Overdue Clients</p>
+        </td>
+        <td width="4%"></td>
+        <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
+          <span style="font-size:36px;font-weight:700;color:#ffcc00;">${dueSoonClientCount}</span>
+          <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Due This Week</p>
+        </td>
+      </tr>
+    </table>
+
+    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;">Top Issues</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;">
+      ${issueRows}
+    </table>
+
+    ${ctaButton(`${BASE_URL}${queueHref}`, 'Open Team Queue')}
+  `
+
+  return {
+    subject: `⚠️ ${plannerName} has ${overdueClientCount} overdue clients in CaseSync`,
+    html: baseLayout(content),
+  }
+}
+
+// --------------------
+
 export function brandedInviteEmail({
   fullName,
   role,

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
-import { deadlineAlertEmail, dailyDigestEmail } from '@/lib/email-templates'
+import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } from '@/lib/email-templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,16 +53,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Fetch planner profiles (email + notification prefs)
+  // Fetch planner profiles (email + notification prefs + manager linkage)
   const assigneeIds = [...new Set((clients ?? []).map(c => c.assigned_to).filter(Boolean))]
   const { data: profiles } = assigneeIds.length > 0
     ? await supabase
         .from('profiles')
-        .select('id, email, full_name, notification_preferences')
+        .select('id, email, full_name, team_manager_id, notification_preferences')
         .in('id', assigneeIds)
     : { data: [] }
 
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+  const teamManagerIds = [...new Set((profiles ?? []).map(p => p.team_manager_id).filter(Boolean))]
+  const { data: teamManagers } = teamManagerIds.length > 0
+    ? await supabase
+        .from('profiles')
+        .select('id, email, full_name, notification_preferences')
+        .in('id', teamManagerIds)
+    : { data: [] }
+  const managerMap = new Map((teamManagers ?? []).map(m => [m.id, m]))
 
   // Check which notifications were already sent today (to avoid duplicates)
   const { data: todayNotifs } = await supabase
@@ -76,6 +84,7 @@ export async function GET(request: Request) {
   const notifications: any[] = []
   let emailsSent = 0
   let digestsSent = 0
+  let managerAlertsSent = 0
 
   // ---- DEADLINE NOTIFICATIONS ----
   for (const client of clients ?? []) {
@@ -145,6 +154,123 @@ export async function GET(request: Request) {
           }
         }
       }
+    }
+  }
+
+  // ---- TEAM MANAGER ESCALATIONS ----
+  const plannerEscalations = new Map<string, {
+    plannerId: string
+    plannerName: string
+    teamManagerId: string
+    overdueClientCount: number
+    dueSoonClientCount: number
+    topIssues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }>
+  }>()
+
+  for (const client of clients ?? []) {
+    if (!client.assigned_to) continue
+    const planner = profileMap.get(client.assigned_to)
+    const teamManagerId = planner?.team_manager_id
+    if (!planner || !teamManagerId) continue
+
+    const issues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }> = []
+    let clientOverdue = false
+    let clientDueThisWeek = false
+
+    for (const { key, label } of DEADLINE_FIELDS) {
+      const dateStr = (client as any)[key] as string | null
+      if (!dateStr) continue
+      const date = new Date(dateStr)
+      date.setHours(0, 0, 0, 0)
+      const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000)
+      if (diffDays < 0) {
+        clientOverdue = true
+        issues.push({
+          clientName: `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`,
+          issue: `${label} overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'}`,
+          dueDate: dateStr,
+          severity: 0,
+        })
+      } else if (diffDays <= 7) {
+        clientDueThisWeek = true
+        issues.push({
+          clientName: `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`,
+          issue: `${label} due in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
+          dueDate: dateStr,
+          severity: 1,
+        })
+      }
+    }
+
+    if (!clientOverdue && !clientDueThisWeek) continue
+
+    const existing: {
+      plannerId: string
+      plannerName: string
+      teamManagerId: string
+      overdueClientCount: number
+      dueSoonClientCount: number
+      topIssues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }>
+    } = plannerEscalations.get(client.assigned_to) ?? {
+      plannerId: client.assigned_to,
+      plannerName: planner.full_name ?? 'Planner',
+      teamManagerId,
+      overdueClientCount: 0,
+      dueSoonClientCount: 0,
+      topIssues: [],
+    }
+
+    if (clientOverdue) existing.overdueClientCount++
+    else if (clientDueThisWeek) existing.dueSoonClientCount++
+
+    existing.topIssues.push(...issues)
+    existing.topIssues = existing.topIssues
+      .sort((a, b) => a.severity - b.severity || a.dueDate.localeCompare(b.dueDate))
+      .slice(0, 5)
+
+    plannerEscalations.set(client.assigned_to, existing)
+  }
+
+  for (const escalation of plannerEscalations.values()) {
+    if (escalation.overdueClientCount <= 0) continue
+
+    const manager = managerMap.get(escalation.teamManagerId)
+    if (!manager?.email) continue
+
+    const prefs = (manager.notification_preferences as any) ?? {}
+    const managerEmailEnabled = prefs.team_deadline_alerts !== false
+    const alertDedupeKey = `manager-alert:${manager.id}:${escalation.plannerId}:${todayStr}`
+    if (!managerEmailEnabled || sentToday.has(alertDedupeKey)) continue
+
+    try {
+      const { subject, html } = teamManagerPlannerAlertEmail({
+        managerName: manager.full_name?.split(' ')[0] ?? 'there',
+        plannerName: escalation.plannerName,
+        overdueClientCount: escalation.overdueClientCount,
+        dueSoonClientCount: escalation.dueSoonClientCount,
+        topIssues: escalation.topIssues,
+        queueHref: '/team?full=1&filter=overdue',
+      })
+      await sendEmail({ to: manager.email, subject, html })
+      managerAlertsSent++
+
+      notifications.push({
+        user_id: manager.id,
+        title: `⚠️ ${escalation.plannerName} has overdue client deadlines`,
+        body: `${escalation.overdueClientCount} overdue client${escalation.overdueClientCount === 1 ? '' : 's'} need follow-up.`,
+        link: `/team?full=1&filter=overdue`,
+        read: false,
+      })
+
+      notifications.push({
+        user_id: manager.id,
+        title: `manager-alert:${escalation.plannerId}:${todayStr}`,
+        body: alertDedupeKey,
+        link: `/team?full=1&filter=overdue`,
+        read: true,
+      })
+    } catch (managerErr) {
+      console.error('[check-deadlines] manager alert send error:', managerErr)
     }
   }
 
@@ -231,6 +357,7 @@ export async function GET(request: Request) {
     notificationsSent: notifications.length,
     emailsSent,
     digestsSent,
+    managerAlertsSent,
     timestamp: new Date().toISOString(),
   })
 }
