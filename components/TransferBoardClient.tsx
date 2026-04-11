@@ -761,7 +761,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
             </div>
           </div>
         )}
-        {recommendedMoves.length > 0 && (
+        {!isMobileLayout && recommendedMoves.length > 0 && (
           <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
             {recommendedMoves.map((move, index) => (
               <div key={`${move.donor.planner.id}-${move.receiver.planner.id}-${index}`} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
