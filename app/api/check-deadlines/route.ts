@@ -91,6 +91,24 @@ export async function GET(request: Request) {
         const daysLabel = diffDays === 1 ? 'tomorrow' : `in ${diffDays} days`
         const notifBody = `${label} is due ${daysLabel} (${dateStr})`
         const dedupeKey = `${client.assigned_to}:${notifBody}`
+        const sectionByField: Record<string, string> = {
+          eligibility_end_date: 'section-eligibility',
+          three_month_visit_due: 'section-contact-visits',
+          quarterly_waiver_date: 'section-contact-visits',
+          med_tech_redet_date: 'section-med-tech',
+          pos_deadline: 'section-plans-assessments',
+          assessment_due: 'section-plans-assessments',
+          thirty_day_letter_date: 'section-contact-visits',
+          co_financial_redet_date: 'section-co-details',
+          co_app_date: 'section-co-details',
+          mfp_consent_date: 'section-co-details',
+          two57_date: 'section-co-details',
+          doc_mdh_date: 'section-plans-assessments',
+          spm_next_due: 'section-plans-assessments',
+        }
+        const fieldKey = String(key)
+        const targetSection = sectionByField[fieldKey] ?? 'section-plans-assessments'
+        const deepLink = `/clients/${client.id}?highlight=${encodeURIComponent(fieldKey)}#${targetSection}`
 
         // Only insert in-app notification if not already sent today
         if (!sentToday.has(dedupeKey)) {
@@ -98,7 +116,7 @@ export async function GET(request: Request) {
             user_id: client.assigned_to,
             title: `📅 Deadline ${daysLabel}: ${clientName}`,
             body: notifBody,
-            link: `/clients/${client.id}`,
+            link: deepLink,
             read: false,
           })
         }

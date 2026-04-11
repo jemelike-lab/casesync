@@ -37,6 +37,7 @@ export default function NotificationBell({ userId }: Props) {
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
   const [open, setOpen] = useState(false)
   const [shake, setShake] = useState(false)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const prevUnreadRef = useRef(unreadCount)
 
@@ -55,6 +56,27 @@ export default function NotificationBell({ userId }: Props) {
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(max-width: 640px)')
+    const sync = () => setIsMobileViewport(media.matches || window.innerWidth <= 640)
+    sync()
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', sync)
+      window.addEventListener('resize', sync)
+      return () => {
+        media.removeEventListener('change', sync)
+        window.removeEventListener('resize', sync)
+      }
+    }
+    media.addListener(sync)
+    window.addEventListener('resize', sync)
+    return () => {
+      media.removeListener(sync)
+      window.removeEventListener('resize', sync)
+    }
   }, [])
 
   async function handleClick(id: string, link: string | null, title: string, body: string | null) {
@@ -104,9 +126,14 @@ export default function NotificationBell({ userId }: Props) {
 
       {open && (
         <div className="slide-in-up" style={{
-          position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 340, maxHeight: 420,
+          position: isMobileViewport ? 'fixed' : 'absolute',
+          right: isMobileViewport ? 12 : 0,
+          left: isMobileViewport ? 12 : 'auto',
+          top: isMobileViewport ? 76 : 'calc(100% + 8px)',
+          width: isMobileViewport ? 'auto' : 340,
+          maxHeight: isMobileViewport ? 'min(70vh, 520px)' : 420,
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 500, overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 5000, overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
         }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
