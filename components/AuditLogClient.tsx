@@ -34,11 +34,37 @@ function truncate(s: string | null, n = 40) {
   return s.length > n ? s.slice(0, n) + '…' : s
 }
 
+function isRecommendedRebalanceMove(action: string) {
+  return /Recommended rebalance move/i.test(action)
+}
+
+function formatPlannerValue(value: string | null) {
+  if (!value) return 'Unassigned'
+  return value
+}
+
+function getActionTone(action: string) {
+  if (/undone/i.test(action)) {
+    return { background: 'rgba(255,159,10,0.15)', color: '#ff9f0a' }
+  }
+  if (isRecommendedRebalanceMove(action)) {
+    return { background: 'rgba(191,90,242,0.16)', color: '#bf5af2' }
+  }
+  if (action === 'delete') {
+    return { background: 'rgba(255,69,58,0.15)', color: '#ff453a' }
+  }
+  if (action === 'create') {
+    return { background: 'rgba(48,209,88,0.15)', color: '#30d158' }
+  }
+  return { background: 'rgba(0,122,255,0.12)', color: '#007aff' }
+}
+
 export default function AuditLogClient({ logs, users, currentUser, profile }: Props) {
   const [filterUser, setFilterUser] = useState('')
   const [filterAction, setFilterAction] = useState('')
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
+  const [rebalanceOnly, setRebalanceOnly] = useState(false)
 
   const selectStyle: React.CSSProperties = {
     background: '#1c1c1e', border: '1px solid #333336', borderRadius: 6, color: '#f5f5f7',
@@ -57,9 +83,19 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
       if (filterAction && l.action !== filterAction) return false
       if (filterFrom && l.created_at < filterFrom) return false
       if (filterTo && l.created_at > filterTo + 'T23:59:59') return false
+      if (rebalanceOnly && !isRecommendedRebalanceMove(l.action)) return false
       return true
     })
-  }, [logs, filterUser, filterAction, filterFrom, filterTo])
+  }, [logs, filterUser, filterAction, filterFrom, filterTo, rebalanceOnly])
+
+  const rebalanceEntries = useMemo(() => filtered.filter(l => isRecommendedRebalanceMove(l.action)), [filtered])
+  const rebalanceSummary = useMemo(() => {
+    const applied = rebalanceEntries.filter(l => /applied/i.test(l.action)).length
+    const undone = rebalanceEntries.filter(l => /undone/i.test(l.action)).length
+    const uniqueClients = new Set(rebalanceEntries.map(l => l.client_id).filter(Boolean)).size
+    const latest = rebalanceEntries[0] ?? null
+    return { applied, undone, uniqueClients, latest }
+  }, [rebalanceEntries])
 
   function exportCSV() {
     const header = 'Timestamp,User,Action,Client,Field,Old Value,New Value'
@@ -90,6 +126,7 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
             <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>🔍 HIPAA Audit Log</h1>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               {filtered.length} of {logs.length} records
+              {rebalanceOnly ? ' • recommended rebalance moves only' : ''}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -124,13 +161,48 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
             <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>To</label>
             <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} style={inputStyle} />
           </div>
-          {(filterUser || filterAction || filterFrom || filterTo) && (
-            <button onClick={() => { setFilterUser(''); setFilterAction(''); setFilterFrom(''); setFilterTo('') }}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text)', alignSelf: 'flex-end', paddingBottom: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={rebalanceOnly}
+              onChange={e => setRebalanceOnly(e.target.checked)}
+              style={{ accentColor: '#bf5af2' }}
+            />
+            Recommended rebalance moves only
+          </label>
+          {(filterUser || filterAction || filterFrom || filterTo || rebalanceOnly) && (
+            <button onClick={() => { setFilterUser(''); setFilterAction(''); setFilterFrom(''); setFilterTo(''); setRebalanceOnly(false) }}
               style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer', alignSelf: 'flex-end' }}>
               Clear
             </button>
           )}
         </div>
+
+        {rebalanceEntries.length > 0 && (
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>🔁 Recommended move history</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
+                  {rebalanceSummary.applied} applied • {rebalanceSummary.undone} undone • {rebalanceSummary.uniqueClients} client{rebalanceSummary.uniqueClients !== 1 ? 's' : ''} touched
+                </div>
+              </div>
+              {rebalanceSummary.latest && (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 520 }}>
+                  Latest: <strong style={{ color: 'var(--text)' }}>{rebalanceSummary.latest.action}</strong>
+                  {rebalanceSummary.latest.clients ? (
+                    <>
+                      {' '}for <Link href={`/clients/${rebalanceSummary.latest.client_id}`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                        {rebalanceSummary.latest.clients.last_name}, {rebalanceSummary.latest.clients.first_name ?? ''} ({rebalanceSummary.latest.clients.client_id})
+                      </Link>
+                    </>
+                  ) : null}
+                  {' '}on {formatDateTime(rebalanceSummary.latest.created_at)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Table */}
         <div style={{ overflowX: 'auto' }}>
@@ -157,9 +229,10 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{l.profiles?.full_name ?? '—'}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <span style={{
-                        background: l.action === 'delete' ? 'rgba(255,69,58,0.15)' : l.action === 'create' ? 'rgba(48,209,88,0.15)' : 'rgba(0,122,255,0.12)',
-                        color: l.action === 'delete' ? '#ff453a' : l.action === 'create' ? '#30d158' : '#007aff',
-                        borderRadius: 4, padding: '1px 6px', fontWeight: 600, textTransform: 'capitalize',
+                        ...getActionTone(l.action),
+                        borderRadius: 4,
+                        padding: '1px 6px',
+                        fontWeight: 600,
                       }}>
                         {l.action}
                       </span>
@@ -172,8 +245,12 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
                       ) : '—'}
                     </td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{l.field_name ?? '—'}</td>
-                    <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#ff9f0a' }}>{truncate(l.old_value)}</td>
-                    <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#30d158' }}>{truncate(l.new_value)}</td>
+                    <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#ff9f0a' }}>
+                      {l.field_name === 'assigned_to' ? formatPlannerValue(l.old_value) : truncate(l.old_value)}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: '#30d158' }}>
+                      {l.field_name === 'assigned_to' ? formatPlannerValue(l.new_value) : truncate(l.new_value)}
+                    </td>
                   </tr>
                 ))
               )}
