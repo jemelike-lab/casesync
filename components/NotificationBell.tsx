@@ -149,30 +149,41 @@ export default function NotificationBell({ userId }: Props) {
         {isMobileViewport && (
           <div
             onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 4999 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 8998 }}
           />
         )}
         <div className="slide-in-up" style={{
           position: isMobileViewport ? 'fixed' : 'absolute',
-          right: isMobileViewport ? 12 : 0,
-          left: isMobileViewport ? 12 : 'auto',
-          top: isMobileViewport ? 76 : 'calc(100% + 8px)',
-          width: isMobileViewport ? 'auto' : 340,
-          maxHeight: isMobileViewport ? 'min(70vh, 520px)' : 420,
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 5000, overflow: 'hidden',
+          right: isMobileViewport ? 0 : 0,
+          left: isMobileViewport ? 0 : 'auto',
+          top: isMobileViewport ? 0 : 'calc(100% + 8px)',
+          bottom: isMobileViewport ? 0 : 'auto',
+          width: isMobileViewport ? '100vw' : 340,
+          maxHeight: isMobileViewport ? '100dvh' : 420,
+          background: 'var(--surface)', border: isMobileViewport ? 'none' : '1px solid var(--border)', borderRadius: isMobileViewport ? 0 : 12,
+          boxShadow: isMobileViewport ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', zIndex: 8999, overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
         }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: isMobileViewport ? '16px 16px 12px' : '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>Notifications</span>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Mark all read
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Mark all read
+                </button>
+              )}
+              {isMobileViewport && (
+                <button
+                  onClick={() => setOpen(false)}
+                  style={{ fontSize: 13, color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 700 }}
+                >
+                  Close
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {notifications.length === 0 ? (
