@@ -104,6 +104,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const [search, setSearch] = useState('')
   const [savingClientId, setSavingClientId] = useState<string | null>(null)
   const [applyingMoveKey, setApplyingMoveKey] = useState<string | null>(null)
+  const [pendingMoveKey, setPendingMoveKey] = useState<string | null>(null)
   const [undoingMove, setUndoingMove] = useState(false)
   const [lastAppliedMove, setLastAppliedMove] = useState<null | {
     clientIds: string[]
@@ -361,6 +362,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return
     }
 
+    setPendingMoveKey(null)
     setLastAppliedMove({
       clientIds: candidateIds,
       fromPlannerId: move.donor.planner.id,
@@ -516,21 +518,25 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                   </div>
                   <button
                     type="button"
-                    onClick={() => applyRecommendedMove(move, `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`)}
+                    onClick={() => setPendingMoveKey(prev => prev === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? null : `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`)}
                     disabled={applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` || move.candidates.length === 0}
                     style={{
                       border: '1px solid var(--border)',
                       borderRadius: 8,
                       padding: '8px 10px',
-                      background: 'var(--accent)',
-                      color: 'white',
+                      background: pendingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'var(--surface-3)' : 'var(--accent)',
+                      color: pendingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'var(--text)' : 'white',
                       fontSize: 12,
                       fontWeight: 700,
                       cursor: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'wait' : 'pointer',
                       opacity: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 0.7 : 1,
                     }}
                   >
-                    {applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'Applying…' : 'Apply move'}
+                    {applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`
+                      ? 'Applying…'
+                      : pendingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`
+                        ? 'Hide preview'
+                        : 'Preview move'}
                   </button>
                 </div>
                 {move.candidates.length > 0 && (
@@ -544,6 +550,81 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                         {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
                       </div>
                     ))}
+                  </div>
+                )}
+                {pendingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      background: 'rgba(255,255,255,0.03)',
+                      display: 'grid',
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                      Confirm this move?
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      Move <strong style={{ color: 'var(--text)' }}>{Math.min(move.suggestedCount, move.candidates.length)} client{Math.min(move.suggestedCount, move.candidates.length) !== 1 ? 's' : ''}</strong>
+                      {' '}from <strong style={{ color: 'var(--text)' }}>{move.donor.planner.full_name ?? 'Unknown'}</strong>
+                      {' '}to <strong style={{ color: 'var(--text)' }}>{move.receiver.planner.full_name ?? 'Unknown'}</strong>.
+                      {' '}Reason: <strong style={{ color: 'var(--text)' }}>{move.reason}</strong>.
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      Clients that will move:
+                    </div>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {move.candidates.slice(0, move.suggestedCount).map(candidate => (
+                        <div key={`confirm-${candidate.id}`} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                          • {candidate.name} ({candidate.clientId})
+                          {candidate.overdue ? ' • overdue' : candidate.dueSoon ? ' • due soon' : ' • lower urgency'}
+                          {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
+                          {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
+                          {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => applyRecommendedMove(move, `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`)}
+                        disabled={applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`}
+                        style={{
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: '8px 10px',
+                          background: 'var(--accent)',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'wait' : 'pointer',
+                          opacity: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 0.7 : 1,
+                        }}
+                      >
+                        {applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'Applying…' : 'Confirm move'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingMoveKey(null)}
+                        disabled={applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`}
+                        style={{
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: '8px 10px',
+                          background: 'transparent',
+                          color: 'var(--text)',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 'wait' : 'pointer',
+                          opacity: applyingMoveKey === `${move.donor.planner.id}-${move.receiver.planner.id}-${index}` ? 0.7 : 1,
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
