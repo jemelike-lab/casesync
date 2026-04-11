@@ -254,20 +254,60 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return clients.filter(other => other.assigned_to === client.assigned_to && other.category === client.category).length
     }
 
-    function candidateScore(client: Client) {
-      let score = 0
-      if (isClientOverdue(client)) score += 100
-      if (isClientDueSoon(client)) score += 40
-      score += Math.max(0, (client.goal_pct ?? 0) - 60)
+    function dateCount(client: Client) {
+      return getClientDates(client).length
+    }
 
+    function complexityPenalty(client: Client) {
+      let penalty = 0
+      const totalDates = dateCount(client)
+      penalty += Math.max(0, totalDates - 3) * 8
+
+      const category = String(client.category ?? '').toLowerCase()
+      if (category === 'co' || category === 'cfc') penalty += 10
+      if (category === 'cpas') penalty += 6
+
+      const goalPct = client.goal_pct ?? 0
+      if (goalPct >= 90) penalty += 12
+      else if (goalPct >= 75) penalty += 6
+
+      return penalty
+    }
+
+    function handoffReadinessBonus(client: Client) {
+      let bonus = 0
       const days = daysSinceContact(client)
       if (days !== null) {
-        if (days <= 7) score += 15
-        else if (days >= 30) score -= 10
+        if (days <= 7) bonus += 18
+        else if (days <= 14) bonus += 10
+        else if (days >= 30) bonus -= 16
+      } else {
+        bonus -= 8
       }
 
-      score += Math.min(20, donorCategoryPressure(client))
+      const goalPct = client.goal_pct ?? 0
+      if (goalPct <= 45) bonus += 10
+      else if (goalPct <= 60) bonus += 4
+
+      return bonus
+    }
+
+    function urgencyScore(client: Client) {
+      let score = 0
+      if (isClientOverdue(client)) score += 80
+      if (isClientDueSoon(client)) score += 35
+
+      const days = daysSinceContact(client)
+      if (days !== null && days >= 21 && (isClientOverdue(client) || isClientDueSoon(client))) {
+        score += 12
+      }
+
+      score += Math.min(18, donorCategoryPressure(client))
       return score
+    }
+
+    function candidateScore(client: Client) {
+      return urgencyScore(client) + handoffReadinessBonus(client) - complexityPenalty(client)
     }
 
     return rebalanceHints.donors.flatMap((donor, donorIndex) => {
@@ -292,6 +332,9 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           goalPct: client.goal_pct ?? 0,
           category: client.category,
           daysSinceContact: daysSinceContact(client),
+          score: candidateScore(client),
+          complexityPenalty: complexityPenalty(client),
+          handoffReadiness: handoffReadinessBonus(client),
         }))
 
       return [{
@@ -548,6 +591,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                         {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
                         {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
                         {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                        {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
                       </div>
                     ))}
                   </div>
@@ -584,6 +628,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                           {candidate.goalPct > 0 ? ` • ${candidate.goalPct}% goal` : ''}
                           {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
                           {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                          {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
                         </div>
                       ))}
                     </div>
