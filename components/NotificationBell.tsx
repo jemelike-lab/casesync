@@ -87,9 +87,16 @@ export default function NotificationBell({ userId }: Props) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', zIndex: 6000 }}>
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          setOpen(v => !v)
+        }}
+        onTouchStart={(event) => {
+          event.stopPropagation()
+        }}
         className={shake ? 'bell-shake' : undefined}
         style={{
           background: 'none', border: 'none', cursor: 'pointer', position: 'relative',
@@ -156,7 +163,11 @@ export default function NotificationBell({ userId }: Props) {
               notifications.map(n => (
                 <div
                   key={n.id}
-                  onClick={() => handleClick(n.id, n.link, n.title, n.body)}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    handleClick(n.id, n.link, n.title, n.body)
+                  }}
                   style={{
                     padding: '12px 16px', borderBottom: '1px solid var(--border)',
                     cursor: n.link ? 'pointer' : 'default',
