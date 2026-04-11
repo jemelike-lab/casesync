@@ -124,6 +124,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
   const [mobileTab, setMobileTab] = useState<'recommendations' | 'transfer' | 'planners' | 'recent'>('recommendations')
   const [mobileSelectedClientId, setMobileSelectedClientId] = useState<string | null>(null)
+  const [mobilePendingPlannerId, setMobilePendingPlannerId] = useState<string | null>(null)
   const [isMobileLayout, setIsMobileLayout] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -201,6 +202,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   const mobileSelectedClient = useMemo(
     () => mobileTransferClients.find(client => client.id === mobileSelectedClientId) ?? null,
     [mobileTransferClients, mobileSelectedClientId]
+  )
+  const mobilePendingPlanner = useMemo(
+    () => planners.find(planner => planner.id === mobilePendingPlannerId) ?? null,
+    [planners, mobilePendingPlannerId]
   )
 
   const plannerSignals = useMemo(() => {
@@ -1064,7 +1069,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                   <button
                     key={`mobile-transfer-client-${client.id}`}
                     type="button"
-                    onClick={() => setMobileSelectedClientId(prev => prev === client.id ? null : client.id)}
+                    onClick={() => {
+                      setMobileSelectedClientId(prev => prev === client.id ? null : client.id)
+                      setMobilePendingPlannerId(null)
+                    }}
                     style={{
                       textAlign: 'left',
                       border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border)',
@@ -1090,7 +1098,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
               <button
                 type="button"
                 disabled={!mobileSelectedClient || savingClientId === mobileSelectedClient?.id || !mobileSelectedClient.assigned_to}
-                onClick={() => mobileSelectedClient && reassignClient(mobileSelectedClient.id, null).then(() => setMobileSelectedClientId(null))}
+                onClick={() => setMobilePendingPlannerId('unassigned')}
                 style={{
                   textAlign: 'left',
                   border: '1px solid var(--border)',
@@ -1111,13 +1119,13 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                     key={`mobile-target-${planner.id}`}
                     type="button"
                     disabled={disabled}
-                    onClick={() => mobileSelectedClient && reassignClient(mobileSelectedClient.id, planner.id).then(() => setMobileSelectedClientId(null))}
+                    onClick={() => setMobilePendingPlannerId(planner.id)}
                     style={{
                       textAlign: 'left',
-                      border: '1px solid var(--border)',
+                      border: mobilePendingPlannerId === planner.id ? '1px solid var(--accent)' : '1px solid var(--border)',
                       borderRadius: 10,
                       padding: '10px 12px',
-                      background: 'var(--surface-2)',
+                      background: mobilePendingPlannerId === planner.id ? 'rgba(0,122,255,0.12)' : 'var(--surface-2)',
                       color: 'var(--text)',
                       opacity: disabled ? 0.5 : 1,
                     }}
@@ -1129,6 +1137,41 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                   </button>
                 )
               })}
+              {mobileSelectedClient && mobilePendingPlannerId && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                    Confirm transfer to {mobilePendingPlannerId === 'unassigned' ? 'Unassigned' : (mobilePendingPlanner?.full_name ?? 'this planner')}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    Move {mobileSelectedClient.last_name}{mobileSelectedClient.first_name ? `, ${mobileSelectedClient.first_name}` : ''}
+                    {' '}from {mobileSelectedClient.profiles?.full_name ?? 'Unassigned'}
+                    {' '}to {mobilePendingPlannerId === 'unassigned' ? 'Unassigned' : (mobilePendingPlanner?.full_name ?? 'this planner')}?
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => reassignClient(mobileSelectedClient.id, mobilePendingPlannerId === 'unassigned' ? null : mobilePendingPlannerId).then(() => {
+                        setMobileSelectedClientId(null)
+                        setMobilePendingPlannerId(null)
+                      })}
+                      disabled={savingClientId === mobileSelectedClient.id}
+                      style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 700, flex: '1 1 180px' }}
+                    >
+                      {savingClientId === mobileSelectedClient.id
+                        ? 'Transferring…'
+                        : `Confirm transfer to ${mobilePendingPlannerId === 'unassigned' ? 'Unassigned' : (mobilePendingPlanner?.full_name ?? 'planner')}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobilePendingPlannerId(null)}
+                      disabled={savingClientId === mobileSelectedClient.id}
+                      style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'transparent', color: 'var(--text)', fontSize: 12, fontWeight: 700, flex: '1 1 120px' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
