@@ -90,11 +90,26 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
 
   const rebalanceEntries = useMemo(() => filtered.filter(l => isRecommendedRebalanceMove(l.action)), [filtered])
   const rebalanceSummary = useMemo(() => {
-    const applied = rebalanceEntries.filter(l => /applied/i.test(l.action)).length
-    const undone = rebalanceEntries.filter(l => /undone/i.test(l.action)).length
+    const appliedEntries = rebalanceEntries.filter(l => /applied/i.test(l.action))
+    const undoneEntries = rebalanceEntries.filter(l => /undone/i.test(l.action))
+    const applied = appliedEntries.length
+    const undone = undoneEntries.length
     const uniqueClients = new Set(rebalanceEntries.map(l => l.client_id).filter(Boolean)).size
     const latest = rebalanceEntries[0] ?? null
-    return { applied, undone, uniqueClients, latest }
+    const netMoves = applied - undone
+    const successRate = applied > 0 ? Math.round((netMoves / applied) * 100) : null
+    const byDay = rebalanceEntries.reduce<Record<string, { applied: number, undone: number }>>((acc, entry) => {
+      const day = entry.created_at.slice(0, 10)
+      acc[day] ??= { applied: 0, undone: 0 }
+      if (/undone/i.test(entry.action)) acc[day].undone += 1
+      else if (/applied/i.test(entry.action)) acc[day].applied += 1
+      return acc
+    }, {})
+    const trendDays = Object.entries(byDay)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-7)
+      .map(([day, counts]) => ({ day, ...counts, net: counts.applied - counts.undone }))
+    return { applied, undone, uniqueClients, latest, netMoves, successRate, trendDays }
   }, [rebalanceEntries])
 
   function exportCSV() {
@@ -179,7 +194,7 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
         </div>
 
         {rebalanceEntries.length > 0 && (
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card" style={{ marginBottom: 20, display: 'grid', gap: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>🔁 Recommended move history</div>
@@ -201,6 +216,39 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
                 </div>
               )}
             </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Net kept moves</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: rebalanceSummary.netMoves >= 0 ? '#30d158' : '#ff453a', marginTop: 4 }}>
+                  {rebalanceSummary.netMoves >= 0 ? '+' : ''}{rebalanceSummary.netMoves}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Applied minus undone in current view</div>
+              </div>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Kept move rate</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginTop: 4 }}>
+                  {rebalanceSummary.successRate !== null ? `${rebalanceSummary.successRate}%` : '—'}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Percent of applied moves not later undone</div>
+              </div>
+            </div>
+
+            {rebalanceSummary.trendDays.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Last 7 active days</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {rebalanceSummary.trendDays.map(day => (
+                    <div key={day.day} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', background: 'var(--surface-2)' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text)' }}>{day.day}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {day.applied} applied • {day.undone} undone • <strong style={{ color: day.net >= 0 ? '#30d158' : '#ff453a' }}>net {day.net >= 0 ? '+' : ''}{day.net}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
