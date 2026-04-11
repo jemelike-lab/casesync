@@ -95,7 +95,7 @@ export default function NotificationBell({ userId }: Props) {
   return (
     <div ref={ref} style={{ position: 'relative', zIndex: 6000 }}>
       <button
-        onPointerDown={(event) => {
+        onPointerUp={(event) => {
           event.preventDefault()
           event.stopPropagation()
           setOpen(v => !v)
@@ -103,10 +103,12 @@ export default function NotificationBell({ userId }: Props) {
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
+          if (!isMobileViewport) setOpen(v => !v)
         }}
-        onTouchStart={(event) => {
+        onTouchEnd={(event) => {
           event.preventDefault()
           event.stopPropagation()
+          setOpen(v => !v)
         }}
         className={shake ? 'bell-shake' : undefined}
         style={{
@@ -143,6 +145,13 @@ export default function NotificationBell({ userId }: Props) {
       </button>
 
       {open && (
+        <>
+        {isMobileViewport && (
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 4999 }}
+          />
+        )}
         <div className="slide-in-up" style={{
           position: isMobileViewport ? 'fixed' : 'absolute',
           right: isMobileViewport ? 12 : 0,
@@ -203,6 +212,7 @@ export default function NotificationBell({ userId }: Props) {
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   )
