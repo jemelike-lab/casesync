@@ -394,16 +394,29 @@ function ClientAlertBanner({ formData, onScrollToOverdue }: {
   }
 
   return (
-    <div className="slide-in-up" style={{
-      background: bg,
-      border: `1px solid ${border}`,
-      borderRadius: 10,
-      padding: '12px 16px',
-      marginBottom: 16,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-    }}>
+    <div
+      className="slide-in-up"
+      onClick={!allCurrent && overdueCount > 0 ? onScrollToOverdue : undefined}
+      role={!allCurrent && overdueCount > 0 ? 'button' : undefined}
+      tabIndex={!allCurrent && overdueCount > 0 ? 0 : undefined}
+      onKeyDown={!allCurrent && overdueCount > 0 ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onScrollToOverdue()
+        }
+      } : undefined}
+      style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 10,
+        padding: '12px 16px',
+        marginBottom: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        cursor: !allCurrent && overdueCount > 0 ? 'pointer' : 'default',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: textColor }}>
@@ -419,7 +432,10 @@ function ClientAlertBanner({ formData, onScrollToOverdue }: {
       </div>
       {!allCurrent && overdueCount > 0 && (
         <button
-          onClick={onScrollToOverdue}
+          onClick={(event) => {
+            event.stopPropagation()
+            onScrollToOverdue()
+          }}
           style={{
             background: 'none',
             border: 'none',
@@ -990,21 +1006,40 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
   // Scroll to first overdue field
   const handleScrollToOverdue = () => {
-    const OVERDUE_DATE_FIELDS = [
-      'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
-      'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
-      'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due',
+    const OVERDUE_FIELD_TARGETS: Array<{ field: string; sectionId: string }> = [
+      { field: 'eligibility_end_date', sectionId: 'section-eligibility' },
+      { field: 'three_month_visit_due', sectionId: 'section-contact-visits' },
+      { field: 'quarterly_waiver_date', sectionId: 'section-contact-visits' },
+      { field: 'med_tech_redet_date', sectionId: 'section-med-tech' },
+      { field: 'pos_deadline', sectionId: 'section-plans-assessments' },
+      { field: 'assessment_due', sectionId: 'section-plans-assessments' },
+      { field: 'thirty_day_letter_date', sectionId: 'section-contact-visits' },
+      { field: 'co_financial_redet_date', sectionId: 'section-co-details' },
+      { field: 'co_app_date', sectionId: 'section-co-details' },
+      { field: 'mfp_consent_date', sectionId: 'section-co-details' },
+      { field: 'two57_date', sectionId: 'section-co-details' },
+      { field: 'doc_mdh_date', sectionId: 'section-plans-assessments' },
+      { field: 'spm_next_due', sectionId: 'section-plans-assessments' },
     ]
-    for (const field of OVERDUE_DATE_FIELDS) {
+
+    for (const { field, sectionId } of OVERDUE_FIELD_TARGETS) {
       const d = formData[field as keyof typeof formData] as string | null | undefined
-      if (getDateStatus(d ?? null) === 'red') {
-        const el = document.getElementById(`field-${field}`)
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          setHighlightedField(field)
-          setTimeout(() => setHighlightedField(null), 3000)
-          return
-        }
+      if (getDateStatus(d ?? null) !== 'red') continue
+
+      const fieldEl = document.getElementById(`field-${field}`)
+      if (fieldEl) {
+        fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setHighlightedField(field)
+        setTimeout(() => setHighlightedField(null), 3000)
+        return
+      }
+
+      const sectionEl = document.getElementById(sectionId)
+      if (sectionEl) {
+        sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        setHighlightedField(field)
+        setTimeout(() => setHighlightedField(null), 3000)
+        return
       }
     }
   }
@@ -1131,7 +1166,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       )}
 
       {/* Eligibility */}
-      <Section title="Eligibility">
+      <Section title="Eligibility" id="section-eligibility">
         {editing ? (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: '0 0 200px' }}>Eligibility Code</span>
@@ -1158,7 +1193,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       </Section>
 
       {/* Contact & Visits */}
-      <Section title="Contact & Visits">
+      <Section title="Contact & Visits" id="section-contact-visits">
         <FieldRow label="Last Contact Date" field="last_contact_date" value={f.last_contact_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.last_contact_date as string | null)} highlighted={highlightedField === 'last_contact_date'} />
         <FieldRow label="Last Contact Type" field="last_contact_type" value={f.last_contact_type} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={LAST_CONTACT_TYPE_OPTIONS} />
         <FieldRow label="Drop-in Visit Date" field="drop_in_visit_date" value={f.drop_in_visit_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.drop_in_visit_date as string | null)} highlighted={highlightedField === 'drop_in_visit_date'} />
@@ -1169,13 +1204,13 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       </Section>
 
       {/* Med Tech */}
-      <Section title="Med Tech">
+      <Section title="Med Tech" id="section-med-tech">
         <FieldRow label="Med-Tech Redet Date" field="med_tech_redet_date" value={f.med_tech_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.med_tech_redet_date as string | null)} highlighted={highlightedField === 'med_tech_redet_date'} />
         <FieldRow label="Med/Tech Status" field="med_tech_status" value={f.med_tech_status} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={MED_TECH_STATUS_OPTIONS} />
       </Section>
 
       {/* Plans & Assessments */}
-      <Section title="Plans & Assessments">
+      <Section title="Plans & Assessments" id="section-plans-assessments">
         <FieldRow label="POC Date" field="poc_date" value={f.poc_date} type="date" editing={editing} onChange={handleChange} />
         <FieldRow label="LOC Date (If Necessary)" field="loc_date" value={f.loc_date} type="date" editing={editing} onChange={handleChange} />
         <FieldRow label="Documentation MDH (45 days)" field="doc_mdh_date" value={f.doc_mdh_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.doc_mdh_date as string | null)} highlighted={highlightedField === 'doc_mdh_date'} />
@@ -1207,7 +1242,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       </Section>
 
       {/* CO Details */}
-      <Section title="CO Details">
+      <Section title="CO Details" id="section-co-details">
         <FieldRow label="CO Financial Redetermination Due Date" field="co_financial_redet_date" value={f.co_financial_redet_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.co_financial_redet_date as string | null)} highlighted={highlightedField === 'co_financial_redet_date'} />
         <FieldRow label="CO Application Date" field="co_app_date" value={f.co_app_date} type="date" editing={editing} onChange={handleChange} dateStatus={getDateStatus(f.co_app_date as string | null)} highlighted={highlightedField === 'co_app_date'} />
         <FieldRow label="Request Letter" field="request_letter" value={f.request_letter} type="text" editing={editing} onChange={handleChange} />
