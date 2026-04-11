@@ -122,7 +122,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   }>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
-  const [mobileTab, setMobileTab] = useState<'recommendations' | 'unassigned' | 'planners' | 'recent'>('recommendations')
+  const [mobileTab, setMobileTab] = useState<'recommendations' | 'transfer' | 'planners' | 'recent'>('recommendations')
+  const [mobileSelectedClientId, setMobileSelectedClientId] = useState<string | null>(null)
   const [isMobileLayout, setIsMobileLayout] = useState(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -196,6 +197,11 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   }, [clients, search])
 
   const unassignedClients = useMemo(() => filteredClients.filter(c => !c.assigned_to), [filteredClients])
+  const mobileTransferClients = useMemo(() => filteredClients, [filteredClients])
+  const mobileSelectedClient = useMemo(
+    () => mobileTransferClients.find(client => client.id === mobileSelectedClientId) ?? null,
+    [mobileTransferClients, mobileSelectedClientId]
+  )
 
   const plannerSignals = useMemo(() => {
     return planners.map(planner => {
@@ -920,14 +926,14 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
           {[
             ['recommendations', 'Recommendations'],
-            ['unassigned', `Unassigned (${unassignedClients.length})`],
+            ['transfer', `Client transfer (${mobileTransferClients.length})`],
             ['planners', 'Planners'],
             ['recent', 'Recent move'],
           ].map(([key, label]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setMobileTab(key as 'recommendations' | 'unassigned' | 'planners' | 'recent')}
+              onClick={() => setMobileTab(key as 'recommendations' | 'transfer' | 'planners' | 'recent')}
               style={{
                 border: '1px solid var(--border)',
                 borderRadius: 999,
@@ -1027,17 +1033,103 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           </div>
         )}
 
-        {mobileTab === 'unassigned' && (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {unassignedClients.length === 0 ? (
-              <div className="card" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                No unassigned clients match this search.
+        {mobileTab === 'transfer' && (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div className="card" style={{ display: 'grid', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Client transfer</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Pick a client, then tap a planner to move them. This replaces drag/drop on phone.
               </div>
-            ) : unassignedClients.map(client => (
-              <div key={`mobile-unassigned-${client.id}`} className="card" style={{ padding: 12 }}>
-                <ClientCardView client={client} saving={savingClientId === client.id} />
-              </div>
-            ))}
+              {mobileSelectedClient && (
+                <div style={{ marginTop: 4, border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--surface-2)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                    Selected: {mobileSelectedClient.last_name}{mobileSelectedClient.first_name ? `, ${mobileSelectedClient.first_name}` : ''}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.6 }}>
+                    Current planner: {mobileSelectedClient.profiles?.full_name ?? 'Unassigned'} • ID: {mobileSelectedClient.client_id}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card" style={{ display: 'grid', gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Clients</div>
+              {mobileTransferClients.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  No clients match this search.
+                </div>
+              ) : mobileTransferClients.map(client => {
+                const isSelected = mobileSelectedClientId === client.id
+                return (
+                  <button
+                    key={`mobile-transfer-client-${client.id}`}
+                    type="button"
+                    onClick={() => setMobileSelectedClientId(prev => prev === client.id ? null : client.id)}
+                    style={{
+                      textAlign: 'left',
+                      border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      background: isSelected ? 'rgba(0,122,255,0.12)' : 'var(--surface-2)',
+                      color: 'var(--text)',
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>
+                      {client.last_name}{client.first_name ? `, ${client.first_name}` : ''}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
+                      {client.client_id} • {client.profiles?.full_name ?? 'Unassigned'} • {String(client.category).toUpperCase()}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="card" style={{ display: 'grid', gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Move to</div>
+              <button
+                type="button"
+                disabled={!mobileSelectedClient || savingClientId === mobileSelectedClient?.id || !mobileSelectedClient.assigned_to}
+                onClick={() => mobileSelectedClient && reassignClient(mobileSelectedClient.id, null).then(() => setMobileSelectedClientId(null))}
+                style={{
+                  textAlign: 'left',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                  background: 'var(--surface-2)',
+                  color: 'var(--text)',
+                  opacity: !mobileSelectedClient || savingClientId === mobileSelectedClient?.id || !mobileSelectedClient.assigned_to ? 0.5 : 1,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700 }}>Unassigned</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>Remove planner assignment</div>
+              </button>
+              {planners.map(planner => {
+                const disabled = !mobileSelectedClient || savingClientId === mobileSelectedClient.id || mobileSelectedClient.assigned_to === planner.id
+                return (
+                  <button
+                    key={`mobile-target-${planner.id}`}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => mobileSelectedClient && reassignClient(mobileSelectedClient.id, planner.id).then(() => setMobileSelectedClientId(null))}
+                    style={{
+                      textAlign: 'left',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      background: 'var(--surface-2)',
+                      color: 'var(--text)',
+                      opacity: disabled ? 0.5 : 1,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{planner.full_name ?? 'Unknown Planner'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+                      {plannerSignals.find(signal => signal.planner.id === planner.id)?.clientCount ?? 0} clients
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
