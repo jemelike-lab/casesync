@@ -18,6 +18,20 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
+function resolveNotificationLink(link: string | null, title: string, body: string | null) {
+  if (!link) return null
+
+  const raw = `${title} ${body ?? ''}`.toLowerCase()
+  const isClientLink = /^\/clients\/[^/?#]+$/.test(link)
+  const isDeadlineLike = raw.includes('overdue') || raw.includes('due') || raw.includes('deadline') || raw.includes('spm')
+
+  if (isClientLink && isDeadlineLike) {
+    return `${link}?highlight=overdue#section-plans-assessments`
+  }
+
+  return link
+}
+
 export default function NotificationBell({ userId }: Props) {
   const router = useRouter()
   const { notifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
@@ -43,10 +57,11 @@ export default function NotificationBell({ userId }: Props) {
     return () => document.removeEventListener('mousedown', handle)
   }, [])
 
-  async function handleClick(id: string, link: string | null) {
+  async function handleClick(id: string, link: string | null, title: string, body: string | null) {
     await markRead(id)
     setOpen(false)
-    if (link) router.push(link)
+    const resolvedLink = resolveNotificationLink(link, title, body)
+    if (resolvedLink) router.push(resolvedLink)
   }
 
   return (
@@ -114,7 +129,7 @@ export default function NotificationBell({ userId }: Props) {
               notifications.map(n => (
                 <div
                   key={n.id}
-                  onClick={() => handleClick(n.id, n.link)}
+                  onClick={() => handleClick(n.id, n.link, n.title, n.body)}
                   style={{
                     padding: '12px 16px', borderBottom: '1px solid var(--border)',
                     cursor: n.link ? 'pointer' : 'default',
