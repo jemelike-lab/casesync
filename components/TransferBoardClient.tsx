@@ -112,11 +112,41 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     toPlannerId: string | null
     fromPlannerName: string
     toPlannerName: string
+    reason: string
   }>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  async function getCurrentUserId() {
+    const { data } = await supabase.auth.getUser()
+    return data.user?.id ?? null
+  }
+
+  async function logRecommendationMove(params: {
+    clientIds: string[]
+    fromPlannerId: string | null
+    toPlannerId: string | null
+    reason: string
+    action: string
+  }) {
+    const userId = await getCurrentUserId()
+    if (!userId) return
+
+    await Promise.all(params.clientIds.map(clientId =>
+      supabase.from('activity_log').insert({
+        client_id: clientId,
+        user_id: userId,
+        action: params.action,
+        field_name: 'assigned_to',
+        old_value: params.fromPlannerId,
+        new_value: params.toPlannerId,
+      })
+    )).catch(error => {
+      console.error('[TransferBoardClient] activity_log insert failed:', error, params)
+    })
+  }
 
   function showToast(type: 'success' | 'error', message: string) {
     setToast({ type, message })
@@ -466,6 +496,15 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       toPlannerId: receiverPlanner.id,
       fromPlannerName: move.donor.planner.full_name ?? 'Unknown',
       toPlannerName: receiverPlanner.full_name ?? 'Support Planner',
+      reason: move.reason,
+    })
+
+    await logRecommendationMove({
+      clientIds: candidateIds,
+      fromPlannerId: move.donor.planner.id,
+      toPlannerId: receiverPlanner.id,
+      reason: move.reason,
+      action: `Recommended rebalance move applied (${move.reason})`,
     })
 
     showToast('success', `Moved ${candidateIds.length} recommended client${candidateIds.length !== 1 ? 's' : ''} to ${receiverPlanner.full_name ?? 'Support Planner'}.`)
@@ -493,6 +532,14 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       showToast('error', error.message)
       return
     }
+
+    await logRecommendationMove({
+      clientIds: lastAppliedMove.clientIds,
+      fromPlannerId: lastAppliedMove.toPlannerId,
+      toPlannerId: lastAppliedMove.fromPlannerId,
+      reason: lastAppliedMove.reason,
+      action: `Recommended rebalance move undone (${lastAppliedMove.reason})`,
+    })
 
     showToast('success', `Undid move from ${lastAppliedMove.fromPlannerName} to ${lastAppliedMove.toPlannerName}.`)
     setLastAppliedMove(null)
