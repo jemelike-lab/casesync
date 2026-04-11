@@ -713,61 +713,36 @@ export async function POST(req: NextRequest) {
     const userName = profile?.full_name ?? 'User'
     const userRole = profile?.role ?? 'unknown'
 
-    // Role-scoped client fetching
+    // BLH Bot uses org-wide CaseSync visibility so it can answer cross-team questions.
     let allClients: Record<string, unknown>[] = []
     let plannerContext = ''
 
-    if (isSupervisorLike(userRole)) {
-      const { data } = await supabase
-        .from('clients')
-        .select('*, profiles!clients_assigned_to_fkey(full_name)')
-        .order('last_name')
-      allClients = (data as Record<string, unknown>[]) ?? []
+    const { data: allClientData } = await supabase
+      .from('clients')
+      .select('*, profiles!clients_assigned_to_fkey(full_name)')
+      .order('last_name')
+    allClients = (allClientData as Record<string, unknown>[]) ?? []
 
-      const { data: planners } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'supports_planner')
-      const plannerStats = (planners ?? []).map(p => {
-        const pClients = allClients.filter(c => c.assigned_to === p.id)
-        const overdue = pClients.filter(c => {
-          const fields = ['eligibility_end_date','three_month_visit_due','pos_deadline','assessment_due','thirty_day_letter_date']
-          return fields.some(f => { const d = new Date(c[f] as string); return c[f] && d < new Date() })
-        }).length
-        return `${p.full_name}: ${pClients.length} clients, ${overdue} overdue`
-      })
-      plannerContext = `Your org has ${planners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
+    const { data: planners } = await supabase
+      .from('profiles')
+      .select('id, full_name, team_manager_id')
+      .eq('role', 'supports_planner')
+      .order('full_name')
 
-    } else if (userRole === 'team_manager') {
-      const { data: myPlanners } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('team_manager_id', userId)
-      const plannerIds = (myPlanners ?? []).map((p: Record<string, unknown>) => p.id as string)
-      
-      if (plannerIds.length > 0) {
-        const { data } = await supabase
-          .from('clients')
-          .select('*, profiles!clients_assigned_to_fkey(full_name)')
-          .in('assigned_to', plannerIds)
-          .order('last_name')
-        allClients = (data as Record<string, unknown>[]) ?? []
-      }
-      
-      const plannerStats = (myPlanners ?? []).map((p: Record<string, unknown>) => {
-        const pClients = allClients.filter(c => c.assigned_to === p.id)
-        return `${p.full_name}: ${pClients.length} clients`
-      })
-      plannerContext = `Your team has ${myPlanners?.length ?? 0} Supports Planners: ${plannerStats.join(', ')}`
+    const plannerStats = (planners ?? []).map((p: Record<string, unknown>) => {
+      const pClients = allClients.filter(c => c.assigned_to === p.id)
+      const overdue = pClients.filter(c => {
+        const fields = ['eligibility_end_date', 'three_month_visit_due', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date']
+        return fields.some(f => {
+          const raw = c[f] as string | null
+          if (!raw) return false
+          return new Date(raw) < new Date()
+        })
+      }).length
+      return `${p.full_name}: ${pClients.length} clients, ${overdue} overdue`
+    })
 
-    } else {
-      const { data } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('assigned_to', userId)
-        .order('last_name')
-      allClients = (data as Record<string, unknown>[]) ?? []
-    }
+    plannerContext = `BLH-wide visibility is enabled. Organization snapshot: ${allClients.length} clients across ${planners?.length ?? 0} Supports Planners. Planner coverage: ${plannerStats.join(', ')}`
 
     const clientCount = allClients?.length ?? 0
 
@@ -814,7 +789,8 @@ Assigned clients: ${clientCount}
 Today: ${todayStr}
 Current month SPM deadline: ${currentSpmStr}${spmDeadlinePassed ? ' — PASSED. File any missing SPMs immediately.' : ' — upcoming.'}
 Next SPM deadline (if filed today or later this month): ${nextSpmStr}
-=== END USER ===${clientContextStr}
+=== END USER ===
+${plannerContext}${clientContextStr}
 
 ${KNOWLEDGE_POS_WORKFLOW}
 
