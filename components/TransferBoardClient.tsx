@@ -122,6 +122,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
   }>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
+  const [mobileTab, setMobileTab] = useState<'recommendations' | 'unassigned' | 'planners' | 'recent'>('recommendations')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
@@ -889,8 +890,181 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         )}
       </div>
 
+      <div className="transfer-mobile-shell" style={{ display: 'none' }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
+          {[
+            ['recommendations', 'Recommendations'],
+            ['unassigned', `Unassigned (${unassignedClients.length})`],
+            ['planners', 'Planners'],
+            ['recent', 'Recent move'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setMobileTab(key as 'recommendations' | 'unassigned' | 'planners' | 'recent')}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 999,
+                padding: '8px 12px',
+                background: mobileTab === key ? 'var(--accent)' : 'var(--surface-2)',
+                color: mobileTab === key ? 'white' : 'var(--text)',
+                fontSize: 12,
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {mobileTab === 'recommendations' && (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {recommendedMoves.length === 0 ? (
+              <div className="card" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                No strong rebalance recommendations right now.
+              </div>
+            ) : recommendedMoves.map((move, index) => {
+              const moveKey = `${move.donor.planner.id}-${move.receiver.planner.id}-${index}`
+              return (
+                <div key={`mobile-${moveKey}`} className="card" style={{ display: 'grid', gap: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                    {move.donor.planner.full_name ?? 'Unknown'} → {move.receiver.planner.full_name ?? 'Unknown'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    Move {Math.min(move.suggestedCount, move.candidates.length)} client{Math.min(move.suggestedCount, move.candidates.length) !== 1 ? 's' : ''}
+                    {' '}• {move.reason}
+                    {' '}• donor pressure {move.donor.pressureScore}
+                    {' '}• receiver pressure {move.receiver.pressureScore}
+                  </div>
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {move.candidates.slice(0, move.suggestedCount).map(candidate => (
+                      <div key={`mobile-candidate-${candidate.id}`} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 10px', background: 'var(--surface-2)' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{candidate.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
+                          {candidate.overdue ? 'Overdue' : candidate.dueSoon ? 'Due soon' : 'Lower urgency'}
+                          {candidate.daysSinceContact !== null ? ` • ${candidate.daysSinceContact}d since contact` : ''}
+                          {candidate.category ? ` • ${String(candidate.category).toUpperCase()}` : ''}
+                          {candidate.whyThisMove?.length ? ` • ${candidate.whyThisMove.join(' • ')}` : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setPendingMoveKey(prev => prev === moveKey ? null : moveKey)}
+                      disabled={applyingMoveKey === moveKey || move.candidates.length === 0}
+                      style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        background: pendingMoveKey === moveKey ? 'var(--surface-3)' : 'var(--accent)',
+                        color: pendingMoveKey === moveKey ? 'var(--text)' : 'white',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        flex: '1 1 180px',
+                      }}
+                    >
+                      {applyingMoveKey === moveKey ? 'Applying…' : pendingMoveKey === moveKey ? 'Hide confirm' : 'Review move'}
+                    </button>
+                  </div>
+                  {pendingMoveKey === moveKey && (
+                    <div style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 8 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        Confirm moving these clients from <strong style={{ color: 'var(--text)' }}>{move.donor.planner.full_name ?? 'Unknown'}</strong>
+                        {' '}to <strong style={{ color: 'var(--text)' }}>{move.receiver.planner.full_name ?? 'Unknown'}</strong>.
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => applyRecommendedMove(move, moveKey)}
+                          disabled={applyingMoveKey === moveKey}
+                          style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 700, flex: '1 1 160px' }}
+                        >
+                          {applyingMoveKey === moveKey ? 'Applying…' : 'Confirm move'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingMoveKey(null)}
+                          disabled={applyingMoveKey === moveKey}
+                          style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'transparent', color: 'var(--text)', fontSize: 12, fontWeight: 700, flex: '1 1 120px' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {mobileTab === 'unassigned' && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {unassignedClients.length === 0 ? (
+              <div className="card" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                No unassigned clients match this search.
+              </div>
+            ) : unassignedClients.map(client => (
+              <div key={`mobile-unassigned-${client.id}`} className="card" style={{ padding: 12 }}>
+                <ClientCardView client={client} saving={savingClientId === client.id} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {mobileTab === 'planners' && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {plannerSignals.map(signal => (
+              <div key={`mobile-planner-${signal.planner.id}`} className="card" style={{ display: 'grid', gap: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{signal.planner.full_name ?? 'Unknown Planner'}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  {signal.clientCount} clients • {signal.overdue} overdue • {signal.dueThisWeek} due this week • pressure {signal.pressureScore}
+                </div>
+                <div style={{ fontSize: 11, color: signal.loadStatus === 'rebalance' ? '#ff9f0a' : signal.loadStatus === 'watch' ? '#ffd60a' : '#30d158', fontWeight: 700 }}>
+                  {signal.loadStatus === 'rebalance' ? 'Rebalance' : signal.loadStatus === 'watch' ? 'Watch' : 'Balanced'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {mobileTab === 'recent' && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {lastAppliedMove ? (
+              <div className="card" style={{ display: 'grid', gap: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Last applied move</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  {lastAppliedMove.clientIds.length} client{lastAppliedMove.clientIds.length !== 1 ? 's' : ''}
+                  {' '}from {lastAppliedMove.fromPlannerName} to {lastAppliedMove.toPlannerName}
+                  {' '}• {lastAppliedMove.reason}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Donor pressure {lastAppliedMove.impact.donorBefore.pressureScore} → {lastAppliedMove.impact.donorAfter.pressureScore}
+                  {' '}• receiver {lastAppliedMove.impact.receiverBefore.pressureScore} → {lastAppliedMove.impact.receiverAfter.pressureScore}
+                </div>
+                <button
+                  type="button"
+                  onClick={undoLastAppliedMove}
+                  disabled={undoingMove}
+                  style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--surface-2)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
+                >
+                  {undoingMove ? 'Undoing…' : 'Undo last applied move'}
+                </button>
+              </div>
+            ) : (
+              <div className="card" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                No recent recommended move applied in this session yet.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
+        <div className="transfer-desktop-shell" style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
           <DropColumn
             id="pool:unassigned-clients"
             title="Client List"
@@ -948,6 +1122,13 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           {activeClient ? <ClientCardView client={activeClient} dragging saving={savingClientId === activeClient.id} /> : null}
         </DragOverlay>
       </DndContext>
+
+      <style>{`
+        @media (max-width: 820px) {
+          .transfer-mobile-shell { display: block !important; }
+          .transfer-desktop-shell { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }
