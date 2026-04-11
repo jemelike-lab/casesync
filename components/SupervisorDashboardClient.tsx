@@ -55,6 +55,7 @@ interface PlannerStats {
   complianceScore: number
   pressureScore: number
   loadStatus: 'balanced' | 'watch' | 'rebalance'
+  topOverdueClients: Array<{ id: string; name: string }>
 }
 
 function StatCard({ label, value, color, href, active }: { label: string; value: number | string; color?: string; href?: string; active?: boolean }) {
@@ -96,6 +97,14 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
           ? 'watch'
           : 'balanced'
 
+      const topOverdueClients = pc
+        .filter(isOverdue)
+        .slice(0, 3)
+        .map(client => ({
+          id: client.id,
+          name: `${client.last_name}${client.first_name ? `, ${client.first_name}` : ''}`,
+        }))
+
       return {
         planner,
         clientCount: pc.length,
@@ -107,6 +116,7 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
         complianceScore,
         pressureScore,
         loadStatus,
+        topOverdueClients,
       }
     })
   }, [clients, planners])
@@ -135,6 +145,13 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       .slice(0, 3)
 
     return { donors, receivers }
+  }, [plannerStats])
+
+  const managerAlerts = useMemo(() => {
+    return plannerStats
+      .filter(planner => planner.overdue > 0 || planner.dueThisWeek >= 3 || planner.loadStatus !== 'balanced')
+      .sort((a, b) => b.overdue - a.overdue || b.pressureScore - a.pressureScore)
+      .slice(0, 4)
   }, [plannerStats])
 
   const overdueByCategory = useMemo(() => [
@@ -286,6 +303,52 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
           ) : (
             <ClientGrid clients={clients} pinnedIds={[]} onTogglePin={() => {}} />
           )}
+        </div>
+      )}
+
+      {mode === 'team_manager' && managerAlerts.length > 0 && (
+        <div className="card" style={{ marginBottom: 16, background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.18)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+            Planner alerts needing manager follow-up
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+            This is the in-app manager summary for planners with overdue deadline pressure, heavy due-this-week load, or rebalance risk.
+          </div>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {managerAlerts.map(alert => (
+              <div key={alert.planner.id} style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{alert.planner.full_name ?? 'Unknown planner'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      {alert.overdue} overdue • {alert.dueThisWeek} due this week • pressure {alert.pressureScore}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <Link href={`/team?full=1&filter=overdue&planner=${encodeURIComponent(alert.planner.id)}`} style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+                      Overdue queue →
+                    </Link>
+                    <Link href={`/team?full=1&filter=due_this_week&planner=${encodeURIComponent(alert.planner.id)}`} style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
+                      Due this week →
+                    </Link>
+                  </div>
+                </div>
+                {alert.topOverdueClients.length > 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                    Top overdue clients:{' '}
+                    {alert.topOverdueClients.map((client, index) => (
+                      <span key={client.id}>
+                        <Link href={`/clients/${client.id}`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                          {client.name}
+                        </Link>
+                        {index < alert.topOverdueClients.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
