@@ -93,6 +93,110 @@ Other:
 - Schedule Docs: ${client.schedule_docs ? 'Yes' : 'No'}`
 }
 
+
+function getDateDiffDays(dateStr: string | null): number | null {
+  if (!dateStr) return null
+  const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return null
+  const now = new Date()
+  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function isDueThisWeekClient(client: Record<string, unknown>): boolean {
+  const fields = [
+    'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
+    'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
+    'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due',
+  ]
+  return fields.some((field) => {
+    const diff = getDateDiffDays(client[field] as string | null)
+    return diff !== null && diff >= 0 && diff <= 7
+  })
+}
+
+function getPlannerOpsSummary(allClients: Record<string, unknown>[], planners: Record<string, unknown>[]) {
+  const plannerRows = planners.map((planner) => {
+    const plannerClients = allClients.filter((client) => client.assigned_to === planner.id)
+    const overdue = plannerClients.filter((client) => getOverdueCount(client) > 0).length
+    const dueThisWeek = plannerClients.filter(isDueThisWeekClient).length
+    const noContact7 = plannerClients.filter((client) => {
+      const days = getDaysSinceContact(client.last_contact_date as string | null)
+      return days !== null && days >= 7
+    }).length
+    const avgGoalPct = plannerClients.length > 0
+      ? Math.round(plannerClients.reduce((sum, client) => sum + Number(client.goal_pct ?? 0), 0) / plannerClients.length)
+      : 0
+    const complianceScore = plannerClients.length > 0
+      ? Math.round(plannerClients.filter((client) => getOverdueCount(client) === 0).length / plannerClients.length * 100)
+      : 100
+    const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, plannerClients.length - 35)
+    const loadStatus = pressureScore >= 12 ? 'rebalance' : pressureScore >= 6 ? 'watch' : 'balanced'
+    const topOverdueClients = plannerClients
+      .filter((client) => getOverdueCount(client) > 0)
+      .sort((a, b) => getOverdueCount(b) - getOverdueCount(a))
+      .slice(0, 3)
+      .map((client) => `${client.last_name ?? 'Unknown'}${client.first_name ? `, ${client.first_name}` : ''} (${client.client_id ?? 'no-id'})`)
+
+    return {
+      plannerId: String(planner.id ?? ''),
+      plannerName: String(planner.full_name ?? 'Unknown'),
+      clientCount: plannerClients.length,
+      overdue,
+      dueThisWeek,
+      noContact7,
+      avgGoalPct,
+      complianceScore,
+      pressureScore,
+      loadStatus,
+      topOverdueClients,
+    }
+  })
+
+  const donors = plannerRows
+    .filter((row) => row.loadStatus === 'rebalance')
+    .sort((a, b) => b.pressureScore - a.pressureScore)
+    .slice(0, 3)
+
+  const receivers = plannerRows
+    .filter((row) => row.loadStatus === 'balanced')
+    .sort((a, b) => a.pressureScore - b.pressureScore || a.clientCount - b.clientCount)
+    .slice(0, 3)
+
+  const managerAlerts = plannerRows
+    .filter((row) => row.overdue > 0 || row.dueThisWeek >= 3 || row.loadStatus !== 'balanced')
+    .sort((a, b) => b.overdue - a.overdue || b.pressureScore - a.pressureScore)
+    .slice(0, 5)
+
+  return { plannerRows, donors, receivers, managerAlerts }
+}
+
+function formatPlannerOpsContext(summary: ReturnType<typeof getPlannerOpsSummary>): string {
+  const plannerLines = summary.plannerRows
+    .sort((a, b) => b.pressureScore - a.pressureScore || b.overdue - a.overdue)
+    .map((row) => `- ${row.plannerName} | load: ${row.loadStatus} | pressure: ${row.pressureScore} | clients: ${row.clientCount} | overdue: ${row.overdue} | due this week: ${row.dueThisWeek} | no contact 7+ days: ${row.noContact7} | compliance: ${row.complianceScore}% | avg goal: ${row.avgGoalPct}%${row.topOverdueClients.length ? ` | top overdue: ${row.topOverdueClients.join(', ')}` : ''}`)
+    .join('\n')
+
+  const donorLine = summary.donors.length > 0
+    ? summary.donors.map((row) => `${row.plannerName} (pressure ${row.pressureScore})`).join(', ')
+    : 'none right now'
+
+  const receiverLine = summary.receivers.length > 0
+    ? summary.receivers.map((row) => `${row.plannerName} (pressure ${row.pressureScore})`).join(', ')
+    : 'none right now'
+
+  const alertLine = summary.managerAlerts.length > 0
+    ? summary.managerAlerts.map((row) => `${row.plannerName}: ${row.overdue} overdue, ${row.dueThisWeek} due this week, pressure ${row.pressureScore}`).join(' | ')
+    : 'none right now'
+
+  return `=== PLANNER OPS SNAPSHOT ===
+Recommended donors: ${donorLine}
+Recommended receivers: ${receiverLine}
+Manager follow-up alerts: ${alertLine}
+Planner detail:
+${plannerLines}
+=== END PLANNER OPS SNAPSHOT ===`
+}
+
 // ─── Knowledge blocks (injected into system prompt) ───────────────────────────
 
 const KNOWLEDGE_POS_WORKFLOW = `
@@ -729,20 +833,12 @@ export async function POST(req: NextRequest) {
       .eq('role', 'supports_planner')
       .order('full_name')
 
-    const plannerStats = (planners ?? []).map((p: Record<string, unknown>) => {
-      const pClients = allClients.filter(c => c.assigned_to === p.id)
-      const overdue = pClients.filter(c => {
-        const fields = ['eligibility_end_date', 'three_month_visit_due', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date']
-        return fields.some(f => {
-          const raw = c[f] as string | null
-          if (!raw) return false
-          return new Date(raw) < new Date()
-        })
-      }).length
-      return `${p.full_name}: ${pClients.length} clients, ${overdue} overdue`
-    })
+    const plannerOpsSummary = getPlannerOpsSummary(allClients, (planners ?? []) as Record<string, unknown>[])
+    const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
 
-    plannerContext = `BLH-wide visibility is enabled. Organization snapshot: ${allClients.length} clients across ${planners?.length ?? 0} Supports Planners. Planner coverage: ${plannerStats.join(', ')}`
+    plannerContext = `BLH-wide visibility is enabled. Organization snapshot: ${allClients.length} clients across ${planners?.length ?? 0} Supports Planners. Planner coverage: ${plannerStats.join(', ')}
+
+${formatPlannerOpsContext(plannerOpsSummary)}`
 
     const clientCount = allClients?.length ?? 0
 
@@ -825,8 +921,11 @@ ${KNOWLEDGE_NAVIGATION}
 4. For ATP questions — confirm the program type, then apply the correct rules.
 5. For SPM — always remind: next due = 15th of the FOLLOWING month (never +30 days).
 6. For navigation — embed page paths in brackets like [/calendar] so the UI renders them as clickable links.
-7. Be warm but professional — planners are caring for vulnerable people.
-8. HIPAA: never suggest sharing client info externally.
+7. When asked org/team operations questions, use the planner ops snapshot to name who needs intervention now, who can absorb work, and the most practical next move.
+8. Prefer operational recommendations over generic commentary: identify the riskiest planners/clients first, then suggest the next 1-3 actions.
+9. If the question is manager/supervisor-facing, summarize pressure, overdue burden, due-this-week load, and no-contact risk in plain English.
+10. Be warm but professional — planners are caring for vulnerable people.
+11. HIPAA: never suggest sharing client info externally.
 === END GUIDELINES ===`
 
     const apiKey = process.env.ANTHROPIC_API_KEY
