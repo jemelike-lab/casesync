@@ -113,6 +113,12 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     fromPlannerName: string
     toPlannerName: string
     reason: string
+    impact: {
+      donorBefore: { pressureScore: number, overdue: number, dueThisWeek: number, clientCount: number }
+      donorAfter: { pressureScore: number, overdue: number, dueThisWeek: number, clientCount: number }
+      receiverBefore: { pressureScore: number, overdue: number, dueThisWeek: number, clientCount: number }
+      receiverAfter: { pressureScore: number, overdue: number, dueThisWeek: number, clientCount: number }
+    }
   }>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
@@ -232,6 +238,58 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     const receivers = plannerSignals.filter(row => row.loadStatus === 'balanced').sort((a, b) => a.pressureScore - b.pressureScore || a.clientCount - b.clientCount).slice(0, 3)
     return { donors, receivers }
   }, [plannerSignals])
+
+  function snapshotPlannerLoad(clientPool: Client[], plannerId: string | null) {
+    const plannerClients = clientPool.filter(c => c.assigned_to === plannerId)
+    const overdue = plannerClients.filter(c => {
+      const dates = [
+        c.eligibility_end_date,
+        c.three_month_visit_due,
+        c.quarterly_waiver_date,
+        c.med_tech_redet_date,
+        c.pos_deadline,
+        c.assessment_due,
+        c.thirty_day_letter_date,
+        c.spm_next_due,
+        c.co_financial_redet_date,
+        c.co_app_date,
+        c.mfp_consent_date,
+        c.two57_date,
+        c.doc_mdh_date,
+      ].filter(Boolean)
+      const today = new Date().toISOString().split('T')[0]
+      return dates.some(date => String(date) < today)
+    }).length
+    const dueThisWeek = plannerClients.filter(c => {
+      const today = new Date()
+      const start = new Date(today)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(start)
+      end.setDate(end.getDate() + 7)
+      const dates = [
+        c.eligibility_end_date,
+        c.three_month_visit_due,
+        c.quarterly_waiver_date,
+        c.med_tech_redet_date,
+        c.pos_deadline,
+        c.assessment_due,
+        c.thirty_day_letter_date,
+        c.spm_next_due,
+        c.co_financial_redet_date,
+        c.co_app_date,
+        c.mfp_consent_date,
+        c.two57_date,
+        c.doc_mdh_date,
+      ].filter(Boolean)
+      return dates.some(date => {
+        const d = new Date(String(date))
+        return d >= start && d <= end
+      })
+    }).length
+    const clientCount = plannerClients.length
+    const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, clientCount - 35)
+    return { pressureScore, overdue, dueThisWeek, clientCount }
+  }
 
   const recommendedMoves = useMemo(() => {
     if (rebalanceHints.donors.length === 0 || rebalanceHints.receivers.length === 0) return []
@@ -471,10 +529,15 @@ export default function TransferBoardClient({ clients: initialClients, planners 
 
     const receiverPlanner = move.receiver.planner
     const previousClients = clients
-    setApplyingMoveKey(moveKey)
-    setClients(prev => prev.map(client => candidateIds.includes(client.id)
+    const donorBefore = snapshotPlannerLoad(previousClients, move.donor.planner.id)
+    const receiverBefore = snapshotPlannerLoad(previousClients, receiverPlanner.id)
+    const nextClients = previousClients.map(client => candidateIds.includes(client.id)
       ? { ...client, assigned_to: receiverPlanner.id, profiles: receiverPlanner }
-      : client))
+      : client)
+    const donorAfter = snapshotPlannerLoad(nextClients, move.donor.planner.id)
+    const receiverAfter = snapshotPlannerLoad(nextClients, receiverPlanner.id)
+    setApplyingMoveKey(moveKey)
+    setClients(nextClients)
 
     const { error } = await supabase
       .from('clients')
@@ -497,6 +560,12 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       fromPlannerName: move.donor.planner.full_name ?? 'Unknown',
       toPlannerName: receiverPlanner.full_name ?? 'Support Planner',
       reason: move.reason,
+      impact: {
+        donorBefore,
+        donorAfter,
+        receiverBefore,
+        receiverAfter,
+      },
     })
 
     await logRecommendationMove({
@@ -647,6 +716,25 @@ export default function TransferBoardClient({ clients: initialClients, planners 
             )
             : 'No strong donor/receiver split right now — use the board normally.'}
         </div>
+        {lastAppliedMove?.impact && (
+          <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'rgba(52,199,89,0.08)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+              Last move impact
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
+              Donor <strong style={{ color: 'var(--text)' }}>{lastAppliedMove.fromPlannerName}</strong>: pressure {lastAppliedMove.impact.donorBefore.pressureScore} → {lastAppliedMove.impact.donorAfter.pressureScore}
+              {' '}({lastAppliedMove.impact.donorAfter.pressureScore < lastAppliedMove.impact.donorBefore.pressureScore ? 'helped' : lastAppliedMove.impact.donorAfter.pressureScore > lastAppliedMove.impact.donorBefore.pressureScore ? 'worse' : 'neutral'})
+              {' '}• overdue {lastAppliedMove.impact.donorBefore.overdue} → {lastAppliedMove.impact.donorAfter.overdue}
+              {' '}• due this week {lastAppliedMove.impact.donorBefore.dueThisWeek} → {lastAppliedMove.impact.donorAfter.dueThisWeek}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
+              Receiver <strong style={{ color: 'var(--text)' }}>{lastAppliedMove.toPlannerName}</strong>: pressure {lastAppliedMove.impact.receiverBefore.pressureScore} → {lastAppliedMove.impact.receiverAfter.pressureScore}
+              {' '}({lastAppliedMove.impact.receiverAfter.pressureScore < lastAppliedMove.impact.receiverBefore.pressureScore ? 'helped' : lastAppliedMove.impact.receiverAfter.pressureScore > lastAppliedMove.impact.receiverBefore.pressureScore ? 'higher load accepted' : 'neutral'})
+              {' '}• overdue {lastAppliedMove.impact.receiverBefore.overdue} → {lastAppliedMove.impact.receiverAfter.overdue}
+              {' '}• due this week {lastAppliedMove.impact.receiverBefore.dueThisWeek} → {lastAppliedMove.impact.receiverAfter.dueThisWeek}
+            </div>
+          </div>
+        )}
         {recommendedMoves.length > 0 && (
           <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
             {recommendedMoves.map((move, index) => (
