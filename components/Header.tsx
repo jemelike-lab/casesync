@@ -165,7 +165,7 @@ export default function Header({ user, profile }: Props) {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
-          <div data-tour="notification-bell">
+          <div data-tour="notification-bell" style={{ position: 'relative', zIndex: 7000, flexShrink: 0 }}>
             {user.id && <NotificationBell userId={user.id} />}
           </div>
           <div className="header-user-meta" style={{ textAlign: 'right', minWidth: 0 }}>
@@ -183,6 +183,21 @@ export default function Header({ user, profile }: Props) {
           </button>
         </div>
       </header>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .header-user-meta,
+          .header-signout {
+            display: none !important;
+          }
+
+          .header-right {
+            gap: 6px !important;
+            flex-shrink: 0 !important;
+            overflow: visible !important;
+          }
+        }
+      `}</style>
 
       {/* Mobile bottom nav */}
       <nav className="mobile-nav" style={{
