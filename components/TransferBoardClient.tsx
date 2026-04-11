@@ -335,6 +335,32 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       return urgencyScore(client) + handoffReadinessBonus(client) - programComplexityPenalty(client)
     }
 
+    function explainCandidate(client: Client) {
+      const wins: string[] = []
+      const cautions: string[] = []
+      const days = daysSinceContact(client)
+      const docFriction = documentationFriction(client)
+      const complexity = programComplexityPenalty(client)
+
+      if (days !== null && days <= 14) wins.push('recent contact makes handoff safer')
+      if (client.spm_completed) wins.push('SPM already complete')
+      if (docFriction === 0) wins.push('low documentation friction')
+      if (!client.reportable_events && !client.appeals) wins.push('no active escalation flags')
+      if (isClientDueSoon(client) && !isClientOverdue(client)) wins.push('due soon but not already overdue')
+
+      if (docFriction >= 12) cautions.push('higher documentation friction')
+      if (client.reportable_events) cautions.push('reportable events in play')
+      if (client.appeals) cautions.push('appeal activity adds handoff risk')
+      if (client.signatures_needed) cautions.push('signatures still needed')
+      if (complexity >= 35) cautions.push('heavier deadline/program complexity')
+      if (days !== null && days >= 30) cautions.push('stale contact history')
+
+      return {
+        whyThisMove: wins.slice(0, 3),
+        whyNotIdeal: cautions.slice(0, 3),
+      }
+    }
+
     return rebalanceHints.donors.flatMap((donor, donorIndex) => {
       const receiver = rebalanceHints.receivers[donorIndex % rebalanceHints.receivers.length]
       const suggestedCount = Math.min(
@@ -362,6 +388,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           handoffReadiness: handoffReadinessBonus(client),
           documentationFriction: documentationFriction(client),
           spmCompleted: client.spm_completed,
+          ...explainCandidate(client),
         }))
 
       return [{
@@ -585,6 +612,20 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
                       Why: {move.reason}. Receiver pressure is {move.receiver.pressureScore} with {move.receiver.clientCount} total clients.
                     </div>
+                    {move.candidates[0] && (
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
+                        <strong style={{ color: 'var(--text)' }}>Why this move:</strong>{' '}
+                        {move.candidates[0].whyThisMove?.length
+                          ? move.candidates[0].whyThisMove.join(' • ')
+                          : 'best available lower-risk handoff option right now'}
+                        {move.candidates[0].whyNotIdeal?.length > 0 && (
+                          <>
+                            {' '}• <strong style={{ color: 'var(--text)' }}>Why not others:</strong>{' '}
+                            {move.candidates[0].whyNotIdeal.join(' • ')}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -621,6 +662,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                         {candidate.spmCompleted ? ' • SPM complete' : ' • SPM open'}
                         {typeof candidate.documentationFriction === 'number' && candidate.documentationFriction > 0 ? ` • doc friction ${candidate.documentationFriction}` : ''}
                         {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
+                        {candidate.whyThisMove?.length ? ` • why: ${candidate.whyThisMove.join(', ')}` : ''}
+                        {candidate.whyNotIdeal?.length ? ` • watch: ${candidate.whyNotIdeal.join(', ')}` : ''}
                       </div>
                     ))}
                   </div>
@@ -660,6 +703,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
                           {candidate.spmCompleted ? ' • SPM complete' : ' • SPM open'}
                           {typeof candidate.documentationFriction === 'number' && candidate.documentationFriction > 0 ? ` • doc friction ${candidate.documentationFriction}` : ''}
                           {typeof candidate.score === 'number' ? ` • score ${candidate.score}` : ''}
+                          {candidate.whyThisMove?.length ? ` • why: ${candidate.whyThisMove.join(', ')}` : ''}
+                          {candidate.whyNotIdeal?.length ? ` • watch: ${candidate.whyNotIdeal.join(', ')}` : ''}
                         </div>
                       ))}
                     </div>
