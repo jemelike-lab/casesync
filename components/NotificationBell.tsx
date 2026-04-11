@@ -51,11 +51,17 @@ export default function NotificationBell({ userId }: Props) {
   }, [unreadCount])
 
   useEffect(() => {
-    function handle(e: MouseEvent) {
+    function handle(e: MouseEvent | PointerEvent | TouchEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
+    document.addEventListener('mousedown', handle as EventListener)
+    document.addEventListener('pointerdown', handle as EventListener)
+    document.addEventListener('touchstart', handle as EventListener)
+    return () => {
+      document.removeEventListener('mousedown', handle as EventListener)
+      document.removeEventListener('pointerdown', handle as EventListener)
+      document.removeEventListener('touchstart', handle as EventListener)
+    }
   }, [])
 
   useEffect(() => {
@@ -89,12 +95,17 @@ export default function NotificationBell({ userId }: Props) {
   return (
     <div ref={ref} style={{ position: 'relative', zIndex: 6000 }}>
       <button
-        onClick={(event) => {
+        onPointerDown={(event) => {
           event.preventDefault()
           event.stopPropagation()
           setOpen(v => !v)
         }}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
         onTouchStart={(event) => {
+          event.preventDefault()
           event.stopPropagation()
         }}
         className={shake ? 'bell-shake' : undefined}
