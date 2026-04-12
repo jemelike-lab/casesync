@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
 
   let csvText = ''
   let mode: Mode = 'validate'
+  let sourceFileName: string | null = null
 
   const contentType = req.headers.get('content-type') ?? ''
 
@@ -63,8 +64,14 @@ export async function POST(req: NextRequest) {
     mode = formData.get('mode') === 'import' ? 'import' : 'validate'
     const file = formData.get('file')
     const pastedText = formData.get('csvText')
+    const sourceFileNameValue = formData.get('sourceFileName')
+
+    if (typeof sourceFileNameValue === 'string' && sourceFileNameValue.trim()) {
+      sourceFileName = sourceFileNameValue.trim()
+    }
 
     if (file instanceof File && file.size > 0) {
+      sourceFileName = sourceFileName ?? file.name
       const lowerName = file.name.toLowerCase()
       if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
         csvText = workbookToCsv(await file.arrayBuffer())
@@ -108,11 +115,26 @@ export async function POST(req: NextRequest) {
 
   const allErrors = [...parseResult.parseErrors, ...parseResult.validationErrors]
   const issueCsv = buildImportIssueCsv([...allErrors, ...parseResult.warnings])
+  const importRunBase = {
+    created_by: userId,
+    mode,
+    source_filename: sourceFileName,
+    total_rows: parseResult.rows.length,
+    valid_rows: parseResult.normalizedRows.length,
+    imported_rows: 0,
+    skipped_rows: parseResult.rows.length - parseResult.normalizedRows.length,
+    error_count: allErrors.length,
+    warning_count: parseResult.warnings.length,
+    issue_report_csv: issueCsv,
+    status: 'completed' as const,
+  }
   const plannerSuggestions = parseResult.validationErrors
     .filter(issue => issue.column === 'assigned_to_name')
     .map(issue => ({ rowNumber: issue.rowNumber, message: issue.message }))
 
   if (mode === 'validate') {
+    await supabase.from('client_import_runs').insert(importRunBase)
+
     return NextResponse.json({
       mode,
       ok: allErrors.length === 0,
@@ -145,6 +167,8 @@ export async function POST(req: NextRequest) {
   const payload = parseResult.normalizedRows.map(buildClientInsertPayload)
 
   if (allErrors.length > 0 && payload.length === 0) {
+    await supabase.from('client_import_runs').insert({ ...importRunBase, status: 'failed' })
+
     return NextResponse.json({
       mode,
       ok: false,
@@ -166,6 +190,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (payload.length === 0) {
+    await supabase.from('client_import_runs').insert({ ...importRunBase, status: 'failed' })
     return NextResponse.json({ error: 'No valid rows to import.' }, { status: 400 })
   }
 
@@ -175,6 +200,7 @@ export async function POST(req: NextRequest) {
     .select('id, client_id')
 
   if (insertError) {
+    await supabase.from('client_import_runs').insert({ ...importRunBase, status: 'failed' })
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
@@ -204,6 +230,11 @@ export async function POST(req: NextRequest) {
   if (activityRows.length > 0) {
     await supabase.from('activity_log').insert(activityRows)
   }
+
+  await supabase.from('client_import_runs').insert({
+    ...importRunBase,
+    imported_rows: insertedRows?.length ?? 0,
+  })
 
   return NextResponse.json({
     mode,

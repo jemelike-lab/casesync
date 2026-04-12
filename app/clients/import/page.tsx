@@ -21,11 +21,18 @@ export default async function ClientImportPage() {
     redirect('/dashboard')
   }
 
-  const { data: planners } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', 'supports_planner')
-    .order('full_name')
+  const [{ data: planners }, { data: importRuns }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'supports_planner')
+      .order('full_name'),
+    supabase
+      .from('client_import_runs')
+      .select('id, created_at, mode, source_filename, total_rows, valid_rows, imported_rows, skipped_rows, error_count, warning_count, status, created_by, profiles!client_import_runs_created_by_fkey(full_name)')
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ])
 
-  return <ClientBatchImportClient planners={(planners as Profile[]) ?? []} />
+  return <ClientBatchImportClient planners={(planners as Profile[]) ?? []} importRuns={(importRuns as any[]) ?? []} />
 }

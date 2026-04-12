@@ -26,6 +26,22 @@ interface ValidationRow {
   assigned_to_resolution?: string
 }
 
+interface ImportRun {
+  id: string
+  created_at: string
+  mode: 'validate' | 'import'
+  source_filename: string | null
+  total_rows: number
+  valid_rows: number
+  imported_rows: number
+  skipped_rows: number
+  error_count: number
+  warning_count: number
+  status: 'completed' | 'failed'
+  created_by: string
+  profiles?: { full_name: string | null } | null
+}
+
 interface ValidationResponse {
   ok: boolean
   summary: {
@@ -46,7 +62,7 @@ interface ValidationResponse {
   error?: string
 }
 
-export default function ClientBatchImportClient({ planners }: { planners: Profile[] }) {
+export default function ClientBatchImportClient({ planners, importRuns }: { planners: Profile[]; importRuns: ImportRun[] }) {
   const [csvText, setCsvText] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -86,6 +102,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
       const formData = new FormData()
       formData.set('mode', mode)
       if (selectedFile) formData.set('file', selectedFile)
+      if (fileName) formData.set('sourceFileName', fileName)
       if (csvText.trim()) formData.set('csvText', csvText)
 
       const response = await fetch('/api/clients/import', {
@@ -228,6 +245,32 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
         </div>
       </div>
 
+      {importRuns.length > 0 && (
+        <div style={{ marginTop: 18, background: '#1c1c1e', borderRadius: 14, border: '1px solid #2c2c2e', padding: 20 }}>
+          <h2 style={{ fontSize: 16, marginTop: 0 }}>Recent import history</h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {importRuns.map((run) => (
+              <div key={run.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) repeat(6, auto)', gap: 10, alignItems: 'center', padding: '10px 12px', border: '1px solid #2c2c2e', borderRadius: 10, background: '#111113' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#f5f5f7' }}>
+                    {run.source_filename || 'Pasted CSV'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#98989d', marginTop: 4 }}>
+                    {new Date(run.created_at).toLocaleString()} • {run.mode} • {run.profiles?.full_name || 'Unknown user'}
+                  </div>
+                </div>
+                <HistoryPill label="Rows" value={run.total_rows} />
+                <HistoryPill label="Valid" value={run.valid_rows} />
+                <HistoryPill label="Imported" value={run.imported_rows} />
+                <HistoryPill label="Skipped" value={run.skipped_rows} tone="warn" />
+                <HistoryPill label="Errors" value={run.error_count} tone={run.error_count > 0 ? 'danger' : 'default'} />
+                <HistoryPill label="Warnings" value={run.warning_count} tone={run.warning_count > 0 ? 'warn' : 'default'} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {result && (
         <div style={{ marginTop: 18, background: '#1c1c1e', borderRadius: 14, border: '1px solid #2c2c2e', padding: 20 }}>
           <h2 style={{ fontSize: 16, marginTop: 0 }}>Validation results</h2>
@@ -356,4 +399,18 @@ const tdStyle: React.CSSProperties = {
   padding: '10px 12px',
   borderBottom: '1px solid #1d1d1f',
   color: '#d2d2d7',
+}
+
+function HistoryPill({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warn' | 'danger' }) {
+  const tones = {
+    default: { background: '#2c2c2e', color: '#f5f5f7' },
+    warn: { background: 'rgba(255,159,10,0.16)', color: '#ff9f0a' },
+    danger: { background: 'rgba(255,69,58,0.16)', color: '#ff453a' },
+  } as const
+
+  return (
+    <div style={{ ...tones[tone], borderRadius: 999, padding: '8px 10px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
+      {label}: {value}
+    </div>
+  )
 }
