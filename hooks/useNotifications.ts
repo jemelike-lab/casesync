@@ -38,13 +38,13 @@ export function useNotifications(userId: string | null) {
       .update({ read: true })
       .eq('user_id', userId)
       .eq('read', false)
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setNotifications([])
     setUnreadCount(0)
   }
 
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read: true }).eq('id', id)
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    setNotifications(prev => prev.filter(n => n.id !== id))
     setUnreadCount(prev => Math.max(0, prev - 1))
   }
 
