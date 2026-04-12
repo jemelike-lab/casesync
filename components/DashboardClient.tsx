@@ -370,6 +370,9 @@ function SupervisorOverviewStrip({
           Use this view for quick oversight, then jump into Transfer Board, Team Manager Board, or the full Supervisor panel when you need to act.
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+          <Link href="/clients/import" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid rgba(100,210,255,0.35)', borderRadius: 8, background: 'rgba(100,210,255,0.08)', fontWeight: 700 }}>
+            ⬆ Import Clients →
+          </Link>
           <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
             Transfer Board →
           </Link>
