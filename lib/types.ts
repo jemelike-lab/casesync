@@ -77,6 +77,7 @@ export interface Client {
   audit_review: string | null
   qa_review: string | null
   goal_pct: number
+  client_classification?: ClientClassification | null
   is_active?: boolean
   deactivation_reason?: string | null
   deactivated_at?: string | null

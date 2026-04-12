@@ -670,6 +670,9 @@ function ClientOpsTable({
           <span style={{ fontSize: 12, color: 'var(--text)' }}>{activeFilterLabel}</span>
           {searchLabel ? <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Search: “{searchLabel}”</span> : null}
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pageStart}-{pageEnd} of {total}</span>
+          <span style={{ fontSize: 11, color: '#30d158', background: 'rgba(48,209,88,0.12)', border: '1px solid rgba(48,209,88,0.2)', borderRadius: 999, padding: '3px 8px' }}>Assigned {sorted.filter(client => Boolean(client.assigned_to)).length}</span>
+          <span style={{ fontSize: 11, color: '#ff9f0a', background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.2)', borderRadius: 999, padding: '3px 8px' }}>Unassigned {sorted.filter(client => !client.assigned_to).length}</span>
+          <span style={{ fontSize: 11, color: '#ff453a', background: 'rgba(255,69,58,0.12)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: 999, padding: '3px 8px' }}>Overdue {sorted.filter(client => getOverdueCount(client) > 0).length}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sort:</span>
@@ -710,6 +713,7 @@ function ClientOpsTable({
               {showSelect && <th style={{ padding: '10px 12px', textAlign: 'left', width: 40 }}>Sel</th>}
               <th style={{ padding: '10px 12px', textAlign: 'left' }}>Client</th>
               <th style={{ padding: '10px 12px', textAlign: 'left' }}>Planner</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Class</th>
               <th style={{ padding: '10px 12px', textAlign: 'left' }}>Priority</th>
               <th style={{ padding: '10px 12px', textAlign: 'left' }}>Risk</th>
               <th style={{ padding: '10px 12px', textAlign: 'left' }}>Overdue</th>
@@ -756,7 +760,23 @@ function ClientOpsTable({
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{client.profiles?.full_name ?? 'Unassigned'}</td>
+                  <td style={{ padding: '10px 12px', color: client.profiles?.full_name ? 'var(--text-secondary)' : '#ff9f0a', fontWeight: client.profiles?.full_name ? 500 : 700 }}>{client.profiles?.full_name ?? 'Unassigned'}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      borderRadius: 999,
+                      padding: '3px 8px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      background: client.client_classification === 'test' ? 'rgba(191,90,242,0.14)' : client.client_classification === 'trial' ? 'rgba(255,159,10,0.14)' : 'rgba(48,209,88,0.14)',
+                      color: client.client_classification === 'test' ? '#bf5af2' : client.client_classification === 'trial' ? '#ff9f0a' : '#30d158',
+                    }}>
+                      {client.client_classification ?? 'real'}
+                    </span>
+                  </td>
                   <td style={{ padding: '10px 12px', fontWeight: 700 }}>{priority}</td>
                   <td style={{ padding: '10px 12px', color: riskColor, fontWeight: 700, textTransform: 'capitalize' }}>{risk}</td>
                   <td style={{ padding: '10px 12px', color: overdueCount > 0 ? 'var(--red)' : 'var(--text-secondary)', fontWeight: overdueCount > 0 ? 700 : 500 }}>{overdueCount}</td>
@@ -769,7 +789,12 @@ function ClientOpsTable({
                   <td style={{ padding: '10px 12px' }}>{formatDate(client.eligibility_end_date)}</td>
                   <td style={{ padding: '10px 12px' }}>{formatDate(client.spm_next_due)}</td>
                   <td style={{ padding: '10px 12px' }}>{client.goal_pct}%</td>
-                  <td style={{ padding: '10px 12px', fontWeight: 700 }}>{health}</td>
+                  <td style={{ padding: '10px 12px', fontWeight: 700 }}>
+                    <div>{health}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {client.assigned_to ? 'Owned' : 'Needs assignment'}
+                    </div>
+                  </td>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <Link href={`/clients/${client.id}`} style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Open</Link>
