@@ -20,15 +20,24 @@ export function useNotifications(userId: string | null) {
 
   async function fetchNotifications() {
     if (!userId) return
-    const { data } = await supabase
+
+    const { data: unreadData } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
+      .eq('read', false)
       .order('created_at', { ascending: false })
       .limit(50)
-    const notifs = (data as Notification[]) ?? []
+
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false)
+
+    const notifs = (unreadData as Notification[]) ?? []
     setNotifications(notifs)
-    setUnreadCount(notifs.filter(n => !n.read).length)
+    setUnreadCount(count ?? notifs.length)
   }
 
   async function markAllRead() {
