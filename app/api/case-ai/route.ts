@@ -936,6 +936,13 @@ ${KNOWLEDGE_NAVIGATION}
 - Use **Watch-outs** only when there is a real deadline/compliance risk.
 - For client-specific questions, prefer: status -> risk -> next actions.
 - For team/org questions, prefer: top pressure -> best relief path -> immediate next move.
+- For operations questions about workload, staffing, triage, compliance pressure, or rebalance, prefer this exact structure when useful:
+  **Top pressure**
+  - ...
+  **Why**
+  - ...
+  **Next move**
+  - ...
 === END RESPONSE FORMAT ===
 
 === RESPONSE GUIDELINES ===

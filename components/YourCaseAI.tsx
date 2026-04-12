@@ -10,31 +10,50 @@ interface Message {
   content: string
 }
 
-const ALL_DASHBOARD_PROMPTS = [
+const PLANNER_DASHBOARD_PROMPTS = [
   'Which clients need attention today?',
-  'Who has the most overdue items?',
+  'What should I do next today?',
   "What's my compliance score?",
+  'Which clients have no contact in 7+ days?',
   'Show me clients with eligibility ending soon',
   'What is the SPM deadline?',
-  'Which clients have no contact in 7+ days?',
-  'Which planners need manager follow-up right now?',
-  'Who can take more clients right now?',
-  'Give me a team compliance summary with next actions',
-  'What should I rebalance first?',
-  'What does ATP mean?',
   'How do I submit a POS?',
   'What documents do I need for transition funds?',
-  'What are the CFC service limitations?',
   'How many signatures does a POS need?',
-  'What is the income limit for CPAS?',
-  'When is the LOC deadline for POS submission?',
   'What is a RUG score?',
-  'How do I handle an ACP participant?',
+]
+
+const MANAGER_DASHBOARD_PROMPTS = [
+  'Which planners need manager follow-up right now?',
+  'What should I rebalance first?',
+  'Who can take more clients right now?',
+  'Give me a team compliance summary with next actions',
+  'Which clients need attention today?',
+  'Which clients have no contact in 7+ days?',
+  'What is the SPM deadline?',
+  'How do I submit a POS?',
+]
+
+const SUPERVISOR_DASHBOARD_PROMPTS = [
+  'Which planners need manager follow-up right now?',
+  'What should I rebalance first?',
+  'Who can take more clients right now?',
+  'Give me a team compliance summary with next actions',
+  'Who has the most overdue items?',
+  'Show me clients with eligibility ending soon',
+  'What is the SPM deadline?',
+  'What are the CFC service limitations?',
 ]
 
 function getRotatingPrompts(prompts: string[], count = 4): string[] {
   const shuffled = [...prompts].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, count)
+}
+
+function getDashboardPromptsForRole(role: string | null): string[] {
+  if (role === 'supervisor' || role === 'admin') return SUPERVISOR_DASHBOARD_PROMPTS
+  if (role === 'team_manager') return MANAGER_DASHBOARD_PROMPTS
+  return PLANNER_DASHBOARD_PROMPTS
 }
 
 const ALL_CLIENT_PROMPTS = [
@@ -297,6 +316,7 @@ export default function BLHAssistant() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [clientName, setClientName] = useState<string | null>(null)
   const [hasOpenedBefore, setHasOpenedBefore] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -309,13 +329,22 @@ export default function BLHAssistant() {
 
   // Determine context-aware prompts
   const isClientPage = !!currentClientId
-  const suggestedPrompts = getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : ALL_DASHBOARD_PROMPTS)
+  const suggestedPrompts = getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : getDashboardPromptsForRole(userRole))
 
   // Fetch current user
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id)
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      setUserId(user.id)
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role) setUserRole(profile.role)
     })
   }, [])
 
@@ -713,7 +742,13 @@ export default function BLHAssistant() {
                     Hi {userId ? 'there' : ''}! I&apos;m BLH Bot
                   </div>
                   <div style={{ fontSize: 12 }}>
-                    {isClientPage ? 'I have full context for this client.' : 'Ask me about your caseload.'}
+                    {isClientPage
+                      ? 'I have full context for this client.'
+                      : userRole === 'team_manager'
+                        ? 'Ask me about team pressure, follow-up, or rebalance moves.'
+                        : userRole === 'supervisor' || userRole === 'admin'
+                          ? 'Ask me about org pressure, staffing balance, or intervention points.'
+                          : 'Ask me about your caseload.'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
