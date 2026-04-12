@@ -133,16 +133,16 @@ export default function ClientBatchImportClient({ planners, importRuns, mode = '
           ← Dashboard
         </Link>
         <span style={{ color: '#3a3a3c' }}>/</span>
-        <span style={{ fontSize: 13, color: '#98989d' }}>{mode === 'planner' ? 'Planner Client Import' : 'Client Import'}</span>
+        <span style={{ fontSize: 13, color: '#98989d' }}>{mode === 'planner' ? 'Planner Client Import' : 'Manager Client Import'}</span>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px' }}>{mode === 'planner' ? 'Import my clients' : 'Batch import clients'}</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px' }}>{mode === 'planner' ? 'Import my clients' : 'Batch import clients for your team'}</h1>
           <p style={{ color: '#98989d', fontSize: 14, margin: 0, maxWidth: 700 }}>
             {mode === 'planner'
               ? 'Planner upload lane for your own client sheet. Valid rows will be assigned to your planner account automatically at import time.'
-              : 'Excel-first importer for the CaseSync client template. It validates the upload, resolves planner names to planner ids, shows row-level issues, and only inserts after a successful dry run.'}
+              : 'Manager upload lane for supervisors, team managers, and IT. It validates the upload, resolves planner names to planner ids, shows row-level issues, and only inserts after a successful dry run.'}
           </p>
         </div>
         <a
