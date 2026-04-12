@@ -178,6 +178,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
+  const insertedByClientId = new Map((insertedRows ?? []).map(client => [client.client_id, client.id]))
+
+  const importedNotes = parseResult.normalizedRows
+    .filter(row => row.notes && insertedByClientId.has(row.client_id))
+    .map(row => ({
+      client_id: insertedByClientId.get(row.client_id)!,
+      author_id: userId,
+      content: row.notes!,
+    }))
+
   const activityRows = (insertedRows ?? []).map((client) => ({
     client_id: client.id,
     user_id: userId,
@@ -186,6 +196,10 @@ export async function POST(req: NextRequest) {
     old_value: null,
     new_value: client.client_id,
   }))
+
+  if (importedNotes.length > 0) {
+    await supabase.from('client_notes').insert(importedNotes)
+  }
 
   if (activityRows.length > 0) {
     await supabase.from('activity_log').insert(activityRows)

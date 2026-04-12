@@ -624,6 +624,7 @@ export function buildClientInsertPayload(row: ClientImportNormalizedRow) {
     audit_review: row.audit_review,
     qa_review: row.qa_review,
     goal_pct: row.goal_pct,
+    client_classification: row.client_classification ?? 'real',
   }
 }
 
