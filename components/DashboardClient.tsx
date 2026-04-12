@@ -1515,11 +1515,18 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
           </div>
         )}
         {(isSupervisor || isTeamManager) && (
-          <Link href="/clients/new" style={{ textDecoration: 'none' }}>
-            <button className="btn-primary" style={{ fontSize: 12, minHeight: 36 }}>
-              + Add Client
-            </button>
-          </Link>
+          <>
+            <Link href="/clients/import" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }}>
+                ⬆ Import Clients
+              </button>
+            </Link>
+            <Link href="/clients/new" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary" style={{ fontSize: 12, minHeight: 36 }}>
+                + Add Client
+              </button>
+            </Link>
+          </>
         )}
         <button
           className="btn-secondary"
