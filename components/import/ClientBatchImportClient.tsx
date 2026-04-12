@@ -62,12 +62,12 @@ interface ValidationResponse {
   error?: string
 }
 
-export default function ClientBatchImportClient({ planners, importRuns }: { planners: Profile[]; importRuns: ImportRun[] }) {
+export default function ClientBatchImportClient({ planners, importRuns, mode = 'supervisor', defaultAssignedTo = '', currentPlannerName = '' }: { planners: Profile[]; importRuns: ImportRun[]; mode?: 'supervisor' | 'planner'; defaultAssignedTo?: string; currentPlannerName?: string }) {
   const [csvText, setCsvText] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [overrideAssignedTo, setOverrideAssignedTo] = useState('')
+  const [overrideAssignedTo, setOverrideAssignedTo] = useState(defaultAssignedTo)
   const [result, setResult] = useState<ValidationResponse | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const [importDone, setImportDone] = useState(false)
@@ -133,19 +133,20 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
           ← Dashboard
         </Link>
         <span style={{ color: '#3a3a3c' }}>/</span>
-        <span style={{ fontSize: 13, color: '#98989d' }}>Client Import</span>
+        <span style={{ fontSize: 13, color: '#98989d' }}>{mode === 'planner' ? 'Planner Client Import' : 'Client Import'}</span>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px' }}>Batch import clients</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px' }}>{mode === 'planner' ? 'Import my clients' : 'Batch import clients'}</h1>
           <p style={{ color: '#98989d', fontSize: 14, margin: 0, maxWidth: 700 }}>
-            Excel-first importer for the CaseSync client template. It validates the upload, resolves planner names to planner ids,
-            shows row-level issues, and only inserts after a successful dry run.
+            {mode === 'planner'
+              ? 'Planner upload lane for your own client sheet. Valid rows will be assigned to your planner account automatically at import time.'
+              : 'Excel-first importer for the CaseSync client template. It validates the upload, resolves planner names to planner ids, shows row-level issues, and only inserts after a successful dry run.'}
           </p>
         </div>
         <a
-          href="/clients-import-template.csv"
+          href={mode === 'planner' ? '/planner-clients-import-template.csv' : '/clients-import-template.csv'}
           download
           style={{
             textDecoration: 'none',
@@ -162,7 +163,7 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
         </a>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(300px, 0.8fr)', gap: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: mode === 'planner' ? 'minmax(0, 1fr)' : 'minmax(0, 1.2fr) minmax(300px, 0.8fr)', gap: 18 }}>
         <div style={{ background: '#1c1c1e', borderRadius: 14, border: '1px solid #2c2c2e', padding: 20 }}>
           <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Upload Excel or CSV</h2>
           <input
@@ -197,32 +198,41 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
               marginBottom: 14,
             }}
           />
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#98989d', marginBottom: 6 }}>Assign entire import to support planner (optional)</label>
-            <select
-              value={overrideAssignedTo}
-              onChange={(event) => setOverrideAssignedTo(event.target.value)}
-              style={{
-                width: '100%',
-                background: '#111113',
-                color: '#f5f5f7',
-                border: '1px solid #333336',
-                borderRadius: 10,
-                padding: '10px 12px',
-                fontSize: 13,
-              }}
-            >
-              <option value="">Use planner names from the sheet</option>
-              {planners.map((planner) => (
-                <option key={planner.id} value={planner.id}>
-                  {planner.full_name || planner.id}
-                </option>
-              ))}
-            </select>
-            <div style={{ marginTop: 8, fontSize: 12, color: '#98989d', lineHeight: 1.5 }}>
-              If selected, this overrides <code>assigned_to_name</code> in the sheet and assigns every imported valid row to that planner.
+          {mode === 'supervisor' ? (
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, color: '#98989d', marginBottom: 6 }}>Assign entire import to support planner (optional)</label>
+              <select
+                value={overrideAssignedTo}
+                onChange={(event) => setOverrideAssignedTo(event.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#111113',
+                  color: '#f5f5f7',
+                  border: '1px solid #333336',
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                  fontSize: 13,
+                }}
+              >
+                <option value="">Use planner names from the sheet</option>
+                {planners.map((planner) => (
+                  <option key={planner.id} value={planner.id}>
+                    {planner.full_name || planner.id}
+                  </option>
+                ))}
+              </select>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#98989d', lineHeight: 1.5 }}>
+                If selected, this overrides <code>assigned_to_name</code> in the sheet and assigns every imported valid row to that planner.
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ marginBottom: 14, border: '1px solid #2c2c2e', borderRadius: 10, padding: 12, background: '#111113' }}>
+              <div style={{ fontSize: 12, color: '#98989d', marginBottom: 6 }}>Import assignment</div>
+              <div style={{ fontSize: 13, color: '#f5f5f7', fontWeight: 600 }}>
+                All imported valid rows will be assigned to {currentPlannerName || 'your planner account'}.
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => submit('validate')} disabled={busy}>
@@ -258,6 +268,7 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
           )}
         </div>
 
+        {mode === 'supervisor' && (
         <div style={{ background: '#1c1c1e', borderRadius: 14, border: '1px solid #2c2c2e', padding: 20 }}>
           <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Planner resolution seam</h2>
           <p style={{ color: '#98989d', fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
@@ -272,6 +283,7 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
             ))}
           </div>
         </div>
+        )}
       </div>
 
       {importRuns.length > 0 && (

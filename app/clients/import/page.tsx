@@ -34,5 +34,5 @@ export default async function ClientImportPage() {
       .limit(20),
   ])
 
-  return <ClientBatchImportClient planners={(planners as Profile[]) ?? []} importRuns={(importRuns as any[]) ?? []} />
+  return <ClientBatchImportClient planners={(planners as Profile[]) ?? []} importRuns={(importRuns as any[]) ?? []} mode="supervisor" />
 }
