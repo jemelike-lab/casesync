@@ -1267,6 +1267,8 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }
 
   const selectAll = () => setSelectedIds(filtered.map(c => c.id))
+  const selectUnassigned = () => setSelectedIds(filtered.filter(c => !c.assigned_to).map(c => c.id))
+  const selectOverdueOnly = () => setSelectedIds(filtered.filter(c => getOverdueCount(c) > 0).map(c => c.id))
   const clearSelect = () => { setSelectedIds([]); setShowSelect(false) }
 
   function exportCurrentView() {
@@ -1579,6 +1581,8 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         {showSelect && (
           <>
             <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }} onClick={selectAll}>Select all in view ({filtered.length})</button>
+            <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }} onClick={selectUnassigned}>Select unassigned</button>
+            <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }} onClick={selectOverdueOnly}>Select overdue</button>
             {selectedIds.length > 0 && (
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{selectedIds.length} selected in this view</span>
             )}
