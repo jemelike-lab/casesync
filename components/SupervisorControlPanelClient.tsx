@@ -308,6 +308,14 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 </div>
               </div>
             </Link>
+            <Link href="/team?view=history" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="card" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>📈 Rebalance History</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Review recent rebalance moves, outcomes, and planner impact without going into the audit log.
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

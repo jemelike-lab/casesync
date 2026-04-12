@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
 import TransferBoardClient from '@/components/TransferBoardClient'
 import PlannerAssignmentBoardClient from '@/components/PlannerAssignmentBoardClient'
+import RebalanceHistoryClient from '@/components/RebalanceHistoryClient'
 import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
 
@@ -108,6 +109,17 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
         teamManagers={(teamManagers as Profile[]) ?? []}
       />
     )
+  }
+
+  if ((isSupervisorLike(profile.role) || profile.role === 'team_manager') && view === 'history') {
+    const { data: historyLogs } = await supabase
+      .from('activity_log')
+      .select('*, profiles!activity_log_user_id_fkey(full_name), clients!activity_log_client_id_fkey(first_name, last_name, client_id)')
+      .ilike('action', 'Recommended rebalance move%')
+      .order('created_at', { ascending: false })
+      .limit(500)
+
+    return <RebalanceHistoryClient logs={(historyLogs as any[]) ?? []} />
   }
 
   const fullFilterBaseLabel = activeSavedView
