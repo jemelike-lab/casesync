@@ -316,6 +316,14 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 </div>
               </div>
             </Link>
+            <Link href="/team?view=queues" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="card" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>🧭 Queue Command Center</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Open overdue, today, week, next-14-day, and quiet-case queues from one manager-focused ops surface.
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

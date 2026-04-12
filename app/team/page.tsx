@@ -5,6 +5,7 @@ import SupervisorDashboardClient from '@/components/SupervisorDashboardClient'
 import TransferBoardClient from '@/components/TransferBoardClient'
 import PlannerAssignmentBoardClient from '@/components/PlannerAssignmentBoardClient'
 import RebalanceHistoryClient from '@/components/RebalanceHistoryClient'
+import TeamQueuesClient from '@/components/TeamQueuesClient'
 import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
 
@@ -120,6 +121,16 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       .limit(500)
 
     return <RebalanceHistoryClient logs={(historyLogs as any[]) ?? []} />
+  }
+
+  if ((isSupervisorLike(profile.role) || profile.role === 'team_manager') && view === 'queues') {
+    return (
+      <TeamQueuesClient
+        clients={clients}
+        planners={(planners as Profile[]) ?? []}
+        mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
+      />
+    )
   }
 
   const fullFilterBaseLabel = activeSavedView
