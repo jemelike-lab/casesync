@@ -139,7 +139,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
             padding: '10px 14px',
           }}
         >
-          Download template
+          Generate template
         </a>
       </div>
 
