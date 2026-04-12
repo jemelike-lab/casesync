@@ -67,6 +67,7 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [overrideAssignedTo, setOverrideAssignedTo] = useState('')
   const [result, setResult] = useState<ValidationResponse | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const [importDone, setImportDone] = useState(false)
@@ -103,6 +104,7 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
       formData.set('mode', mode)
       if (selectedFile) formData.set('file', selectedFile)
       if (fileName) formData.set('sourceFileName', fileName)
+      if (overrideAssignedTo) formData.set('overrideAssignedTo', overrideAssignedTo)
       if (csvText.trim()) formData.set('csvText', csvText)
 
       const response = await fetch('/api/clients/import', {
@@ -195,6 +197,33 @@ export default function ClientBatchImportClient({ planners, importRuns }: { plan
               marginBottom: 14,
             }}
           />
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#98989d', marginBottom: 6 }}>Assign entire import to support planner (optional)</label>
+            <select
+              value={overrideAssignedTo}
+              onChange={(event) => setOverrideAssignedTo(event.target.value)}
+              style={{
+                width: '100%',
+                background: '#111113',
+                color: '#f5f5f7',
+                border: '1px solid #333336',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontSize: 13,
+              }}
+            >
+              <option value="">Use planner names from the sheet</option>
+              {planners.map((planner) => (
+                <option key={planner.id} value={planner.id}>
+                  {planner.full_name || planner.id}
+                </option>
+              ))}
+            </select>
+            <div style={{ marginTop: 8, fontSize: 12, color: '#98989d', lineHeight: 1.5 }}>
+              If selected, this overrides <code>assigned_to_name</code> in the sheet and assigns every imported valid row to that planner.
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => submit('validate')} disabled={busy}>
               {busy ? 'Working…' : 'Validate only'}

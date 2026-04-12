@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
   let csvText = ''
   let mode: Mode = 'validate'
   let sourceFileName: string | null = null
+  let overrideAssignedTo: string | null = null
 
   const contentType = req.headers.get('content-type') ?? ''
 
@@ -65,9 +66,13 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file')
     const pastedText = formData.get('csvText')
     const sourceFileNameValue = formData.get('sourceFileName')
+    const overrideAssignedToValue = formData.get('overrideAssignedTo')
 
     if (typeof sourceFileNameValue === 'string' && sourceFileNameValue.trim()) {
       sourceFileName = sourceFileNameValue.trim()
+    }
+    if (typeof overrideAssignedToValue === 'string' && overrideAssignedToValue.trim()) {
+      overrideAssignedTo = overrideAssignedToValue.trim()
     }
 
     if (file instanceof File && file.size > 0) {
@@ -164,7 +169,11 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const payload = parseResult.normalizedRows.map(buildClientInsertPayload)
+  const plannerOverride = overrideAssignedTo && (planners ?? []).some(planner => planner.id === overrideAssignedTo)
+    ? overrideAssignedTo
+    : null
+
+  const payload = parseResult.normalizedRows.map(row => buildClientInsertPayload(plannerOverride ? { ...row, assigned_to: plannerOverride } : row))
 
   if (allErrors.length > 0 && payload.length === 0) {
     await supabase.from('client_import_runs').insert({ ...importRunBase, status: 'failed' })
