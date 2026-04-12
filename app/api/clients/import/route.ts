@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as XLSX from 'xlsx'
 import { canManageTeam } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import {
   buildClientInsertPayload,
   parseClientImportText,
+  parseDelimitedRowsToCsv,
 } from '@/lib/client-import'
 
 export const dynamic = 'force-dynamic'
@@ -31,16 +33,50 @@ async function getAuthorizedContext() {
   return { supabase, userId: authData.user.id }
 }
 
+function workbookToCsv(buffer: ArrayBuffer) {
+  const workbook = XLSX.read(Buffer.from(buffer), { type: 'buffer' })
+  const firstSheet = workbook.SheetNames[0]
+  if (!firstSheet) throw new Error('Workbook has no sheets.')
+  const worksheet = workbook.Sheets[firstSheet]
+  const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, raw: false, defval: '' }) as string[][]
+  if (!rows.length) return ''
+  const [headers, ...dataRows] = rows.map(row => row.map(cell => String(cell ?? '').trim()))
+  return parseDelimitedRowsToCsv(headers, dataRows)
+}
+
 export async function POST(req: NextRequest) {
   const auth = await getAuthorizedContext()
   if (auth.error) return auth.error
 
-  const body = await req.json().catch(() => null)
-  const csvText = typeof body?.csvText === 'string' ? body.csvText : ''
-  const mode: Mode = body?.mode === 'import' ? 'import' : 'validate'
+  let csvText = ''
+  let mode: Mode = 'validate'
+
+  const contentType = req.headers.get('content-type') ?? ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData()
+    mode = formData.get('mode') === 'import' ? 'import' : 'validate'
+    const file = formData.get('file')
+    const pastedText = formData.get('csvText')
+
+    if (file instanceof File && file.size > 0) {
+      const lowerName = file.name.toLowerCase()
+      if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+        csvText = workbookToCsv(await file.arrayBuffer())
+      } else {
+        csvText = await file.text()
+      }
+    } else if (typeof pastedText === 'string') {
+      csvText = pastedText
+    }
+  } else {
+    const body = await req.json().catch(() => null)
+    csvText = typeof body?.csvText === 'string' ? body.csvText : ''
+    mode = body?.mode === 'import' ? 'import' : 'validate'
+  }
 
   if (!csvText.trim()) {
-    return NextResponse.json({ error: 'CSV text is required.' }, { status: 400 })
+    return NextResponse.json({ error: 'Import file or CSV text is required.' }, { status: 400 })
   }
 
   const { supabase, userId } = auth

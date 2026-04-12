@@ -38,6 +38,7 @@ interface ValidationResponse {
 
 export default function ClientBatchImportClient({ planners }: { planners: Profile[] }) {
   const [csvText, setCsvText] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ValidationResponse | null>(null)
@@ -50,27 +51,36 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
   )
 
   async function readFile(file: File) {
-    const text = await file.text()
-    setCsvText(text)
+    setSelectedFile(file)
     setFileName(file.name)
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      const text = await file.text()
+      setCsvText(text)
+    } else {
+      setCsvText('')
+    }
     setResult(null)
     setServerError(null)
     setImportDone(false)
   }
 
   async function submit(mode: 'validate' | 'import') {
-    if (!csvText.trim()) {
-      setServerError('Choose a CSV file first.')
+    if (!selectedFile && !csvText.trim()) {
+      setServerError('Choose an import file first.')
       return
     }
 
     setBusy(true)
     setServerError(null)
     try {
+      const formData = new FormData()
+      formData.set('mode', mode)
+      if (selectedFile) formData.set('file', selectedFile)
+      if (csvText.trim()) formData.set('csvText', csvText)
+
       const response = await fetch('/api/clients/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csvText, mode }),
+        body: formData,
       })
       const data = await response.json()
       setResult(data)
@@ -101,7 +111,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px' }}>Batch import clients</h1>
           <p style={{ color: '#98989d', fontSize: 14, margin: 0, maxWidth: 700 }}>
-            First pass importer for the CaseSync client template. It validates the upload, resolves planner names to planner ids,
+            Excel-first importer for the CaseSync client template. It validates the upload, resolves planner names to planner ids,
             shows row-level issues, and only inserts after a successful dry run.
           </p>
         </div>
@@ -125,10 +135,10 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(300px, 0.8fr)', gap: 18 }}>
         <div style={{ background: '#1c1c1e', borderRadius: 14, border: '1px solid #2c2c2e', padding: 20 }}>
-          <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Upload CSV</h2>
+          <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Upload Excel or CSV</h2>
           <input
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             onChange={async (event) => {
               const file = event.target.files?.[0]
               if (file) await readFile(file)
@@ -178,7 +188,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
           <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Planner resolution seam</h2>
           <p style={{ color: '#98989d', fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
             Spreadsheet rows use <code>assigned_to_name</code>. The importer resolves that name against current supports planners.
-            Use <code>Unassigned</code> to leave assignment blank.
+            Exact full-name match works today; use <code>Unassigned</code> to leave assignment blank.
           </p>
           <div style={{ maxHeight: 220, overflow: 'auto', border: '1px solid #2c2c2e', borderRadius: 10, padding: 10, background: '#111113' }}>
             {plannerNames.length === 0 ? (

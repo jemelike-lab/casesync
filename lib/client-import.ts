@@ -553,3 +553,17 @@ export function parseClientImportText(csvText: string, planners: Pick<Profile, '
     normalizedRows: validated.normalizedRows,
   }
 }
+
+
+
+export function parseDelimitedRowsToCsv(headers: string[], dataRows: string[][]): string {
+  const escapeCell = (value: string) => {
+    if (/[",\n]/.test(value)) {
+      return '"' + value.replace(/"/g, '""') + '"'
+    }
+    return value
+  }
+
+  const allRows = [headers, ...dataRows]
+  return allRows.map(row => row.map(cell => escapeCell(String(cell ?? ''))).join(',')).join('\n')
+}
