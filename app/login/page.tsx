@@ -83,9 +83,15 @@ export default function LoginPage() {
       return
     }
 
+    const normalizedEmail = email.trim().toLowerCase()
+
     // Check rate limit before attempting login
     try {
-      const rateLimitRes = await fetch('/api/auth/rate-limit', { method: 'POST' })
+      const rateLimitRes = await fetch('/api/auth/rate-limit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      })
       if (rateLimitRes.status === 429) {
         const data = await rateLimitRes.json()
         const minutes = Math.ceil((data.retryAfter ?? 900) / 60)
@@ -97,7 +103,7 @@ export default function LoginPage() {
       // If rate limit check fails, proceed with login (fail open)
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
 
     if (error) {
       setError(error.message)

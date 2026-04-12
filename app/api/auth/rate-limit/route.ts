@@ -7,7 +7,16 @@ export async function POST(request: NextRequest) {
     request.headers.get('x-real-ip') ??
     '127.0.0.1'
 
-  const result = checkRateLimit(ip)
+  let email = ''
+  try {
+    const body = await request.json()
+    if (typeof body?.email === 'string') email = body.email.trim().toLowerCase()
+  } catch {
+    // ignore malformed body and fall back to IP-only bucket
+  }
+
+  const key = email ? `${ip}:${email}` : ip
+  const result = checkRateLimit(key)
 
   if (!result.allowed) {
     const retryAfterSeconds = Math.ceil((result.resetAt - Date.now()) / 1000)
