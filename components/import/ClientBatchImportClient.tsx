@@ -146,7 +146,7 @@ export default function ClientBatchImportClient({ planners, importRuns, mode = '
           </p>
         </div>
         <a
-          href={mode === 'planner' ? '/planner-clients-import-template.csv' : '/clients-import-template.csv'}
+          href={mode === 'planner' ? '/api/import-template/planner' : '/api/import-template/supervisor'}
           download
           style={{
             textDecoration: 'none',

@@ -373,7 +373,7 @@ function SupervisorOverviewStrip({
           <Link href="/clients/import" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid rgba(100,210,255,0.35)', borderRadius: 8, background: 'rgba(100,210,255,0.08)', fontWeight: 700 }}>
             ⬆ Import Clients →
           </Link>
-          <a href="/clients-import-template.csv" download style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid rgba(48,209,88,0.35)', borderRadius: 8, background: 'rgba(48,209,88,0.08)', fontWeight: 700 }}>
+          <a href="/api/import-template/supervisor" download style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid rgba(48,209,88,0.35)', borderRadius: 8, background: 'rgba(48,209,88,0.08)', fontWeight: 700 }}>
             🧾 Generate Template
           </a>
           <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
