@@ -142,11 +142,13 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  if (allErrors.length > 0) {
+  const payload = parseResult.normalizedRows.map(buildClientInsertPayload)
+
+  if (allErrors.length > 0 && payload.length === 0) {
     return NextResponse.json({
       mode,
       ok: false,
-      error: 'Resolve validation errors before importing.',
+      error: 'No valid rows are available to import. Resolve validation errors first.',
       summary: {
         totalRows: parseResult.rows.length,
         validRows: parseResult.normalizedRows.length,
@@ -163,7 +165,6 @@ export async function POST(req: NextRequest) {
     }, { status: 400 })
   }
 
-  const payload = parseResult.normalizedRows.map(buildClientInsertPayload)
   if (payload.length === 0) {
     return NextResponse.json({ error: 'No valid rows to import.' }, { status: 400 })
   }

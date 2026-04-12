@@ -105,7 +105,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
     }
   }
 
-  const canImport = Boolean(result?.ok && (result.summary.validRows ?? 0) > 0 && !importDone)
+  const canImport = Boolean(result && (result.summary.validRows ?? 0) > 0 && !importDone)
 
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', paddingBottom: 80 }}>
@@ -183,7 +183,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
               {busy ? 'Working…' : 'Validate only'}
             </button>
             <button className="btn-primary" onClick={() => submit('import')} disabled={busy || !canImport}>
-              {busy ? 'Importing…' : 'Import valid rows'}
+              {busy ? 'Importing…' : `Import valid rows${result && (result.summary.validRows ?? 0) > 0 ? ` (${result.summary.validRows})` : ''}`}
             </button>
             {result?.issueReportHref && (
               <a
@@ -205,7 +205,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
             )}
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: '#98989d', lineHeight: 1.6 }}>
-            Import stays non-destructive: it inserts new clients only, rejects duplicate client IDs, and never updates existing clients.
+            Import stays non-destructive: it inserts new clients only, rejects duplicate client IDs, never updates existing clients, and can import valid rows while skipping bad ones.
           </div>
           {serverError && (
             <div style={{ marginTop: 14, fontSize: 13, color: '#ff453a' }}>{serverError}</div>
