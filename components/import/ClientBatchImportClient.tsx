@@ -10,6 +10,11 @@ interface ImportIssue {
   message: string
 }
 
+interface PlannerSuggestion {
+  rowNumber: number
+  message: string
+}
+
 interface ValidationRow {
   rowNumber: number
   client_id: string
@@ -18,6 +23,7 @@ interface ValidationRow {
   category: string
   assigned_to_name: string | null
   assigned_to: string | null
+  assigned_to_resolution?: string
 }
 
 interface ValidationResponse {
@@ -26,13 +32,17 @@ interface ValidationResponse {
     totalRows: number
     validRows?: number
     importedRows?: number
+    skippedRows?: number
     errorCount?: number
     warningCount: number
   }
   errors?: ImportIssue[]
   warnings?: ImportIssue[]
+  plannerSuggestions?: PlannerSuggestion[]
   rows?: ValidationRow[]
   inserted?: Array<{ id: string; client_id: string }>
+  issueReportHref?: string
+  issueReportFileName?: string
   error?: string
 }
 
@@ -175,6 +185,24 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
             <button className="btn-primary" onClick={() => submit('import')} disabled={busy || !canImport}>
               {busy ? 'Importing…' : 'Import valid rows'}
             </button>
+            {result?.issueReportHref && (
+              <a
+                href={result.issueReportHref}
+                download={result.issueReportFileName ?? 'client-import-issues.csv'}
+                style={{
+                  textDecoration: 'none',
+                  background: '#2c2c2e',
+                  border: '1px solid #3a3a3c',
+                  borderRadius: 10,
+                  color: '#f5f5f7',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: '10px 14px',
+                }}
+              >
+                Download issue report
+              </a>
+            )}
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: '#98989d', lineHeight: 1.6 }}>
             Import stays non-destructive: it inserts new clients only, rejects duplicate client IDs, and never updates existing clients.
@@ -188,7 +216,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
           <h2 style={{ fontSize: 16, margin: '0 0 12px' }}>Planner resolution seam</h2>
           <p style={{ color: '#98989d', fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
             Spreadsheet rows use <code>assigned_to_name</code>. The importer resolves that name against current supports planners.
-            Exact full-name match works today; use <code>Unassigned</code> to leave assignment blank.
+            Exact match is preferred; normalized matching and suggestions now help catch messy spreadsheet names.
           </p>
           <div style={{ maxHeight: 220, overflow: 'auto', border: '1px solid #2c2c2e', borderRadius: 10, padding: 10, background: '#111113' }}>
             {plannerNames.length === 0 ? (
@@ -206,6 +234,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
             <SummaryPill label="Rows" value={result.summary.totalRows} />
             {'validRows' in result.summary && <SummaryPill label="Valid" value={result.summary.validRows ?? 0} />}
+            {'skippedRows' in result.summary && <SummaryPill label="Skipped" value={result.summary.skippedRows ?? 0} tone="warn" />}
             {'importedRows' in result.summary && <SummaryPill label="Imported" value={result.summary.importedRows ?? 0} />}
             <SummaryPill label="Errors" value={result.summary.errorCount ?? 0} tone="danger" />
             <SummaryPill label="Warnings" value={result.summary.warningCount} tone="warn" />
@@ -214,6 +243,20 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
           {importDone && (
             <div style={{ fontSize: 13, color: '#30d158', marginBottom: 14 }}>
               Import complete. Inserted {result.summary.importedRows ?? 0} new clients.
+            </div>
+          )}
+
+          {!!result.plannerSuggestions?.length && (
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, marginBottom: 10 }}>Planner suggestions</h3>
+              <div style={{ border: '1px solid #2c2c2e', borderRadius: 10, overflow: 'hidden' }}>
+                {result.plannerSuggestions.map((suggestion, index) => (
+                  <div key={`${suggestion.rowNumber}-${index}`} style={{ padding: '10px 12px', borderBottom: index === result.plannerSuggestions!.length - 1 ? 'none' : '1px solid #1d1d1f', fontSize: 13 }}>
+                    <span style={{ color: '#98989d', marginRight: 8 }}>Row {suggestion.rowNumber}</span>
+                    <span style={{ color: '#f5f5f7' }}>{suggestion.message}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -236,6 +279,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
                       <th style={thStyle}>Name</th>
                       <th style={thStyle}>Category</th>
                       <th style={thStyle}>Planner</th>
+                      <th style={thStyle}>Resolution</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -246,6 +290,7 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
                         <td style={tdStyle}>{[row.first_name, row.last_name].filter(Boolean).join(' ')}</td>
                         <td style={tdStyle}>{String(row.category).toUpperCase()}</td>
                         <td style={tdStyle}>{row.assigned_to_name ?? 'Unassigned'}</td>
+                        <td style={tdStyle}>{formatResolution(row.assigned_to_resolution)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -257,6 +302,11 @@ export default function ClientBatchImportClient({ planners }: { planners: Profil
       )}
     </div>
   )
+}
+
+function formatResolution(value?: string) {
+  if (!value) return '—'
+  return value.replace(/-/g, ' ')
 }
 
 function SummaryPill({ label, value, tone }: { label: string; value: number; tone?: 'danger' | 'warn' }) {

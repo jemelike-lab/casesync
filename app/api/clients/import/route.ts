@@ -4,6 +4,7 @@ import { canManageTeam } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import {
   buildClientInsertPayload,
+  buildImportIssueCsv,
   parseClientImportText,
   parseDelimitedRowsToCsv,
 } from '@/lib/client-import'
@@ -42,6 +43,10 @@ function workbookToCsv(buffer: ArrayBuffer) {
   if (!rows.length) return ''
   const [headers, ...dataRows] = rows.map(row => row.map(cell => String(cell ?? '').trim()))
   return parseDelimitedRowsToCsv(headers, dataRows)
+}
+
+function issueDownloadHref(csvText: string) {
+  return `data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`
 }
 
 export async function POST(req: NextRequest) {
@@ -102,6 +107,11 @@ export async function POST(req: NextRequest) {
   )
 
   const allErrors = [...parseResult.parseErrors, ...parseResult.validationErrors]
+  const issueCsv = buildImportIssueCsv([...allErrors, ...parseResult.warnings])
+  const plannerSuggestions = parseResult.validationErrors
+    .filter(issue => issue.column === 'assigned_to_name')
+    .map(issue => ({ rowNumber: issue.rowNumber, message: issue.message }))
+
   if (mode === 'validate') {
     return NextResponse.json({
       mode,
@@ -109,11 +119,16 @@ export async function POST(req: NextRequest) {
       summary: {
         totalRows: parseResult.rows.length,
         validRows: parseResult.normalizedRows.length,
+        skippedRows: parseResult.rows.length - parseResult.normalizedRows.length,
         errorCount: allErrors.length,
         warningCount: parseResult.warnings.length,
       },
       errors: allErrors,
       warnings: parseResult.warnings,
+      plannerSuggestions,
+      issueReportCsv: issueCsv,
+      issueReportFileName: 'client-import-issues.csv',
+      issueReportHref: issueDownloadHref(issueCsv),
       rows: parseResult.normalizedRows.map(row => ({
         rowNumber: row.rowNumber,
         client_id: row.client_id,
@@ -122,6 +137,7 @@ export async function POST(req: NextRequest) {
         category: row.category,
         assigned_to_name: row.assigned_to_name,
         assigned_to: row.assigned_to,
+        assigned_to_resolution: row.assigned_to_resolution,
       })),
     })
   }
@@ -134,11 +150,16 @@ export async function POST(req: NextRequest) {
       summary: {
         totalRows: parseResult.rows.length,
         validRows: parseResult.normalizedRows.length,
+        skippedRows: parseResult.rows.length - parseResult.normalizedRows.length,
         errorCount: allErrors.length,
         warningCount: parseResult.warnings.length,
       },
       errors: allErrors,
       warnings: parseResult.warnings,
+      plannerSuggestions,
+      issueReportCsv: issueCsv,
+      issueReportFileName: 'client-import-issues.csv',
+      issueReportHref: issueDownloadHref(issueCsv),
     }, { status: 400 })
   }
 
@@ -174,10 +195,17 @@ export async function POST(req: NextRequest) {
     ok: true,
     summary: {
       totalRows: parseResult.rows.length,
+      validRows: parseResult.normalizedRows.length,
       importedRows: insertedRows?.length ?? 0,
+      skippedRows: parseResult.rows.length - (insertedRows?.length ?? 0),
+      errorCount: 0,
       warningCount: parseResult.warnings.length,
     },
     warnings: parseResult.warnings,
+    plannerSuggestions,
+    issueReportCsv: issueCsv,
+    issueReportFileName: 'client-import-issues.csv',
+    issueReportHref: issueDownloadHref(issueCsv),
     inserted: insertedRows ?? [],
   })
 }

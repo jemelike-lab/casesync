@@ -108,12 +108,18 @@ export interface ClientImportParsedRow {
   raw: Record<string, string>
 }
 
+export interface ClientImportPlannerSuggestion {
+  id: string
+  full_name: string | null
+}
+
 export interface ClientImportPlannerMatch {
   matched: boolean
   plannerId: string | null
   plannerName: string | null
-  mode: 'blank' | 'exact' | 'unassigned' | 'missing' | 'ambiguous'
-  matches?: Array<{ id: string; full_name: string | null }>
+  mode: 'blank' | 'exact' | 'exact-normalized' | 'suggested' | 'unassigned' | 'missing' | 'ambiguous'
+  matches?: ClientImportPlannerSuggestion[]
+  suggestions?: ClientImportPlannerSuggestion[]
 }
 
 export interface ClientImportNormalizedRow {
@@ -126,6 +132,8 @@ export interface ClientImportNormalizedRow {
   eligibility_end_date: string | null
   assigned_to: string | null
   assigned_to_name: string | null
+  assigned_to_resolution: ClientImportPlannerMatch['mode']
+  assigned_to_suggestions?: ClientImportPlannerSuggestion[]
   last_contact_date: string | null
   last_contact_type: string | null
   three_month_visit_date: string | null
@@ -262,6 +270,30 @@ function normalizeText(value: string | undefined): string | null {
   return trimmed === '' ? null : trimmed
 }
 
+function normalizeLooseText(value: string | undefined): string {
+  return (value ?? '').trim().replace(/\s+/g, ' ')
+}
+
+function normalizeComparableName(value: string | undefined): string {
+  return normalizeLooseText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function plannerSimilarityScore(input: string, candidate: string): number {
+  if (!input || !candidate) return 0
+  if (candidate === input) return 1
+  if (candidate.includes(input) || input.includes(candidate)) return 0.9
+
+  const inputParts = input.split(' ')
+  const candidateParts = candidate.split(' ')
+  const overlap = inputParts.filter(part => candidateParts.includes(part)).length
+  if (!overlap) return 0
+  return overlap / Math.max(inputParts.length, candidateParts.length)
+}
+
 function normalizeDate(value: string | undefined): { value: string | null; error?: string } {
   const trimmed = value?.trim() ?? ''
   if (!trimmed) return { value: null }
@@ -313,32 +345,72 @@ function normalizeClientClassification(value: string | undefined): { value: Clie
 export function resolvePlannerByName(name: string | null, planners: Pick<Profile, 'id' | 'full_name'>[]): ClientImportPlannerMatch {
   if (!name) return { matched: true, plannerId: null, plannerName: null, mode: 'blank' }
 
-  const normalized = name.trim().toLowerCase()
-  if (normalized === 'unassigned') {
+  const rawName = normalizeLooseText(name)
+  const normalized = rawName.toLowerCase()
+  const comparable = normalizeComparableName(rawName)
+
+  if (!normalized || normalized === 'unassigned') {
     return { matched: true, plannerId: null, plannerName: 'Unassigned', mode: 'unassigned' }
   }
 
-  const matches = planners.filter(planner => (planner.full_name ?? '').trim().toLowerCase() === normalized)
-  if (matches.length === 1) {
+  const exactMatches = planners.filter(planner => normalizeLooseText(planner.full_name ?? '').toLowerCase() === normalized)
+  if (exactMatches.length === 1) {
     return {
       matched: true,
-      plannerId: matches[0].id,
-      plannerName: matches[0].full_name,
+      plannerId: exactMatches[0].id,
+      plannerName: exactMatches[0].full_name,
       mode: 'exact',
     }
   }
 
-  if (matches.length > 1) {
+  if (exactMatches.length > 1) {
     return {
       matched: false,
       plannerId: null,
       plannerName: null,
       mode: 'ambiguous',
-      matches: matches.map(({ id, full_name }) => ({ id, full_name })),
+      matches: exactMatches.map(({ id, full_name }) => ({ id, full_name })),
     }
   }
 
-  return { matched: false, plannerId: null, plannerName: null, mode: 'missing' }
+  const normalizedMatches = planners.filter(planner => normalizeComparableName(planner.full_name ?? '') === comparable)
+  if (normalizedMatches.length === 1) {
+    return {
+      matched: true,
+      plannerId: normalizedMatches[0].id,
+      plannerName: normalizedMatches[0].full_name,
+      mode: 'exact-normalized',
+    }
+  }
+
+  if (normalizedMatches.length > 1) {
+    return {
+      matched: false,
+      plannerId: null,
+      plannerName: null,
+      mode: 'ambiguous',
+      matches: normalizedMatches.map(({ id, full_name }) => ({ id, full_name })),
+    }
+  }
+
+  const suggestions = planners
+    .map((planner) => ({
+      id: planner.id,
+      full_name: planner.full_name,
+      score: plannerSimilarityScore(comparable, normalizeComparableName(planner.full_name ?? '')),
+    }))
+    .filter(planner => planner.score >= 0.5)
+    .sort((a, b) => b.score - a.score || String(a.full_name).localeCompare(String(b.full_name)))
+    .slice(0, 3)
+    .map(({ id, full_name }) => ({ id, full_name }))
+
+  return {
+    matched: false,
+    plannerId: null,
+    plannerName: null,
+    mode: suggestions.length ? 'suggested' : 'missing',
+    suggestions,
+  }
 }
 
 export function validateClientImportRows(
@@ -372,13 +444,13 @@ export function validateClientImportRows(
       errors.push({ rowNumber: row.rowNumber, column: 'category', message: category.error })
     }
 
-    const normalizedClientId = clientId?.toLowerCase() ?? null
+    const normalizedClientId = clientId?.toLowerCase() ?? ''
     if (normalizedClientId) {
       if (seenClientIds.has(normalizedClientId)) {
         errors.push({
           rowNumber: row.rowNumber,
           column: 'client_id',
-          message: `Duplicate client_id in file (also row ${seenClientIds.get(normalizedClientId)})`,
+          message: `Duplicate client_id in file (first seen on row ${seenClientIds.get(normalizedClientId)})`,
         })
       } else {
         seenClientIds.set(normalizedClientId, row.rowNumber)
@@ -389,23 +461,49 @@ export function validateClientImportRows(
       }
     }
 
-    const fieldDateValues: Record<string, string | null> = {}
-    for (const field of DATE_FIELDS) {
-      const normalizedDate = normalizeDate(raw[field])
-      if (normalizedDate.error) {
-        errors.push({ rowNumber: row.rowNumber, column: field, message: normalizedDate.error })
+    const plannerMatch = resolvePlannerByName(normalizeText(raw.assigned_to_name), planners)
+    if (!plannerMatch.matched) {
+      if (plannerMatch.mode === 'ambiguous') {
+        errors.push({
+          rowNumber: row.rowNumber,
+          column: 'assigned_to_name',
+          message: `Planner name is ambiguous.${plannerMatch.matches?.length ? ` Matches: ${plannerMatch.matches.map(match => match.full_name).filter(Boolean).join(', ')}` : ''}`,
+        })
+      } else if (plannerMatch.mode === 'suggested' && plannerMatch.suggestions?.length) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          column: 'assigned_to_name',
+          message: `Planner not found. Did you mean: ${plannerMatch.suggestions.map(match => match.full_name).filter(Boolean).join(', ')}?`,
+        })
+      } else if (normalizeText(raw.assigned_to_name)) {
+        errors.push({ rowNumber: row.rowNumber, column: 'assigned_to_name', message: 'Planner name not found' })
       }
-      fieldDateValues[field] = normalizedDate.value
+    } else if (plannerMatch.mode === 'exact-normalized') {
+      warnings.push({
+        rowNumber: row.rowNumber,
+        column: 'assigned_to_name',
+        message: `Planner matched after normalizing spacing/punctuation: ${plannerMatch.plannerName}`,
+      })
     }
 
-    const spmCompleted = normalizeBoolean(raw.spm_completed)
-    if (spmCompleted.error) {
-      errors.push({ rowNumber: row.rowNumber, column: 'spm_completed', message: spmCompleted.error })
+    const dateValues = Object.fromEntries(
+      [...DATE_FIELDS].map((field) => {
+        const normalizedValue = normalizeDate(raw[field])
+        if (normalizedValue.error) {
+          errors.push({ rowNumber: row.rowNumber, column: field, message: normalizedValue.error })
+        }
+        return [field, normalizedValue.value]
+      }),
+    ) as Record<string, string | null>
+
+    const booleanSpmCompleted = normalizeBoolean(raw.spm_completed)
+    if (booleanSpmCompleted.error) {
+      errors.push({ rowNumber: row.rowNumber, column: 'spm_completed', message: booleanSpmCompleted.error })
     }
 
-    const scheduleDocs = normalizeBoolean(raw.schedule_docs)
-    if (scheduleDocs.error) {
-      errors.push({ rowNumber: row.rowNumber, column: 'schedule_docs', message: scheduleDocs.error })
+    const booleanScheduleDocs = normalizeBoolean(raw.schedule_docs)
+    if (booleanScheduleDocs.error) {
+      errors.push({ rowNumber: row.rowNumber, column: 'schedule_docs', message: booleanScheduleDocs.error })
     }
 
     const goalPct = normalizeGoalPct(raw.goal_pct)
@@ -413,82 +511,71 @@ export function validateClientImportRows(
       errors.push({ rowNumber: row.rowNumber, column: 'goal_pct', message: goalPct.error })
     }
 
-    const clientClassification = normalizeClientClassification(raw.client_classification)
-    if (clientClassification.error) {
-      errors.push({ rowNumber: row.rowNumber, column: 'client_classification', message: clientClassification.error })
+    const classification = normalizeClientClassification(raw.client_classification)
+    if (classification.error) {
+      errors.push({ rowNumber: row.rowNumber, column: 'client_classification', message: classification.error })
     }
 
-    const plannerName = normalizeText(raw.assigned_to_name)
-    const plannerMatch = resolvePlannerByName(plannerName, planners)
-    if (!plannerMatch.matched) {
-      errors.push({
-        rowNumber: row.rowNumber,
-        column: 'assigned_to_name',
-        message: plannerMatch.mode === 'ambiguous'
-          ? `Planner name is ambiguous: ${plannerName}`
-          : `Planner not found: ${plannerName}`,
-      })
-    } else if (plannerMatch.mode === 'unassigned') {
-      warnings.push({ rowNumber: row.rowNumber, column: 'assigned_to_name', message: 'Client will be imported as unassigned' })
+    for (const field of TEXT_FIELDS) {
+      const value = normalizeText(raw[field])
+      if (value && /\s{2,}/.test(value)) {
+        warnings.push({ rowNumber: row.rowNumber, column: field, message: 'Value contains extra internal spacing; saved as entered.' })
+      }
     }
 
-    const rowHasError = errors.some(error => error.rowNumber === row.rowNumber)
-    if (rowHasError || !clientId || !lastName || !category.value) continue
+    if (errors.some(error => error.rowNumber === row.rowNumber)) {
+      continue
+    }
 
-    const unknownHeaders = Object.keys(raw).filter(header => !CLIENT_IMPORT_HEADERS.includes(header as ClientImportHeader))
-    unknownHeaders.forEach(header => {
-      warnings.push({ rowNumber: row.rowNumber, column: header, message: 'Unknown column will be ignored' })
-    })
-
-    const normalizedRow: ClientImportNormalizedRow = {
+    normalizedRows.push({
       rowNumber: row.rowNumber,
-      client_id: clientId,
+      client_id: clientId!,
       first_name: firstName,
-      last_name: lastName,
-      category: category.value,
+      last_name: lastName!,
+      category: category.value!,
       eligibility_code: normalizeText(raw.eligibility_code),
-      eligibility_end_date: fieldDateValues.eligibility_end_date,
+      eligibility_end_date: dateValues.eligibility_end_date,
       assigned_to: plannerMatch.plannerId,
-      assigned_to_name: plannerName,
-      last_contact_date: fieldDateValues.last_contact_date,
+      assigned_to_name: plannerMatch.plannerName,
+      assigned_to_resolution: plannerMatch.mode,
+      assigned_to_suggestions: plannerMatch.suggestions,
+      last_contact_date: dateValues.last_contact_date,
       last_contact_type: normalizeText(raw.last_contact_type),
-      three_month_visit_date: fieldDateValues.three_month_visit_date,
-      three_month_visit_due: fieldDateValues.three_month_visit_due,
-      quarterly_waiver_date: fieldDateValues.quarterly_waiver_date,
-      drop_in_visit_date: fieldDateValues.drop_in_visit_date,
-      poc_date: fieldDateValues.poc_date,
-      loc_date: fieldDateValues.loc_date,
-      med_tech_redet_date: fieldDateValues.med_tech_redet_date,
+      three_month_visit_date: dateValues.three_month_visit_date,
+      three_month_visit_due: dateValues.three_month_visit_due,
+      quarterly_waiver_date: dateValues.quarterly_waiver_date,
+      drop_in_visit_date: dateValues.drop_in_visit_date,
+      poc_date: dateValues.poc_date,
+      loc_date: dateValues.loc_date,
+      med_tech_redet_date: dateValues.med_tech_redet_date,
       med_tech_status: normalizeText(raw.med_tech_status),
-      pos_deadline: fieldDateValues.pos_deadline,
+      pos_deadline: dateValues.pos_deadline,
       pos_status: normalizeText(raw.pos_status),
-      assessment_due: fieldDateValues.assessment_due,
-      spm_completed: spmCompleted.value,
-      spm_next_due: fieldDateValues.spm_next_due,
+      assessment_due: dateValues.assessment_due,
+      spm_completed: booleanSpmCompleted.value,
+      spm_next_due: dateValues.spm_next_due,
       foc: normalizeText(raw.foc),
       provider_forms: normalizeText(raw.provider_forms),
       signatures_needed: normalizeText(raw.signatures_needed),
-      schedule_docs: scheduleDocs.value,
+      schedule_docs: booleanScheduleDocs.value,
       atp: normalizeText(raw.atp),
       snfs: normalizeText(raw.snfs),
       lease: normalizeText(raw.lease),
       reportable_events: normalizeText(raw.reportable_events),
       appeals: normalizeText(raw.appeals),
-      thirty_day_letter_date: fieldDateValues.thirty_day_letter_date,
-      co_financial_redet_date: fieldDateValues.co_financial_redet_date,
-      co_app_date: fieldDateValues.co_app_date,
+      thirty_day_letter_date: dateValues.thirty_day_letter_date,
+      co_financial_redet_date: dateValues.co_financial_redet_date,
+      co_app_date: dateValues.co_app_date,
       request_letter: normalizeText(raw.request_letter),
-      mfp_consent_date: fieldDateValues.mfp_consent_date,
-      two57_date: fieldDateValues.two57_date,
-      doc_mdh_date: fieldDateValues.doc_mdh_date,
+      mfp_consent_date: dateValues.mfp_consent_date,
+      two57_date: dateValues.two57_date,
+      doc_mdh_date: dateValues.doc_mdh_date,
       audit_review: normalizeText(raw.audit_review),
       qa_review: normalizeText(raw.qa_review),
       goal_pct: goalPct.value,
-      client_classification: clientClassification.value,
+      client_classification: classification.value,
       notes: normalizeText(raw.notes),
-    }
-
-    normalizedRows.push(normalizedRow)
+    })
   }
 
   return { normalizedRows, errors, warnings }
@@ -554,11 +641,9 @@ export function parseClientImportText(csvText: string, planners: Pick<Profile, '
   }
 }
 
-
-
 export function parseDelimitedRowsToCsv(headers: string[], dataRows: string[][]): string {
   const escapeCell = (value: string) => {
-    if (/[",\n]/.test(value)) {
+    if (/[\",\n]/.test(value)) {
       return '"' + value.replace(/"/g, '""') + '"'
     }
     return value
@@ -566,4 +651,11 @@ export function parseDelimitedRowsToCsv(headers: string[], dataRows: string[][])
 
   const allRows = [headers, ...dataRows]
   return allRows.map(row => row.map(cell => escapeCell(String(cell ?? ''))).join(',')).join('\n')
+}
+
+export function buildImportIssueCsv(issues: ClientImportError[]): string {
+  return parseDelimitedRowsToCsv(
+    ['row_number', 'column', 'message'],
+    issues.map(issue => [String(issue.rowNumber), issue.column ?? '', issue.message]),
+  )
 }
