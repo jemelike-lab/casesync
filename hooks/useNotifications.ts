@@ -16,6 +16,7 @@ export interface Notification {
 export function useNotifications(userId: string | null) {
   const supabase = createClient()
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [archivedNotifications, setArchivedNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
   async function fetchNotifications() {
@@ -29,6 +30,14 @@ export function useNotifications(userId: string | null) {
       .order('created_at', { ascending: false })
       .limit(50)
 
+    const { data: readData } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('read', true)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
     const { count } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
@@ -36,7 +45,9 @@ export function useNotifications(userId: string | null) {
       .eq('read', false)
 
     const notifs = (unreadData as Notification[]) ?? []
+    const archived = (readData as Notification[]) ?? []
     setNotifications(notifs)
+    setArchivedNotifications(archived)
     setUnreadCount(count ?? notifs.length)
   }
 
@@ -47,13 +58,22 @@ export function useNotifications(userId: string | null) {
       .update({ read: true })
       .eq('user_id', userId)
       .eq('read', false)
+    setArchivedNotifications(prev => [...notifications.map(n => ({ ...n, read: true })), ...prev])
     setNotifications([])
     setUnreadCount(0)
   }
 
   async function markRead(id: string) {
+    let movedNotification: Notification | null = null
+    setNotifications(prev => {
+      const match = prev.find(n => n.id === id) ?? null
+      movedNotification = match ? { ...match, read: true } : null
+      return prev.filter(n => n.id !== id)
+    })
+    if (movedNotification) {
+      setArchivedNotifications(prev => [movedNotification!, ...prev])
+    }
     await supabase.from('notifications').update({ read: true }).eq('id', id)
-    setNotifications(prev => prev.filter(n => n.id !== id))
     setUnreadCount(prev => Math.max(0, prev - 1))
   }
 
@@ -78,5 +98,5 @@ export function useNotifications(userId: string | null) {
     return () => { supabase.removeChannel(channel) }
   }, [userId, supabase])
 
-  return { notifications, unreadCount, markAllRead, markRead, refetch: fetchNotifications }
+  return { notifications, archivedNotifications, unreadCount, markAllRead, markRead, refetch: fetchNotifications }
 }

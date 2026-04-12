@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Profile } from '@/lib/types'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -35,7 +36,12 @@ function resolveNotificationLink(link: string | null, title: string, body: strin
 
 export default function NotificationsPageClient({ userId, profile }: Props) {
   const router = useRouter()
-  const { notifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
+  const { notifications, archivedNotifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
+  const [activeTab, setActiveTab] = useState<'inbox' | 'archive'>('inbox')
+  const visibleNotifications = useMemo(
+    () => activeTab === 'inbox' ? notifications : archivedNotifications,
+    [activeTab, notifications, archivedNotifications]
+  )
 
   async function handleOpen(id: string, link: string | null, title: string, body: string | null) {
     await markRead(id)
@@ -55,7 +61,9 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
           </div>
           <h1 style={{ margin: 0, fontSize: 28, lineHeight: 1.1 }}>Notifications</h1>
           <div style={{ marginTop: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
-            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+            {activeTab === 'inbox'
+              ? (unreadCount > 0 ? `${unreadCount} unread` : 'All caught up')
+              : `${archivedNotifications.length} read`}
             {profile?.full_name ? ` · ${profile.full_name}` : ''}
           </div>
         </div>
@@ -70,13 +78,30 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
         )}
       </div>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button
+          onClick={() => setActiveTab('inbox')}
+          className={activeTab === 'inbox' ? 'btn-primary' : 'btn-secondary'}
+          style={{ minWidth: 110 }}
+        >
+          Inbox {unreadCount > 0 ? `(${unreadCount})` : ''}
+        </button>
+        <button
+          onClick={() => setActiveTab('archive')}
+          className={activeTab === 'archive' ? 'btn-primary' : 'btn-secondary'}
+          style={{ minWidth: 110 }}
+        >
+          Archive {archivedNotifications.length > 0 ? `(${archivedNotifications.length})` : ''}
+        </button>
+      </div>
+
       <div style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'var(--surface)' }}>
-        {notifications.length === 0 ? (
+        {visibleNotifications.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-            No notifications yet.
+            {activeTab === 'inbox' ? 'No unread notifications.' : 'No archived notifications yet.'}
           </div>
         ) : (
-          notifications.map((notification) => {
+          visibleNotifications.map((notification) => {
             const resolvedLink = resolveNotificationLink(notification.link, notification.title, notification.body)
             return (
               <button
