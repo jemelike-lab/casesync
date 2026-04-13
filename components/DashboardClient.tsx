@@ -1551,7 +1551,12 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
           <>
             <Link href="/clients/import" style={{ textDecoration: 'none' }}>
               <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }}>
-                ⬆ Import Clients
+                ⬆ Batch Import
+              </button>
+            </Link>
+            <Link href="/clients/import" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary" style={{ fontSize: 12, minHeight: 36 }}>
+                📋 Import History
               </button>
             </Link>
             <Link href="/clients/new" style={{ textDecoration: 'none' }}>
