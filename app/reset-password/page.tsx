@@ -28,13 +28,37 @@ export default function ResetPasswordPage() {
     async function bootstrapRecoverySession() {
       const hash = typeof window !== 'undefined' ? window.location.hash : ''
       const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+      const query = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
       const accessToken = params.get('access_token')
       const refreshToken = params.get('refresh_token')
-      const type = params.get('type')
+      const type = params.get('type') ?? query.get('type')
+      const code = query.get('code')
 
       if (!supabase) {
         if (active) {
           setError('CaseSync is temporarily unavailable. Missing client configuration.')
+          setReady(true)
+        }
+        return
+      }
+
+      if (type === 'recovery' && code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (exchangeError) {
+          if (active) {
+            setError(exchangeError.message)
+            setReady(true)
+          }
+          return
+        }
+
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, document.title, '/reset-password')
+        }
+
+        if (active) {
+          setValidSession(true)
           setReady(true)
         }
         return
