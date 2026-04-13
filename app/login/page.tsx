@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  const [showRecoveryAction, setShowRecoveryAction] = useState(false)
   const router = useRouter()
   const supabase = useMemo(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
@@ -75,6 +76,8 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     setMessage(null)
+    setShowRecoveryAction(false)
+    setShowRecoveryAction(false)
     setLoading(true)
 
     if (!supabase) {
@@ -108,7 +111,8 @@ export default function LoginPage() {
     if (error) {
       const msg = (error.message || '').toLowerCase()
       if (msg.includes('email rate limit exceeded')) {
-        setError('Too many sign-in attempts for this email. Wait a bit, then use Forgot password for a fresh reset link instead of retrying sign-in.')
+        setError('Too many sign-in attempts for this email. Use the recovery action below for a fresh reset link instead of retrying sign-in.')
+        setShowRecoveryAction(true)
       } else {
         setError(error.message)
       }
@@ -148,6 +152,7 @@ export default function LoginPage() {
     const normalizedEmail = email.trim().toLowerCase()
     setError(null)
     setMessage(null)
+    setShowRecoveryAction(false)
 
     if (!normalizedEmail) {
       setError('Enter your email address first, then tap Forgot password.')
@@ -258,6 +263,26 @@ export default function LoginPage() {
             }}>
               {message}
             </div>
+          )}
+
+          {showRecoveryAction && (
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: 14,
+                borderRadius: 10,
+                border: '1px solid rgba(255, 159, 10, 0.35)',
+                background: 'rgba(255, 159, 10, 0.10)',
+                color: '#ffb340',
+                fontWeight: 700,
+              }}
+            >
+              {resetLoading ? 'Sending reset link…' : 'Send reset link now'}
+            </button>
           )}
 
           <button
