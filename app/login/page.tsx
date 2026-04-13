@@ -106,7 +106,12 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
 
     if (error) {
-      setError(error.message)
+      const msg = (error.message || '').toLowerCase()
+      if (msg.includes('email rate limit exceeded')) {
+        setError('Too many sign-in attempts for this email. Wait a bit, then use Forgot password for a fresh reset link instead of retrying sign-in.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
