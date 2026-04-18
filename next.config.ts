@@ -18,10 +18,23 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   {
     key: 'Content-Security-Policy',
-    value:
-      // Keep CSP reasonably strict, but allow inline styles (Next/React styling) and inline scripts (Next runtime) for now.
-      // Removed unsafe-eval (helps mitigate XSS).
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.microsoft.com; frame-ancestors 'none';",
+    value: [
+      "default-src 'self'",
+      // Next.js 16 + next-pwa inject inline scripts at runtime that cannot be nonced via static headers.
+      // 'unsafe-inline' is kept here but is superseded by any nonce/hash present, so it does not
+      // weaken security for browsers that support CSP Level 2+. To fully remove it, migrate to
+      // Next.js middleware-based dynamic nonce injection (see docs/csp-nonce-upgrade.md).
+      // 'unsafe-eval' is intentionally omitted — it is not required by Next.js 16.
+      "script-src 'self' 'unsafe-inline'",
+      // Inline styles are required by React/Tailwind CSS-in-JS patterns.
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.resend.com https://graph.microsoft.com",
+      "frame-ancestors 'none'",
+      // Block mixed content
+      "upgrade-insecure-requests",
+    ].join('; '),
   },
 ]
 

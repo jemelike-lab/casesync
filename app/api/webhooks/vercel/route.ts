@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { rateLimit } from '@/lib/rateLimit'
+import { rateLimit } from '@/lib/rate-limit'
 
 // Simple shared-secret auth:
 // - Vercel supports sending a secret via query param (?secret=...) or custom header.
