@@ -57,6 +57,7 @@ export async function GET(req: Request) {
     }
 
     const role = String(profile.role ?? '')
+    const qSafe = q.toLowerCase().replace(/[,()%_\\]/g, '')
     const qLower = q.toLowerCase()
 
     const admin = createSupabaseJsClient(
@@ -68,7 +69,7 @@ export async function GET(req: Request) {
       .from('clients')
       .select('id, client_id, last_name, first_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role, team_manager_id)')
       .eq('is_active', true)
-      .or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%`)
+      .or(`last_name.ilike.%${qSafe}%,first_name.ilike.%${qSafe}%,client_id.ilike.%${qSafe}%`)
       .order('last_name')
       .limit(limit)
 
@@ -87,7 +88,7 @@ export async function GET(req: Request) {
       admin
         .from('profiles')
         .select('id, full_name, role, team_manager_id')
-        .or(`full_name.ilike.%${q}%`)
+        .or(`full_name.ilike.%${qSafe}%`)
         .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it'] : ['supports_planner', 'team_manager', 'supervisor', 'it'])
         .order('full_name')
         .limit(limit),

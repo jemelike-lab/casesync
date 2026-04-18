@@ -89,10 +89,12 @@ export async function GET(req: Request) {
     }
 
     if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      query = query.or(
-        `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
-      )
+      const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
+      if (q) {
+        query = query.or(
+          `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
+        )
+      }
     }
 
     query = query.order('last_name')

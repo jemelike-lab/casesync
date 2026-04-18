@@ -1,6 +1,7 @@
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -797,9 +798,17 @@ export async function POST(req: NextRequest) {
   activeRequests++
 
   try {
-    const { messages, userId, clientId } = await req.json()
+    // Verify session — never trust userId from the request body
+    const serverSupabase = await createServerClient()
+    const { data: authData, error: authErr } = await serverSupabase.auth.getUser()
+    if (authErr || !authData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    }
+    const userId = authData.user.id
 
-    if (!userId || !messages) {
+    const { messages, clientId } = await req.json()
+
+    if (!messages) {
       return new Response('Missing required fields', { status: 400 })
     }
 

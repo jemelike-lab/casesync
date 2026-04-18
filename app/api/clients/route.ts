@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get('page') ?? '0', 10)
-    const limit = parseInt(searchParams.get('limit') ?? '20', 10)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '20', 10), 1), 100)
     const filter = searchParams.get('filter') ?? 'all'
     const search = searchParams.get('search') ?? ''
     const assignedTo = searchParams.get('assignedTo') ?? ''
@@ -176,12 +176,14 @@ export async function GET(req: NextRequest) {
       query = query.eq('category', 'cpas')
     }
 
-    // Search
+    // Search — sanitize input to prevent PostgREST filter injection
     if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      query = query.or(
-        `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
-      )
+      const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
+      if (q) {
+        query = query.or(
+          `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
+        )
+      }
     }
 
     // Sort

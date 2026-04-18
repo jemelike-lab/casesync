@@ -23,16 +23,16 @@ const DEADLINE_FIELDS = [
 const NOTIFY_DAYS = [1, 3, 7]
 
 export async function GET(request: Request) {
-  // Security: check for cron secret or internal call
+  // Security: require cron secret — fail closed if not configured
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
   const today = new Date()
