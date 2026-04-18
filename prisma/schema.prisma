@@ -1,0 +1,691 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("WORKRYN_DATABASE_URL")
+}
+
+
+model User {
+  id            String    @id @default(cuid())
+  supabaseId    String?   @unique
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("STAFF")
+  jobTitle      String?
+  phone         String?
+  bio           String?
+  avatarColor   String    @default("#6366f1")
+  mfaEnabled    Boolean   @default(false)
+  mfaSecret     String?
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+
+  assignedTasks Task[]     @relation("AssignedTasks")
+  createdTasks  Task[]     @relation("CreatedTasks")
+  auditLogs     AuditLog[]
+  tickets       Ticket[]   @relation("CreatedTickets")
+  assignedTickets Ticket[] @relation("AssignedTickets")
+  sentMessages      ChatMessage[]
+  notifications     Notification[]
+  shifts            Shift[]
+  messageReactions  MessageReaction[]
+  reminders         Reminder[]
+
+  // New relations
+  channelMemberships  ChannelMember[]
+  sentInvitations     Invitation[]  @relation("SentInvitations")
+  acceptedInvitation  Invitation[]  @relation("AcceptedInvitation")
+  dmParticipations    DirectConversationParticipant[]
+  directMessages      DirectMessage[]
+
+  // Tickets / Training / Evaluations
+  ticketMessages       TicketMessage[]      @relation("TicketMessageAuthor")
+  ticketInternalNotes  TicketInternalNote[] @relation("TicketNoteAuthor")
+  createdCourses       TrainingCourse[]     @relation("CreatedCourses")
+  lessonProgress       LessonProgress[]     @relation("LessonProgress")
+  quizAttempts         QuizAttempt[]        @relation("QuizAttempts")
+  trainingEnrollments  TrainingEnrollment[] @relation("TrainingEnrollments")
+  evaluationsReceived  Evaluation[]         @relation("AgentEvaluations")
+  evaluationsGiven     Evaluation[]         @relation("EvaluatorEvaluations")
+
+  // Department head
+  headedDepartment    Department?         @relation("DepartmentHead")
+
+  // Time tracking
+  timeEntries         TimeEntry[]         @relation("TimeEntryUser")
+  editedTimeEntries   TimeEntry[]         @relation("TimeEntryEditor")
+
+  // Notification preferences (1:1)
+  notificationPreference NotificationPreference?
+
+  @@map("w_user")
+}
+
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  color       String   @default("#6366f1")
+  icon        String   @default("building-2")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  headId      String?  @unique
+  head        User?    @relation("DepartmentHead", fields: [headId], references: [id])
+
+  users       User[]
+  tasks       Task[]
+  tickets     Ticket[]
+  shifts      Shift[]
+
+  @@map("w_department")
+}
+
+// ── Time tracking ──────────────────────────────────────────
+
+model TimeEntry {
+  id            String   @id @default(cuid())
+
+  userId        String
+  user          User     @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  clockInAt     DateTime
+  clockOutAt    DateTime?
+
+  totalMinutes   Int      @default(0)
+  breakMinutes   Int      @default(0)
+  workedMinutes  Int      @default(0)
+
+  status        String   @default("ACTIVE")
+  notes         String?
+
+  editedById    String?
+  editedBy      User?    @relation("TimeEntryEditor", fields: [editedById], references: [id])
+  editReason    String?
+
+  breaks        TimeBreak[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("w_time_entry")
+}
+
+model TimeBreak {
+  id              String   @id @default(cuid())
+
+  timeEntryId     String
+  timeEntry       TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+
+  startAt         DateTime
+  endAt           DateTime?
+
+  plannedMinutes  Int
+  actualMinutes   Int?
+  type            String   @default("LUNCH")
+
+  createdAt       DateTime @default(now())
+
+  @@map("w_time_break")
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  status       String    @default("TODO")
+  priority     String    @default("MEDIUM")
+  tags         String?
+  dueDate      DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignedToId String?
+  assignedTo   User?      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+  createdById  String
+  createdBy    User       @relation("CreatedTasks", fields: [createdById], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  comments     TaskComment[]
+
+  @@map("w_task")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  createdAt DateTime @default(now())
+
+  @@map("w_task_comment")
+}
+
+model Ticket {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  status       String   @default("OPEN")
+  priority     String   @default("MEDIUM")
+  category     String?
+  tags         String?
+
+  // Requester contact details (required for IT support tickets)
+  requesterFirstName String?
+  requesterLastName  String?
+  requesterEmail     String?
+  requesterPhone     String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  resolvedAt   DateTime?
+  archivedAt   DateTime?
+
+  createdById  String
+  createdBy    User       @relation("CreatedTickets", fields: [createdById], references: [id])
+
+  assignedToId String?
+  assignedTo   User?      @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  messages      TicketMessage[]
+  internalNotes TicketInternalNote[]
+
+  @@map("w_ticket")
+}
+
+model TicketMessage {
+  id           String   @id @default(cuid())
+  content      String
+  sentViaEmail Boolean  @default(false)
+  isFromAgent  Boolean  @default(false)
+
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId     String?
+  author       User?    @relation("TicketMessageAuthor", fields: [authorId], references: [id])
+
+  createdAt    DateTime @default(now())
+
+  @@map("w_ticket_message")
+}
+
+model TicketInternalNote {
+  id        String   @id @default(cuid())
+  content   String
+
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId  String
+  author    User     @relation("TicketNoteAuthor", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("w_ticket_internal_note")
+}
+
+// ── Training (LMS) ──────────────────────────────────────────
+
+model TrainingCourse {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  thumbnail     String?
+  category      String?
+  isRequired    Boolean  @default(false)
+  isPublished   Boolean  @default(false)
+  passThreshold Int      @default(70)
+
+  createdById   String
+  createdBy     User     @relation("CreatedCourses", fields: [createdById], references: [id])
+
+  lessons       TrainingLesson[]
+  quizzes       TrainingQuiz[]
+  enrollments   TrainingEnrollment[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("w_training_course")
+}
+
+model TrainingLesson {
+  id            String   @id @default(cuid())
+  title         String
+  content       String   @default("")
+  videoUrl      String?
+  videoFileName String?
+  durationSeconds Int?
+  order         Int      @default(0)
+
+  courseId      String
+  course        TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  progress      LessonProgress[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("w_training_lesson")
+}
+
+model LessonProgress {
+  id             String   @id @default(cuid())
+  completed      Boolean  @default(false)
+  watchedSeconds Int      @default(0)
+
+  lessonId       String
+  lesson         TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  userId         String
+  user           User     @relation("LessonProgress", fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt      DateTime @updatedAt
+
+  @@unique([lessonId, userId])
+
+  @@map("w_lesson_progress")
+}
+
+model TrainingQuiz {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  passThreshold Int      @default(70)
+
+  courseId      String
+  course        TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  questions     QuizQuestion[]
+  attempts      QuizAttempt[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("w_training_quiz")
+}
+
+model QuizQuestion {
+  id        String   @id @default(cuid())
+  text      String
+  type      String   @default("MULTIPLE_CHOICE")
+  order     Int      @default(0)
+  points    Int      @default(1)
+
+  quizId    String
+  quiz      TrainingQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  options   QuizOption[]
+
+  createdAt DateTime @default(now())
+
+  @@map("w_quiz_question")
+}
+
+model QuizOption {
+  id         String   @id @default(cuid())
+  text       String
+  isCorrect  Boolean  @default(false)
+  order      Int      @default(0)
+
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("w_quiz_option")
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  score       Int
+  passed      Boolean
+  answers     String
+
+  quizId      String
+  quiz        TrainingQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation("QuizAttempts", fields: [userId], references: [id], onDelete: Cascade)
+
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@map("w_quiz_attempt")
+}
+
+model TrainingEnrollment {
+  id          String   @id @default(cuid())
+  status      String   @default("IN_PROGRESS")
+  completedAt DateTime?
+
+  courseId    String
+  course      TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation("TrainingEnrollments", fields: [userId], references: [id], onDelete: Cascade)
+
+  enrolledAt  DateTime @default(now())
+
+  @@unique([courseId, userId])
+
+  @@map("w_training_enrollment")
+}
+
+// ── Evaluations ──────────────────────────────────────────────
+
+model EvaluationTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+
+  // Optional reference document (the form/PDF the team normally uses)
+  documentUrl  String?
+  documentName String?
+  documentSize Int?
+
+  criteria    EvaluationCriterion[]
+  evaluations Evaluation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("w_evaluation_template")
+}
+
+model EvaluationCriterion {
+  id          String   @id @default(cuid())
+  label       String
+  description String?
+  order       Int      @default(0)
+  maxScore    Int      @default(5)
+
+  templateId  String
+  template    EvaluationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  scores      EvaluationScore[]
+
+  @@map("w_evaluation_criterion")
+}
+
+model Evaluation {
+  id            String    @id @default(cuid())
+  overallRating Int?
+  comments      String?
+  isPrivate     Boolean   @default(false)
+
+  // Optional uploaded document (e.g. completed/scanned evaluation form)
+  documentUrl   String?
+  documentName  String?
+  documentSize  Int?
+
+  templateId    String
+  template      EvaluationTemplate @relation(fields: [templateId], references: [id])
+
+  agentId       String
+  agent         User      @relation("AgentEvaluations", fields: [agentId], references: [id])
+
+  evaluatorId   String
+  evaluator     User      @relation("EvaluatorEvaluations", fields: [evaluatorId], references: [id])
+
+  scores        EvaluationScore[]
+
+  acknowledgedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("w_evaluation")
+}
+
+model EvaluationScore {
+  id            String  @id @default(cuid())
+  score         Int
+  comment       String?
+
+  evaluationId  String
+  evaluation    Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  criterionId   String
+  criterion     EvaluationCriterion @relation(fields: [criterionId], references: [id])
+
+  @@map("w_evaluation_score")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String?
+  details      String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@map("w_audit_log")
+}
+
+model ChatChannel {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isGeneral   Boolean  @default(false)
+  visibility  String   @default("PUBLIC")
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  messages    ChatMessage[]
+  members     ChannelMember[]
+
+  @@map("w_chat_channel")
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  role      String   @default("MEMBER")
+  joinedAt  DateTime @default(now())
+
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+
+  @@map("w_channel_member")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  messageId String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+
+  @@map("w_message_reaction")
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  title       String
+  note        String?
+  dueAt       DateTime
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdById String
+
+  @@map("w_reminder")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  editedAt  DateTime?
+
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  authorId  String
+  author    User    @relation(fields: [authorId], references: [id])
+
+  reactions MessageReaction[]
+
+  @@map("w_chat_message")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  category  String   @default("SYSTEM")
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("w_notification")
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Per-category channel matrix (JSON):
+  // { "<categoryId>": { "inApp": bool, "email": bool, "push": bool 
+  @@map("w_notification_preference")
+} }
+  channels String @default("{}")
+
+  // Email digest frequency: "instant" | "daily" | "weekly" | "never"
+  emailDigest String @default("instant")
+
+  // Manual pause: pause everything except urgent/security
+  pauseAll Boolean @default(false)
+
+  // Do Not Disturb schedule
+  dndEnabled Boolean @default(false)
+  dndStart   String  @default("22:00") // HH:MM 24h
+  dndEnd     String  @default("08:00") // HH:MM 24h
+
+  // In-app feedback
+  playSound      Boolean @default(true)
+  desktopEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Shift {
+  id          String   @id @default(cuid())
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  notes       String?
+  color       String   @default("#6366f1")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User    @relation(fields: [userId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  @@map("w_shift")
+}
+
+// ── New Models ──
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String
+  token       String   @unique @default(cuid())
+  role        String   @default("STAFF")
+  departmentId String?
+  status      String   @default("PENDING")
+  expiresAt   DateTime
+  message     String?
+  createdAt   DateTime @default(now())
+
+  invitedById String
+  invitedBy   User     @relation("SentInvitations", fields: [invitedById], references: [id])
+
+  acceptedById String?
+  acceptedBy   User?   @relation("AcceptedInvitation", fields: [acceptedById], references: [id])
+
+  @@map("w_invitation")
+}
+
+model DirectConversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants DirectConversationParticipant[]
+  messages     DirectMessage[]
+
+  @@map("w_direct_conversation")
+}
+
+model DirectConversationParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User @relation(fields: [userId], references: [id])
+  joinedAt       DateTime @default(now())
+
+  @@unique([conversationId, userId])
+
+  @@map("w_direct_conversation_participant")
+}
+
+model DirectMessage {
+  id             String   @id @default(cuid())
+  content        String
+  createdAt      DateTime @default(now())
+  editedAt       DateTime?
+
+  conversationId String
+  conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  authorId       String
+  author         User @relation(fields: [authorId], references: [id])
+
+  @@map("w_direct_message")
+}

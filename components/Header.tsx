@@ -106,6 +106,26 @@ export default function Header({ user, profile }: Props) {
             )}
             <NavLink href="/settings/security" label="Settings" active={settingsActive} />
             <NavLink href="/help" label="📚 Help" active={helpActive} />
+            <Link
+              href="/w/dashboard"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#818cf8',
+                textDecoration: 'none',
+                padding: '6px 12px',
+                borderRadius: 6,
+                background: 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                transition: 'all 0.15s',
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
+            >
+              ⇄ Workryn
+            </Link>
           </nav>
         </div>
 
@@ -236,6 +256,7 @@ export default function Header({ user, profile }: Props) {
         )}
         <MobileNavItem href="/settings/security" icon="🔐" label="Prefs" active={settingsActive} />
         <MobileNavItem href="/help" icon="📚" label="Help" active={helpActive} />
+        <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} />
         {/* Mobile help button */}
         <button
           onClick={() => setShowTour(true)}
