@@ -826,44 +826,97 @@ export async function POST(req: NextRequest) {
     const userName = profile?.full_name ?? 'User'
     const userRole = profile?.role ?? 'unknown'
 
-    // BLH Bot uses org-wide CaseSync visibility so it can answer cross-team questions.
+    // --- Role-scoped data loading ---
+    // Supports planners only see their own clients.
+    // Team managers see their team's clients + planner stats for their team.
+    // Supervisors/IT see org-wide summary stats but NOT all individual client rows
+    //   (sending 5,000 client rows per request is a major cost/latency issue).
+    // In all cases, if a specific clientId is provided we fetch that one record.
     let allClients: Record<string, unknown>[] = []
     let plannerContext = ''
 
-    const { data: allClientData } = await supabase
-      .from('clients')
-      .select('*, profiles!clients_assigned_to_fkey(full_name)')
-      .order('last_name')
-    allClients = (allClientData as Record<string, unknown>[]) ?? []
+    const isPlannerRole = userRole === 'supports_planner'
+    const isManagerRole = userRole === 'team_manager'
+    const isSupervisorRole = isSupervisorLike(userRole)
 
-    const { data: planners } = await supabase
-      .from('profiles')
-      .select('id, full_name, team_manager_id')
-      .eq('role', 'supports_planner')
-      .order('full_name')
+    if (isPlannerRole) {
+      // Supports planner: load only their assigned clients
+      const { data: myClients } = await supabase
+        .from('clients')
+        .select('*, profiles!clients_assigned_to_fkey(full_name)')
+        .eq('assigned_to', userId)
+        .eq('is_active', true)
+        .order('last_name')
+      allClients = (myClients as Record<string, unknown>[]) ?? []
+      plannerContext = `You are assisting a Supports Planner with their own caseload of ${allClients.length} active clients.`
 
-    const plannerOpsSummary = getPlannerOpsSummary(allClients, (planners ?? []) as Record<string, unknown>[])
-    const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
+    } else if (isManagerRole) {
+      // Team manager: load their team's planners and those planners' clients
+      const { data: teamPlanners } = await supabase
+        .from('profiles')
+        .select('id, full_name, team_manager_id')
+        .eq('role', 'supports_planner')
+        .eq('team_manager_id', userId)
+        .order('full_name')
+      const teamPlannerIds = (teamPlanners ?? []).map((p: Record<string, unknown>) => p.id as string)
 
-    plannerContext = `BLH-wide visibility is enabled. Organization snapshot: ${allClients.length} clients across ${planners?.length ?? 0} Supports Planners. Planner coverage: ${plannerStats.join(', ')}
+      if (teamPlannerIds.length > 0) {
+        const { data: teamClients } = await supabase
+          .from('clients')
+          .select('*, profiles!clients_assigned_to_fkey(full_name)')
+          .in('assigned_to', teamPlannerIds)
+          .eq('is_active', true)
+          .order('last_name')
+        allClients = (teamClients as Record<string, unknown>[]) ?? []
+      }
+
+      const plannerOpsSummary = getPlannerOpsSummary(allClients, (teamPlanners ?? []) as Record<string, unknown>[])
+      const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
+      plannerContext = `Team Manager view: ${allClients.length} clients across ${teamPlanners?.length ?? 0} Supports Planners on your team. Planner coverage: ${plannerStats.join(', ')}
 
 ${formatPlannerOpsContext(plannerOpsSummary)}`
+
+    } else if (isSupervisorRole) {
+      // Supervisor/IT: load summary stats only — NOT individual rows.
+      // Full row loading of thousands of clients is too expensive per-request.
+      const { data: allPlanners } = await supabase
+        .from('profiles')
+        .select('id, full_name, team_manager_id')
+        .eq('role', 'supports_planner')
+        .order('full_name')
+
+      // Load clients but only the fields needed for ops snapshot (not full records)
+      const { data: summaryClients } = await supabase
+        .from('clients')
+        .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
+        .eq('is_active', true)
+      allClients = (summaryClients as Record<string, unknown>[]) ?? []
+
+      const plannerOpsSummary = getPlannerOpsSummary(allClients, (allPlanners ?? []) as Record<string, unknown>[])
+      const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
+      plannerContext = `Org-wide visibility. Organization snapshot: ${allClients.length} active clients across ${allPlanners?.length ?? 0} Supports Planners. Planner coverage: ${plannerStats.join(', ')}
+
+${formatPlannerOpsContext(plannerOpsSummary)}`
+    }
 
     const clientCount = allClients?.length ?? 0
 
     let clientContextStr = ''
 
     if (clientId) {
-      const { data: client } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', clientId)
-        .single()
+      // Always fetch the specific client when one is provided — but verify access
+      let clientQuery = supabase.from('clients').select('*').eq('id', clientId)
+      // For planners, enforce they can only ask about their own clients
+      if (isPlannerRole) {
+        clientQuery = clientQuery.eq('assigned_to', userId)
+      }
+      const { data: client } = await clientQuery.single()
 
       if (client) {
         clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\n${formatClientSummary(client as Record<string, unknown>)}\n=== END CLIENT CONTEXT ===`
       }
-    } else if (allClients && allClients.length > 0) {
+    } else if (allClients && allClients.length > 0 && (isPlannerRole || isManagerRole)) {
+      // Only send full client list rows for planner/manager — supervisor uses ops snapshot above
       const clientList = allClients.map((c: Record<string, unknown>) => {
         const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()
         const daysSince = getDaysSinceContact(c.last_contact_date as string | null)

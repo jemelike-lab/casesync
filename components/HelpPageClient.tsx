@@ -203,23 +203,37 @@ function renderMarkdown(md: string): string {
   return output.join('\n')
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 function inlineMarkdown(text: string): string {
+  // Escape HTML first to prevent XSS — then apply markdown transforms
+  text = escapeHtml(text)
   // Bold
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   // Italic
   text = text.replace(/\*(.+?)\*/g, '<em>$1</em>')
   // Inline code
   text = text.replace(/`([^`]+)`/g, '<code>$1</code>')
-  // Links
-  // - Internal anchors (#...) and internal routes (/...) should open in the same tab.
+  // Links — validate href to block javascript: and data: protocols
+  // - Internal anchors (#...) and internal routes (/...) open in the same tab.
   // - External links (http/https) open in a new tab.
   text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, href) => {
     const url = String(href)
+    // Block dangerous protocols
+    if (/^(javascript|data|vbscript):/i.test(url.trim())) {
+      return label
+    }
     const isAnchor = url.startsWith('#')
     const isInternal = isAnchor || url.startsWith('/')
 
     // Tag internal anchors so our click handler can smooth-scroll reliably.
-    // (Without this, some anchors may not jump depending on timing/layout.)
     if (isInternal) {
       return `<a href="${url}" class="help-link-internal">${label}</a>`
     }
