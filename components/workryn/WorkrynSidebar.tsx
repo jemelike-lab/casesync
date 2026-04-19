@@ -3,28 +3,28 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  LayoutDashboard, Clock, CheckSquare, Ticket, ClipboardCheck,
-  Calendar, GraduationCap, Settings, LogOut, Building2, Users,
+  LayoutGrid, Timer, ListChecks, MessageCircle, ClipboardCheck,
+  CalendarDays, BookOpen, Settings, LogOut, Landmark, ShieldCheck,
   ChevronRight, Bell, Check, Mail, User, ArrowLeftRight,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useState, useEffect, useRef } from 'react'
 
 const navItems = [
-  { href: '/w/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/w/time-clock',   label: 'Time Clock',   icon: Clock },
-  { href: '/w/tasks',        label: 'Tasks',        icon: CheckSquare },
-  { href: '/w/tickets',      label: 'Tickets',      icon: Ticket },
+  { href: '/w/dashboard',    label: 'Dashboard',    icon: LayoutGrid },
+  { href: '/w/time-clock',   label: 'Time Clock',   icon: Timer },
+  { href: '/w/tasks',        label: 'Tasks',        icon: ListChecks },
+  { href: '/w/tickets',      label: 'Tickets',      icon: MessageCircle },
   { href: '/w/evaluations',  label: 'Evaluations',  icon: ClipboardCheck },
-  { href: '/w/schedule',     label: 'Schedule',     icon: Calendar },
-  { href: '/w/training',     label: 'Training',     icon: GraduationCap },
-  { href: '/w/departments',  label: 'Departments',  icon: Building2 },
+  { href: '/w/schedule',     label: 'Schedule',     icon: CalendarDays },
+  { href: '/w/training',     label: 'Training',     icon: BookOpen },
+  { href: '/w/departments',  label: 'Departments',  icon: Landmark },
   { href: '/w/profile',      label: 'Profile',      icon: User },
   { href: '/w/settings',     label: 'Settings',     icon: Settings },
 ]
 
 const adminItems = [
-  { href: '/w/admin',        label: 'Admin',        icon: Users },
+  { href: '/w/admin',        label: 'Admin',        icon: ShieldCheck },
 ]
 
 type Notification = {
