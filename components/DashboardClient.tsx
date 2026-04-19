@@ -982,6 +982,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const [isSavingView, startSavingView] = useTransition()
   const [weekCounts, setWeekCounts] = useState<Record<string, number>>({})
   const [summaryStats, setSummaryStats] = useState({ total: 0, overdue: 0, dueThisWeek: 0, eligibilitySoon: 0, noContact: 0 })
+  const [fullSummaryStats, setFullSummaryStats] = useState({ total: 0, overdue: 0, dueThisWeek: 0, eligibilitySoon: 0, noContact: 0 })
   const fullMode = searchParams.get('full') === '1'
   const queryFilter = (searchParams.get('filter') as FilterType | null) ?? null
   const queryPlanner = searchParams.get('planner')
@@ -1073,7 +1074,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         setClients(payload.clients ?? [])
         setTotal(payload.total ?? 0)
         setHasMore(Boolean(payload.hasMore))
-        setSummaryStats(payload.summary ?? {
+        const rawSummary = payload.summary ?? {
           total: payload.total ?? 0,
           overdue: (payload.clients ?? []).filter(isOverdue).length,
           dueThisWeek: (payload.clients ?? []).filter(isDueThisWeek).length,
@@ -1082,7 +1083,9 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
             const d = getDaysSinceContact(c.last_contact_date)
             return d !== null && d >= 7
           }).length,
-        })
+        }
+        setSummaryStats(rawSummary)
+        setFullSummaryStats(payload.fullSummary ?? rawSummary)
       })
       .catch((error) => {
         if (controller.signal.aborted) return
@@ -1628,12 +1631,12 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         onFilter={handleGreetingFilter}
       />
 
-      {/* Stats */}
+      {/* Stats — always show full-scope counts so clicking any card shows correct data */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 24 }}>
-        <StatCard label="Active Clients" value={stats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
-        <StatCard label="Overdue" value={stats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
-        <StatCard label="Due This Week" value={stats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
-        <StatCard label="No Contact 7+ Days" value={stats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
+        <StatCard label="Active Clients" value={fullSummaryStats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
+        <StatCard label="Overdue" value={fullSummaryStats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
+        <StatCard label="Due This Week" value={fullSummaryStats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
+        <StatCard label="No Contact 7+ Days" value={fullSummaryStats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
       </div>
 
       {fullMode && (

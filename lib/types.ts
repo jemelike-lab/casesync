@@ -178,6 +178,13 @@ export interface PaginatedClientsResponse {
     eligibilitySoon: number
     noContact: number
   }
+  fullSummary?: {
+    total: number
+    overdue: number
+    dueThisWeek: number
+    eligibilitySoon: number
+    noContact: number
+  }
 }
 export type SortDir = 'asc' | 'desc'
 

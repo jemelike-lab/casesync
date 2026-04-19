@@ -200,7 +200,28 @@ export async function GET(req: NextRequest) {
     // Paginate
     query = query.range(from, to)
 
-    const { data: clients, error, count } = await query
+    // Run filtered query + unfiltered count query in parallel
+    // The unfiltered query gives us accurate stat card totals regardless of current filter
+    const isFiltered = (filter !== 'all' && !deadlineDate) || search.trim()
+
+    let fullScopeQuery = admin
+      .from('clients')
+      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
+
+    if (role === 'supports_planner') {
+      fullScopeQuery = fullScopeQuery.eq('assigned_to', userId)
+    } else if (role === 'team_manager' || isSupervisorLike(role)) {
+      if (assignedTo) {
+        fullScopeQuery = fullScopeQuery.eq('assigned_to', assignedTo)
+      }
+    }
+
+    const [filteredResult, fullScopeResult] = await Promise.all([
+      query,
+      isFiltered ? fullScopeQuery : Promise.resolve(null),
+    ])
+
+    const { data: clients, error, count } = filteredResult
 
     if (error) {
       console.error('Error fetching paginated clients:', error)
@@ -221,7 +242,20 @@ export async function GET(req: NextRequest) {
       }).length,
     }
 
-    return new Response(JSON.stringify({ clients: pageClients, total, hasMore, summary }), {
+    // Full-scope summary for stat cards (always shows totals regardless of active filter)
+    const allClients = fullScopeResult?.data ?? pageClients
+    const fullSummary = isFiltered ? {
+      total: allClients.length,
+      overdue: allClients.filter(isOverdue).length,
+      dueThisWeek: allClients.filter(isDueThisWeek).length,
+      eligibilitySoon: allClients.filter(isEligibilityEndingSoon).length,
+      noContact: allClients.filter(client => {
+        const days = getDaysSinceContact(client.last_contact_date)
+        return days !== null && days >= 7
+      }).length,
+    } : summary
+
+    return new Response(JSON.stringify({ clients: pageClients, total, hasMore, summary, fullSummary }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (err) {
