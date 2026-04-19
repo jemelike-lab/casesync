@@ -8,7 +8,7 @@ import {
   MoonStar, ShieldAlert,
 } from 'lucide-react'
 import { getInitials, formatDate } from '@/lib/workryn/utils'
-import { useTheme, type Theme } from '@/components/ThemeProvider'
+import { useTheme, type Theme } from '@/components/workryn/ThemeProvider'
 import type { NotificationCategory } from '@/lib/workryn/notifications'
 
 type Profile = {

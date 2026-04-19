@@ -11,7 +11,7 @@ import {
   Award, GraduationCap,
 } from 'lucide-react'
 import { getInitials, formatDate, formatDateTime, timeAgo } from '@/lib/workryn/utils'
-import { DEPT_ICON_OPTIONS, DEPT_COLOR_SWATCHES, getDeptIcon } from '../DepartmentsClient'
+import { DEPT_ICON_OPTIONS, DEPT_COLOR_SWATCHES, getDeptIcon } from './DepartmentsClient'
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type Member = {
