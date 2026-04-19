@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Clock, CheckSquare, Ticket, ClipboardCheck,
   Calendar, GraduationCap, Settings, LogOut, Building2, Users,
-  ChevronRight, Bell, Check, Mail, Crown, User, ArrowLeftRight,
+  ChevronRight, Bell, Check, Mail, User, ArrowLeftRight,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -254,8 +254,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
             <div className="w-sidebar-user-info">
               <span className="w-sidebar-user-name">{user.name ?? 'User'}</span>
               <span className="w-sidebar-user-role">
-                {isOwner && <Crown size={10} style={{ color: '#fbbf24' }} />}
-                {user.role}
+                Beatrice Loving Heart, INC.
               </span>
             </div>
           </Link>
