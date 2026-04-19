@@ -36,7 +36,7 @@ export async function PATCH(
 
   const replaceOptions = Array.isArray(body.options)
 
-  const result = await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx: any) => {
     const updated = await tx.quizQuestion.update({ where: { id }, data })
 
     if (replaceOptions) {

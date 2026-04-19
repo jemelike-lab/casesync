@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   const { totalMinutes, breakMinutes, workedMinutes, breakRows } = computeTotals(inAt, outAt, breaks)
   const status = 'EDITED'
 
-  const entry = await db.$transaction(async (tx) => {
+  const entry = await db.$transaction(async (tx: any) => {
     const created = await tx.timeEntry.create({
       data: {
         userId,

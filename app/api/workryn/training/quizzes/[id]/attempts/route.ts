@@ -60,7 +60,7 @@ export async function POST(
 
   for (const q of quiz.questions) {
     total += q.points
-    const correctOptionIds = q.options.filter(o => o.isCorrect).map(o => o.id)
+    const correctOptionIds = q.options.filter((o: any) => o.isCorrect).map((o: any) => o.id)
     const userAnswer = rawAnswers[q.id]
 
     if (q.type === 'MULTIPLE_CHOICE_MULTI') {
@@ -69,7 +69,7 @@ export async function POST(
         : (userAnswer ? [userAnswer] : [])
       if (
         selected.length === correctOptionIds.length &&
-        correctOptionIds.every(id => selected.includes(id))
+        correctOptionIds.every((id: any) => selected.includes(id))
       ) {
         earned += q.points
       }
@@ -126,8 +126,8 @@ export async function POST(
     ])
 
     const lessonsDone = lessons.length === 0 || completedCount >= lessons.length
-    const passedQuizIds = new Set(passedQuizzes.map((a) => a.quizId))
-    const allQuizzesPassed = allQuizzes.every((qz) => passedQuizIds.has(qz.id))
+    const passedQuizIds = new Set(passedQuizzes.map((a: any) => a.quizId))
+    const allQuizzesPassed = allQuizzes.every((qz: any) => passedQuizIds.has(qz.id))
 
     if (lessonsDone && allQuizzesPassed) {
       await db.trainingEnrollment.update({

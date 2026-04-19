@@ -71,7 +71,7 @@ export async function POST(
     order = last ? last.order + 1 : 0
   }
 
-  const result = await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx: any) => {
     const question = await tx.quizQuestion.create({
       data: {
         text,

@@ -49,7 +49,7 @@ export default async function ProfilePage() {
 
   // Calculate progress % per enrollment (completed lessons / total lessons)
   const enrollmentsSerialized = await Promise.all(
-    enrollments.map(async (e) => {
+    enrollments.map(async (e: any) => {
       const totalLessons = e.course._count.lessons
       const completedLessons = totalLessons > 0
         ? await db.lessonProgress.count({

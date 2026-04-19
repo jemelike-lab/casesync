@@ -99,9 +99,9 @@ export default async function AdminTimeClockPage() {
     }
   }
 
-  const initialUsers = users.map((u) => {
+  const initialUsers = users.map((u: any) => {
     const currentEntry = activeByUser.get(u.id) ?? null
-    const currentBreak = currentEntry?.breaks.find((b) => !b.endAt) ?? null
+    const currentBreak = currentEntry?.breaks.find((b: any) => !b.endAt) ?? null
     const weekTotal = weekByUser.get(u.id) || { workedMinutes: 0, breakMinutes: 0 }
     const lastEntry = lastByUser.get(u.id) || null
     return {

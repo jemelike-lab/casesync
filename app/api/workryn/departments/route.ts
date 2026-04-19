@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   // Create the department, and if a head was provided, also add that user as a
   // member of the new department (so the head is consistent with the "head must
   // be a member" invariant enforced by PATCH).
-  const dept = await db.$transaction(async (tx) => {
+  const dept = await db.$transaction(async (tx: any) => {
     const created = await tx.department.create({
       data: {
         name,

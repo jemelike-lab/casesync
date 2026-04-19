@@ -107,7 +107,7 @@ export async function GET(_req: NextRequest) {
     todayWorked += m.workedMinutes
   }
 
-  const currentBreak = currentEntry?.breaks.find((b) => !b.endAt) ?? null
+  const currentBreak = currentEntry?.breaks.find((b: any) => !b.endAt) ?? null
 
   return NextResponse.json({
     isClockedIn: Boolean(currentEntry),

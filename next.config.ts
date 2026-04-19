@@ -42,8 +42,6 @@ const nextConfig = {
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
-  // TODO: Remove after fixing Workryn TypeScript errors (52 strict-mode violations)
-  typescript: { ignoreBuildErrors: true },
   images: {
     formats: ['image/avif', 'image/webp'],
   },

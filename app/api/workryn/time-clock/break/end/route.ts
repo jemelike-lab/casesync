@@ -21,7 +21,7 @@ export async function POST(_req: NextRequest) {
     )
   }
 
-  const openBreak = active.breaks.find((b) => !b.endAt)
+  const openBreak = active.breaks.find((b: any) => !b.endAt)
   if (!openBreak) {
     return NextResponse.json(
       { error: 'No active break to end.' },

@@ -36,9 +36,9 @@ export async function GET(
   if (isStaff) {
     const sanitized = {
       ...quiz,
-      questions: quiz.questions.map(q => ({
+      questions: quiz.questions.map((q: any) => ({
         ...q,
-        options: q.options.map(o => ({
+        options: q.options.map((o: any) => ({
           id: o.id,
           text: o.text,
           order: o.order,

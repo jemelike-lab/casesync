@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  const userIds = users.map((u) => u.id)
+  const userIds = users.map((u: any) => u.id)
 
   const [activeEntries, weekEntries, lastEntries] = await Promise.all([
     db.timeEntry.findMany({
@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
   }
 
   const result = users
-    .map((u) => {
+    .map((u: any) => {
       const currentEntry = activeByUser.get(u.id) ?? null
       const currentBreak = currentEntry?.breaks.find((b) => !b.endAt) ?? null
       const weekTotal = weekByUser.get(u.id) || { workedMinutes: 0, breakMinutes: 0 }
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
         lastEntry,
       }
     })
-    .filter((u) => {
+    .filter((u: any) => {
       if (search) {
         const hay = `${u.name ?? ''} ${u.email ?? ''} ${u.jobTitle ?? ''}`.toLowerCase()
         if (!hay.includes(search)) return false

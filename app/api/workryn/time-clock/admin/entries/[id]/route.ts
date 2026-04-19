@@ -128,7 +128,7 @@ export async function PATCH(
 
   const { totalMinutes, breakMinutes, workedMinutes, breakRows } = computeTotals(inAt, outAt, breaks)
 
-  const updated = await db.$transaction(async (tx) => {
+  const updated = await db.$transaction(async (tx: any) => {
     await tx.timeBreak.deleteMany({ where: { timeEntryId: id } })
     const entry = await tx.timeEntry.update({
       where: { id },
@@ -188,7 +188,7 @@ export async function DELETE(
   const existing = await db.timeEntry.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: any) => {
     await tx.timeBreak.deleteMany({ where: { timeEntryId: id } })
     await tx.timeEntry.delete({ where: { id } })
     await tx.auditLog.create({

@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     }),
   ])
 
-  const weeklyMinutes = weekEntries.reduce((sum, e) => sum + (e.workedMinutes || 0), 0)
+  const weeklyMinutes = weekEntries.reduce((sum: number, e: any) => sum + (e.workedMinutes || 0), 0)
   const weeklyHours = Math.round((weeklyMinutes / 60) * 10) / 10
 
   return (

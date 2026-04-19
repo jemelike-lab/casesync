@@ -22,7 +22,7 @@ export async function POST(_req: NextRequest) {
 
   const now = new Date()
 
-  const result = await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx: any) => {
     // Atomic guard against double clock-out: only proceed if row is still ACTIVE
     const guard = await tx.timeEntry.updateMany({
       where: { id: active.id, status: 'ACTIVE' },
@@ -33,7 +33,7 @@ export async function POST(_req: NextRequest) {
     }
 
     // End any active break first
-    const openBreak = active.breaks.find((b) => !b.endAt)
+    const openBreak = active.breaks.find((b: any) => !b.endAt)
     if (openBreak) {
       const actual = Math.max(
         0,
@@ -54,7 +54,7 @@ export async function POST(_req: NextRequest) {
       0,
       Math.round((now.getTime() - new Date(active.clockInAt).getTime()) / 60000),
     )
-    const breakMinutes = breaks.reduce((sum, b) => sum + (b.actualMinutes ?? 0), 0)
+    const breakMinutes = breaks.reduce((sum: number, b: any) => sum + (b.actualMinutes ?? 0), 0)
     const workedMinutes = Math.max(0, totalMinutes - breakMinutes)
 
     const updated = await tx.timeEntry.update({

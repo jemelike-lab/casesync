@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, targetUserId: target.id, demoteSelf, noop: true })
   }
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: any) => {
     await tx.user.update({ where: { id: target.id }, data: { role: 'OWNER' } })
     if (demoteSelf) {
       await tx.user.update({ where: { id: session.user.id }, data: { role: 'ADMIN' } })

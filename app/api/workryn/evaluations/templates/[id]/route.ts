@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const updated = await db.$transaction(async (tx) => {
+  const updated = await db.$transaction(async (tx: any) => {
     const data: Record<string, unknown> = {}
     if (typeof name === 'string') data.name = name.trim()
     if (description !== undefined) data.description = description?.toString().trim() || null

@@ -118,11 +118,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   let cleanedScores: { criterionId: string; score: number; comment: string | null }[] | undefined
   if (scoresInput) {
-    const criterionMap = new Map(existing.template.criteria.map((c) => [c.id, c]))
+    const criterionMap = new Map(existing.template.criteria.map((c: any) => [c.id, c]))
     cleanedScores = []
     for (const s of scoresInput) {
       if (!s.criterionId) continue
-      const crit = criterionMap.get(s.criterionId)
+      const crit = criterionMap.get(s.criterionId) as any
       if (!crit) {
         return NextResponse.json({ error: `Unknown criterion: ${s.criterionId}` }, { status: 400 })
       }
@@ -141,7 +141,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const updated = await db.$transaction(async (tx) => {
+  const updated = await db.$transaction(async (tx: any) => {
     const data: Record<string, unknown> = {}
     if (overallRating !== undefined) data.overallRating = overallRating
     if (comments !== undefined) data.comments = comments
@@ -201,7 +201,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const existing = await db.evaluation.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 })
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: any) => {
     await tx.evaluationScore.deleteMany({ where: { evaluationId: id } })
     await tx.evaluation.delete({ where: { id } })
   })

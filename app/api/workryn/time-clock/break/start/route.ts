@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (active.breaks.some((b) => !b.endAt)) {
+  if (active.breaks.some((b: any) => !b.endAt)) {
     return NextResponse.json(
       { error: 'You already have an active break.' },
       { status: 409 },

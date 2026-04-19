@@ -818,7 +818,7 @@ function SettingsTab({
   onSaved: () => void | Promise<void>
 }) {
   
-  const isAdmin = session?.user.role === 'OWNER' || session?.user.role === 'ADMIN'
+  const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
 
   const [name, setName] = useState(profile.name ?? '')
   const [jobTitle, setJobTitle] = useState(profile.jobTitle ?? '')

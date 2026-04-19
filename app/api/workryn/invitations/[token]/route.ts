@@ -63,7 +63,7 @@ export async function POST(
   const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4', '#f59e0b', '#10b981']
   const avatarColor = colors[Math.floor(Math.random() * colors.length)]
 
-  const { user } = await db.$transaction(async (tx) => {
+  const { user } = await db.$transaction(async (tx: any) => {
     const created = await tx.user.create({
       data: {
         name: name.trim(),

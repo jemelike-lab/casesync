@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   // Extra belt-and-suspenders filter for STAFF against private rows.
   const visible = isAdminOrAbove(role) || isManagerOrAbove(role)
     ? evaluations
-    : evaluations.filter((e) => !(e.agentId === userId && e.isPrivate))
+    : evaluations.filter((e: any) => !(e.agentId === userId && e.isPrivate))
 
   return NextResponse.json(visible)
 }
@@ -125,11 +125,11 @@ export async function POST(req: NextRequest) {
 
   // Validate scores: every criterion ID must belong to the template, and each score
   // must be within 1..maxScore.
-  const criterionMap = new Map(template.criteria.map((c) => [c.id, c]))
+  const criterionMap = new Map(template.criteria.map((c: any) => [c.id, c]))
   const cleanedScores: { criterionId: string; score: number; comment: string | null }[] = []
   for (const s of scoresInput) {
     if (!s.criterionId) continue
-    const crit = criterionMap.get(s.criterionId)
+    const crit = criterionMap.get(s.criterionId) as any
     if (!crit) {
       return NextResponse.json({ error: `Unknown criterion: ${s.criterionId}` }, { status: 400 })
     }
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const evaluation = await db.$transaction(async (tx) => {
+  const evaluation = await db.$transaction(async (tx: any) => {
     return tx.evaluation.create({
       data: {
         templateId,

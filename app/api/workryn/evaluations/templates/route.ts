@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'At least one criterion with a label is required' }, { status: 400 })
   }
 
-  const template = await db.$transaction(async (tx) => {
+  const template = await db.$transaction(async (tx: any) => {
     return tx.evaluationTemplate.create({
       data: {
         name: name.trim(),

@@ -41,7 +41,7 @@ export async function DELETE(
 
   const wasHead = department.headId === userId
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: any) => {
     if (wasHead) {
       await tx.department.update({
         where: { id },
