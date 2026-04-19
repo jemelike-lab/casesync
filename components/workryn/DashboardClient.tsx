@@ -1,5 +1,5 @@
 'use client'
-import { CheckSquare, Ticket, Activity, Clock, AlertTriangle } from 'lucide-react'
+import { ListChecks, MessageCircle, Timer, TrendingUp, ArrowUpRight, CheckCircle2 } from 'lucide-react'
 import { timeAgo, getPriorityColor, getInitials } from '@/lib/workryn/utils'
 import Link from 'next/link'
 
@@ -15,33 +15,6 @@ interface Props {
   }>
 }
 
-const statCards = (stats: Props['stats']) => [
-  {
-    label: 'My Tasks',
-    value: stats.taskCount,
-    icon: CheckSquare,
-    iconBg: 'rgba(99,102,241,0.15)',
-    iconColor: '#818cf8',
-    href: '/tasks',
-  },
-  {
-    label: 'Open Tickets',
-    value: stats.openTickets,
-    icon: Ticket,
-    iconBg: 'rgba(245,158,11,0.15)',
-    iconColor: '#f59e0b',
-    href: '/tickets',
-  },
-  {
-    label: 'Hours This Week',
-    value: stats.weeklyHours,
-    icon: Clock,
-    iconBg: 'rgba(16,185,129,0.15)',
-    iconColor: '#10b981',
-    href: '/time-clock',
-  },
-]
-
 function greet(name: string) {
   const h = new Date().getHours()
   const prefix = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
@@ -49,87 +22,82 @@ function greet(name: string) {
 }
 
 export default function DashboardClient({ user, stats, auditLogs, recentTasks }: Props) {
-  const cards = statCards(stats)
-
   return (
-    <>
-      {/* Welcome banner */}
-      <div className="dash-welcome animate-slide-up">
-        <div className="dash-welcome-inner">
-          <div className="dash-welcome-text">
-            <h1 className="dash-greeting">
-              {greet(user.name ?? 'there')} <span style={{ fontSize: '1.75rem' }}>👋</span>
-            </h1>
-            <p className="dash-subtitle">
-              Here&apos;s what&apos;s happening in your workspace today.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/w/tasks" className="btn btn-primary btn-sm focus-ring" id="btn-new-task">
-              + New Task
-            </Link>
-            <Link href="/w/tickets" className="btn btn-ghost btn-sm focus-ring" id="btn-new-ticket">
-              + New Ticket
-            </Link>
-          </div>
+    <div className="wd">
+      {/* Header */}
+      <header className="wd-header">
+        <div>
+          <h1 className="wd-greeting">{greet(user.name ?? 'there')}</h1>
+          <p className="wd-subtitle">Here&apos;s your workspace overview.</p>
         </div>
+        <div className="wd-actions">
+          <Link href="/w/tasks" className="wd-btn wd-btn-primary">+ New Task</Link>
+          <Link href="/w/tickets" className="wd-btn wd-btn-outline">+ New Ticket</Link>
+        </div>
+      </header>
+
+      {/* Stat Cards */}
+      <div className="wd-stats">
+        <Link href="/w/tasks" className="wd-stat-card" style={{ '--accent': '#a78bfa' } as React.CSSProperties}>
+          <div className="wd-stat-icon" style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa' }}>
+            <ListChecks size={20} strokeWidth={1.8} />
+          </div>
+          <div className="wd-stat-body">
+            <span className="wd-stat-value">{stats.taskCount}</span>
+            <span className="wd-stat-label">My Tasks</span>
+          </div>
+          <ArrowUpRight size={16} className="wd-stat-arrow" />
+        </Link>
+
+        <Link href="/w/tickets" className="wd-stat-card" style={{ '--accent': '#fbbf24' } as React.CSSProperties}>
+          <div className="wd-stat-icon" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>
+            <MessageCircle size={20} strokeWidth={1.8} />
+          </div>
+          <div className="wd-stat-body">
+            <span className="wd-stat-value">{stats.openTickets}</span>
+            <span className="wd-stat-label">Open Tickets</span>
+          </div>
+          <ArrowUpRight size={16} className="wd-stat-arrow" />
+        </Link>
+
+        <Link href="/w/time-clock" className="wd-stat-card" style={{ '--accent': '#34d399' } as React.CSSProperties}>
+          <div className="wd-stat-icon" style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}>
+            <Timer size={20} strokeWidth={1.8} />
+          </div>
+          <div className="wd-stat-body">
+            <span className="wd-stat-value">{stats.weeklyHours}</span>
+            <span className="wd-stat-label">Hours This Week</span>
+          </div>
+          <ArrowUpRight size={16} className="wd-stat-arrow" />
+        </Link>
       </div>
 
-      <div className="page-body">
-        {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4" style={{ marginBottom: 28 }}>
-          {cards.map(({ label, value, icon: Icon, iconBg, iconColor, href }, i) => (
-            <Link key={label} href={href} style={{ textDecoration: 'none' }}>
-              <div
-                className="stat-card animate-slide-up"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <div className="stat-icon" style={{ background: iconBg }}>
-                  <Icon size={22} color={iconColor} />
-                </div>
-                <div className="stat-value">{value}</div>
-                <div className="stat-label">{label}</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Two-column layout */}
-        <div className="flex gap-6" style={{ alignItems: 'flex-start' }}>
-
-          {/* Recent Tasks */}
-          <div className="glass-card flex-1 animate-slide-up" style={{ animationDelay: '200ms' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
-              <h3 className="flex gap-2 items-center">
-                <CheckSquare size={18} color="var(--brand-light)" />
-                <span className="gradient-text">My Open Tasks</span>
-              </h3>
-              <Link href="/w/tasks" className="btn btn-ghost btn-sm">View all</Link>
-            </div>
-
+      {/* Content Grid */}
+      <div className="wd-grid">
+        {/* Tasks Panel */}
+        <div className="wd-panel">
+          <div className="wd-panel-header">
+            <h2 className="wd-panel-title">
+              <ListChecks size={18} strokeWidth={1.8} />
+              Open Tasks
+            </h2>
+            <Link href="/w/tasks" className="wd-link">View all →</Link>
+          </div>
+          <div className="wd-panel-body">
             {recentTasks.length === 0 ? (
-              <div className="empty-state" style={{ padding: '32px 0' }}>
-                <CheckSquare size={36} />
+              <div className="wd-empty">
+                <CheckCircle2 size={40} strokeWidth={1.2} />
                 <p>No open tasks — you&apos;re all caught up!</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
-                {recentTasks.map((task, i) => (
-                  <Link
-                    key={task.id}
-                    href="/w/tasks"
-                    className="task-row focus-ring"
-                    id={`task-${task.id}`}
-                    style={{ animationDelay: `${300 + i * 50}ms` }}
-                  >
-                    <span
-                      className="dot"
-                      style={{ background: getPriorityColor(task.priority) }}
-                    />
-                    <span className="task-row-title">{task.title}</span>
+              <div className="wd-task-list">
+                {recentTasks.map((task) => (
+                  <Link key={task.id} href="/w/tasks" className="wd-task-row">
+                    <span className="wd-task-dot" style={{ background: getPriorityColor(task.priority) }} />
+                    <span className="wd-task-title">{task.title}</span>
                     {task.dueDate && (
-                      <span className="task-row-due flex gap-1 items-center">
-                        <Clock size={12} />
+                      <span className="wd-task-due">
+                        <Timer size={11} />
                         {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     )}
@@ -138,35 +106,35 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
               </div>
             )}
           </div>
+        </div>
 
-          {/* Activity Feed */}
-          <div className="glass-card animate-slide-up" style={{ width: 340, flexShrink: 0, animationDelay: '260ms' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
-              <h3 className="flex gap-2 items-center">
-                <Activity size={18} color="var(--brand-light)" />
-                <span className="gradient-text">Activity</span>
-              </h3>
-            </div>
-
+        {/* Activity Panel */}
+        <div className="wd-panel wd-panel-sm">
+          <div className="wd-panel-header">
+            <h2 className="wd-panel-title">
+              <TrendingUp size={18} strokeWidth={1.8} />
+              Activity
+            </h2>
+          </div>
+          <div className="wd-panel-body">
             {auditLogs.length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>
-                <Activity size={28} />
+              <div className="wd-empty wd-empty-sm">
+                <TrendingUp size={32} strokeWidth={1.2} />
                 <p>No recent activity</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-0">
-                {auditLogs.map((log, i) => (
-                  <div key={log.id} className="activity-row">
-                    <div
-                      className="avatar avatar-sm"
-                      style={{ background: log.user.avatarColor, flexShrink: 0 }}
-                    >
+              <div className="wd-activity-list">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="wd-activity-row">
+                    <div className="wd-activity-avatar" style={{ background: log.user.avatarColor }}>
                       {getInitials(log.user.name ?? 'U')}
                     </div>
-                    <div className="activity-content">
-                      <span className="activity-action">{log.action.replace(/_/g, ' ')}</span>
-                      <span className="activity-resource"> · {log.resourceType}</span>
-                      <div className="activity-time">{timeAgo(log.createdAt)}</div>
+                    <div className="wd-activity-body">
+                      <div className="wd-activity-text">
+                        <span className="wd-activity-action">{log.action.replace(/_/g, ' ')}</span>
+                        <span className="wd-activity-resource"> · {log.resourceType}</span>
+                      </div>
+                      <span className="wd-activity-time">{timeAgo(log.createdAt)}</span>
                     </div>
                   </div>
                 ))}
@@ -177,109 +145,89 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
       </div>
 
       <style>{`
-        /* ── Welcome banner ── */
-        .dash-welcome {
-          padding: 28px 32px 24px;
-          border-bottom: 1px solid var(--border-subtle);
-          background: var(--bg-base);
-          position: sticky;
-          top: 0;
-          z-index: 10;
-        }
-        .dash-welcome-inner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 20px 24px;
-          background: var(--brand-gradient-subtle);
-          border: 1px solid var(--glass-border);
-          border-radius: var(--radius-lg);
-          position: relative;
-          overflow: hidden;
-        }
-        .dash-welcome-inner::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: var(--brand-gradient);
-          opacity: 0.6;
-        }
-        .dash-greeting {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin-bottom: 4px;
-          letter-spacing: -0.02em;
-        }
-        .dash-subtitle {
-          font-size: 0.875rem;
-          color: var(--text-secondary);
-        }
+        .wd { min-height: 100vh; background: var(--w-bg-base); }
 
-        /* ── Task rows ── */
-        .task-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 12px;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--border-subtle);
-          background: var(--bg-elevated);
-          color: var(--text-secondary);
-          font-size: 0.875rem;
-          transition: all var(--transition-smooth);
-          text-decoration: none;
-          animation: slideUp 0.3s ease both;
+        .wd-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 32px 36px 28px;
         }
-        .task-row:hover {
-          border-color: var(--brand);
-          color: var(--text-primary);
-          background: var(--bg-hover);
-          transform: translateX(4px);
-          box-shadow: 0 0 16px rgba(99,102,241,0.1);
+        .wd-greeting {
+          font-size: 1.625rem; font-weight: 700; color: var(--w-text-primary);
+          letter-spacing: -0.02em; margin: 0 0 4px;
         }
-        .task-row-title {
-          flex: 1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .wd-subtitle { font-size: 0.9rem; color: var(--w-text-muted); margin: 0; }
+        .wd-actions { display: flex; gap: 10px; }
+        .wd-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 9px 18px; border-radius: 10px;
+          font-size: 0.8125rem; font-weight: 600;
+          text-decoration: none; cursor: pointer; transition: all 200ms ease;
         }
-        .task-row-due {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          white-space: nowrap;
-        }
+        .wd-btn-primary { background: var(--w-brand); color: #fff; border: none; }
+        .wd-btn-primary:hover { background: var(--w-brand-light); box-shadow: var(--w-shadow-brand); transform: translateY(-1px); }
+        .wd-btn-outline { background: transparent; color: var(--w-text-secondary); border: 1px solid var(--w-border-default); }
+        .wd-btn-outline:hover { background: var(--w-bg-hover); color: var(--w-text-primary); border-color: var(--w-border-strong); }
 
-        /* ── Activity feed ── */
-        .activity-row {
-          display: flex;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid var(--border-subtle);
-          transition: background var(--transition-smooth);
+        .wd-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 36px 28px; }
+        .wd-stat-card {
+          display: flex; align-items: center; gap: 14px; padding: 20px;
+          background: var(--w-bg-surface); border: 1px solid var(--w-border-subtle);
+          border-radius: 14px; text-decoration: none; position: relative; overflow: hidden;
+          transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .activity-row:last-child { border-bottom: none; }
-        .activity-content { flex: 1; min-width: 0; }
-        .activity-action {
-          font-size: 0.8125rem;
-          font-weight: 500;
-          color: var(--text-primary);
-          text-transform: capitalize;
+        .wd-stat-card::after {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+          background: var(--accent, var(--w-brand)); opacity: 0; transition: opacity 250ms ease;
         }
-        .activity-resource {
-          font-size: 0.8125rem;
-          color: var(--text-muted);
-          text-transform: capitalize;
+        .wd-stat-card:hover {
+          border-color: color-mix(in srgb, var(--accent, var(--w-brand)) 30%, transparent);
+          background: var(--w-bg-elevated); transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.2);
         }
-        .activity-time {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-top: 4px;
+        .wd-stat-card:hover::after { opacity: 1; }
+        .wd-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .wd-stat-body { flex: 1; }
+        .wd-stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: var(--w-text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+        .wd-stat-label { display: block; font-size: 0.8125rem; color: var(--w-text-muted); margin-top: 2px; }
+        .wd-stat-arrow { color: var(--w-text-muted); opacity: 0; transition: all 200ms ease; flex-shrink: 0; }
+        .wd-stat-card:hover .wd-stat-arrow { opacity: 1; color: var(--accent, var(--w-brand-light)); transform: translate(2px, -2px); }
+
+        .wd-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; padding: 0 36px 36px; align-items: start; }
+        .wd-panel { background: var(--w-bg-surface); border: 1px solid var(--w-border-subtle); border-radius: 16px; overflow: hidden; }
+        .wd-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--w-border-subtle); }
+        .wd-panel-title { display: flex; align-items: center; gap: 10px; font-size: 0.9375rem; font-weight: 600; color: var(--w-text-primary); margin: 0; }
+        .wd-link { font-size: 0.8125rem; font-weight: 500; color: var(--w-brand-light); text-decoration: none; transition: color 150ms ease; }
+        .wd-link:hover { color: var(--w-brand); text-decoration: underline; }
+        .wd-panel-body { padding: 8px; }
+
+        .wd-task-list { display: flex; flex-direction: column; gap: 2px; }
+        .wd-task-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; color: var(--w-text-secondary); font-size: 0.875rem; text-decoration: none; transition: all 200ms ease; }
+        .wd-task-row:hover { background: var(--w-bg-hover); color: var(--w-text-primary); }
+        .wd-task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .wd-task-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wd-task-due { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--w-text-muted); white-space: nowrap; }
+
+        .wd-activity-list { display: flex; flex-direction: column; }
+        .wd-activity-row { display: flex; gap: 12px; padding: 14px; border-bottom: 1px solid var(--w-border-subtle); }
+        .wd-activity-row:last-child { border-bottom: none; }
+        .wd-activity-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .wd-activity-body { flex: 1; min-width: 0; }
+        .wd-activity-text { font-size: 0.8125rem; line-height: 1.4; }
+        .wd-activity-action { font-weight: 500; color: var(--w-text-primary); text-transform: capitalize; }
+        .wd-activity-resource { color: var(--w-text-muted); text-transform: capitalize; }
+        .wd-activity-time { font-size: 0.75rem; color: var(--w-text-muted); margin-top: 3px; display: block; }
+
+        .wd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 48px 20px; color: var(--w-text-muted); text-align: center; }
+        .wd-empty-sm { padding: 32px 20px; }
+        .wd-empty p { font-size: 0.875rem; margin: 0; }
+
+        @media (max-width: 1024px) { .wd-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+          .wd-header { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 20px 20px; }
+          .wd-stats { grid-template-columns: 1fr; padding: 0 20px 20px; }
+          .wd-grid { padding: 0 20px 20px; }
         }
       `}</style>
-    </>
+    </div>
   )
 }
