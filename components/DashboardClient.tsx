@@ -15,6 +15,7 @@ import {
   SavedViewRecord,
   isOverdue,
   isDueThisWeek,
+  isDueToday,
   isEligibilityEndingSoon,
   getDaysSinceContact,
   clientPriorityScore,
@@ -497,7 +498,7 @@ function WelcomeSection({ profile, clients }: {
       urgentTasks.push({ client, type: 'overdue', priority: 1000 + overdueCount })
     }
     // Due today
-    else if (client.next_deadline_date === formatDate(now)) {
+    else if (isDueToday(client)) {
       urgentTasks.push({ client, type: 'due_today', priority: 900 })
     }
     // Eligibility ending soon (within 7 days)
