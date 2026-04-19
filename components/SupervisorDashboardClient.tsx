@@ -280,12 +280,12 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Active Clients" value={totalStats.clients} href={fullFilterLabel ? undefined : fullViewHref('all')} active={currentFilter === 'all'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullFilterLabel ? undefined : fullViewHref('overdue')} active={currentFilter === 'overdue'} />
-        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullFilterLabel ? undefined : fullViewHref('due_today')} active={currentFilter === 'due_today'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullFilterLabel ? undefined : fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
-        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" href={fullFilterLabel ? undefined : fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
-        <StatCard label="Supports Planners" value={planners.length} href={fullFilterLabel ? undefined : '/supervisor'} active={!fullFilterLabel} />
+        <StatCard label="Active Clients" value={totalStats.clients} href={fullViewHref('all')} active={currentFilter === 'all'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
+        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
+        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" href={fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
+        <StatCard label="Supports Planners" value={planners.length} href="/supervisor" active={!fullFilterLabel} />
       </div>
 
       {fullFilterLabel && (
