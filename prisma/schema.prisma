@@ -585,13 +585,10 @@ model NotificationPreference {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Per-category channel matrix (JSON):
-  // { "<categoryId>": { "inApp": bool, "email": bool, "push": bool 
-  @@map("w_notification_preference")
-} }
+  // Per-category channel matrix (JSON)
   channels String @default("{}")
 
-  // Email digest frequency: "instant" | "daily" | "weekly" | "never"
+  // Email digest frequency
   emailDigest String @default("instant")
 
   // Manual pause: pause everything except urgent/security
@@ -599,8 +596,8 @@ model NotificationPreference {
 
   // Do Not Disturb schedule
   dndEnabled Boolean @default(false)
-  dndStart   String  @default("22:00") // HH:MM 24h
-  dndEnd     String  @default("08:00") // HH:MM 24h
+  dndStart   String  @default("22:00")
+  dndEnd     String  @default("08:00")
 
   // In-app feedback
   playSound      Boolean @default(true)
@@ -608,6 +605,8 @@ model NotificationPreference {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("w_notification_preference")
 }
 
 model Shift {
