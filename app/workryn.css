@@ -6,11 +6,11 @@
 
 /* ─── Design Tokens (available globally for Workryn components) ────────── */
 :root {
-  --w-bg-base: #111318;
-  --w-bg-surface: #181b22;
-  --w-bg-elevated: #1f2430;
-  --w-bg-overlay: #262d3b;
-  --w-bg-hover: #2e3647;
+  --w-bg-base: #13151c;
+  --w-bg-surface: #1a1d27;
+  --w-bg-elevated: #222633;
+  --w-bg-overlay: #2a3040;
+  --w-bg-hover: #323a4e;
 
   --w-border-subtle: rgba(148,163,184,0.08);
   --w-border-default: rgba(148,163,184,0.13);
@@ -114,7 +114,7 @@
 .w-sidebar {
   position: fixed; top: 0; left: 0; bottom: 0;
   width: var(--w-sidebar-width);
-  background: var(--w-bg-surface);
+  background: var(--w-bg-elevated);
   border-right: 1px solid var(--w-border-subtle);
   display: flex; flex-direction: column;
   z-index: 50; overflow-y: auto;
@@ -227,8 +227,8 @@
 .w-sidebar-item .w-sidebar-item-arrow { margin-left: auto; opacity: 0.4; }
 .w-sidebar-item:hover { background: var(--w-bg-hover); color: var(--w-text-primary); }
 .w-sidebar-item.active {
-  background: rgba(124,110,240,0.10);
-  color: var(--w-brand-light);
+  background: rgba(124,110,240,0.14);
+  color: #fff;
   font-weight: 600;
 }
 .w-sidebar-item.active::before {
