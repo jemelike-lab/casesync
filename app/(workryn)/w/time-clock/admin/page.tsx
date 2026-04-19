@@ -125,6 +125,7 @@ export default async function AdminTimeClockPage() {
       initialUsers={JSON.parse(JSON.stringify(initialUsers))}
       departments={JSON.parse(JSON.stringify(departments))}
       initialWeekStart={weekStart.toISOString()}
+      session={{ user: { id: session.user.id, role: session.user.role } }}
     />
   )
 }

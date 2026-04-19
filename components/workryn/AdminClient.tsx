@@ -42,9 +42,10 @@ interface Props {
   initialDepartments: Dept[]
   auditLogs: AuditLog[]
   initialInvitations?: Invitation[]
+  session: { user: { id: string; role: string } } | null
 }
 
-export default function AdminClient({ initialUsers, initialDepartments, auditLogs, initialInvitations = [] }: Props) {
+export default function AdminClient({ initialUsers, initialDepartments, auditLogs, initialInvitations = [], session }: Props) {
   
   const currentUserRole = session?.user.role as string | undefined
   const currentUserId = session?.user.id as string | undefined

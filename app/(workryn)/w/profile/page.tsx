@@ -110,6 +110,7 @@ export default async function ProfilePage() {
         evaluationsReceived: evaluationCount,
       }}
       initialEnrollments={enrollmentsSerialized}
+      session={{ user: { id: session.user.id, role: session.user.role } }}
     />
   )
 }

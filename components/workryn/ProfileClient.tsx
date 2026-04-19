@@ -46,6 +46,7 @@ interface ProfileProps {
     evaluationsReceived: number
   }
   initialEnrollments?: TrainingEnrollment[]
+  session: { user: { id: string; role: string } } | null
 }
 
 type Tab = 'overview' | 'training' | 'evaluations' | 'settings'
@@ -66,7 +67,7 @@ interface EvaluationItem {
   template?: { id: string; name: string }
 }
 
-export default function ProfileClient({ profile, stats, initialEnrollments = [] }: ProfileProps) {
+export default function ProfileClient({ profile, stats, initialEnrollments = [], session }: ProfileProps) {
   
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 

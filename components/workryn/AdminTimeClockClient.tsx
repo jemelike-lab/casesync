@@ -177,12 +177,13 @@ interface Props {
   initialUsers: AdminUser[]
   departments: Department[]
   initialWeekStart: string
+  session: { user: { id: string; role: string } } | null
 }
 
 type Tab = 'live' | 'timesheets' | 'reports'
 type StatusPill = 'all' | 'active' | 'on_break' | 'clocked_out'
 
-export default function AdminTimeClockClient({ initialUsers, departments, initialWeekStart }: Props) {
+export default function AdminTimeClockClient({ initialUsers, departments, initialWeekStart, session }: Props) {
   
   const canManage = isManagerOrAbove(session?.user?.role)
 
