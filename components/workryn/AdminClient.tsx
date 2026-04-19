@@ -295,9 +295,7 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
                   </button>
                 )}
                 {myAssignableRoles.length > 0 && (
-                  <button className="btn btn-primary focus-ring" onClick={openUserCreate} id="btn-invite-user">
-                    <Plus size={16} /> Add User
-                  </button>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Users sync from CaseSync</span>
                 )}
               </div>
             </div>

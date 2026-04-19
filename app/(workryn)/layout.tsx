@@ -1,7 +1,17 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
+import { db } from '@/lib/workryn/db'
 import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
+
+/** Map CaseSync role to Workryn role */
+function mapRole(csRole?: string): string {
+  switch (csRole) {
+    case 'supervisor': return 'ADMIN'
+    case 'planner': return 'MANAGER'
+    default: return 'STAFF'
+  }
+}
 
 export default async function WorkrynLayout({
   children,
@@ -14,26 +24,43 @@ export default async function WorkrynLayout({
   if (!user) redirect('/login')
 
   // Get Workryn session (maps Supabase user to Workryn user record)
-  const session = await getWorkrynSession()
+  let session = await getWorkrynSession()
 
-  // If no Workryn user record exists yet, we'll auto-provision one
-  // For now, create a fallback from the Supabase profile
-  let workrynUser = session?.user
-  if (!workrynUser) {
+  // Auto-provision: if no Workryn user record exists, create one from CaseSync profile
+  if (!session) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
 
-    workrynUser = {
-      id: user.id,
-      email: user.email ?? '',
-      name: profile?.full_name ?? user.email ?? '',
-      role: 'STAFF',
-      avatarColor: '#6366f1',
-      image: null,
+    try {
+      await db.user.create({
+        data: {
+          supabaseId: user.id,
+          email: user.email ?? '',
+          name: profile?.full_name ?? user.email ?? '',
+          role: mapRole(profile?.role),
+          avatarColor: '#6366f1',
+          isActive: true,
+        },
+      })
+      // Re-fetch session now that the record exists
+      session = await getWorkrynSession()
+    } catch (err) {
+      // Record may already exist (race condition) — try fetching again
+      console.error('[Workryn Layout] Auto-provision failed:', err)
+      session = await getWorkrynSession()
     }
+  }
+
+  const workrynUser = session?.user ?? {
+    id: user.id,
+    email: user.email ?? '',
+    name: user.email ?? '',
+    role: 'STAFF',
+    avatarColor: '#6366f1',
+    image: null,
   }
 
   return (
