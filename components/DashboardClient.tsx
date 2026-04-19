@@ -478,6 +478,140 @@ function TeamManagerSummaryTable({
   )
 }
 
+function WelcomeSection({ profile, clients }: {
+  profile: Profile | null
+  clients: Client[]
+}) {
+  const now = new Date()
+  const hour = now.getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
+
+  // Get urgent tasks - client-specific items that need immediate attention
+  const urgentTasks: Array<{ client: Client; type: 'overdue' | 'due_today' | 'eligibility' | 'no_contact'; priority: number }> = []
+
+  clients.forEach(client => {
+    // Overdue items (highest priority)
+    if (isOverdue(client)) {
+      const overdueCount = getOverdueCount(client)
+      urgentTasks.push({ client, type: 'overdue', priority: 1000 + overdueCount })
+    }
+    // Due today
+    else if (client.next_deadline_date === formatDate(now)) {
+      urgentTasks.push({ client, type: 'due_today', priority: 900 })
+    }
+    // Eligibility ending soon (within 7 days)
+    else if (isEligibilityEndingSoon(client)) {
+      urgentTasks.push({ client, type: 'eligibility', priority: 800 })
+    }
+    // No contact 10+ days (critical threshold)
+    else {
+      const days = getDaysSinceContact(client.last_contact_date)
+      if (days !== null && days >= 10) {
+        urgentTasks.push({ client, type: 'no_contact', priority: 700 + days })
+      }
+    }
+  })
+
+  // Sort by priority (highest first) and take top 5
+  const topTasks = urgentTasks
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 5)
+
+  if (topTasks.length === 0) {
+    return (
+      <div className="card" style={{ 
+        marginBottom: 20,
+        background: 'linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(0,0,0,0) 100%)',
+        border: '1px solid rgba(124,58,237,0.2)'
+      }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+          {greeting}, {firstName} 👋
+        </div>
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          You're all caught up! No urgent tasks require your attention right now. Great work keeping your caseload under control.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card" style={{ 
+      marginBottom: 20,
+      background: 'linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(0,0,0,0) 100%)',
+      border: '1px solid rgba(124,58,237,0.2)'
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+        {greeting}, {firstName} 👋
+      </div>
+      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+        You have {topTasks.length} urgent {topTasks.length === 1 ? 'task' : 'tasks'} requiring immediate attention:
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {topTasks.map(({ client, type }, idx) => {
+          const Icon = type === 'overdue' ? '🚨' : type === 'due_today' ? '📅' : type === 'eligibility' ? '⚠️' : '💬'
+          let message = ''
+          let color = 'var(--text)'
+
+          if (type === 'overdue') {
+            const count = getOverdueCount(client)
+            message = `${count} overdue ${count === 1 ? 'deadline' : 'deadlines'}`
+            color = 'var(--red)'
+          } else if (type === 'due_today') {
+            message = 'Deadline due today'
+            color = 'var(--orange)'
+          } else if (type === 'eligibility') {
+            message = 'Eligibility ending soon'
+            color = 'var(--orange)'
+          } else {
+            const days = getDaysSinceContact(client.last_contact_date) ?? 0
+            message = `No contact for ${days} days`
+            color = 'var(--yellow)'
+          }
+
+          return (
+            <Link
+              key={`${client.id}-${type}`}
+              href={`/clients/${client.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 14px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent)'
+                e.currentTarget.style.transform = 'translateX(4px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border)'
+                e.currentTarget.style.transform = 'translateX(0)'
+              }}
+            >
+              <div style={{ fontSize: 24, lineHeight: 1 }}>{Icon}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+                  {client.first_name} {client.last_name}
+                </div>
+                <div style={{ fontSize: 12, color, fontWeight: 500 }}>
+                  {message}
+                </div>
+              </div>
+              <div style={{ fontSize: 18, color: 'var(--text-secondary)' }}>→</div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function NextBestMoveCard({ profile, stats, onFilter }: {
   profile: Profile | null
   stats: { overdue: number; dueThisWeek: number; noContact: number; eligibilitySoon: number }
@@ -1311,6 +1445,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         showConfetti={showConfetti}
         onDismissConfetti={() => setShowConfetti(false)}
       />
+
+      {/* Welcome section with urgent client-specific tasks */}
+      {!fullMode && (
+        <WelcomeSection profile={profile} clients={baseClients} />
+      )}
 
       {fullMode && (
         <div className="card" style={{ marginBottom: 16, padding: 14 }}>
