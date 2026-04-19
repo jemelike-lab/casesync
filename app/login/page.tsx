@@ -63,7 +63,7 @@ export default function LoginPage() {
       } else if (profile && profile.onboarded === false) {
         router.push('/onboarding')
       } else if (type === 'invite' || type === 'magiclink') {
-        router.push('/dashboard')
+        router.push('/w/dashboard')
       }
       router.refresh()
     }
@@ -137,7 +137,7 @@ export default function LoginPage() {
       if (profile && profile.onboarded === false) {
         router.push('/onboarding')
       } else {
-        router.push('/dashboard')
+        router.push('/w/dashboard')
       }
       router.refresh()
     }
