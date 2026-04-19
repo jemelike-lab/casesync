@@ -32,7 +32,6 @@ const ROLE_COLORS: Record<string, string> = { OWNER: '#fbbf24', ADMIN: '#8b5cf6'
 const STATUS_COLORS: Record<string, string> = { PENDING: '#f59e0b', ACCEPTED: '#10b981', EXPIRED: '#64748b', REVOKED: '#ef4444' }
 const TABS = [
   { id: 'users', label: 'Users', icon: <Users size={16} /> },
-  { id: 'invitations', label: 'Invitations', icon: <Mail size={16} /> },
   { id: 'departments', label: 'Departments', icon: <Building2 size={16} /> },
   { id: 'audit', label: 'Audit Log', icon: <Activity size={16} /> },
 ]
@@ -253,10 +252,6 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
           <div className="admin-stat">
             <div className="admin-stat-icon" style={{ background: 'rgba(139,92,246,0.12)' }}><ShieldCheck size={22} color="#8b5cf6" /></div>
             <div><div className="admin-stat-num">{users.filter(u => u.role === 'ADMIN').length}</div><div className="admin-stat-label">Admins</div></div>
-          </div>
-          <div className="admin-stat">
-            <div className="admin-stat-icon" style={{ background: 'rgba(245,158,11,0.12)' }}><Mail size={22} color="#f59e0b" /></div>
-            <div><div className="admin-stat-num">{pendingCount}</div><div className="admin-stat-label">Pending Invites</div></div>
           </div>
         </div>
       </div>

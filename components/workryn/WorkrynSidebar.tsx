@@ -56,7 +56,6 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   const supabase = createClient()
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
-  const [pendingInvites, setPendingInvites] = useState(0)
   const bellRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -70,19 +69,6 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
       .then(data => setNotifs(Array.isArray(data) ? data : []))
       .catch(() => {})
   }, [])
-
-  useEffect(() => {
-    if (!isAdmin) return
-    function fetchCount() {
-      fetch('/api/workryn/workryn/invitations/pending-count')
-        .then(r => r.json())
-        .then(data => setPendingInvites(data.count ?? 0))
-        .catch(() => {})
-    }
-    fetchCount()
-    const interval = setInterval(fetchCount, 30000)
-    return () => clearInterval(interval)
-  }, [isAdmin])
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -214,20 +200,6 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           </>
         )}
       </nav>
-
-      {/* Invitation Bubble — Admin/Manager only */}
-      {isAdmin && pendingInvites > 0 && (
-        <div
-          className="w-invite-bubble"
-          onClick={() => router.push('/w/admin?tab=invitations')}
-        >
-          <div className="w-invite-bubble-icon"><Mail size={14} style={{ color: 'var(--w-brand-light)' }} /></div>
-          <div className="w-invite-bubble-body">
-            <span className="w-invite-bubble-label">Pending invitations</span>
-            <span className="w-invite-bubble-count">{pendingInvites}</span>
-          </div>
-        </div>
-      )}
 
       {/* Footer with user info */}
       <div className="w-sidebar-footer">
