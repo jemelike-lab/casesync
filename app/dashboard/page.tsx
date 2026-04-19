@@ -51,6 +51,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         teamManagers={teamManagers}
         summaryByAssignee={Object.fromEntries(summaryMap)}
         globalSummary={globalSummary}
+        profile={profile ?? null}
       />
     )
   }

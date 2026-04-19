@@ -20,6 +20,7 @@ interface Props {
     eligibility_ending_soon_clients: number
     no_contact_7_days_clients: number
   }
+  profile?: Profile | null
 }
 
 function RoleBadge({ role }: { role: string }) {
@@ -123,13 +124,14 @@ function teamLink(filter: ClientFilter, plannerId?: string) {
   return `/team?${params.toString()}`
 }
 
-export default function SupervisorControlPanelClient({ planners, teamManagers, summaryByAssignee, globalSummary }: Props) {
+export default function SupervisorControlPanelClient({ planners, teamManagers, summaryByAssignee, globalSummary, profile }: Props) {
   const [clientFilter, setClientFilter] = useState<ClientFilter>('all')
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all')
   const [clients, setClients] = useState<Client[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [clientPage, setClientPage] = useState(0)
+  const [urgentClients, setUrgentClients] = useState<Client[]>([])
 
   const clientResultsRef = useRef<HTMLDivElement | null>(null)
   const rosterRef = useRef<HTMLDivElement | null>(null)
@@ -194,6 +196,29 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
     )
   }, [summaryByAssignee, globalSummary])
 
+  // Fetch urgent (overdue) clients on mount for welcome section
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    params.set('page', '0')
+    params.set('limit', '5')
+    params.set('filter', 'overdue')
+    params.set('sortField', 'priority')
+    params.set('sortDir', 'desc')
+
+    fetch(`/api/clients?${params.toString()}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) return
+        return res.json() as Promise<{ clients: Client[]; total: number }>
+      })
+      .then((payload) => {
+        if (payload) setUrgentClients(payload.clients ?? [])
+      })
+      .catch(() => {})
+
+    return () => controller.abort()
+  }, [])
+
   useEffect(() => {
     const controller = new AbortController()
     const params = new URLSearchParams()
@@ -251,6 +276,79 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           ← Dashboard
         </Link>
       </div>
+
+      {/* Welcome section with urgent client-specific tasks */}
+      {(() => {
+        const hour = new Date().getHours()
+        const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+        const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
+        const hasUrgent = urgentClients.length > 0
+
+        return (
+          <div className="card" style={{
+            marginBottom: 20,
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(0,0,0,0) 100%)',
+            border: '1px solid rgba(124,58,237,0.2)',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+              {greeting}, {firstName} 👋
+            </div>
+            {hasUrgent ? (
+              <>
+                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+                  {urgentClients.length} urgent {urgentClients.length === 1 ? 'client needs' : 'clients need'} immediate attention across the org:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {urgentClients.slice(0, 5).map((client) => {
+                    const assignedPlanner = planners.find(p => p.id === client.assigned_to)
+                    return (
+                      <Link
+                        key={client.id}
+                        href={`/clients/${client.id}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '12px 14px',
+                          background: 'var(--surface-2)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 10,
+                          textDecoration: 'none',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--accent)'
+                          e.currentTarget.style.transform = 'translateX(4px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--border)'
+                          e.currentTarget.style.transform = 'translateX(0)'
+                        }}
+                      >
+                        <div style={{ fontSize: 24, lineHeight: 1 }}>🚨</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+                            {client.first_name} {client.last_name}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--red)', fontWeight: 500 }}>
+                            Overdue
+                            {assignedPlanner ? ` · Assigned to ${assignedPlanner.full_name}` : ' · Unassigned'}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 18, color: 'var(--text-secondary)' }}>→</div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                No urgent overdue clients across the org right now — the team is in good shape.
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       <ClientQuickSearch
         helperText="Supervisor search across active clients."
