@@ -13,6 +13,7 @@ import TeamSavedViewsBar from './TeamSavedViewsBar'
 
 interface Props {
   clients: Client[]
+  allScopedClients?: Client[]
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
   fullFilterLabel?: string | null
@@ -81,7 +82,7 @@ function StatCard({ label, value, color, href, active }: { label: string; value:
   )
 }
 
-export default function SupervisorDashboardClient({ clients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category, savedViews = [], activeSavedViewId = null }: Props) {
+export default function SupervisorDashboardClient({ clients, allScopedClients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category, savedViews = [], activeSavedViewId = null }: Props) {
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
@@ -121,17 +122,21 @@ export default function SupervisorDashboardClient({ clients, planners, mode, ful
     })
   }, [clients, planners])
 
-  const totalStats = useMemo(() => ({
-    clients: clients.length,
-    overdue: clients.filter(isOverdue).length,
-    dueToday: clients.filter(isDueToday).length,
-    dueThisWeek: clients.filter(isDueThisWeek).length,
-    dueNext14Days: clients.filter(client => isDueNext14Days(client) && !isOverdue(client) && !isDueToday(client) && !isDueThisWeek(client)).length,
-    noContact7: clients.filter(client => {
-      const days = getDaysSinceContact(client.last_contact_date)
-      return days !== null && days >= 7
-    }).length,
-  }), [clients])
+  const totalStats = useMemo(() => {
+    // Use full unfiltered scope for stat cards so numbers are accurate across all filters
+    const statsSource = allScopedClients ?? clients
+    return {
+      clients: statsSource.length,
+      overdue: statsSource.filter(isOverdue).length,
+      dueToday: statsSource.filter(isDueToday).length,
+      dueThisWeek: statsSource.filter(isDueThisWeek).length,
+      dueNext14Days: statsSource.filter(client => isDueNext14Days(client) && !isOverdue(client) && !isDueToday(client) && !isDueThisWeek(client)).length,
+      noContact7: statsSource.filter(client => {
+        const days = getDaysSinceContact(client.last_contact_date)
+        return days !== null && days >= 7
+      }).length,
+    }
+  }, [clients, allScopedClients])
 
   const rebalanceSuggestions = useMemo(() => {
     const donors = plannerStats

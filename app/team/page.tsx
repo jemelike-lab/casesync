@@ -64,6 +64,9 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     clients = clients.filter(client => client.assigned_to && plannerFilterSet.has(client.assigned_to))
   }
 
+  // Keep unfiltered clients for accurate stat card counts
+  const allScopedClients = clients
+
   if (derivedFilter === 'overdue') {
     clients = clients.filter(client => {
       const categoryOk = !derivedCategory || client.category === derivedCategory
@@ -169,6 +172,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   return (
     <SupervisorDashboardClient
       clients={clients}
+      allScopedClients={allScopedClients}
       planners={(planners as Profile[]) ?? []}
       mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
       fullFilterLabel={fullFilterLabel}
