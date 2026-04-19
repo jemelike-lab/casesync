@@ -108,6 +108,7 @@ export default function Header({ user, profile }: Props) {
             <NavLink href="/help" label="📚 Help" active={helpActive} />
             <Link
               href="/w/dashboard"
+              data-tour="workryn-button"
               style={{
                 fontSize: 12,
                 fontWeight: 600,

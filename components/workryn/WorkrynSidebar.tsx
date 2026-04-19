@@ -102,8 +102,17 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
     <aside className="w-sidebar">
       {/* Logo + Toggle + Bell */}
       <div className="w-sidebar-logo">
-        <div className="w-sidebar-logo-icon">
-          <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>W</span>
+        <div className="w-sidebar-logo-icon" style={{ padding: 0, overflow: 'hidden' }}>
+          <img 
+            src="/logo.png" 
+            alt="BLH" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'contain',
+              padding: 2
+            }} 
+          />
         </div>
         <span className="w-sidebar-logo-text">Workryn</span>
 

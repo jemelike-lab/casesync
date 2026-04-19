@@ -64,6 +64,14 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 7,
+    emoji: '💼',
+    title: 'Workryn Portal',
+    content: "Click the Workryn button to access your employee portal — clock in/out, view your schedule, submit tickets, complete training, and more.",
+    target: '[data-tour="workryn-button"]',
+    position: 'bottom',
+  },
+  {
+    id: 8,
     emoji: '🤖',
     title: 'BLH Bot',
     content: "BLH Bot is your AI assistant — click the purple button anytime you have a question. Ask about deadlines, procedures, eligibility codes, and more.",
@@ -71,7 +79,7 @@ const TOUR_STEPS: TourStep[] = [
     position: 'top',
   },
   {
-    id: 8,
+    id: 9,
     emoji: '🔔',
     title: 'Notification Bell',
     content: "Check your notification bell for deadline reminders, compliance alerts, and team messages. A red badge means you have unread notifications.",
@@ -79,7 +87,7 @@ const TOUR_STEPS: TourStep[] = [
     position: 'bottom',
   },
   {
-    id: 9,
+    id: 10,
     emoji: '✅',
     title: "You're all set!",
     content: "You know the essentials! Explore the Calendar and Documents from the navigation. If you ever need help, BLH Bot is always here.",
