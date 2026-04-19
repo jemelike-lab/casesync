@@ -71,6 +71,7 @@ model User {
   // Notification preferences (1:1)
   notificationPreference NotificationPreference?
 
+  @@schema("public")
   @@map("w_user")
 }
 
@@ -93,6 +94,7 @@ model Department {
   tickets     Ticket[]
   shifts      Shift[]
 
+  @@schema("public")
   @@map("w_department")
 }
 
@@ -123,6 +125,7 @@ model TimeEntry {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_time_entry")
 }
 
@@ -141,6 +144,7 @@ model TimeBreak {
 
   createdAt       DateTime @default(now())
 
+  @@schema("public")
   @@map("w_time_break")
 }
 
@@ -167,6 +171,7 @@ model Task {
 
   comments     TaskComment[]
 
+  @@schema("public")
   @@map("w_task")
 }
 
@@ -178,6 +183,7 @@ model TaskComment {
   authorId  String
   createdAt DateTime @default(now())
 
+  @@schema("public")
   @@map("w_task_comment")
 }
 
@@ -213,6 +219,7 @@ model Ticket {
   messages      TicketMessage[]
   internalNotes TicketInternalNote[]
 
+  @@schema("public")
   @@map("w_ticket")
 }
 
@@ -230,6 +237,7 @@ model TicketMessage {
 
   createdAt    DateTime @default(now())
 
+  @@schema("public")
   @@map("w_ticket_message")
 }
 
@@ -245,6 +253,7 @@ model TicketInternalNote {
 
   createdAt DateTime @default(now())
 
+  @@schema("public")
   @@map("w_ticket_internal_note")
 }
 
@@ -270,6 +279,7 @@ model TrainingCourse {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_training_course")
 }
 
@@ -290,6 +300,7 @@ model TrainingLesson {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_training_lesson")
 }
 
@@ -308,6 +319,7 @@ model LessonProgress {
 
   @@unique([lessonId, userId])
 
+  @@schema("public")
   @@map("w_lesson_progress")
 }
 
@@ -326,6 +338,7 @@ model TrainingQuiz {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_training_quiz")
 }
 
@@ -343,6 +356,7 @@ model QuizQuestion {
 
   createdAt DateTime @default(now())
 
+  @@schema("public")
   @@map("w_quiz_question")
 }
 
@@ -355,6 +369,7 @@ model QuizOption {
   questionId String
   question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@map("w_quiz_option")
 }
 
@@ -373,6 +388,7 @@ model QuizAttempt {
   startedAt   DateTime @default(now())
   completedAt DateTime?
 
+  @@schema("public")
   @@map("w_quiz_attempt")
 }
 
@@ -391,6 +407,7 @@ model TrainingEnrollment {
 
   @@unique([courseId, userId])
 
+  @@schema("public")
   @@map("w_training_enrollment")
 }
 
@@ -413,6 +430,7 @@ model EvaluationTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_evaluation_template")
 }
 
@@ -428,6 +446,7 @@ model EvaluationCriterion {
 
   scores      EvaluationScore[]
 
+  @@schema("public")
   @@map("w_evaluation_criterion")
 }
 
@@ -457,6 +476,7 @@ model Evaluation {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@schema("public")
   @@map("w_evaluation")
 }
 
@@ -471,6 +491,7 @@ model EvaluationScore {
   criterionId   String
   criterion     EvaluationCriterion @relation(fields: [criterionId], references: [id])
 
+  @@schema("public")
   @@map("w_evaluation_score")
 }
 
@@ -485,6 +506,7 @@ model AuditLog {
   ipAddress    String?
   createdAt    DateTime @default(now())
 
+  @@schema("public")
   @@map("w_audit_log")
 }
 
@@ -501,6 +523,7 @@ model ChatChannel {
   messages    ChatMessage[]
   members     ChannelMember[]
 
+  @@schema("public")
   @@map("w_chat_channel")
 }
 
@@ -517,6 +540,7 @@ model ChannelMember {
 
   @@unique([channelId, userId])
 
+  @@schema("public")
   @@map("w_channel_member")
 }
 
@@ -531,6 +555,7 @@ model MessageReaction {
 
   @@unique([messageId, userId, emoji])
 
+  @@schema("public")
   @@map("w_message_reaction")
 }
 
@@ -546,6 +571,7 @@ model Reminder {
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdById String
 
+  @@schema("public")
   @@map("w_reminder")
 }
 
@@ -563,6 +589,7 @@ model ChatMessage {
 
   reactions MessageReaction[]
 
+  @@schema("public")
   @@map("w_chat_message")
 }
 
@@ -579,6 +606,7 @@ model Notification {
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@schema("public")
   @@map("w_notification")
 }
 
@@ -608,6 +636,7 @@ model NotificationPreference {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@schema("public")
   @@map("w_notification_preference")
 }
 
@@ -627,6 +656,7 @@ model Shift {
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
 
+  @@schema("public")
   @@map("w_shift")
 }
 
@@ -649,6 +679,7 @@ model Invitation {
   acceptedById String?
   acceptedBy   User?   @relation("AcceptedInvitation", fields: [acceptedById], references: [id])
 
+  @@schema("public")
   @@map("w_invitation")
 }
 
@@ -660,6 +691,7 @@ model DirectConversation {
   participants DirectConversationParticipant[]
   messages     DirectMessage[]
 
+  @@schema("public")
   @@map("w_direct_conversation")
 }
 
@@ -673,6 +705,7 @@ model DirectConversationParticipant {
 
   @@unique([conversationId, userId])
 
+  @@schema("public")
   @@map("w_direct_conversation_participant")
 }
 
@@ -688,5 +721,6 @@ model DirectMessage {
   authorId       String
   author         User @relation(fields: [authorId], references: [id])
 
+  @@schema("public")
   @@map("w_direct_message")
 }
