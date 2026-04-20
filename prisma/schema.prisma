@@ -4,9 +4,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("WORKRYN_DATABASE_URL")
-  schemas  = ["public", "auth"]
+  provider  = "postgresql"
+  url       = env("WORKRYN_DATABASE_URL")
+  directUrl = env("WORKRYN_DIRECT_URL")
+  schemas   = ["public", "auth"]
 }
 
 
