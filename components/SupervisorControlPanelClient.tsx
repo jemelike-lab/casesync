@@ -55,16 +55,22 @@ function ClickableStatCard({
       onClick={onClick}
       style={{
         textAlign: 'center',
-        padding: '20px 24px',
+        padding: '16px 12px',
         borderRadius: 16,
         border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
         background: active ? 'rgba(0,122,255,0.08)' : 'var(--surface)',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.15s',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 90,
+        gap: 6,
       }}
     >
-      <div style={{ fontSize: 32, fontWeight: 700, color: color ?? 'var(--text)' }}>{value}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: color ?? 'var(--text)', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.3, fontWeight: 500 }}>{label}</div>
     </button>
   )
 }
