@@ -95,25 +95,7 @@ export default function NotificationBell({ userId }: Props) {
   return (
     <div ref={ref} style={{ position: 'relative', zIndex: 6000 }}>
       <button
-        onPointerUp={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          if (isMobileViewport) {
-            router.push('/dashboard/notifications')
-            return
-          }
-          setOpen(v => !v)
-        }}
         onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          if (isMobileViewport) {
-            router.push('/dashboard/notifications')
-            return
-          }
-          setOpen(v => !v)
-        }}
-        onTouchEnd={(event) => {
           event.preventDefault()
           event.stopPropagation()
           if (isMobileViewport) {
