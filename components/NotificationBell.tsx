@@ -99,7 +99,7 @@ export default function NotificationBell({ userId }: Props) {
           event.preventDefault()
           event.stopPropagation()
           if (isMobileViewport) {
-            router.push('/notifications')
+            router.push('/dashboard/notifications')
             return
           }
           setOpen(v => !v)
@@ -108,7 +108,7 @@ export default function NotificationBell({ userId }: Props) {
           event.preventDefault()
           event.stopPropagation()
           if (isMobileViewport) {
-            router.push('/notifications')
+            router.push('/dashboard/notifications')
             return
           }
           setOpen(v => !v)
@@ -117,7 +117,7 @@ export default function NotificationBell({ userId }: Props) {
           event.preventDefault()
           event.stopPropagation()
           if (isMobileViewport) {
-            router.push('/notifications')
+            router.push('/dashboard/notifications')
             return
           }
           setOpen(v => !v)

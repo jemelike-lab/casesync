@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Profile } from '@/lib/types'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -38,6 +38,11 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
   const router = useRouter()
   const { notifications, archivedNotifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
   const [activeTab, setActiveTab] = useState<'inbox' | 'archive'>('inbox')
+
+  // P6 fix: clear bell badge on mount
+  useEffect(() => {
+    markAllRead()
+  }, [userId])
   const visibleNotifications = useMemo(
     () => activeTab === 'inbox' ? notifications : archivedNotifications,
     [activeTab, notifications, archivedNotifications]
