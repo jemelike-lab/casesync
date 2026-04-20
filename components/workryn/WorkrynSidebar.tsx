@@ -56,8 +56,10 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   const supabase = createClient()
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
+  const [notifFromTopbar, setNotifFromTopbar] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const bellRef = useRef<HTMLButtonElement>(null)
+  const topbarBellRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const unread = notifs.filter(n => !n.isRead).length
@@ -80,7 +82,8 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
     function handler(e: MouseEvent) {
       if (
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        bellRef.current && !bellRef.current.contains(e.target as Node)
+        bellRef.current && !bellRef.current.contains(e.target as Node) &&
+        topbarBellRef.current && !topbarBellRef.current.contains(e.target as Node)
       ) {
         setShowNotifs(false)
       }
@@ -117,9 +120,9 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
         </button>
         <span className="w-mobile-title">Workryn</span>
         <button
-          ref={bellRef}
+          ref={topbarBellRef}
           className="w-btn w-btn-icon w-btn-ghost w-notif-bell w-focus-ring"
-          onClick={() => setShowNotifs(v => !v)}
+          onClick={() => { setNotifFromTopbar(true); setShowNotifs(v => !v) }}
           aria-label="Notifications"
         >
           <Bell size={20} />
@@ -169,7 +172,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
             <button
               ref={bellRef}
               className="w-btn w-btn-icon w-btn-ghost w-notif-bell w-focus-ring"
-              onClick={() => setShowNotifs(v => !v)}
+              onClick={() => { setNotifFromTopbar(false); setShowNotifs(v => !v) }}
               title="Notifications"
               aria-label="Notifications"
             >
@@ -181,7 +184,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           </div>
 
           {showNotifs && (
-            <div ref={dropdownRef} className="w-notif-dropdown w-animate-scale-in">
+            <div ref={dropdownRef} className={`w-notif-dropdown w-animate-scale-in${notifFromTopbar ? ' w-notif-dropdown--topbar' : ''}`}>
               <div className="w-notif-header">
                 <span style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Notifications</span>
                 {unread > 0 && (
