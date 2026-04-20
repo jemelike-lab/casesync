@@ -519,3 +519,92 @@
 .w-animate-scale-in { animation: w-scaleIn 0.2s ease both; }
 .w-app-shell .animate-in { animation: w-fadeIn 0.25s ease both; }
 .w-app-shell .animate-slide-up { animation: w-slideUp 0.3s ease both; }
+
+/* ─── Mobile Topbar (PWA / narrow viewports) ────────────────────────────── */
+.w-mobile-topbar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--w-bg-elevated);
+  border-bottom: 1px solid var(--w-border-subtle);
+  z-index: 300;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+}
+
+.w-mobile-title {
+  flex: 1;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--w-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.w-hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: var(--w-text-primary);
+  cursor: pointer;
+  border-radius: var(--w-radius-md);
+  flex-shrink: 0;
+  transition: background var(--w-transition);
+}
+
+.w-hamburger:hover {
+  background: var(--w-bg-hover);
+}
+
+/* Backdrop overlay when sidebar is open on mobile */
+.w-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 49;
+}
+
+@media (max-width: 768px) {
+  .w-mobile-topbar {
+    display: flex;
+  }
+
+  .w-sidebar-backdrop {
+    display: block;
+  }
+
+  /* Push page content down so it clears the topbar */
+  .w-page-content {
+    margin-left: 0;
+    padding-top: 56px;
+  }
+
+  /* Sidebar slides in from the left */
+  .w-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--w-transition-smooth);
+    z-index: 50;
+  }
+
+  .w-sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--w-shadow-lg);
+  }
+
+  /* Notification dropdown anchors to top-left when sidebar is open on mobile */
+  .w-notif-dropdown {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    top: 64px;
+  }
+}
