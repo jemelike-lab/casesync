@@ -10,19 +10,21 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [show, setShow] = useState(false)
+  const [animateIn, setAnimateIn] = useState(false)
 
   useEffect(() => {
-    // Check if already dismissed
+    if (typeof window === 'undefined') return
     if (localStorage.getItem('pwa-banner-dismissed') === 'true') return
-
-    // Only show on mobile
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-    if (!isMobile) return
+    if (window.matchMedia('(display-mode: standalone)').matches) return
 
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShow(true)
+      // Delay show for page to settle
+      setTimeout(() => {
+        setShow(true)
+        requestAnimationFrame(() => setAnimateIn(true))
+      }, 2000)
     }
 
     window.addEventListener('beforeinstallprompt', handler)
@@ -34,86 +36,119 @@ export default function InstallBanner() {
     await deferredPrompt.prompt()
     const choice = await deferredPrompt.userChoice
     if (choice.outcome === 'accepted') {
-      setShow(false)
+      handleClose()
     }
     setDeferredPrompt(null)
   }
 
+  const handleClose = () => {
+    setAnimateIn(false)
+    setTimeout(() => setShow(false), 300)
+  }
+
   const handleDismiss = () => {
     localStorage.setItem('pwa-banner-dismissed', 'true')
-    setShow(false)
+    handleClose()
   }
 
   if (!show) return null
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      background: '#1c1c1e',
-      borderTop: '1px solid #2c2c2e',
-      padding: '12px 16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      zIndex: 9999,
-      boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
-    }}>
-      {/* Icon */}
+    <>
+      <style>{`
+        @keyframes installSlideUp {
+          from { opacity: 0; transform: translateY(100%); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes installSlideDown {
+          from { opacity: 1; transform: translateY(0); }
+          to   { opacity: 0; transform: translateY(100%); }
+        }
+      `}</style>
       <div style={{
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        background: '#007aff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 20,
-        flexShrink: 0,
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        padding: 'max(12px, env(safe-area-inset-bottom)) 12px 12px',
+        animation: animateIn ? 'installSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1) both' : 'installSlideDown 0.25s ease both',
+        pointerEvents: animateIn ? 'auto' : 'none',
       }}>
-        📋
-      </div>
+        <div style={{
+          background: 'rgba(28, 28, 30, 0.92)',
+          backdropFilter: 'blur(20px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.08)',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          boxShadow: '0 -2px 24px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.05) inset',
+          maxWidth: 480,
+          margin: '0 auto',
+        }}>
+          {/* App icon */}
+          <img
+            src="/icons/icon-96x96.png"
+            alt="CaseSync"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 11,
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+          />
 
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#f5f5f7' }}>Add CaseSync to your home screen</div>
-        <div style={{ fontSize: 11, color: '#8e8e93', marginTop: 2 }}>For the best experience</div>
-      </div>
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#f5f5f7', lineHeight: 1.3 }}>
+              Install CaseSync
+            </div>
+            <div style={{ fontSize: 12, color: '#8e8e93', marginTop: 2, lineHeight: 1.3 }}>
+              Add to your home screen for quick access
+            </div>
+          </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button
-          onClick={handleDismiss}
-          style={{
-            background: 'transparent',
-            border: '1px solid #3a3a3c',
-            color: '#8e8e93',
-            padding: '6px 12px',
-            borderRadius: 6,
-            fontSize: 13,
-            cursor: 'pointer',
-          }}
-        >
-          Dismiss
-        </button>
-        <button
-          onClick={handleInstall}
-          style={{
-            background: '#007aff',
-            border: 'none',
-            color: 'white',
-            padding: '6px 14px',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Install
-        </button>
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={handleDismiss}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#636366',
+                padding: '8px',
+                fontSize: 13,
+                cursor: 'pointer',
+                lineHeight: 1,
+              }}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+            <button
+              onClick={handleInstall}
+              style={{
+                background: '#007aff',
+                border: 'none',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                lineHeight: 1.2,
+              }}
+            >
+              Install
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
