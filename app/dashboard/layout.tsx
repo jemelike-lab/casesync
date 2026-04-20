@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
-import IdleTimeout from '@/components/IdleTimeout'
 import YourCaseAI from '@/components/YourCaseAI'
 import OnboardingTour from '@/components/OnboardingTour'
 
@@ -27,7 +26,7 @@ export default async function DashboardLayout({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
       <Header user={user} profile={profile} />
-      <IdleTimeout timeoutMs={15 * 60 * 1000} />
+      {/* IdleTimeout is now handled globally by SessionGuard in root layout */}
       <main style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
         {children}
       </main>
