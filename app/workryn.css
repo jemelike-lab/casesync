@@ -608,3 +608,17 @@
     top: 64px;
   }
 }
+
+/* ─── Topbar bell notification dropdown (mobile) ────────────────────────── */
+/* When opened from the mobile topbar bell, anchor below the topbar instead  */
+/* of to the right of the sidebar (which is off-screen on mobile).           */
+@media (max-width: 768px) {
+  .w-notif-dropdown--topbar {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    top: 64px; /* below the 56px topbar + 8px gap */
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+  }
+}
