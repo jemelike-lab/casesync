@@ -71,7 +71,7 @@ export default function Header({ user, profile }: Props) {
         padding: '0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right))',
         width: '100%',
         maxWidth: '100vw',
-        overflow: 'hidden',
+        overflow: 'visible',
         height: 60,
         display: 'flex',
         alignItems: 'center',
