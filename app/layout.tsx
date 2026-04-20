@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import './workryn.css'
 import InstallBanner from '@/components/InstallBanner'
+import SessionGuard from '@/components/SessionGuard'
 import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -47,6 +48,8 @@ export default function RootLayout({
       </head>
       <body className={inter.className} style={{ background: '#0f0f11', color: '#f5f5f7', minHeight: '100dvh' }}>
         {children}
+        {/* SessionGuard: mounts IdleTimeout for all authenticated routes */}
+        <SessionGuard />
         <InstallBanner />
         <Analytics />
       </body>
