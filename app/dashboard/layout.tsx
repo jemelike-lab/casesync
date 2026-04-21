@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { enforceMfa } from '@/lib/enforce-mfa'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import YourCaseAI from '@/components/YourCaseAI'
@@ -15,6 +16,9 @@ export default async function DashboardLayout({
   if (!user) {
     redirect('/login')
   }
+
+  // Enforce MFA for supervisor/IT roles
+  await enforceMfa()
 
   // Get profile
   const { data: profile } = await supabase
