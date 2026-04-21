@@ -90,30 +90,4 @@ export async function getTeamManagers(supabase: Awaited<ReturnType<typeof create
 
   return (data as Profile[]) ?? []
 }
-
-export async function getActiveClients(supabase: Awaited<ReturnType<typeof createClient>>, assignedTo?: string | string[]) {
-  let query = supabase
-    .from('clients')
-    .select(CLIENT_WITH_ASSIGNEE_FIELDS)
-    .eq('is_active', true)
-    .order('last_name')
-
-  if (Array.isArray(assignedTo)) {
-    if (assignedTo.length === 0) return []
-    query = query.in('assigned_to', assignedTo)
-  } else if (assignedTo) {
-    query = query.eq('assigned_to', assignedTo)
-  }
-
-  const { data, error } = await query
-  if (error) throw error
-
-  type ClientRow = Omit<Client, 'profiles'> & {
-    profiles?: { id: string; full_name: string | null; role: Profile['role'] } | { id: string; full_name: string | null; role: Profile['role'] }[] | null
-  }
-
-  return ((data ?? []) as ClientRow[]).map((client) => ({
-    ...client,
-    profiles: Array.isArray(client.profiles) ? client.profiles[0] ?? null : client.profiles ?? null,
-  })) as Client[]
-}
+// getActiveClients() removed — all dashboard/list views now use paginated /api/clients
