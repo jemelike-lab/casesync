@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#007aff" />
+        <meta name="theme-color" content="#2563eb" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CaseSync" />
@@ -32,7 +32,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="CaseSync" />
-        <meta name="msapplication-TileColor" content="#0f0f11" />
+        <meta name="msapplication-TileColor" content="#2563eb" />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
         {/* Apple splash screens */}
         <link rel="apple-touch-startup-image" href="/splash/splash-iphone-14-pro.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
