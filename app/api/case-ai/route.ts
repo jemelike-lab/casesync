@@ -2,6 +2,7 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -788,6 +789,9 @@ LTSS NAVIGATION:
 `
 
 export async function POST(req: NextRequest) {
+  const aiRateLimit = await checkAiRateLimit(req, '/api/case-ai')
+  if (aiRateLimit) return aiRateLimit
+
   // Rate limiting: max 10 concurrent AI requests
   if (activeRequests >= MAX_CONCURRENT) {
     return new Response(
