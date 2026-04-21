@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+63
+ { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const WINDOW_MS = 60 * 1000 // 1 minute
@@ -51,16 +52,18 @@ export async function checkAiRateLimit(
   }
 
   // Record this request — ignore conflicts from near-simultaneous requests
-  await serviceSupabase
-    .from('ai_rate_limits')
-    .insert({
-      user_id: user.id,
-      endpoint,
-      window_start: new Date().toISOString(),
-    })
-    .throwOnError()
-    .then(() => null)
-    .catch(() => null) // UNIQUE conflict on same-microsecond requests is harmless
+  try {
+        await serviceSupabase
+              .from('ai_rate_limits')
+                    .insert({
+                            user_id: user.id,
+                                    endpoint,
+                                            window_start: new Date().toISOString(),
+                                                  })
+                                                    } catch (_e) {
+                                                        // UNIQUE conflict on same-microsecond requests is harmless
+                                                          }
 
+  }
   return null // within limits
 }
