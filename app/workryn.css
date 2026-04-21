@@ -93,6 +93,7 @@
 .w-app-shell .w-main {
   flex: 1;
   min-width: 0;
+  margin-left: var(--w-sidebar-width);
   padding: 32px 40px;
 }
 
@@ -347,7 +348,7 @@
 @media (max-width: 768px) {
   .w-sidebar { transform: translateX(-100%); transition: transform var(--w-transition-smooth); }
   .w-sidebar.open { transform: translateX(0); }
-  .w-app-shell .w-main { padding: 20px 16px; }
+  .w-app-shell .w-main { margin-left: 0; padding: 20px 16px; }
 }
 
 /*  Focus rings  */
