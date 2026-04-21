@@ -116,8 +116,8 @@ export default function LoginPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes cs-pulse-glow {
-          0%, 100% { box-shadow: 0 0 40px rgba(124,58,237,0.18), 0 0 80px rgba(0,122,255,0.08); }
-          50%       { box-shadow: 0 0 60px rgba(124,58,237,0.28), 0 0 120px rgba(0,122,255,0.14); }
+          0%, 100% { box-shadow: 0 0 40px rgba(37,99,235,0.18), 0 0 80px rgba(0,122,255,0.08); }
+          50%       { box-shadow: 0 0 60px rgba(37,99,235,0.28), 0 0 120px rgba(0,122,255,0.14); }
         }
         .cs-login-card {
           animation: cs-fadein 0.5s cubic-bezier(0.22,1,0.36,1) both, cs-pulse-glow 4s ease-in-out infinite;
@@ -136,9 +136,9 @@ export default function LoginPage() {
         }
         .cs-login-input::placeholder { color: rgba(255,255,255,0.28); }
         .cs-login-input:focus {
-          border-color: rgba(124,58,237,0.7);
-          background: rgba(124,58,237,0.06);
-          box-shadow: 0 0 0 3px rgba(124,58,237,0.18);
+          border-color: rgba(37,99,235,0.7);
+          background: rgba(37,99,235,0.06);
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
         }
         .cs-sign-in-btn {
           width: 100%;
@@ -148,16 +148,16 @@ export default function LoginPage() {
           border: none;
           border-radius: 11px;
           cursor: pointer;
-          background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           color: #fff;
           letter-spacing: 0.01em;
           transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
-          box-shadow: 0 4px 20px rgba(124,58,237,0.45);
+          box-shadow: 0 4px 20px rgba(37,99,235,0.45);
         }
         .cs-sign-in-btn:hover:not(:disabled) {
           opacity: 0.92;
           transform: translateY(-1px);
-          box-shadow: 0 6px 28px rgba(124,58,237,0.55);
+          box-shadow: 0 6px 28px rgba(37,99,235,0.55);
         }
         .cs-sign-in-btn:active:not(:disabled) { transform: translateY(0); }
         .cs-sign-in-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -192,10 +192,10 @@ export default function LoginPage() {
         padding: '24px',
         position: 'relative',
         overflow: 'hidden',
-        background: 'radial-gradient(ellipse 120% 80% at 50% -10%, rgba(124,58,237,0.22) 0%, transparent 60%), radial-gradient(ellipse 80% 60% at 80% 80%, rgba(0,122,255,0.10) 0%, transparent 55%), #0a0a0f',
+        background: 'radial-gradient(ellipse 120% 80% at 50% -10%, rgba(37,99,235,0.22) 0%, transparent 60%), radial-gradient(ellipse 80% 60% at 80% 80%, rgba(0,122,255,0.10) 0%, transparent 55%), #0a0a0f',
       }}>
         {/* Floating orbs */}
-        <div className="cs-orb" style={{ width: 340, height: 340, background: 'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 70%)', top: '-80px', left: '-60px', animation: 'cs-float-1 12s ease-in-out infinite' }} />
+        <div className="cs-orb" style={{ width: 340, height: 340, background: 'radial-gradient(circle, rgba(37,99,235,0.14) 0%, transparent 70%)', top: '-80px', left: '-60px', animation: 'cs-float-1 12s ease-in-out infinite' }} />
         <div className="cs-orb" style={{ width: 260, height: 260, background: 'radial-gradient(circle, rgba(0,122,255,0.10) 0%, transparent 70%)', bottom: '-40px', right: '-40px', animation: 'cs-float-2 15s ease-in-out infinite' }} />
         <div className="cs-orb" style={{ width: 180, height: 180, background: 'radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%)', top: '60%', left: '15%', animation: 'cs-float-3 9s ease-in-out infinite' }} />
 
@@ -227,12 +227,12 @@ export default function LoginPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(18,18,26,0.8) 100%)',
-              border: '1px solid rgba(124,58,237,0.22)',
+              background: 'linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(18,18,26,0.8) 100%)',
+              border: '1px solid rgba(37,99,235,0.22)',
               borderRadius: 18,
               padding: '10px',
               marginBottom: 16,
-              boxShadow: '0 4px 24px rgba(124,58,237,0.2)',
+              boxShadow: '0 4px 24px rgba(37,99,235,0.2)',
             }}>
               <Image src="/logo.png" alt="Beatrice Loving Heart" width={68} height={68} style={{ objectFit: 'contain', display: 'block' }} />
             </div>

@@ -511,7 +511,7 @@ export default function BLHAssistant() {
         .blh-bot-msg::-webkit-scrollbar-track { background: transparent; }
         .blh-bot-msg::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
         .blh-bot-prompt-btn:hover { background: rgba(139,92,246,0.25) !important; border-color: rgba(139,92,246,0.5) !important; }
-        .blh-bot-send:hover:not(:disabled) { background: rgba(124,58,237,0.9) !important; }
+        .blh-bot-send:hover:not(:disabled) { background: rgba(37,99,235,0.9) !important; }
         .blh-bot-send:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 480px) {
           .blh-bot-panel {
@@ -544,7 +544,7 @@ export default function BLHAssistant() {
                 position: 'absolute',
                 inset: 0,
                 borderRadius: '50%',
-                background: 'rgba(124,58,237,0.4)',
+                background: 'rgba(37,99,235,0.4)',
                 animation: 'pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite',
               }}
             />
@@ -556,7 +556,7 @@ export default function BLHAssistant() {
                 width: 52,
                 height: 52,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -642,7 +642,7 @@ export default function BLHAssistant() {
                   width: 28,
                   height: 28,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -876,7 +876,7 @@ export default function BLHAssistant() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 16,
@@ -886,7 +886,7 @@ export default function BLHAssistant() {
                   justifyContent: 'center',
                   flexShrink: 0,
                   transition: 'background 0.15s',
-                  boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
+                  boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
                 }}
                 title="Send"
               >

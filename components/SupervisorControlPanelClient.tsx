@@ -293,8 +293,8 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         return (
           <div className="card" style={{
             marginBottom: 20,
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(0,0,0,0) 100%)',
-            border: '1px solid rgba(124,58,237,0.2)',
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(0,0,0,0) 100%)',
+            border: '1px solid rgba(37,99,235,0.2)',
           }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
               {greeting}, {firstName} 👋

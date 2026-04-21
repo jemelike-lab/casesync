@@ -304,7 +304,7 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
               height={spotlightRect.height + 16}
               rx={10}
               fill="transparent"
-              stroke="#7C3AED"
+              stroke="#2563eb"
               strokeWidth={2.5}
             />
           </svg>
@@ -348,7 +348,7 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
                   width: i === step ? 18 : 6,
                   height: 6,
                   borderRadius: 3,
-                  background: i === step ? '#7C3AED' : '#e5e7eb',
+                  background: i === step ? '#2563eb' : '#e5e7eb',
                   transition: 'width 0.2s, background 0.2s',
                 }}
               />
@@ -392,7 +392,7 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
             onClick={handleNext}
             autoFocus
             style={{
-              background: '#7C3AED',
+              background: '#2563eb',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -403,7 +403,7 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
               transition: 'background 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#6D28D9')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#7C3AED')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#2563eb')}
           >
             {isLast ? "Let's go! 🚀" : 'Next →'}
           </button>

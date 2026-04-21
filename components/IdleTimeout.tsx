@@ -137,7 +137,7 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 48, fontWeight: 800, color: '#7C3AED', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: 48, fontWeight: 800, color: '#2563eb', fontVariantNumeric: 'tabular-nums' }}>
             {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
           </div>
           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
@@ -150,7 +150,7 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
           autoFocus
           style={{
             width: '100%',
-            background: '#7C3AED',
+            background: '#2563eb',
             color: '#fff',
             border: 'none',
             borderRadius: 10,
@@ -161,7 +161,7 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
             transition: 'background 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget.style.background = '#6D28D9')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#7C3AED')}
+          onMouseLeave={e => (e.currentTarget.style.background = '#2563eb')}
         >
           Continue My Session
         </button>
