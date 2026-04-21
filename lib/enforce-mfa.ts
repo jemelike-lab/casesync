@@ -9,25 +9,32 @@ const MFA_REQUIRED_ROLES = ['supervisor', 'it']
  * Redirects to /settings/security if MFA is required but not enrolled.
  */
 export async function enforceMfa() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return // not authenticated, will be caught by auth guard
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-  if (!profile || !MFA_REQUIRED_ROLES.includes(profile.role)) return
+    if (!profile || !MFA_REQUIRED_ROLES.includes(profile.role)) return
 
-  // Check if user has MFA enrolled
-  const { data: factors } = await supabase.auth.mfa.listFactors()
-  const hasVerifiedFactor = (factors?.totp ?? []).some(
-    (f: any) => f.status === 'verified'
-  )
+    // Check if user has MFA enrolled
+    const { data: factors } = await supabase.auth.mfa.listFactors()
+    const totpFactors = (factors as any)?.totp ?? (factors as any)?.all?.filter((f: any) => f.factor_type === 'totp') ?? []
+    const hasVerifiedFactor = Array.isArray(totpFactors) && totpFactors.some(
+      (f: any) => f.status === 'verified'
+    )
 
-  if (!hasVerifiedFactor) {
-    redirect('/settings/security?mfa_required=1')
+    if (!hasVerifiedFactor) {
+      redirect('/settings/security?mfa_required=1')
+    }
+  } catch (e: any) {
+    // Don't block on MFA check errors — log and continue
+    if (e?.digest?.includes('NEXT_REDIRECT')) throw e // re-throw redirect
+    console.error('[enforceMfa] Error checking MFA:', e?.message)
   }
 }
