@@ -6,7 +6,7 @@ import TransferBoardClient from '@/components/TransferBoardClient'
 import PlannerAssignmentBoardClient from '@/components/PlannerAssignmentBoardClient'
 import RebalanceHistoryClient from '@/components/RebalanceHistoryClient'
 import TeamQueuesClient from '@/components/TeamQueuesClient'
-import { getActiveClients, getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
+import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
 
 export const revalidate = 60
@@ -52,9 +52,9 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   let clients: Client[] = []
 
   if (isSupervisorLike(profile.role) && view === 'transfer') {
-    clients = await getActiveClients(supabase)
+    { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).order('last_name'); clients = data ?? [] }
   } else if (plannerIds.length > 0) {
-    clients = await getActiveClients(supabase, plannerIds)
+    { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).in('assigned_to', plannerIds).order('last_name'); clients = data ?? [] }
   }
 
   const plannerFilters = Array.isArray(derivedPlanner) ? derivedPlanner.filter(Boolean) : derivedPlanner ? [derivedPlanner] : []
