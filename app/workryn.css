@@ -2219,3 +2219,324 @@
   .w-settings-layout { grid-template-columns: 1fr; }
   .w-topbar { padding: 0 var(--w-space-4); }
 }
+
+/* ============================================================
+   BACKWARD COMPATIBILITY — maps old component class names
+   to new v3 design tokens. Remove once components are updated.
+   ============================================================ */
+
+/* Sidebar brand/logo zone */
+.w-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-3);
+  padding: var(--w-space-5) var(--w-space-5);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  z-index: 1;
+}
+
+.w-sidebar-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--w-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.w-sidebar-logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.w-sidebar-logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+/* Context switcher toggle */
+.w-toggle-btn {
+  margin: var(--w-space-3) var(--w-space-4);
+  padding: var(--w-space-2) var(--w-space-3);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--w-radius);
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-2);
+  cursor: pointer;
+  transition: background var(--w-duration) var(--w-ease);
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.w-toggle-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.w-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.w-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+/* Notification bell (sidebar topbar area) */
+.w-notif-bell {
+  color: rgba(255,255,255,0.5);
+  position: relative;
+}
+
+.w-notif-bell:hover {
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.08);
+}
+
+.w-notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--w-danger);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: var(--w-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+  border: 1.5px solid var(--w-sidebar-bg);
+}
+
+/* Sidebar nav */
+.w-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--w-space-2) var(--w-space-4) var(--w-space-4);
+  position: relative;
+  z-index: 1;
+}
+
+.w-sidebar-nav::-webkit-scrollbar { width: 0; }
+
+.w-sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: var(--w-space-3) var(--w-space-2) var(--w-space-1);
+}
+
+/* Sidebar nav items — THE KEY FIX */
+.w-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-3);
+  padding: var(--w-space-2) var(--w-space-3);
+  border-radius: var(--w-radius-sm);
+  text-decoration: none;
+  color: rgba(255,255,255,0.55);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all var(--w-duration) var(--w-ease);
+  cursor: pointer;
+  margin-bottom: 1px;
+  position: relative;
+}
+
+.w-sidebar-item:hover {
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.07);
+}
+
+.w-sidebar-item.active {
+  color: #ffffff;
+  background: rgba(37,99,235,0.25);
+}
+
+.w-sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  background: var(--w-brand);
+  border-radius: 0 3px 3px 0;
+}
+
+.w-sidebar-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity var(--w-duration) var(--w-ease);
+}
+
+.w-sidebar-item:hover svg,
+.w-sidebar-item.active svg {
+  opacity: 1;
+}
+
+.w-sidebar-item span {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Chevron icon on active items */
+.w-sidebar-item > svg:last-child {
+  width: 14px;
+  height: 14px;
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+/* Sidebar footer / user */
+.w-sidebar-footer {
+  padding: var(--w-space-3) var(--w-space-4);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-2);
+  position: relative;
+  z-index: 1;
+}
+
+.w-sidebar-user-link {
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-3);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  padding: var(--w-space-1);
+  border-radius: var(--w-radius-sm);
+  transition: background var(--w-duration) var(--w-ease);
+}
+
+.w-sidebar-user-link:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.w-sidebar-user-role {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Avatar compat */
+.w-avatar-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+/* Focus ring helper */
+.w-focus-ring:focus-visible {
+  outline: 2px solid var(--w-brand);
+  outline-offset: 2px;
+}
+
+/* Sidebar mobile topbar area — the div wrapping toggle + bell */
+.w-sidebar-logo + div {
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-2);
+  padding: 0 var(--w-space-4);
+  margin-bottom: var(--w-space-2);
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile hamburger */
+.w-mobile-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+/* ============================================================
+   DASHBOARD PAGE COMPAT — existing page markup
+   ============================================================ */
+
+/* Dashboard stat cards — the existing ones use .wd-stat-card */
+.wd-stat-card {
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-md);
+  box-shadow: var(--w-shadow-sm);
+  padding: var(--w-space-5) var(--w-space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-4);
+  transition: all var(--w-duration) var(--w-ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.wd-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--w-stat-accent, var(--w-brand));
+}
+
+.wd-stat-card:hover {
+  box-shadow: var(--w-shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Dashboard panels */
+.wd-panel {
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-md);
+  box-shadow: var(--w-shadow-sm);
+  overflow: hidden;
+}
+
+.wd-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--w-space-5) var(--w-space-5) var(--w-space-4);
+  border-bottom: 1px solid var(--w-border-subtle);
+}
+
+.wd-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--w-text-primary);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: var(--w-space-2);
+}
+
+.wd-panel-body {
+  padding: var(--w-space-5);
+}
