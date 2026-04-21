@@ -144,6 +144,6 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
         </div>
       </div>
 
-      div>
+    </div>
   )
 }
