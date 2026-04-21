@@ -1,5 +1,4 @@
-63
- { createClient } from '@/lib/supabase/server'
+ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const WINDOW_MS = 60 * 1000 // 1 minute
