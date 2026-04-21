@@ -21,11 +21,11 @@ export async function checkAiRateLimit(
 
   const windowStart = new Date(Date.now() - WINDOW_MS).toISOString()
 
-  // Count requests in current window using service role
+  // Use service role to bypass RLS on ai_rate_limits
   const { createClient: createServiceClient } = await import('@supabase/supabase-js')
   const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!  // fixed: was SUPABASE_SECRET_KEY
   )
 
   const { count } = await serviceSupabase
@@ -50,12 +50,17 @@ export async function checkAiRateLimit(
     )
   }
 
-  // Record this request
-  await serviceSupabase.from('ai_rate_limits').insert({
-    user_id: user.id,
-    endpoint,
-    window_start: new Date().toISOString(),
-  })
+  // Record this request — ignore conflicts from near-simultaneous requests
+  await serviceSupabase
+    .from('ai_rate_limits')
+    .insert({
+      user_id: user.id,
+      endpoint,
+      window_start: new Date().toISOString(),
+    })
+    .throwOnError()
+    .then(() => null)
+    .catch(() => null) // UNIQUE conflict on same-microsecond requests is harmless
 
   return null // within limits
 }
