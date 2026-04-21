@@ -1,14 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const aiRateLimit = await checkAiRateLimit(req, '/api/blhbot/ask')
-  if (aiRateLimit) return aiRateLimit
-
+  // Note: AI rate limiting is enforced downstream in /api/case-ai.
+  // This route only applies the lightweight in-memory IP limiter.
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const rl = rateLimit(`blhbot-ask:${ip}`, { limit: 30, windowMs: 60_000 })
   if (!rl.ok) {
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
   // - client context injection via clientId
   // - role-aware scope + knowledge blocks
   // - Anthropic streaming
-  // We'll send a single user message.
+  // - AI rate limiting (checkAiRateLimit on /api/case-ai)
   const res = await fetch(new URL('/api/case-ai', req.url), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

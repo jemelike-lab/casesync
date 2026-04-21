@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
@@ -17,6 +18,9 @@ export async function POST(req: NextRequest) {
     if (authErr || !authData?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const aiRateLimit = await checkAiRateLimit(req, '/api/client-summary')
+    if (aiRateLimit) return aiRateLimit
 
     const supabase = createSupabaseJsClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
