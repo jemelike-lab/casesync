@@ -8,7 +8,9 @@ import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
 function mapRole(csRole?: string): string {
   switch (csRole) {
     case 'supervisor': return 'ADMIN'
-    case 'planner': return 'MANAGER'
+    case 'it':         return 'ADMIN'
+    case 'team_manager': return 'MANAGER'
+    case 'supports_planner': return 'STAFF'
     default: return 'STAFF'
   }
 }
