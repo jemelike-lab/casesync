@@ -812,8 +812,20 @@ export async function POST(req: NextRequest) {
 
     const { messages, clientId } = await req.json()
 
-    if (!messages) {
+    // P0: UUID validation on clientId
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (clientId && !UUID_RE.test(clientId)) {
+      return new Response('Invalid client ID format', { status: 400 })
+    }
+
+    // P0: Cap messages array length to prevent token abuse
+    if (!messages || !Array.isArray(messages)) {
       return new Response('Missing required fields', { status: 400 })
+    }
+
+    // P0: Cap messages to prevent memory exhaustion
+    if (messages.length > 50) {
+      return new Response('Too many messages', { status: 400 })
     }
 
     const supabase = createClient(
@@ -823,7 +835,7 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, full_name, role')
       .eq('id', userId)
       .single()
 
@@ -847,7 +859,7 @@ export async function POST(req: NextRequest) {
       // Supports planner: load only their assigned clients
       const { data: myClients } = await supabase
         .from('clients')
-        .select('*, profiles!clients_assigned_to_fkey(full_name)')
+        .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(full_name)')
         .eq('assigned_to', userId)
         .eq('is_active', true)
         .order('last_name')
@@ -867,7 +879,7 @@ export async function POST(req: NextRequest) {
       if (teamPlannerIds.length > 0) {
         const { data: teamClients } = await supabase
           .from('clients')
-          .select('*, profiles!clients_assigned_to_fkey(full_name)')
+          .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(full_name)')
           .in('assigned_to', teamPlannerIds)
           .eq('is_active', true)
           .order('last_name')
@@ -909,7 +921,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
 
     if (clientId) {
       // Always fetch the specific client when one is provided — but verify access
-      let clientQuery = supabase.from('clients').select('*').eq('id', clientId)
+      let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
       // For planners, enforce they can only ask about their own clients
       if (isPlannerRole) {
         clientQuery = clientQuery.eq('assigned_to', userId)

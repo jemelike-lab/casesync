@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     let query = admin
       .from('clients')
-      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
+      .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
     const isFiltered = (filter !== 'all' && !deadlineDate) || search.trim()
     let fullScopeQuery = admin
       .from('clients')
-      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
+      .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(id, full_name, role)')
 
     if (role === 'supports_planner') {
       fullScopeQuery = fullScopeQuery.eq('assigned_to', userId)

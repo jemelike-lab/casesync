@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'clientId required' }, { status: 400 })
     }
 
+    // P0: UUID format validation
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_RE.test(clientId)) {
+      return NextResponse.json({ error: 'Invalid client ID format' }, { status: 400 })
+    }
+
     const server = await createServerClient()
     const { data: authData, error: authErr } = await server.auth.getUser()
 
@@ -29,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const { data: client, error } = await supabase
       .from('clients')
-      .select('*, profiles!clients_assigned_to_fkey(full_name)')
+      .select('id, client_id, first_name, last_name, category, eligibility_end_date, pos_deadline, pos_status, assessment_due, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, spm_next_due, last_contact_date, last_contact_type, goal_pct, profiles!clients_assigned_to_fkey(full_name)')
       .eq('id', clientId)
       .single()
 
