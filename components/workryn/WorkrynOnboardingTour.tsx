@@ -115,18 +115,15 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
     tryGet()
   }, [step, visible, cur])
 
-  const close = useCallback((fromLast?: boolean) => {
+  const close = useCallback(() => {
     setVisible(false)
     localStorage.setItem(TOUR_KEY, 'true')
     onClose?.()
-    if (fromLast) {
-      window.location.href = '/dashboard'
-    }
   }, [onClose])
 
   const next = useCallback(() => {
     if (step < TOUR_STEPS.length - 1) setStep(s => s + 1)
-    else close(true)
+    else { close(); window.location.href = '/dashboard' }
   }, [step, close])
 
   useEffect(() => {
