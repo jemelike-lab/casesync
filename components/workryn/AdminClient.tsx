@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Users, Building2, ShieldCheck, Plus, X, Loader2,
-  CheckCircle2, XCircle, Edit2, Activity, Mail, Copy, Link2,
+  CheckCircle2, XCircle, Edit2, Activity, Copy, Link2,
   Crown, ArrowRightLeft,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
@@ -40,11 +40,10 @@ interface Props {
   initialUsers: AdminUser[]
   initialDepartments: Dept[]
   auditLogs: AuditLog[]
-  initialInvitations?: Invitation[]
   session: { user: { id: string; role: string } } | null
 }
 
-export default function AdminClient({ initialUsers, initialDepartments, auditLogs, initialInvitations = [], session }: Props) {
+export default function AdminClient({ initialUsers, initialDepartments, auditLogs, session }: Props) {
   
   const currentUserRole = session?.user.role as string | undefined
   const currentUserId = session?.user.id as string | undefined
@@ -57,20 +56,15 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
   const [tab, setTab] = useState('users')
   const [users, setUsers] = useState<AdminUser[]>(initialUsers)
   const [departments] = useState<Dept[]>(initialDepartments)
-  const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations)
-  const [showUserModal, setShowUserModal] = useState(false)
+    const [showUserModal, setShowUserModal] = useState(false)
   const [showDeptModal, setShowDeptModal] = useState(false)
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const [showTransferModal, setShowTransferModal] = useState(false)
+    const [showTransferModal, setShowTransferModal] = useState(false)
   const [transferTargetId, setTransferTargetId] = useState('')
   const [editUser, setEditUser] = useState<AdminUser | null>(null)
   const [saving, setSaving] = useState(false)
-  const [copied, setCopied] = useState<string | null>(null)
-  const [userForm, setUserForm] = useState({ name: '', email: '', password: '', role: defaultAssignRole, jobTitle: '', departmentId: '', avatarColor: '#6366f1' })
+    const [userForm, setUserForm] = useState({ name: '', email: '', password: '', role: defaultAssignRole, jobTitle: '', departmentId: '', avatarColor: '#6366f1' })
   const [deptForm, setDeptForm] = useState({ name: '', description: '', color: '#6366f1' })
-  const [inviteForm, setInviteForm] = useState({ email: '', role: defaultAssignRole, departmentId: '', message: '' })
-  const [inviteFilter, setInviteFilter] = useState('ALL')
-
+    
   // Check URL params for tab (once on mount)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -182,49 +176,15 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
     } finally { setSaving(false) }
   }
 
-  async function handleInviteSend() {
-    if (!inviteForm.email.trim()) return
-    setSaving(true)
-    try {
-      const res = await fetch('/api/workryn/invitations', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inviteForm),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        alert(err.error || 'Failed to send invitation')
-        return
-      }
-      const invite = await res.json()
-      setInvitations(i => [invite, ...i])
-      setShowInviteModal(false)
-      setInviteForm({ email: '', role: defaultAssignRole, departmentId: '', message: '' })
-    } finally { setSaving(false) }
-  }
 
-  async function handleRevokeInvite(id: string) {
-    const res = await fetch('/api/workryn/invitations', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    if (res.ok) {
-      const updated = await res.json()
-      setInvitations(i => i.map(x => x.id === id ? updated : x))
-    }
-  }
 
-  function copyInviteLink(token: string) {
-    const link = `${window.location.origin}/accept-invite?token=${token}`
-    navigator.clipboard.writeText(link)
-    setCopied(token)
-    setTimeout(() => setCopied(null), 2000)
-  }
 
-  const filteredInvitations = inviteFilter === 'ALL'
+
+
+
     ? invitations
     : invitations.filter(i => i.status === inviteFilter)
 
-  const pendingCount = invitations.filter(i => i.status === 'PENDING').length
 
   const AVATAR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']
   const DEPT_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
@@ -372,90 +332,6 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
           </>
         )}
 
-        {/* Invitations Tab */}
-        {tab === 'invitations' && (
-          <>
-            <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-              <div className="flex items-center gap-2">
-                {['ALL', 'PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED'].map(f => (
-                  <button key={f} className={`badge ${inviteFilter === f ? 'badge-brand' : 'badge-muted'}`} style={{ cursor: 'pointer', padding: '4px 12px' }} onClick={() => setInviteFilter(f)}>
-                    {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
-              <button className="btn btn-gradient focus-ring" onClick={() => setShowInviteModal(true)} id="btn-send-invitation">
-                <Mail size={16} /> Send Invitation
-              </button>
-            </div>
-
-            {filteredInvitations.length === 0 ? (
-              <div className="empty-state"><Mail size={32} /><p>No invitations {inviteFilter !== 'ALL' ? `with status ${inviteFilter.toLowerCase()}` : 'yet'}</p></div>
-            ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr><th>Email</th><th>Role</th><th>Status</th><th>Invited By</th><th>Sent</th><th>Expires</th><th>Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {filteredInvitations.map(inv => (
-                      <tr key={inv.id}>
-                        <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{inv.email}</td>
-                        <td>
-                          {inv.role === 'OWNER' ? (
-                            <span
-                              className="badge owner-badge"
-                              style={{
-                                background: 'linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.25))',
-                                color: '#fbbf24',
-                                fontWeight: 700,
-                                border: '1px solid rgba(251,191,36,0.4)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Crown size={12} /> OWNER
-                            </span>
-                          ) : (
-                            <span className="badge" style={{ background: ROLE_COLORS[inv.role] + '22', color: ROLE_COLORS[inv.role], fontWeight: 700 }}>{inv.role}</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="badge" style={{ background: (STATUS_COLORS[inv.status] || '#64748b') + '22', color: STATUS_COLORS[inv.status] || '#64748b', fontWeight: 600 }}>
-                            {inv.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            <div className="avatar avatar-sm" style={{ background: inv.invitedBy.avatarColor, width: 24, height: 24, fontSize: '0.5625rem' }}>
-                              {getInitials(inv.invitedBy.name ?? 'U')}
-                            </div>
-                            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{inv.invitedBy.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{timeAgo(inv.createdAt)}</td>
-                        <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{new Date(inv.expiresAt).toLocaleDateString()}</td>
-                        <td>
-                          <div className="flex gap-1">
-                            <button className="btn btn-icon btn-ghost focus-ring" style={{ width: 28, height: 28 }} onClick={() => copyInviteLink(inv.token)} title="Copy invite link" aria-label="Copy invite link">
-                              {copied === inv.token ? <CheckCircle2 size={13} color="var(--success)" /> : <Copy size={13} />}
-                            </button>
-                            {inv.status === 'PENDING' && (
-                              <button className="btn btn-icon btn-ghost focus-ring" style={{ width: 28, height: 28, color: 'var(--danger)' }} onClick={() => handleRevokeInvite(inv.id)} title="Revoke" aria-label="Revoke invitation">
-                                <XCircle size={13} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        )}
-
         {/* Departments Tab */}
         {tab === 'departments' && (
           <>
@@ -594,52 +470,6 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
                 }
               >
                 {saving ? <Loader2 size={16} className="spin" /> : editUser ? 'Save Changes' : 'Create User'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Send Invitation Modal */}
-      {showInviteModal && (
-        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
-          <div className="modal animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
-            <div className="modal-header">
-              <h3>Send Invitation</h3>
-              <button className="btn btn-icon btn-ghost focus-ring" onClick={() => setShowInviteModal(false)} aria-label="Close" title="Close"><X size={18} /></button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="label">Email Address</label>
-                <input className="input focus-ring" type="email" value={inviteForm.email} onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))} placeholder="newteam@company.com" autoFocus />
-              </div>
-              <div className="flex gap-3">
-                <div className="form-group flex-1">
-                  <label className="label">Role</label>
-                  <select className="input focus-ring" value={inviteForm.role} onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))} disabled={myAssignableRoles.length === 0}>
-                    {myAssignableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div className="form-group flex-1">
-                  <label className="label">Department</label>
-                  <select className="input focus-ring" value={inviteForm.departmentId} onChange={e => setInviteForm(f => ({ ...f, departmentId: e.target.value }))}>
-                    <option value="">None</option>
-                    {initialDepartments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="label">Personal Message (optional)</label>
-                <textarea className="input focus-ring" value={inviteForm.message} onChange={e => setInviteForm(f => ({ ...f, message: e.target.value }))} placeholder="Welcome to the team! We're excited to have you…" rows={3} style={{ resize: 'vertical' }} />
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Link2 size={13} /> Invitation link expires in 7 days
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost focus-ring" onClick={() => setShowInviteModal(false)}>Cancel</button>
-              <button className="btn btn-gradient focus-ring" onClick={handleInviteSend} disabled={saving || !inviteForm.email.trim()}>
-                {saving ? <Loader2 size={16} className="spin" /> : <><Mail size={16} /> Send Invitation</>}
               </button>
             </div>
           </div>
