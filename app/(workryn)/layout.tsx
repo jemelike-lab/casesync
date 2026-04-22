@@ -3,32 +3,32 @@ import { createClient } from '@/lib/supabase/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
+import WorkrynOnboardingTour from '@/components/workryn/WorkrynOnboardingTour'
 
-/** Map CaseSync role to Workryn role */
-function mapRole(csRole?: string): string {
-  switch (csRole) {
-    case 'supervisor': return 'ADMIN'
-    case 'it':         return 'ADMIN'
-    case 'team_manager': return 'MANAGER'
-    case 'supports_planner': return 'STAFF'
-    default: return 'STAFF'
+/**
+ * Maps CaseSync profile role → Workryn role.
+ * CaseSync roles (from profiles table): supervisor, team_manager, support_planner, it, admin
+ */
+function mapRole(csRole?: string | null): string {
+  switch (csRole?.toLowerCase()) {
+    case 'supervisor':       return 'SUPERVISOR'
+    case 'it':               return 'ADMIN'
+    case 'admin':            return 'ADMIN'
+    case 'team_manager':     return 'TEAM_MANAGER'
+    case 'support_planner':
+    case 'supports_planner': return 'SUPPORT_PLANNER'
+    default:                 return 'SUPPORT_PLANNER'
   }
 }
 
-export default async function WorkrynLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  // Check Supabase auth
+export default async function WorkrynLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Get Workryn session (maps Supabase user to Workryn user record)
   let session = await getWorkrynSession()
 
-  // Auto-provision: if no Workryn user record exists, create one from CaseSync profile
+  // Auto-provision: create w_user from CaseSync profile if missing
   if (!session) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -37,8 +37,9 @@ export default async function WorkrynLayout({
       .single()
 
     try {
-      await db.user.create({
-        data: {
+      await db.user.upsert({
+        where: { supabaseId: user.id },
+        create: {
           supabaseId: user.id,
           email: user.email ?? '',
           name: profile?.full_name ?? user.email ?? '',
@@ -46,11 +47,14 @@ export default async function WorkrynLayout({
           avatarColor: '#6366f1',
           isActive: true,
         },
+        update: {
+          // On conflict, update role/name in case they changed in CaseSync
+          name: profile?.full_name ?? user.email ?? '',
+          role: mapRole(profile?.role),
+        },
       })
-      // Re-fetch session now that the record exists
       session = await getWorkrynSession()
     } catch (err) {
-      // Record may already exist (race condition) — try fetching again
       console.error('[Workryn Layout] Auto-provision failed:', err)
       session = await getWorkrynSession()
     }
@@ -60,7 +64,7 @@ export default async function WorkrynLayout({
     id: user.id,
     email: user.email ?? '',
     name: user.email ?? '',
-    role: 'STAFF',
+    role: 'SUPPORT_PLANNER',
     avatarColor: '#6366f1',
     image: null,
   }
@@ -71,6 +75,7 @@ export default async function WorkrynLayout({
       <main className="w-page-content">
         {children}
       </main>
+      <WorkrynOnboardingTour />
     </div>
   )
 }
