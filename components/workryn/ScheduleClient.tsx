@@ -3,7 +3,27 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, X, Loader2, Clock, Bell } from 'lucide-react'
 import { getInitials } from '@/lib/workryn/utils'
 
-//  Types 
+// Role helpers — supports both old and new role names
+function canManageSchedule(role: string): boolean {
+  return ['ADMIN','MANAGER','OWNER','SUPERVISOR','TEAM_MANAGER'].includes(role)
+}
+function canViewAllStaff(role: string): boolean {
+  return ['ADMIN','MANAGER','OWNER','SUPERVISOR','TEAM_MANAGER'].includes(role)
+}
+function getRoleLabel(role: string): string {
+  const map: Record<string,string> = {
+    SUPPORT_PLANNER: 'Support Planner',
+    TEAM_MANAGER: 'Team Manager',
+    SUPERVISOR: 'Supervisor',
+    STAFF: 'Staff',
+    ADMIN: 'Admin',
+    MANAGER: 'Manager',
+    OWNER: 'Owner',
+  }
+  return map[role] ?? role
+}
+
+// Types
 type Shift = {
   id: string; title: string; notes: string | null
   startTime: string; endTime: string; color: string
@@ -27,7 +47,6 @@ interface Props {
 function formatShiftTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
-
 function getWeekDates(offset: number): Date[] {
   const now = new Date(); now.setHours(0,0,0,0)
   const day = now.getDay()
@@ -38,7 +57,6 @@ function getWeekDates(offset: number): Date[] {
     const d = new Date(monday); d.setDate(monday.getDate() + i); return d
   })
 }
-
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate()
 }
@@ -47,31 +65,30 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
   const [shifts, setShifts] = useState<Shift[]>(initialShifts)
   const [weekOffset, setWeekOffset] = useState(0)
   const [showShiftModal, setShowShiftModal] = useState(false)
-  const [showReminderModal, setShowReminderModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [filterUserId, setFilterUserId] = useState('')
   const [shiftForm, setShiftForm] = useState({
     userId: '', title: '', date: '', startTime: '09:00', endTime: '17:00',
     color: SHIFT_COLORS[0], departmentId: '', notes: ''
   })
-  const [reminderForm, setReminderForm] = useState({
-    userId: '', message: '', shiftId: ''
-  })
-  const [reminderSent, setReminderSent] = useState(false)
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null)
 
-  const isManager = currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER'
+  const isManager = canManageSchedule(currentUser.role)
+  const canSeeAll = canViewAllStaff(currentUser.role)
   const weekDates = getWeekDates(weekOffset)
 
-  //  Save shift 
+  // Only show own row if Support Planner
+  const visibleUsers = canSeeAll
+    ? (filterUserId ? users.filter(u => u.id === filterUserId) : users)
+    : users.filter(u => u.id === currentUser.id)
+
   async function handleSaveShift() {
     setSaving(true)
     const startTime = new Date(`${shiftForm.date}T${shiftForm.startTime}`).toISOString()
     const endTime = new Date(`${shiftForm.date}T${shiftForm.endTime}`).toISOString()
-    const body: any = {
-      userId: shiftForm.userId, title: shiftForm.title,
-      startTime, endTime, color: shiftForm.color,
-      notes: shiftForm.notes || null,
+    const body: Record<string, unknown> = {
+      userId: shiftForm.userId, title: shiftForm.title, startTime, endTime,
+      color: shiftForm.color, notes: shiftForm.notes || null,
       departmentId: shiftForm.departmentId || null
     }
     if (editingShiftId) body.id = editingShiftId
@@ -92,55 +109,39 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
     setSaving(false)
   }
 
-  //  Delete shift 
   async function handleDeleteShift(shiftId: string) {
     await fetch(`/api/workryn/shifts/${shiftId}`, { method: 'DELETE' })
     setShifts(prev => prev.filter(s => s.id !== shiftId))
   }
 
-  //  Send reminder 
-  async function handleSendReminder() {
-    setSaving(true)
-    await fetch('/api/workryn/reminders', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reminderForm)
-    })
-    setReminderSent(true)
-    setTimeout(() => { setShowReminderModal(false); setReminderSent(false) }, 1500)
-    setSaving(false)
-  }
-
-  //  Edit shift 
   function openEditShift(shift: Shift) {
     const d = new Date(shift.startTime)
     setShiftForm({
-      userId: shift.user.id,
-      title: shift.title,
+      userId: shift.user.id, title: shift.title,
       date: d.toISOString().split('T')[0],
       startTime: d.toTimeString().slice(0,5),
       endTime: new Date(shift.endTime).toTimeString().slice(0,5),
-      color: shift.color,
-      departmentId: shift.departmentId || '',
-      notes: shift.notes || ''
+      color: shift.color, departmentId: shift.departmentId || '', notes: shift.notes || ''
     })
     setEditingShiftId(shift.id)
     setShowShiftModal(true)
   }
 
-  //  New shift on cell click 
   function openNewShift(userId: string, date: Date) {
+    if (!isManager) return
     setShiftForm({
-      userId, title: 'Shift', date: date.toISOString().split('T')[0],
-      startTime: '09:00', endTime: '17:00', color: SHIFT_COLORS[Math.floor(Math.random()*SHIFT_COLORS.length)],
+      userId, title: 'Shift',
+      date: date.toISOString().split('T')[0],
+      startTime: '09:00', endTime: '17:00',
+      color: SHIFT_COLORS[Math.floor(Math.random()*SHIFT_COLORS.length)],
       departmentId: '', notes: ''
     })
     setEditingShiftId(null)
     setShowShiftModal(true)
   }
 
-  const filteredUsers = filterUserId ? users.filter(u => u.id === filterUserId) : users
+  const today = new Date()
 
-  //  RENDER 
   return (
     <div className="sched-root">
       {/* Header */}
@@ -150,7 +151,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
             <ChevronLeft size={16} />
           </button>
           <span className="sched-week-label">
-            {weekDates[0].toLocaleDateString([], { month: 'short', day: 'numeric' })}  {weekDates[6].toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+            {weekDates[0].toLocaleDateString([], { month: 'short', day: 'numeric' })}–
+            {weekDates[6].toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
           </span>
           <button className="sched-nav-btn" onClick={() => setWeekOffset(w => w + 1)}>
             <ChevronRight size={16} />
@@ -160,15 +162,16 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
           )}
         </div>
         <div className="sched-toolbar">
-          <select className="sched-filter" value={filterUserId} onChange={e => setFilterUserId(e.target.value)}>
-            <option value="">All Staff</option>
-            {users.map(u => <option key={u.id} value={u.id}>{u.name || 'Unnamed'}</option>)}
-          </select>
+          {canSeeAll && (
+            <select className="sched-filter" value={filterUserId} onChange={e => setFilterUserId(e.target.value)}>
+              <option value="">All Staff</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.name || 'Unnamed'}</option>)}
+            </select>
+          )}
           {isManager && (
             <button className="sched-add-btn" onClick={() => {
               setEditingShiftId(null)
-              setShiftForm({ userId:'', title:'Shift', date:weekDates[0].toISOString().split('T')[0],
-                startTime:'09:00', endTime:'17:00', color:SHIFT_COLORS[0], departmentId:'', notes:'' })
+              setShiftForm({ userId:'', title:'Shift', date:weekDates[0].toISOString().split('T')[0], startTime:'09:00', endTime:'17:00', color:SHIFT_COLORS[0], departmentId:'', notes:'' })
               setShowShiftModal(true)
             }}>
               <Plus size={14} /> Add Shift
@@ -178,72 +181,77 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
       </div>
 
       {/* Grid */}
-      <div className="sched-grid">
-        {/* Day header row */}
-        <div className="sched-grid-header">
-          <div className="sched-grid-corner">Staff</div>
-          {weekDates.map((d, i) => {
-            const isToday = isSameDay(d, new Date())
-            return (
-              <div key={i} className={`sched-grid-day${isToday ? ' sched-today' : ''}`}>
-                <span className="sched-day-name">{DAYS[d.getDay()]}</span>
-                <span className="sched-day-num">{d.getDate()}</span>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* User rows */}
-        {filteredUsers.map(user => (
-          <div key={user.id} className="sched-grid-row">
-            <div className="sched-user-cell">
-              <div className="sched-avatar" style={{ background: user.avatarColor }}>
-                {getInitials(user.name || '?')}
-              </div>
-              <div className="sched-user-info">
-                <span className="sched-user-name">{user.name || 'Unnamed'}</span>
-                {user.jobTitle && <span className="sched-user-title">{user.jobTitle}</span>}
-              </div>
-            </div>
-            {weekDates.map((date, di) => {
-              const dayShifts = shifts.filter(s =>
-                s.user.id === user.id && isSameDay(new Date(s.startTime), date)
-              )
-              const isToday = isSameDay(date, new Date())
+      <div className="sched-grid-wrap">
+        <div className="sched-grid">
+          {/* Day header row */}
+          <div className="sched-grid-header">
+            <div className="sched-grid-corner">STAFF</div>
+            {weekDates.map((d, i) => {
+              const isToday = isSameDay(d, today)
               return (
-                <div key={di}
-                  className={`sched-day-cell${isToday ? ' sched-today-cell' : ''}`}
-                  onClick={() => isManager && dayShifts.length === 0 && openNewShift(user.id, date)}
-                >
-                  {dayShifts.map(shift => (
-                    <div key={shift.id} className="sched-shift-chip"
-                      style={{ borderLeftColor: shift.color, background: `${shift.color}18` }}
-                      onClick={e => { e.stopPropagation(); isManager && openEditShift(shift) }}
-                    >
-                      <span className="sched-shift-time">
-                        {formatShiftTime(shift.startTime)}  {formatShiftTime(shift.endTime)}
-                      </span>
-                      <span className="sched-shift-title">{shift.title}</span>
-                      {isManager && (
-                        <button className="sched-shift-del" onClick={e => {
-                          e.stopPropagation(); handleDeleteShift(shift.id)
-                        }}><X size={10} /></button>
-                      )}
-                    </div>
-                  ))}
-                  {dayShifts.length === 0 && isManager && (
-                    <div className="sched-cell-empty">
-                      <Plus size={12} />
-                    </div>
-                  )}
+                <div key={i} className={`sched-col-head${isToday ? ' sched-col-today' : ''}`}>
+                  <span className="sched-col-day">{DAYS[d.getDay()]}</span>
+                  <span className={`sched-col-num${isToday ? ' sched-col-num-today' : ''}`}>{d.getDate()}</span>
                 </div>
               )
             })}
           </div>
-        ))}
+
+          {/* User rows */}
+          {visibleUsers.map(user => (
+            <div key={user.id} className="sched-grid-row">
+              <div className="sched-user-cell">
+                <div className="sched-avatar" style={{ background: user.avatarColor }}>
+                  {getInitials(user.name || '?')}
+                </div>
+                <div className="sched-user-info">
+                  <span className="sched-user-name">{user.name || 'Unnamed'}</span>
+                  <span className="sched-user-role">{getRoleLabel(user.role)}</span>
+                </div>
+              </div>
+              {weekDates.map((date, di) => {
+                const dayShifts = shifts.filter(s =>
+                  s.user.id === user.id && isSameDay(new Date(s.startTime), date)
+                )
+                const isToday = isSameDay(date, today)
+                return (
+                  <div
+                    key={di}
+                    className={`sched-day-cell${isToday ? ' sched-day-cell-today' : ''}`}
+                    onClick={() => isManager && dayShifts.length === 0 && openNewShift(user.id, date)}
+                  >
+                    {dayShifts.map(shift => (
+                      <div
+                        key={shift.id}
+                        className="sched-shift-chip"
+                        style={{ borderLeftColor: shift.color, background: `${shift.color}22` }}
+                        onClick={e => { e.stopPropagation(); isManager && openEditShift(shift) }}
+                      >
+                        <span className="sched-shift-time">
+                          {formatShiftTime(shift.startTime)}–{formatShiftTime(shift.endTime)}
+                        </span>
+                        <span className="sched-shift-title">{shift.title}</span>
+                        {isManager && (
+                          <button className="sched-shift-del" onClick={e => { e.stopPropagation(); handleDeleteShift(shift.id) }}>
+                            <X size={10} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {dayShifts.length === 0 && isManager && (
+                      <div className="sched-cell-add">
+                        <Plus size={12} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/*  Shift Modal  */}
+      {/* Shift Modal */}
       {showShiftModal && (
         <div className="sched-overlay" onClick={() => setShowShiftModal(false)}>
           <div className="sched-modal" onClick={e => e.stopPropagation()}>
@@ -297,15 +305,12 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
               </label>
               <label className="sched-field">
                 <span>Notes</span>
-                <textarea value={shiftForm.notes} rows={2}
-                  onChange={e => setShiftForm({...shiftForm, notes: e.target.value})} />
+                <textarea value={shiftForm.notes} rows={2} onChange={e => setShiftForm({...shiftForm, notes: e.target.value})} />
               </label>
             </div>
             <div className="sched-modal-footer">
               {editingShiftId && (
-                <button className="sched-btn-danger" onClick={() => {
-                  handleDeleteShift(editingShiftId); setShowShiftModal(false)
-                }}>Delete</button>
+                <button className="sched-btn-danger" onClick={() => { handleDeleteShift(editingShiftId); setShowShiftModal(false) }}>Delete</button>
               )}
               <button className="sched-btn-ghost" onClick={() => setShowShiftModal(false)}>Cancel</button>
               <button className="sched-btn-primary" onClick={handleSaveShift} disabled={saving || !shiftForm.userId}>
@@ -313,48 +318,6 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 {editingShiftId ? 'Update' : 'Create'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/*  Reminder Modal  */}
-      {showReminderModal && (
-        <div className="sched-overlay" onClick={() => setShowReminderModal(false)}>
-          <div className="sched-modal sched-modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="sched-modal-header">
-              <h3><Bell size={16} /> Send Reminder</h3>
-              <button className="sched-modal-close" onClick={() => setShowReminderModal(false)}><X size={16} /></button>
-            </div>
-            <div className="sched-modal-body">
-              {reminderSent ? (
-                <div className="sched-reminder-sent">Reminder sent!</div>
-              ) : (
-                <>
-                  <label className="sched-field">
-                    <span>To</span>
-                    <select value={reminderForm.userId} onChange={e => setReminderForm({...reminderForm, userId: e.target.value})}>
-                      <option value="">Select</option>
-                      {users.map(u => <option key={u.id} value={u.id}>{u.name || 'Unnamed'}</option>)}
-                    </select>
-                  </label>
-                  <label className="sched-field">
-                    <span>Message</span>
-                    <textarea value={reminderForm.message} rows={3}
-                      onChange={e => setReminderForm({...reminderForm, message: e.target.value})} />
-                  </label>
-                </>
-              )}
-            </div>
-            {!reminderSent && (
-              <div className="sched-modal-footer">
-                <button className="sched-btn-ghost" onClick={() => setShowReminderModal(false)}>Cancel</button>
-                <button className="sched-btn-primary" onClick={handleSendReminder}
-                  disabled={saving || !reminderForm.userId}>
-                  {saving ? <Loader2 size={14} className="sched-spin" /> : <Bell size={14} />}
-                  Send
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
