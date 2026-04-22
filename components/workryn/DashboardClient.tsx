@@ -70,9 +70,12 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
     <div className="wd">
       {/* Header */}
       <header className="wd-header">
-        <div>
-          <h1 className="wd-greeting">{greet(user.name ?? 'there')}</h1>
-          <p className="wd-subtitle">Here's what's happening today</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img src="/blh-logo.png" alt="BLH" style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'contain', background: '#fff', padding: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }} />
+          <div>
+            <h1 className="wd-greeting">{greet(user.name ?? 'there')}</h1>
+            <p className="wd-subtitle">Here's what's happening today</p>
+          </div>
         </div>
       </header>
 
