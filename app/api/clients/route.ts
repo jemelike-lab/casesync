@@ -5,8 +5,7 @@ import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact 
 
 export const dynamic = 'force-dynamic'
 
-// All authenticated roles can access the clients list (scoped by role inside the handler)
-export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
+const handler = withAuth(async (req: NextRequest, { user, role, admin }) => {
   const { searchParams } = new URL(req.url)
   const page = parseInt(searchParams.get('page') ?? '0', 10)
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '20', 10), 1), 100)
@@ -21,20 +20,17 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
   const from = page * limit
   const to = from + limit - 1
 
-  let query = admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (admin as any)
     .from('clients')
     .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
 
-  // Role-based scoping (already validated by withAuth)
   if (role === 'supports_planner') {
     query = query.eq('assigned_to', userId)
   } else if (role === 'team_manager' || isSupervisorLike(role)) {
-    if (assignedTo) {
-      query = query.eq('assigned_to', assignedTo)
-    }
+    if (assignedTo) query = query.eq('assigned_to', assignedTo)
   }
 
-  // Filter
   const nowDate = new Date()
   const now = nowDate.toISOString().split('T')[0]
   const todayStart = new Date(nowDate)
@@ -54,19 +50,19 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
   ]
 
   if (deadlineDate) {
-    query = query.or(deadlineFields.map((f) => `${f}.eq.${deadlineDate}`).join(','))
+    query = query.or(deadlineFields.map((f: string) => `${f}.eq.${deadlineDate}`).join(','))
   } else if (filter === 'overdue') {
-    query = query.or(deadlineFields.map((f) => `${f}.lt.${now}`).join(','))
+    query = query.or(deadlineFields.map((f: string) => `${f}.lt.${now}`).join(','))
   } else if (filter === 'due_today') {
-    query = query.or(deadlineFields.map((f) => `${f}.eq.${now}`).join(','))
+    query = query.or(deadlineFields.map((f: string) => `${f}.eq.${now}`).join(','))
   } else if (filter === 'due_this_week') {
     const t = tomorrow.toISOString().split('T')[0]
     const w = weekLater.toISOString().split('T')[0]
-    query = query.or(deadlineFields.map((f) => `and(${f}.gte.${t},${f}.lte.${w})`).join(','))
+    query = query.or(deadlineFields.map((f: string) => `and(${f}.gte.${t},${f}.lte.${w})`).join(','))
   } else if (filter === 'due_next_14_days') {
     const t = tomorrow.toISOString().split('T')[0]
     const tw = twoWeeksLater.toISOString().split('T')[0]
-    query = query.or(deadlineFields.map((f) => `and(${f}.gte.${t},${f}.lte.${tw})`).join(','))
+    query = query.or(deadlineFields.map((f: string) => `and(${f}.gte.${t},${f}.lte.${tw})`).join(','))
   } else if (filter === 'co') {
     query = query.eq('category', 'co')
   } else if (filter === 'cfc') {
@@ -75,7 +71,6 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
     query = query.eq('category', 'cpas')
   }
 
-  // Search — sanitize to prevent PostgREST filter injection
   if (search.trim()) {
     const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
     if (q) {
@@ -85,7 +80,6 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
     }
   }
 
-  // Sort
   if (sortField === 'goal_pct') {
     query = query.order('goal_pct', { ascending: sortDir === 'asc' }).order('last_name')
   } else if (sortField === 'last_contact_date') {
@@ -96,22 +90,19 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
     query = query.order('last_name', { ascending: sortDir === 'asc' })
   }
 
-  // Paginate
   query = query.range(from, to)
 
-  // Run filtered query + unfiltered count query in parallel
   const isFiltered = (filter !== 'all' && !deadlineDate) || search.trim()
 
-  let fullScopeQuery = admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fullScopeQuery = (admin as any)
     .from('clients')
     .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
 
   if (role === 'supports_planner') {
     fullScopeQuery = fullScopeQuery.eq('assigned_to', userId)
   } else if (role === 'team_manager' || isSupervisorLike(role)) {
-    if (assignedTo) {
-      fullScopeQuery = fullScopeQuery.eq('assigned_to', assignedTo)
-    }
+    if (assignedTo) fullScopeQuery = fullScopeQuery.eq('assigned_to', assignedTo)
   }
 
   const [filteredResult, fullScopeResult] = await Promise.all([
@@ -126,7 +117,8 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const pageClients = clients ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pageClients: any[] = clients ?? []
   const total = count ?? 0
   const hasMore = from + limit < total
 
@@ -135,28 +127,25 @@ export const GET = withAuth(async (req: NextRequest, { user, role, admin }) => {
     overdue: pageClients.filter(isOverdue).length,
     dueThisWeek: pageClients.filter(isDueThisWeek).length,
     eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
-    noContact: pageClients.filter((client: any) => {
-      const days = getDaysSinceContact(client.last_contact_date)
-      return days !== null && days >= 7
-    }).length,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    noContact: pageClients.filter((c: any) => { const d = getDaysSinceContact(c.last_contact_date); return d !== null && d >= 7 }).length,
   }
 
-  const allClients = fullScopeResult?.data ?? pageClients
-  const fullSummary = isFiltered
-    ? {
-        total: allClients.length,
-        overdue: allClients.filter(isOverdue).length,
-        dueThisWeek: allClients.filter(isDueThisWeek).length,
-        eligibilitySoon: allClients.filter(isEligibilityEndingSoon).length,
-        noContact: allClients.filter((client: any) => {
-          const days = getDaysSinceContact(client.last_contact_date)
-          return days !== null && days >= 7
-        }).length,
-      }
-    : summary
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allClients: any[] = fullScopeResult?.data ?? pageClients
+  const fullSummary = isFiltered ? {
+    total: allClients.length,
+    overdue: allClients.filter(isOverdue).length,
+    dueThisWeek: allClients.filter(isDueThisWeek).length,
+    eligibilitySoon: allClients.filter(isEligibilityEndingSoon).length,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    noContact: allClients.filter((c: any) => { const d = getDaysSinceContact(c.last_contact_date); return d !== null && d >= 7 }).length,
+  } : summary
 
   return NextResponse.json(
     { clients: pageClients, total, hasMore, summary, fullSummary },
     { headers: { 'Content-Type': 'application/json' } }
   )
 })
+
+export { handler as GET }
