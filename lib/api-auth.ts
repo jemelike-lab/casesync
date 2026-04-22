@@ -44,10 +44,12 @@ export interface AuthContext {
   profile: { id: string; role: string; full_name?: string | null }
   /** Shorthand for profile.role */
   role: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   /** Supabase client authenticated as the user (uses publishable key + cookies) */
-  supabase: ReturnType<typeof createSupabaseJsClient>
+  supabase: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   /** Supabase admin client (service role) — use only after auth is confirmed */
-  admin: ReturnType<typeof createSupabaseJsClient>
+  admin: any
 }
 
 export interface WithAuthOptions {
@@ -135,7 +137,7 @@ export function withAuth(handler: ApiHandler, options?: WithAuthOptions) {
           full_name: profile.full_name ?? null,
         },
         role,
-        supabase: supabase as unknown as ReturnType<typeof createSupabaseJsClient>,
+        supabase,
         admin,
       }
 
