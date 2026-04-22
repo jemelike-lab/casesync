@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   // Fetch the client with RLS enforcement
   const { data: client, error } = await supabase
     .from('clients')
-    .select('*')
+    .select('id')
     .eq('id', id)
     .single()
 

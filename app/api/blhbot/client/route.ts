@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   // RLS should enforce access, but we also check assigned_to defensively.
   const { data: client, error } = await supabase
     .from('clients')
-    .select('*')
+    .select('id, client_id, first_name, last_name, category, eligibility_code, pos_status, goal_pct, last_contact_date, last_contact_type, spm_completed, spm_next_due, eligibility_end_date, pos_deadline, assessment_due, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals')
     .eq('id', id)
     .single()
 
