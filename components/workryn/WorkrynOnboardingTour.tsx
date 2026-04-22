@@ -88,6 +88,16 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
 
   useEffect(() => {
     if (forceShow) { setVisible(true); setStep(0); return }
+    // Check for handoff from CaseSync tour
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('tour') === '1') {
+      // Strip the param from the URL without navigation
+      const url = new URL(window.location.href)
+      url.searchParams.delete('tour')
+      window.history.replaceState({}, '', url.toString())
+      setVisible(true)
+      return
+    }
     const done = localStorage.getItem(TOUR_KEY)
     if (!done) { const t = setTimeout(() => setVisible(true), 900); return () => clearTimeout(t) }
   }, [forceShow])
@@ -105,15 +115,18 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
     tryGet()
   }, [step, visible, cur])
 
-  const close = useCallback(() => {
+  const close = useCallback((fromLast?: boolean) => {
     setVisible(false)
     localStorage.setItem(TOUR_KEY, 'true')
     onClose?.()
+    if (fromLast) {
+      window.location.href = '/dashboard'
+    }
   }, [onClose])
 
   const next = useCallback(() => {
     if (step < TOUR_STEPS.length - 1) setStep(s => s + 1)
-    else close()
+    else close(true)
   }, [step, close])
 
   useEffect(() => {
@@ -199,7 +212,7 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
             borderRadius: 9, padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
             boxShadow: '0 2px 12px rgba(37,99,235,0.35)',
           }}>
-            {isLast ? "Let's go! 🚀" : 'Next →'}
+            {isLast ? "Back to CaseSync 🚀" : 'Next →'}
           </button>
         </div>
       </div>
