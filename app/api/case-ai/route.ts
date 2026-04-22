@@ -859,7 +859,7 @@ export async function POST(req: NextRequest) {
       // Supports planner: load only their assigned clients
       const { data: myClients } = await supabase
         .from('clients')
-        .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(full_name)')
+        .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
         .eq('assigned_to', userId)
         .eq('is_active', true)
         .order('last_name')
@@ -879,7 +879,7 @@ export async function POST(req: NextRequest) {
       if (teamPlannerIds.length > 0) {
         const { data: teamClients } = await supabase
           .from('clients')
-          .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(full_name)')
+          .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
           .in('assigned_to', teamPlannerIds)
           .eq('is_active', true)
           .order('last_name')
