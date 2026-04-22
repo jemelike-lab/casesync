@@ -22,10 +22,6 @@ type AuditLog = {
   id: string; action: string; resourceType: string; details: string | null; createdAt: string
   user: { id: string; name: string | null; avatarColor: string }
 }
-type Invitation = {
-  id: string; email: string; token: string; role: string; status: string
-  departmentId: string | null; message: string | null; expiresAt: string; createdAt: string
-  invitedBy: { id: string; name: string | null; avatarColor: string }
 }
 
 const ROLE_COLORS: Record<string, string> = { OWNER: '#fbbf24', ADMIN: '#8b5cf6', MANAGER: '#6366f1', STAFF: '#64748b' }
@@ -177,15 +173,6 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
   }
 
 
-
-
-
-
-
-    ? invitations
-    : invitations.filter(i => i.status === inviteFilter)
-
-
   const AVATAR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']
   const DEPT_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
@@ -222,11 +209,6 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
           {TABS.map(t => (
             <button key={t.id} className={`tab-btn focus-ring ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} id={`admin-tab-${t.id}`}>
               {t.icon} {t.label}
-              {t.id === 'invitations' && pendingCount > 0 && (
-                <span style={{ background: 'var(--warning)', color: 'var(--text-inverse)', fontSize: '0.625rem', fontWeight: 700, borderRadius: 99, padding: '1px 5px', marginLeft: 4 }}>
-                  {pendingCount}
-                </span>
-              )}
             </button>
           ))}
         </div>
