@@ -32,7 +32,6 @@ export default async function AdminPage() {
       initialUsers={JSON.parse(JSON.stringify(users))}
       initialDepartments={JSON.parse(JSON.stringify(departments))}
       auditLogs={JSON.parse(JSON.stringify(auditLogs))}
-      initialInvitations={JSON.parse(JSON.stringify(invitations))}
       session={{ user: { id: session.user.id, role: session.user.role } }}
     />
   )
