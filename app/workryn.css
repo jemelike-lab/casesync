@@ -2141,7 +2141,7 @@
 
 .tc-clock-panel { display: flex; flex-direction: column; gap: 1.25rem; }
 .tc-clock-hero { display: flex; align-items: center; gap: 1.5rem; }
-.tc-clock-wrap { width: 200px; height: 200px; flex-shrink: 0; }
+.tc-clock-wrap { width: 240px; height: 240px; flex-shrink: 0; }
 .tc-clock-svg { width: 100%; height: 100%; }
 .tc-clock-meta { display: flex; flex-direction: column; gap: .375rem; }
 .tc-clock-status { display: flex; }
