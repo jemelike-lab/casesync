@@ -4,7 +4,7 @@ import { timeAgo, getPriorityColor, getInitials } from '@/lib/workryn/utils'
 import Link from 'next/link'
 
 interface Props {
-  user: { name?: string | null; role: string; avatarColor: string; departmentName: string }
+  user: { name?: string | null; email?: string | null; id?: string; role?: string; avatarColor?: string; departmentName?: string | null }
   stats: { taskCount: number; openTickets: number; weeklyHours: number }
   auditLogs: Array<{
     id: string; action: string; resourceType: string; details: string | null; createdAt: string
@@ -56,7 +56,7 @@ function DonutChart({ completed, total }: { completed: number; total: number }) 
 
 export default function DashboardClient({ user, stats, auditLogs, recentTasks }: Props) {
   // Calculate completion %
-  const completedTasks = recentTasks.filter(t => t.status === 'COMPLETED').length
+  const completedTasks = recentTasks.filter(t => t.status === 'COMPLETED' || t.status === 'DONE').length
   const totalTasks = recentTasks.length || 1
 
   // Mock upcoming shifts for timeline (in production, fetch from API)
