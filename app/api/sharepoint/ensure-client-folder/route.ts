@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ensureClientFolder } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
+import { validateUUID } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest) {
     if (!clientId) {
       return NextResponse.json({ error: 'clientId is required' }, { status: 400 })
     }
+
+  if (!validateUUID(clientId)) {
+    return NextResponse.json({ error: 'Invalid clientId format' }, { status: 400 })
+  }
 
     // Auth: only logged-in users can trigger folder creation.
     // NOTE: the /clients/new page already restricts to team_manager + supervisor.
