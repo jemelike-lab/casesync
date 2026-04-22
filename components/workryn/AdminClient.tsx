@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Users, Building2, ShieldCheck, Plus, X, Loader2,
-  CheckCircle2, XCircle, Edit2, Activity, Copy, Link2,
+  CheckCircle2, XCircle, Edit2, Activity,
   Crown, ArrowRightLeft,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
@@ -22,10 +22,8 @@ type AuditLog = {
   id: string; action: string; resourceType: string; details: string | null; createdAt: string
   user: { id: string; name: string | null; avatarColor: string }
 }
-}
 
 const ROLE_COLORS: Record<string, string> = { OWNER: '#fbbf24', ADMIN: '#8b5cf6', MANAGER: '#6366f1', STAFF: '#64748b' }
-const STATUS_COLORS: Record<string, string> = { PENDING: '#f59e0b', ACCEPTED: '#10b981', EXPIRED: '#64748b', REVOKED: '#ef4444' }
 const TABS = [
   { id: 'users', label: 'Users', icon: <Users size={16} /> },
   { id: 'departments', label: 'Departments', icon: <Building2 size={16} /> },
