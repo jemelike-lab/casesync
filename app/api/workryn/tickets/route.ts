@@ -15,6 +15,12 @@ export async function GET(req: NextRequest) {
   const includeArchived = searchParams.get('archived') === 'true'
   const search = searchParams.get('q')?.trim() || ''
 
+  const VALID_STATUSES   = new Set(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
+  const VALID_PRIORITIES = new Set(['URGENT', 'HIGH', 'MEDIUM', 'LOW'])
+
+  if (status   && !VALID_STATUSES.has(status))   return NextResponse.json({ error: 'Invalid status' },   { status: 400 })
+  if (priority && !VALID_PRIORITIES.has(priority)) return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+
   const where: Record<string, unknown> = {}
 
   if (status) where.status = status
