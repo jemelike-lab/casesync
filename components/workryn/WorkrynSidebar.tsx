@@ -136,7 +136,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
         <div className="w-sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
 
-      <aside className={`w-sidebar${sidebarOpen ? ' open' : ''}`}>
+      <aside className={`w-sidebar${sidebarOpen ? ' open' : ''}`} data-tour-w="sidebar">
         {/* Logo */}
         <div className="w-sidebar-logo">
           <div className="w-sidebar-logo-icon" style={{ padding: 0, overflow: 'hidden', background: 'transparent', boxShadow: 'none' }}>
@@ -145,13 +145,13 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           </div>
           <span className="w-sidebar-logo-text">Workryn</span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Link href="/dashboard" className="w-toggle-btn w-focus-ring" title="Switch to CaseSync" aria-label="Switch to CaseSync">
+            <Link href="/dashboard" className="w-toggle-btn w-focus-ring" title="Switch to CaseSync" aria-label="Switch to CaseSync" data-tour-w="cs-toggle">
               <ArrowLeftRight size={14} />
               <span className="w-toggle-label">CaseSync</span>
             </Link>
             <button ref={bellRef} className="w-btn w-btn-icon w-btn-ghost w-notif-bell w-focus-ring"
               onClick={() => { setNotifFromTopbar(false); setShowNotifs(v => !v) }}
-              title="Notifications" aria-label="Notifications">
+              title="Notifications" aria-label="Notifications" data-tour-w="notif-bell">
               <Bell size={18} />
               {unread > 0 && <span className="w-notif-badge">{unread > 9 ? '9+' : unread}</span>}
             </button>
@@ -192,7 +192,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
         <nav className="w-sidebar-nav">
           <div className="w-sidebar-section-label">Workspace</div>
           {navItems.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={`w-sidebar-item w-focus-ring ${isActive(href) ? 'active' : ''}`}>
+            <Link key={href} href={href} className={`w-sidebar-item w-focus-ring ${isActive(href) ? 'active' : ''}`} data-tour-w={href.replace('/w/','')}>
               <Icon size={18} />
               <span>{label}</span>
               {isActive(href) && <ChevronRight size={14} className="w-sidebar-item-arrow" />}
