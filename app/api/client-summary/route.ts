@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { validateUUID } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     // P0: UUID format validation
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!UUID_RE.test(clientId)) {
+    if (!validateUUID(clientId)) {
       return NextResponse.json({ error: 'Invalid client ID format' }, { status: 400 })
     }
 

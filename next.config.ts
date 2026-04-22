@@ -42,6 +42,11 @@ const nextConfig = {
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
   },
