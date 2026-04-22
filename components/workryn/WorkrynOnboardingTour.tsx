@@ -13,69 +13,47 @@ interface TourStep {
 }
 
 const TOUR_STEPS: TourStep[] = [
-  {
-    id: 1, emoji: '👋', title: 'Welcome to Workryn!',
-    content: "Workryn is your employee portal at Beatrice Loving Heart. Clock in, check your schedule, complete training, and more — all in one place. Let's take a quick tour.",
-    position: 'center',
+  { id: 1, emoji: '👋', title: 'Welcome to Workryn!', position: 'center',
+    content: "Workryn is your employee portal at Beatrice Loving Heart. Clock in, view your schedule, complete training, and more. Let us take a quick tour.",
   },
-  {
-    id: 2, emoji: '🧭', title: 'Sidebar Navigation',
-    content: 'Everything is accessible from this sidebar. Your role determines which sections you can see and what you can do in each one.',
-    target: '[data-tour-w="sidebar"]',
-    position: 'right',
+  { id: 2, emoji: '🧭', title: 'Sidebar Navigation',
+    content: "Everything is accessible from this sidebar. Your role determines which sections you can see.",
+    target: '[data-tour-w="sidebar"]', position: 'right',
   },
-  {
-    id: 3, emoji: '📊', title: 'Dashboard',
-    content: 'Your dashboard shows your tasks, open tickets, hours this week, and today's schedule at a glance.',
-    target: '[data-tour-w="dashboard"]',
-    position: 'right',
+  { id: 3, emoji: '📊', title: 'Dashboard',
+    content: "Your dashboard shows your tasks, open tickets, hours this week, and today's schedule at a glance.",
+    target: '[data-tour-w="dashboard"]', position: 'right',
   },
-  {
-    id: 4, emoji: '⏱️', title: 'Time Clock',
-    content: 'Clock in and out from here. Your timesheet and full history are just a tab away. Break options are available once you're clocked in.',
-    target: '[data-tour-w="time-clock"]',
-    position: 'right',
+  { id: 4, emoji: '⏱️', title: 'Time Clock',
+    content: "Clock in and out right here. Your timesheet and full history are just a tab away. Break options appear once you are clocked in.",
+    target: '[data-tour-w="time-clock"]', position: 'right',
   },
-  {
-    id: 5, emoji: '📅', title: 'Schedule',
-    content: 'See your weekly schedule in a clean grid. Team Managers and Supervisors can add and edit shifts for the whole team.',
-    target: '[data-tour-w="schedule"]',
-    position: 'right',
+  { id: 5, emoji: '📅', title: 'Schedule',
+    content: "See your weekly schedule in a clean grid. Team Managers and Supervisors can add and edit shifts for the whole team.",
+    target: '[data-tour-w="schedule"]', position: 'right',
   },
-  {
-    id: 6, emoji: '✅', title: 'Tasks',
-    content: 'Tasks assigned to you live here. You can track progress, update status, and leave comments.',
-    target: '[data-tour-w="tasks"]',
-    position: 'right',
+  { id: 6, emoji: '✅', title: 'Tasks',
+    content: "Tasks assigned to you live here. Track progress, update status, and leave comments.",
+    target: '[data-tour-w="tasks"]', position: 'right',
   },
-  {
-    id: 7, emoji: '🎫', title: 'Tickets',
-    content: 'Submit IT or support tickets here. Track their status and communicate with your team in the thread.',
-    target: '[data-tour-w="tickets"]',
-    position: 'right',
+  { id: 7, emoji: '🎫', title: 'Tickets',
+    content: "Submit IT or support tickets here. Track their status and communicate with your team in the thread.",
+    target: '[data-tour-w="tickets"]', position: 'right',
   },
-  {
-    id: 8, emoji: '📚', title: 'Training',
-    content: 'Complete required training courses and quizzes. Your progress is tracked and managers can see your completion status.',
-    target: '[data-tour-w="training"]',
-    position: 'right',
+  { id: 8, emoji: '📚', title: 'Training',
+    content: "Complete required training courses and quizzes. Your progress is tracked and managers can see your completion status.",
+    target: '[data-tour-w="training"]', position: 'right',
   },
-  {
-    id: 9, emoji: '🔔', title: 'Notifications',
-    content: 'The bell icon shows your real-time notifications — task assignments, reminders, and shift updates.',
-    target: '[data-tour-w="notif-bell"]',
-    position: 'bottom',
+  { id: 9, emoji: '🔔', title: 'Notifications',
+    content: "The bell icon shows your real-time notifications — task assignments, reminders, and shift updates.",
+    target: '[data-tour-w="notif-bell"]', position: 'bottom',
   },
-  {
-    id: 10, emoji: '↔️', title: 'Switch Back to CaseSync',
-    content: 'Use the CaseSync toggle at the top of the sidebar to jump back to the case management portal at any time.',
-    target: '[data-tour-w="cs-toggle"]',
-    position: 'right',
+  { id: 10, emoji: '↔️', title: 'Switch to CaseSync',
+    content: "Use this toggle to jump back to the CaseSync case management portal at any time.",
+    target: '[data-tour-w="cs-toggle"]', position: 'right',
   },
-  {
-    id: 11, emoji: '🚀', title: "You're ready!",
-    content: "That's everything you need to know. Your role controls what you can access — if you think something is missing, check with your supervisor.",
-    position: 'center',
+  { id: 11, emoji: '🚀', title: 'You are all set!', position: 'center',
+    content: "That covers everything. Your role controls your access — if something seems missing, check with your supervisor.",
   },
 ]
 
@@ -94,7 +72,7 @@ function computePos(rect: SpotlightRect | null, pos: TourStep['position'], tw: n
   const { top, left, width, height } = rect
   switch (pos) {
     case 'bottom': return { top: top + height + pad, left: Math.max(pad, Math.min(left + width / 2 - tw / 2, window.innerWidth - tw - pad)) }
-    case 'top':    return { top: top - th - pad, left: Math.max(pad, Math.min(left + width / 2 - tw / 2, window.innerWidth - tw - pad)) }
+    case 'top':    return { top: top - th - pad,    left: Math.max(pad, Math.min(left + width / 2 - tw / 2, window.innerWidth - tw - pad)) }
     case 'right':  return { top: Math.max(pad, top + height / 2 - th / 2), left: left + width + pad }
     case 'left':   return { top: Math.max(pad, top + height / 2 - th / 2), left: left - tw - pad }
     default:       return { top: top + height + pad, left: Math.max(pad, left) }
@@ -111,10 +89,7 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
   useEffect(() => {
     if (forceShow) { setVisible(true); setStep(0); return }
     const done = localStorage.getItem(TOUR_KEY)
-    if (!done) {
-      const t = setTimeout(() => setVisible(true), 900)
-      return () => clearTimeout(t)
-    }
+    if (!done) { const t = setTimeout(() => setVisible(true), 900); return () => clearTimeout(t) }
   }, [forceShow])
 
   const cur = TOUR_STEPS[step]
@@ -161,7 +136,6 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
 
   return (
     <>
-      {/* Overlay */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: isCenter ? 'none' : 'auto' }}>
         {rect ? (
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} aria-hidden>
@@ -180,7 +154,6 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
         )}
       </div>
 
-      {/* Tooltip */}
       <div
         role="dialog" aria-modal aria-label={`Tour step ${step + 1} of ${TOUR_STEPS.length}: ${cur.title}`}
         style={{
@@ -194,7 +167,6 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
           ...(isCenter ? { top: '50%', left: '50%', transform: 'translate(-50%,-50%)' } : tooltipPos),
         }}
       >
-        {/* Progress dots */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 4 }}>
             {TOUR_STEPS.map((_, i) => (
@@ -208,7 +180,6 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
           <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>{step + 1} / {TOUR_STEPS.length}</span>
         </div>
 
-        {/* Content */}
         <p style={{ margin: '0 0 4px', fontSize: 22 }}>{cur.emoji}</p>
         <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>
           {cur.title}
@@ -217,7 +188,6 @@ export default function WorkrynOnboardingTour({ forceShow = false, onClose }: Pr
           {cur.content}
         </p>
 
-        {/* Buttons */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
           {!isLast && (
             <button onClick={close} style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: 13, cursor: 'pointer', padding: '6px 10px', borderRadius: 7 }}>
