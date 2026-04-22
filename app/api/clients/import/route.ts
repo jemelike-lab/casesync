@@ -76,6 +76,26 @@ export async function POST(req: NextRequest) {
     }
 
     if (file instanceof File && file.size > 0) {
+      // P1: file size cap (10 MB) and MIME type validation
+      const MAX_SIZE = 10 * 1024 * 1024
+      if (file.size > MAX_SIZE) {
+        return NextResponse.json({ error: 'File too large. Maximum size is 10 MB.' }, { status: 400 })
+      }
+      const ALLOWED_EXTENSIONS = new Set(['.csv', '.xlsx', '.xls'])
+      const ALLOWED_MIME_TYPES = new Set([
+        'text/csv',
+        'application/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+      ])
+      const ext = '.' + file.name.toLowerCase().split('.').pop()
+      if (!ALLOWED_EXTENSIONS.has(ext)) {
+        return NextResponse.json({ error: 'Invalid file type. Only .csv, .xlsx, and .xls files are allowed.' }, { status: 400 })
+      }
+      if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
+        return NextResponse.json({ error: 'Invalid file type. Only CSV and Excel files are allowed.' }, { status: 400 })
+      }
       sourceFileName = sourceFileName ?? file.name
       const lowerName = file.name.toLowerCase()
       if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
