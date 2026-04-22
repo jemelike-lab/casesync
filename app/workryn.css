@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Workryn v5 — Premium Dark Mode with Glassmorphism
+   Workryn v5b — Premium Dark Mode with Glassmorphism
    ═══════════════════════════════════════════════════════════════════
    Built on v4 class/var names. NO renames. Purely visual overhaul.
    
    Changes from v4:
    • Content area: light → rich dark mode (matches sidebar)
    • Glassmorphism cards with frosted blur + subtle borders
-   • Vibrant accent system: indigo → teal → emerald gradients
+   • Vibrant accent system: blue accent with glow gradients
    • Micro-animations: hover lifts, entrance slides, pulsing CTAs
    • Depth: layered shadows, glowing borders, gradient accents
    • Bridge vars: maps --glass-bg, --bg-surface, etc. for components
@@ -26,13 +26,13 @@
   --w-border-default: rgba(255,255,255,0.10);
   --w-border-strong: rgba(255,255,255,0.18);
 
-  /* Brand — indigo/blue with teal highlights */
-  --w-brand: #6366f1;
-  --w-brand-dark: #4f46e5;
-  --w-brand-light: #a5b4fc;
-  --w-brand-glow: rgba(99,102,241,0.25);
-  --w-brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
-  --w-brand-gradient-subtle: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.06) 100%);
+  /* Brand — blue with glow highlights */
+  --w-brand: #2563eb;
+  --w-brand-dark: #1d4ed8;
+  --w-brand-light: #93c5fd;
+  --w-brand-glow: rgba(37,99,235,0.25);
+  --w-brand-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+  --w-brand-gradient-subtle: linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(59,130,246,0.06) 100%);
 
   /* Semantic */
   --w-success: #10b981;
@@ -68,8 +68,8 @@
   --w-shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
   --w-shadow-md: 0 4px 14px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2);
   --w-shadow-lg: 0 8px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
-  --w-shadow-brand: 0 8px 32px rgba(99,102,241,0.3);
-  --w-shadow-glow: 0 0 60px rgba(99,102,241,0.12);
+  --w-shadow-brand: 0 8px 32px rgba(37,99,235,0.3);
+  --w-shadow-glow: 0 0 60px rgba(37,99,235,0.12);
 
   /* Transitions */
   --w-transition: 160ms ease;
@@ -96,11 +96,11 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-inverse: #0f172a;
-  --brand: #6366f1;
-  --brand-dark: #4f46e5;
-  --brand-light: #a5b4fc;
-  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
-  --brand-gradient-subtle: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.06) 100%);
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
+  --brand-light: #93c5fd;
+  --brand-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+  --brand-gradient-subtle: linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(59,130,246,0.06) 100%);
   --border-subtle: rgba(255,255,255,0.06);
   --border-default: rgba(255,255,255,0.10);
   --border-strong: rgba(255,255,255,0.18);
@@ -111,7 +111,7 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 14px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
-  --shadow-glow: 0 0 60px rgba(99,102,241,0.12);
+  --shadow-glow: 0 0 60px rgba(37,99,235,0.12);
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -139,8 +139,8 @@
   padding: 32px 40px;
   position: relative;
   background:
-    radial-gradient(ellipse 80% 60% at 70% 10%, rgba(99,102,241,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(139,92,246,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 70% 10%, rgba(37,99,235,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(59,130,246,0.04) 0%, transparent 50%),
     var(--w-bg-base);
 }
 
@@ -176,16 +176,16 @@
 }
 
 .w-sidebar .w-sidebar-item:hover {
-  background: rgba(99,102,241,0.14);
+  background: rgba(37,99,235,0.14);
   color: #e2e8f0;
   transform: translateX(2px);
   transition: background var(--w-transition), color var(--w-transition), transform var(--w-transition-smooth);
 }
 
 .w-sidebar .w-sidebar-item.active {
-  background: rgba(99,102,241,0.22);
+  background: rgba(37,99,235,0.22);
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(99,102,241,0.25);
+  box-shadow: inset 0 0 0 1px rgba(37,99,235,0.25);
 }
 
 .w-sidebar .w-sidebar-item.active::before {
@@ -194,9 +194,9 @@
   left: 0; top: 50%;
   transform: translateY(-50%);
   width: 3px; height: 22px;
-  background: linear-gradient(180deg, #a78bfa, #6366f1);
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 12px rgba(99,102,241,0.6);
+  box-shadow: 0 0 12px rgba(37,99,235,0.6);
 }
 
 .w-sidebar .w-sidebar-logo {
@@ -216,17 +216,17 @@
 .w-sidebar .w-sidebar-user-role { color: rgba(148,182,229,0.55); }
 
 .w-sidebar .w-toggle-btn {
-  background: rgba(99,102,241,0.12);
+  background: rgba(37,99,235,0.12);
   border-color: rgba(255,255,255,0.1);
   color: #94a3b8;
   transition: all var(--w-transition-smooth);
 }
 
 .w-sidebar .w-toggle-btn:hover {
-  background: rgba(99,102,241,0.22);
+  background: rgba(37,99,235,0.22);
   color: #e2e8f0;
   border-color: rgba(255,255,255,0.2);
-  box-shadow: 0 0 12px rgba(99,102,241,0.2);
+  box-shadow: 0 0 12px rgba(37,99,235,0.2);
 }
 
 .w-sidebar .w-notif-bell {
@@ -241,7 +241,7 @@
 
 .w-sidebar .w-btn-ghost { color: #94a3b8; }
 .w-sidebar .w-btn-ghost:hover {
-  background: rgba(99,102,241,0.15);
+  background: rgba(37,99,235,0.15);
   color: #e2e8f0;
 }
 
@@ -348,7 +348,7 @@
 }
 
 .w-sidebar-user-link:hover {
-  background: rgba(99,102,241,0.14);
+  background: rgba(37,99,235,0.14);
 }
 
 .w-sidebar-user-info {
@@ -416,7 +416,7 @@
 .w-btn-primary {
   background: var(--w-brand-gradient);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
 }
 
 .w-btn-primary:hover {
@@ -427,7 +427,7 @@
 
 .w-btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(99,102,241,0.3);
+  box-shadow: 0 1px 4px rgba(37,99,235,0.3);
 }
 
 .w-btn-outline {
@@ -520,9 +520,9 @@
 }
 
 .w-app-shell .badge-brand {
-  background: rgba(99,102,241,0.15);
+  background: rgba(37,99,235,0.15);
   color: var(--w-brand-light);
-  box-shadow: 0 0 8px rgba(99,102,241,0.1);
+  box-shadow: 0 0 8px rgba(37,99,235,0.1);
 }
 
 .w-app-shell .badge-success {
@@ -572,9 +572,9 @@
 }
 
 .w-app-shell .stat-card:hover {
-  border-color: rgba(99,102,241,0.2);
+  border-color: rgba(37,99,235,0.2);
   transform: translateY(-4px);
-  box-shadow: var(--w-shadow-md), 0 0 30px rgba(99,102,241,0.08);
+  box-shadow: var(--w-shadow-md), 0 0 30px rgba(37,99,235,0.08);
 }
 
 .w-app-shell .stat-card:hover::before { opacity: 1; }
@@ -665,7 +665,7 @@
 .wd-btn-primary {
   background: var(--w-brand-gradient);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3);
 }
 
 .wd-btn-primary:hover {
@@ -727,8 +727,8 @@
 }
 
 .wd-stat-card:hover {
-  border-color: rgba(99,102,241,0.25);
-  box-shadow: var(--w-shadow-md), 0 0 40px rgba(99,102,241,0.1);
+  border-color: rgba(37,99,235,0.25);
+  box-shadow: var(--w-shadow-md), 0 0 40px rgba(37,99,235,0.1);
   transform: translateY(-4px);
 }
 
@@ -795,7 +795,7 @@
 }
 
 .wd-panel:hover {
-  box-shadow: var(--w-shadow-md), 0 0 30px rgba(99,102,241,0.06);
+  box-shadow: var(--w-shadow-md), 0 0 30px rgba(37,99,235,0.06);
   border-color: rgba(255,255,255,0.1);
 }
 
@@ -827,7 +827,7 @@
 }
 
 .wd-link:hover {
-  color: #c4b5fd;
+  color: #93c5fd;
   text-decoration: underline;
 }
 
@@ -864,7 +864,7 @@
 }
 
 .wd-task-row:hover {
-  background: rgba(99,102,241,0.08);
+  background: rgba(37,99,235,0.08);
   transform: translateX(4px);
 }
 
@@ -999,7 +999,7 @@
 }
 
 .w-app-shell tbody tr:hover {
-  background: rgba(99,102,241,0.04);
+  background: rgba(37,99,235,0.04);
 }
 
 .w-app-shell tbody tr:last-child td { border-bottom: none; }
@@ -1019,7 +1019,7 @@
 }
 
 .w-card:hover {
-  box-shadow: var(--w-shadow-md), 0 0 20px rgba(99,102,241,0.06);
+  box-shadow: var(--w-shadow-md), 0 0 20px rgba(37,99,235,0.06);
   border-color: rgba(255,255,255,0.1);
   transform: translateY(-2px);
 }
@@ -1048,15 +1048,15 @@
 
 .w-tab:hover {
   color: var(--w-text-primary);
-  background: rgba(99,102,241,0.06);
+  background: rgba(37,99,235,0.06);
 }
 
 .w-tab.active {
   color: var(--w-brand-light);
   border-bottom-color: var(--w-brand);
   font-weight: 600;
-  background: rgba(99,102,241,0.08);
-  box-shadow: 0 2px 8px rgba(99,102,241,0.1);
+  background: rgba(37,99,235,0.08);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.1);
 }
 
 /* ═══════════════════════════════════════════
@@ -1071,13 +1071,13 @@
 .w-empty-state-icon {
   width: 60px; height: 60px;
   margin: 0 auto 18px;
-  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08));
+  background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(59,130,246,0.08));
   border-radius: var(--w-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--w-brand-light);
-  box-shadow: 0 0 0 6px rgba(99,102,241,0.06), 0 0 30px rgba(99,102,241,0.08);
+  box-shadow: 0 0 0 6px rgba(37,99,235,0.06), 0 0 30px rgba(37,99,235,0.08);
 }
 
 .w-empty-state p {
@@ -1110,7 +1110,7 @@
   transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 12px rgba(99,102,241,0.3);
+  box-shadow: 0 0 12px rgba(37,99,235,0.3);
 }
 
 .w-progress-bar::after {
@@ -1141,7 +1141,7 @@
   cursor: pointer;
 }
 
-.w-ticket-row:hover { background: rgba(99,102,241,0.04); }
+.w-ticket-row:hover { background: rgba(37,99,235,0.04); }
 .w-ticket-row:last-child { border-bottom: none; }
 
 .w-status-dot {
@@ -1193,7 +1193,7 @@
 .w-modal {
   background: linear-gradient(180deg, rgba(20,24,36,0.98) 0%, rgba(15,18,28,0.99) 100%);
   border-radius: var(--w-radius-xl);
-  box-shadow: var(--w-shadow-lg), 0 0 80px rgba(99,102,241,0.08);
+  box-shadow: var(--w-shadow-lg), 0 0 80px rgba(37,99,235,0.08);
   max-width: 520px;
   width: 90vw;
   max-height: 85vh;
@@ -1285,8 +1285,8 @@
 }
 
 @keyframes w-pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(37,99,235,0); }
 }
 
 /* Animate page content on load */
@@ -1334,7 +1334,7 @@
 .w-app-shell .modal {
   background: linear-gradient(180deg, rgba(20,24,36,0.98) 0%, rgba(15,18,28,0.99) 100%);
   border-radius: var(--w-radius-xl);
-  box-shadow: var(--w-shadow-lg), 0 0 80px rgba(99,102,241,0.08);
+  box-shadow: var(--w-shadow-lg), 0 0 80px rgba(37,99,235,0.08);
   max-width: 520px;
   width: 90vw;
   max-height: 85vh;
@@ -1380,7 +1380,7 @@
 .w-app-shell .btn-gradient {
   background: var(--w-brand-gradient);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3);
 }
 
 .w-app-shell .btn-gradient:hover {
@@ -1403,7 +1403,7 @@
 .w-app-shell .btn-primary {
   background: var(--w-brand-gradient);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
 }
 
 .w-app-shell .btn-primary:hover {
@@ -1476,7 +1476,7 @@
 }
 
 .w-app-shell .dropdown-item:hover {
-  background: rgba(99,102,241,0.08);
+  background: rgba(37,99,235,0.08);
   color: var(--w-text-primary);
 }
 
@@ -1486,13 +1486,13 @@
 .w-focus-ring:focus-visible {
   outline: 2px solid var(--w-brand);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
 }
 
 .w-app-shell .focus-ring:focus-visible {
   outline: 2px solid var(--w-brand);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
 }
 
 /* ═══════════════════════════════════════════
@@ -1598,7 +1598,7 @@
 }
 
 .w-app-shell a:hover {
-  color: #c4b5fd;
+  color: #93c5fd;
 }
 
 /* Ensure page-level h1, p use dark text colors */
@@ -1610,4 +1610,524 @@
 
 .w-app-shell p {
   color: var(--w-text-secondary);
+}
+
+/* ═══════════════════════════════════════════
+   TIME CLOCK — Circular Glowing Display
+   ═══════════════════════════════════════════ */
+
+/* Clock face container — the main clock area */
+.w-app-shell .tc-clock-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 320px;
+  height: 320px;
+  margin: 20px auto 24px;
+}
+
+/* Outer ring — SVG progress circle */
+.w-app-shell .tc-ring-bg {
+  stroke: rgba(37,99,235,0.08);
+  fill: none;
+}
+
+.w-app-shell .tc-ring-progress {
+  fill: none;
+  stroke: url(#tc-gradient);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgba(37,99,235,0.4));
+  transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Inner glow behind clock */
+.w-app-shell .tc-clock-face::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Time display inside circle */
+.w-app-shell .tc-time {
+  font-size: 3.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--w-text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.w-app-shell .tc-time-seconds {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--w-text-muted);
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.w-app-shell .tc-date {
+  font-size: 0.8125rem;
+  color: var(--w-text-muted);
+  margin-top: 4px;
+}
+
+.w-app-shell .tc-user {
+  font-size: 0.75rem;
+  color: var(--w-text-muted);
+  opacity: 0.7;
+}
+
+/* Status badge */
+.w-app-shell .tc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.w-app-shell .tc-status-out {
+  background: rgba(100,116,139,0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(100,116,139,0.15);
+}
+
+.w-app-shell .tc-status-out .tc-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.w-app-shell .tc-status-active {
+  background: rgba(16,185,129,0.12);
+  color: #6ee7b7;
+  border: 1px solid rgba(16,185,129,0.2);
+  animation: tc-pulse 2s ease-in-out infinite;
+}
+
+.w-app-shell .tc-status-active .tc-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16,185,129,0.6);
+}
+
+@keyframes tc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+/* Clock In / Out button */
+.w-app-shell .tc-btn-clockin {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 99px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 0 rgba(37,99,235,0.3);
+  animation: tc-btn-glow 3s ease-in-out infinite;
+}
+
+.w-app-shell .tc-btn-clockin:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(37,99,235,0.45), 0 0 40px rgba(37,99,235,0.15);
+}
+
+.w-app-shell .tc-btn-clockin:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@keyframes tc-btn-glow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 0 rgba(37,99,235,0.3); }
+  50% { box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 8px rgba(37,99,235,0); }
+}
+
+.w-app-shell .tc-btn-clockout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 99px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+}
+
+.w-app-shell .tc-btn-clockout:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(239,68,68,0.4);
+}
+
+.w-app-shell .tc-btn-break {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid rgba(37,99,235,0.2);
+  background: rgba(37,99,235,0.08);
+  color: #93c5fd;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+}
+
+.w-app-shell .tc-btn-break:hover {
+  background: rgba(37,99,235,0.15);
+  border-color: rgba(37,99,235,0.3);
+  box-shadow: 0 0 20px rgba(37,99,235,0.1);
+}
+
+/* Stats sidebar */
+.w-app-shell .tc-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.w-app-shell .tc-stat-card {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--w-radius-lg);
+  padding: 18px;
+  transition: all var(--w-transition-smooth);
+}
+
+.w-app-shell .tc-stat-card:hover {
+  border-color: rgba(37,99,235,0.15);
+  box-shadow: 0 0 20px rgba(37,99,235,0.06);
+}
+
+.w-app-shell .tc-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--w-text-muted);
+  margin-bottom: 6px;
+}
+
+.w-app-shell .tc-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--w-text-primary);
+  letter-spacing: -0.03em;
+}
+
+.w-app-shell .tc-stat-sub {
+  font-size: 0.75rem;
+  color: var(--w-text-muted);
+  margin-top: 2px;
+}
+
+/* Weekly progress bar */
+.w-app-shell .tc-weekly-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.w-app-shell .tc-weekly-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+  border-radius: 99px;
+  transition: width 800ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(37,99,235,0.4);
+  position: relative;
+}
+
+.w-app-shell .tc-weekly-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; bottom: 0; width: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  animation: w-shimmer 2.5s ease-in-out infinite;
+}
+
+/* Break/overtime mini cards */
+.w-app-shell .tc-mini-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.w-app-shell .tc-mini-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--w-radius-md);
+  padding: 12px 14px;
+}
+
+.w-app-shell .tc-mini-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--w-text-muted);
+}
+
+.w-app-shell .tc-mini-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--w-text-primary);
+  margin-top: 2px;
+}
+
+/* Today's activity */
+.w-app-shell .tc-activity-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--w-text-muted);
+  font-size: 0.875rem;
+}
+
+.w-app-shell .tc-activity-empty svg {
+  opacity: 0.25;
+  margin-bottom: 10px;
+}
+
+/* ═══════════════════════════════════════════
+   SCHEDULE — Connecteam-style Weekly Grid
+   ═══════════════════════════════════════════ */
+
+.w-app-shell .sched-grid-wrap {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--w-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--w-shadow-sm);
+}
+
+/* Header row with day names */
+.w-app-shell .sched-header-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.w-app-shell .sched-header-cell {
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--w-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+
+.w-app-shell .sched-header-cell:first-child {
+  text-align: left;
+  padding-left: 16px;
+  font-size: 0.6875rem;
+  color: var(--w-text-muted);
+}
+
+.w-app-shell .sched-header-cell.today {
+  color: #60a5fa;
+  background: rgba(37,99,235,0.06);
+}
+
+.w-app-shell .sched-header-date {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--w-text-primary);
+  margin-top: 2px;
+}
+
+.w-app-shell .sched-header-cell.today .sched-header-date {
+  color: #60a5fa;
+}
+
+/* Staff rows */
+.w-app-shell .sched-staff-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background var(--w-transition);
+  min-height: 72px;
+}
+
+.w-app-shell .sched-staff-row:hover {
+  background: rgba(37,99,235,0.02);
+}
+
+.w-app-shell .sched-staff-row:last-child {
+  border-bottom: none;
+}
+
+/* Staff info cell */
+.w-app-shell .sched-staff-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  position: sticky;
+  left: 0;
+  background: rgba(8,12,20,0.95);
+  z-index: 1;
+}
+
+.w-app-shell .sched-staff-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--w-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-app-shell .sched-staff-role {
+  font-size: 0.6875rem;
+  color: var(--w-text-muted);
+  margin-top: 1px;
+}
+
+/* Day cells */
+.w-app-shell .sched-day-cell {
+  padding: 6px;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: background var(--w-transition);
+}
+
+.w-app-shell .sched-day-cell:hover {
+  background: rgba(37,99,235,0.04);
+}
+
+.w-app-shell .sched-day-cell.today {
+  background: rgba(37,99,235,0.03);
+}
+
+/* Shift blocks inside day cells */
+.w-app-shell .sched-shift-block {
+  padding: 6px 8px;
+  border-radius: var(--w-radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.w-app-shell .sched-shift-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.w-app-shell .sched-shift-time {
+  font-size: 0.625rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.w-app-shell .sched-shift-role {
+  font-size: 0.5625rem;
+  opacity: 0.7;
+  margin-top: 1px;
+}
+
+/* Empty shift placeholder */
+.w-app-shell .sched-day-cell:hover .sched-add-hint {
+  opacity: 1;
+}
+
+.w-app-shell .sched-add-hint {
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  color: var(--w-text-muted);
+  opacity: 0;
+  transition: opacity var(--w-transition);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: var(--w-radius-sm);
+}
+
+/* Schedule action bar */
+.w-app-shell .sched-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.w-app-shell .sched-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--w-radius-md);
+  padding: 4px;
+}
+
+.w-app-shell .sched-week-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--w-radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--w-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--w-transition);
+}
+
+.w-app-shell .sched-week-btn:hover {
+  background: rgba(37,99,235,0.1);
+  color: var(--w-text-primary);
+}
+
+.w-app-shell .sched-week-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--w-text-primary);
+  padding: 0 12px;
+  min-width: 160px;
+  text-align: center;
 }
