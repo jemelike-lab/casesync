@@ -2737,3 +2737,145 @@
   color: var(--w-text-secondary); margin: 0;
 }
 .wd-empty-state span { font-size: 0.8125rem; }
+
+
+/* ── View toggle ──────────────────────────────────────────── */
+.sched-view-toggle {
+  display: flex;
+  background: var(--w-bg-overlay);
+  border: 1px solid var(--w-border-default);
+  border-radius: var(--w-radius-md);
+  overflow: hidden;
+}
+.sched-view-btn {
+  padding: 7px 14px;
+  font-size: 0.8125rem; font-weight: 500;
+  background: none; border: none; cursor: pointer;
+  color: var(--w-text-muted);
+  transition: all var(--w-transition);
+}
+.sched-view-btn:hover { color: var(--w-text-primary); background: var(--w-bg-hover); }
+.sched-view-btn-active {
+  background: var(--w-brand) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+/* ── Month View ───────────────────────────────────────────── */
+.sched-month {
+  background: var(--w-bg-surface);
+  border: 1px solid var(--w-border-subtle);
+  border-radius: var(--w-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--w-shadow-sm);
+}
+.sched-month-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--w-bg-overlay);
+  border-bottom: 1px solid var(--w-border-subtle);
+}
+.sched-month-dow {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 0.6875rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--w-text-muted);
+}
+.sched-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.sched-month-cell {
+  min-height: 110px;
+  padding: 6px;
+  border-right: 1px solid var(--w-border-subtle);
+  border-bottom: 1px solid var(--w-border-subtle);
+  cursor: pointer;
+  transition: background var(--w-transition);
+  position: relative;
+}
+.sched-month-cell:nth-child(7n) { border-right: none; }
+.sched-month-cell:hover { background: rgba(37,99,235,0.025); }
+.sched-month-today { background: rgba(37,99,235,0.04); }
+.sched-month-other { opacity: 0.45; }
+.sched-month-date {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  font-size: 0.8125rem; font-weight: 600;
+  color: var(--w-text-secondary);
+  border-radius: 50%;
+  margin-bottom: 4px;
+}
+.sched-month-date-today {
+  background: var(--w-brand);
+  color: #fff;
+}
+.sched-month-chips { display: flex; flex-direction: column; gap: 2px; }
+.sched-month-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: filter var(--w-transition);
+  white-space: nowrap;
+}
+.sched-month-chip:hover { filter: brightness(0.92); }
+.sched-month-chip-time { font-weight: 700; color: var(--w-text-primary); flex-shrink: 0; }
+.sched-month-chip-name { font-weight: 600; color: var(--w-text-secondary); flex-shrink: 0; }
+.sched-month-chip-title { color: var(--w-text-muted); overflow: hidden; text-overflow: ellipsis; }
+.sched-month-more {
+  font-size: 0.6875rem; color: var(--w-brand);
+  font-weight: 600; padding: 1px 4px;
+  cursor: pointer;
+}
+
+/* ── Day View ─────────────────────────────────────────────── */
+.sched-day-view {
+  background: var(--w-bg-surface);
+  border: 1px solid var(--w-border-subtle);
+  border-radius: var(--w-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--w-shadow-sm);
+}
+.sched-day-row {
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--w-border-subtle);
+  min-height: 72px;
+}
+.sched-day-row:last-child { border-bottom: none; }
+.sched-day-shifts {
+  flex: 1; display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 16px; align-items: center;
+}
+.sched-day-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--w-radius-sm);
+  border-left: 3px solid;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--w-transition), box-shadow var(--w-transition);
+  min-width: 160px;
+}
+.sched-day-chip:hover { transform: translateY(-1px); box-shadow: var(--w-shadow-sm); }
+.sched-day-chip-time { font-weight: 700; color: var(--w-text-primary); }
+.sched-day-chip-title { color: var(--w-text-secondary); font-weight: 500; }
+.sched-day-add-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  background: var(--w-bg-overlay);
+  border: 1px dashed var(--w-border-default);
+  border-radius: var(--w-radius-sm);
+  color: var(--w-text-muted);
+  font-size: 0.8125rem; cursor: pointer;
+  transition: all var(--w-transition);
+}
+.sched-day-add-btn:hover { border-color: var(--w-brand); color: var(--w-brand); background: rgba(37,99,235,0.04); }
+.sched-empty {
+  padding: 48px; text-align: center;
+  color: var(--w-text-muted); font-size: 0.875rem;
+}
