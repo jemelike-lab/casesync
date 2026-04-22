@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 /**
  * CaseSync Proxy — Session Management & Route Protection
@@ -41,10 +42,16 @@ function isApiRoute(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+<<<<<<< HEAD
+  const { pathname } = request.nextUrl
+
+  if (isPublic(pathname)) {
+=======
   const { pathname } = request.nextUrl
 
   // Allow public routes through without any auth check
   if (isPublic(pathname)) {
+>>>>>>> 5ece1550184ae4fd400cbe75bb352d7c4daa36c3
     return NextResponse.next()
   }
 
@@ -71,9 +78,7 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // ---------- No valid session ----------
   if (!user) {
@@ -95,6 +100,66 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+<<<<<<< HEAD
+  const now = Math.floor(Date.now() / 1000)
+  const lastActivity = parseInt(
+    request.cookies.get('cs_last_activity')?.value ?? '0', 10
+  )
+
+  if (lastActivity > 0 && now - lastActivity > INACTIVITY_TIMEOUT_S) {
+    await supabase.auth.signOut()
+
+    if (isApiRoute(pathname)) {
+      return NextResponse.json(
+        { error: 'Session timed out due to inactivity' },
+        { status: 401 }
+      )
+    }
+
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('reason', 'session_timeout')
+    loginUrl.searchParams.set('redirect', pathname)
+    const redirectResponse = NextResponse.redirect(loginUrl)
+    redirectResponse.cookies.delete('cs_last_activity')
+    return redirectResponse
+  }
+
+  if (isDataApiRoute(pathname)) {
+    const result = rateLimit(`data:${user.id}`, {
+      limit: DATA_RATE_LIMIT,
+      windowMs: DATA_RATE_WINDOW_MS,
+    })
+
+    if (!result.ok) {
+      const retryAfterSecs = Math.ceil((result.resetAt - Date.now()) / 1000)
+      return NextResponse.json(
+        { error: 'Too many requests — rate limit exceeded', retryAfter: retryAfterSecs },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfterSecs),
+            'X-RateLimit-Limit': String(DATA_RATE_LIMIT),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(Math.ceil(result.resetAt / 1000)),
+          },
+        }
+      )
+    }
+
+    response.headers.set('X-RateLimit-Limit', String(DATA_RATE_LIMIT))
+    response.headers.set('X-RateLimit-Remaining', String(result.remaining))
+    response.headers.set('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)))
+  }
+
+  response.cookies.set('cs_last_activity', String(now), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: INACTIVITY_TIMEOUT_S,
+  })
+
+=======
   // ---------- Inactivity timeout (HIPAA 30 min) ----------
   const now = Math.floor(Date.now() / 1000)
   const lastActivity = parseInt(
@@ -131,6 +196,7 @@ export async function proxy(request: NextRequest) {
     maxAge: INACTIVITY_TIMEOUT_S,
   })
 
+>>>>>>> 5ece1550184ae4fd400cbe75bb352d7c4daa36c3
   return response
 }
 
