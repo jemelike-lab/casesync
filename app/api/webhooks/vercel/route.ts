@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { rateLimit } from '@/lib/rate-limit'
 
 // Simple shared-secret auth:
@@ -6,6 +7,17 @@ import { rateLimit } from '@/lib/rate-limit'
 // - We'll accept either:
 //   - ?secret=...
 //   - x-vercel-webhook-secret: ...
+function safeCompare(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a)
+    const bBuf = Buffer.from(b)
+    if (aBuf.length !== bBuf.length) return false
+    return timingSafeEqual(aBuf, bBuf)
+  } catch {
+    return false
+  }
+}
+
 function isAuthorized(req: NextRequest) {
   const expected = process.env.VERCEL_WEBHOOK_SECRET
   if (!expected) return false
@@ -13,7 +25,8 @@ function isAuthorized(req: NextRequest) {
   const providedQuery = req.nextUrl.searchParams.get('secret')
   const providedHeader = req.headers.get('x-vercel-webhook-secret')
 
-  return providedQuery === expected || providedHeader === expected
+  return (providedQuery !== null && safeCompare(providedQuery, expected)) ||
+         (providedHeader !== null && safeCompare(providedHeader, expected))
 }
 
 export async function POST(req: NextRequest) {
