@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
     const filter = searchParams.get('filter') ?? 'all'
     const search = searchParams.get('search') ?? ''
     const assignedTo = searchParams.get('assignedTo') ?? ''
-    const sortField = searchParams.get('sortField') ?? 'name'
+    const SORT_FIELDS = new Set(['goal_pct', 'last_contact_date', 'eligibility_end_date'])
+  const _sortFieldRaw = searchParams.get('sortField') ?? ''
+  const sortField = SORT_FIELDS.has(_sortFieldRaw) ? _sortFieldRaw : 'name'
     const sortDir = (searchParams.get('sortDir') ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc'
     const deadlineDate = searchParams.get('deadlineDate') ?? ''
 
