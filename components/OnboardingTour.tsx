@@ -11,6 +11,7 @@ interface TourStep {
   content: string
   target?: string // CSS selector for element to highlight
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center'
+  handoff?: boolean // if true, Next button navigates to Workryn
 }
 
 const TOUR_STEPS: TourStep[] = [
@@ -65,10 +66,11 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 7,
     emoji: '💼',
-    title: 'Workryn Portal',
-    content: "Click the Workryn button to access your employee portal — clock in/out, view your schedule, submit tickets, complete training, and more.",
+    title: 'Your Employee Portal',
+    content: "Workryn is your employee hub — clock in/out, view your schedule, submit tickets, and complete training. Next we'll take you there for a quick tour.",
     target: '[data-tour="workryn-button"]',
     position: 'bottom',
+    handoff: true,
   },
   {
     id: 8,
@@ -218,6 +220,14 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
   }, [step, visible, currentStep])
 
   const handleNext = useCallback(() => {
+    const cur = TOUR_STEPS[step]
+    if (cur.handoff) {
+      // Mark CaseSync tour complete and hand off to Workryn tour
+      localStorage.setItem(TOUR_KEY, 'true')
+      setVisible(false)
+      window.location.href = '/w/dashboard?tour=1'
+      return
+    }
     if (step < TOUR_STEPS.length - 1) {
       setStep(s => s + 1)
     } else {
@@ -405,7 +415,7 @@ export default function OnboardingTour({ forceShow = false, onClose }: Onboardin
             onMouseEnter={e => (e.currentTarget.style.background = '#6D28D9')}
             onMouseLeave={e => (e.currentTarget.style.background = '#2563eb')}
           >
-            {isLast ? "Let's go! 🚀" : 'Next →'}
+            {isLast ? "Let's go! 🚀" : TOUR_STEPS[step].handoff ? 'Open Workryn →' : 'Next →'}
           </button>
         </div>
       </div>
