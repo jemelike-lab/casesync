@@ -75,56 +75,47 @@ function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate()
 }
 
-//  SVG Clock Face 
+// SVG Clock Face  v5b: numbered, thin border
 function ClockFace({ elapsed, isOnBreak, isClockedIn }: { elapsed: number; isOnBreak: boolean; isClockedIn: boolean }) {
-  const r = 80; const cx = 100; const cy = 100
+  const now = new Date()
+  const secs = now.getSeconds() + now.getMilliseconds() / 1000
+  const mins = now.getMinutes() + secs / 60
+  const hrs  = (now.getHours() % 12) + mins / 60
+
+  const cx = 100; const cy = 100; const r = 82
   const circumference = 2 * Math.PI * r
-  // Progress: 08h mapped to full circle
-  const maxSeconds = 8 * 3600
-  const progress = Math.min(elapsed / maxSeconds, 1)
+  const progress = Math.min(elapsed / (8 * 3600), 1)
   const dashOffset = circumference * (1 - progress)
 
-  const now = new Date()
-  const seconds = now.getSeconds()
-  const minutes = now.getMinutes()
-  const hours = now.getHours() % 12
+  const accent = isOnBreak ? '#f59e0b' : isClockedIn ? '#2563eb' : 'rgba(148,163,184,0.3)'
 
-  const secAngle = (seconds / 60) * 360 - 90
-  const minAngle = ((minutes + seconds / 60) / 60) * 360 - 90
-  const hrAngle = ((hours + minutes / 60) / 12) * 360 - 90
-
-  const toXY = (angle: number, len: number) => {
-    const rad = (angle * Math.PI) / 180
-    return { x: cx + len * Math.cos(rad), y: cy + len * Math.sin(rad) }
+  function toXY(angleDeg: number, radius: number) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180
+    return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) }
   }
 
-  const secPt = toXY(secAngle, 68)
-  const minPt = toXY(minAngle, 55)
-  const hrPt = toXY(hrAngle, 38)
+  const hrPt  = toXY((hrs  % 12) * 30, 52)
+  const minPt = toXY(mins * 6,          66)
+  const secPt = toXY(secs * 6,          72)
 
-  const accent = isOnBreak ? '#f59e0b' : isClockedIn ? '#2563eb' : '#64748b'
-  const trackColor = 'rgba(148,163,184,0.15)'
+  const hourNums = Array.from({ length: 12 }, (_, i) => {
+    const n = i + 1
+    const pt = toXY(n * 30, 68)
+    return { n, x: pt.x, y: pt.y }
+  })
 
   return (
     <svg viewBox="0 0 200 200" className="tc-clock-svg">
-      {/* Tick marks */}
-      {Array.from({length: 60}).map((_, i) => {
-        const angle = (i / 60) * 360 - 90
-        const isHour = i % 5 === 0
-        const inner = isHour ? 68 : 72
-        const outer = 78
-        const p1 = toXY(angle, inner)
-        const p2 = toXY(angle, outer)
-        return <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-          stroke={isHour ? 'var(--text-muted)' : 'var(--border-color)'}
-          strokeWidth={isHour ? 1.5 : 0.8} strokeLinecap="round" />
-      })}
+      {/* Outer rim  thin */}
+      <circle cx={cx} cy={cy} r={93} fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="1" />
+      {/* Face fill */}
+      <circle cx={cx} cy={cy} r={92} fill="rgba(10,11,30,0.7)" />
       {/* Track ring */}
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={8} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(148,163,184,0.08)" strokeWidth="3" />
       {/* Progress arc */}
       {isClockedIn && (
         <circle cx={cx} cy={cy} r={r} fill="none"
-          stroke={accent} strokeWidth={8}
+          stroke={accent} strokeWidth="3"
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
           strokeLinecap="round"
@@ -132,21 +123,38 @@ function ClockFace({ elapsed, isOnBreak, isClockedIn }: { elapsed: number; isOnB
           style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
         />
       )}
+      {/* Tick marks */}
+      {Array.from({ length: 60 }, (_, i) => {
+        const isHour = i % 5 === 0
+        const inner = isHour ? 75 : 79
+        const p1 = toXY(i * 6, inner)
+        const p2 = toXY(i * 6, 85)
+        return <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+          stroke={isHour ? 'rgba(148,163,184,0.5)' : 'rgba(148,163,184,0.18)'}
+          strokeWidth={isHour ? 1.5 : 0.6} strokeLinecap="round" />
+      })}
+      {/* Hour numbers 112 */}
+      {hourNums.map(({ n, x, y }) => (
+        <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central"
+          fontSize="10" fontWeight="500" fontFamily="system-ui,sans-serif"
+          fill="rgba(148,163,184,0.75)">{n}</text>
+      ))}
       {/* Hour hand */}
       <line x1={cx} y1={cy} x2={hrPt.x} y2={hrPt.y}
-        stroke="var(--text-primary)" strokeWidth={3} strokeLinecap="round" />
+        stroke="var(--text-primary)" strokeWidth="3" strokeLinecap="round" />
       {/* Minute hand */}
       <line x1={cx} y1={cy} x2={minPt.x} y2={minPt.y}
-        stroke="var(--text-primary)" strokeWidth={2} strokeLinecap="round" />
+        stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round" />
       {/* Second hand */}
       <line x1={cx} y1={cy} x2={secPt.x} y2={secPt.y}
-        stroke={accent} strokeWidth={1} strokeLinecap="round" />
-      {/* Center dot */}
-      <circle cx={cx} cy={cy} r={4} fill={accent} />
-      {/* Inner elapsed label */}
+        stroke={accent} strokeWidth="1" strokeLinecap="round" />
+      {/* Center pip */}
+      <circle cx={cx} cy={cy} r={3.5} fill={accent} />
+      <circle cx={cx} cy={cy} r={1.5} fill="var(--bg-primary)" />
+      {/* Elapsed time when clocked in */}
       {isClockedIn && (
-        <text x={cx} y={cy + 22} textAnchor="middle" fontSize="10"
-          fill="var(--text-muted)" fontFamily="monospace">
+        <text x={cx} y={cy + 26} textAnchor="middle" fontSize="9"
+          fill="rgba(148,163,184,0.55)" fontFamily="monospace">
           {formatHMS(elapsed)}
         </text>
       )}
@@ -154,7 +162,6 @@ function ClockFace({ elapsed, isOnBreak, isClockedIn }: { elapsed: number; isOnB
   )
 }
 
-//  Main Component 
 export default function TimeClockClient({ initialCurrentEntry, initialWeekEntries, initialWeekStart, userName }: Props) {
   //  Clock-in state 
   const [status, setStatus] = useState<StatusResponse | null>(null)
@@ -510,3 +517,4 @@ export default function TimeClockClient({ initialCurrentEntry, initialWeekEntrie
     </div>
   )
 }
+
