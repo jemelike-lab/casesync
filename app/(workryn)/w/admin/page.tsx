@@ -12,7 +12,7 @@ export default async function AdminPage() {
   const session = await getWorkrynSession()
   if (!session || !isManagerOrAbove(session.user.role)) redirect('/dashboard')
 
-  const [users, departments, auditLogs, invitations] = await Promise.all([
+  const [users, departments, auditLogs] = await Promise.all([
     db.user.findMany({
       orderBy: { createdAt: 'desc' },
       include: { department: { select: { id: true, name: true, color: true } } },
@@ -25,12 +25,7 @@ export default async function AdminPage() {
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: { user: { select: { id: true, name: true, avatarColor: true } } },
-    }),
-    db.invitation.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { invitedBy: { select: { id: true, name: true, avatarColor: true } } },
-    }),
-  ])
+    })])
 
   return (
     <AdminClient
