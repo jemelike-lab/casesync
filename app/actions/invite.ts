@@ -1,4 +1,5 @@
 'use server'
+import { db } from '@/lib/workryn/db'
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -57,6 +58,19 @@ export async function getInviteByToken(token: string) {
   }
 
   return { invite }
+}
+
+
+function mapCsRoleToWorkryn(csRole?: string | null): string {
+  switch (csRole?.toLowerCase()) {
+    case 'supervisor':       return 'SUPERVISOR'
+    case 'it':
+    case 'admin':            return 'ADMIN'
+    case 'team_manager':     return 'TEAM_MANAGER'
+    case 'support_planner':
+    case 'supports_planner': return 'SUPPORT_PLANNER'
+    default:                 return 'SUPPORT_PLANNER'
+  }
 }
 
 export async function acceptInvite(_prevState: any, formData: FormData) {
@@ -154,6 +168,30 @@ export async function acceptInvite(_prevState: any, formData: FormData) {
 
   if (signInError) {
     return { error: signInError.message }
+  }
+
+
+  // Auto-provision Workryn user record so they can access /w/* immediately
+  try {
+    await db.user.upsert({
+      where: { supabaseId: userId },
+      create: {
+        supabaseId: userId,
+        email: invite.email,
+        name: invite.full_name ?? invite.email,
+        role: mapCsRoleToWorkryn(invite.role),
+        avatarColor: '#6366f1',
+        isActive: true,
+      },
+      update: {
+        name: invite.full_name ?? invite.email,
+        role: mapCsRoleToWorkryn(invite.role),
+        isActive: true,
+      },
+    })
+  } catch (err) {
+    console.error('[acceptInvite] Workryn user provision failed:', err)
+    // Non-fatal — layout will auto-provision on first Workryn visit
   }
 
   redirect('/onboarding')
