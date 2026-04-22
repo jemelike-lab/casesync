@@ -1,5 +1,4 @@
 import { getWorkrynSession } from '@/lib/workryn/auth'
-
 import { db } from '@/lib/workryn/db'
 import { redirect } from 'next/navigation'
 import AdminClient from '@/components/workryn/AdminClient'
@@ -25,7 +24,8 @@ export default async function AdminPage() {
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: { user: { select: { id: true, name: true, avatarColor: true } } },
-    })])
+    }),
+  ])
 
   return (
     <AdminClient
