@@ -290,7 +290,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
         <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
         <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" href={fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
-        <StatCard label="Supports Planners" value={planners.length} href="/team?view=planners" active={false} />
+        <StatCard label="Supports Planners" value={planners.length} href="/team?full=1" active={false} />
       </div>
 
       {fullFilterLabel && (
