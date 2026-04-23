@@ -72,6 +72,12 @@ model User {
   // Notification preferences (1:1)
   notificationPreference NotificationPreference?
 
+  // ── PTO relations ──
+  ptoBalances          PtoBalance[]    @relation("PtoBalances")
+  ptoRequests          PtoRequest[]    @relation("PtoRequests")
+  ptoReviewed          PtoRequest[]    @relation("PtoReviewer")
+  intuitMapping        IntuitEmployeeMap? @relation("IntuitMapping")
+
   @@schema("public")
   @@map("w_user")
 }
@@ -724,4 +730,109 @@ model DirectMessage {
 
   @@schema("public")
   @@map("w_direct_message")
+}
+
+// ── PTO Module ──────────────────────────────────────────────
+
+model PtoType {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  color       String   @default("#2563eb")
+  icon        String   @default("umbrella")
+  accrualRate Float    @default(0)
+  maxAccrual  Float    @default(0)
+  requiresDoc Boolean  @default(false)
+  excludeFromPayroll Boolean @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  balances PtoBalance[]
+  requests PtoRequest[]
+
+  @@schema("public")
+  @@map("w_pto_type")
+}
+
+model PtoBalance {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("PtoBalances", fields: [userId], references: [id], onDelete: Cascade)
+  typeId      String
+  type        PtoType  @relation(fields: [typeId], references: [id])
+  accrued     Float    @default(0)
+  used        Float    @default(0)
+  pending     Float    @default(0)
+  adjustment  Float    @default(0)
+  periodStart DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, typeId])
+  @@schema("public")
+  @@map("w_pto_balance")
+}
+
+model PtoRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("PtoRequests", fields: [userId], references: [id], onDelete: Cascade)
+  typeId        String
+  type          PtoType   @relation(fields: [typeId], references: [id])
+  startDate     DateTime
+  endDate       DateTime
+  totalHours    Float
+  isHalfDay     Boolean   @default(false)
+  halfDayPeriod String?
+  notes         String?
+  status        String    @default("PENDING")
+  reviewedById  String?
+  reviewedBy    User?     @relation("PtoReviewer", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  reviewNote    String?
+  documentUrl   String?
+  documentName  String?
+  intuitSynced    Boolean   @default(false)
+  intuitSyncedAt  DateTime?
+  intuitTimeActivityId String?
+  intuitSyncError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
+  @@map("w_pto_request")
+}
+
+model IntuitEmployeeMap {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation("IntuitMapping", fields: [userId], references: [id], onDelete: Cascade)
+  intuitEmployeeId  String
+  intuitDisplayName String?
+  intuitEmail       String?
+  syncStatus        String   @default("ACTIVE")
+  lastSyncedAt      DateTime?
+  lastSyncError     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@schema("public")
+  @@map("w_intuit_employee_map")
+}
+
+model IntuitConnection {
+  id              String   @id @default(cuid())
+  realmId         String   @unique
+  accessToken     String
+  refreshToken    String
+  tokenExpiresAt  DateTime
+  companyName     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@schema("public")
+  @@map("w_intuit_connection")
 }
