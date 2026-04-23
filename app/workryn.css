@@ -2321,12 +2321,11 @@
 .sched-col-num {
   font-size: 1.125rem; font-weight: 700;
   color: var(--w-text-primary);
-  width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
 }
 .sched-col-num-today {
-  background: var(--w-brand); color: #fff;
+  color: var(--w-brand);
+  font-weight: 800;
 }
 
 /* Staff rows */
