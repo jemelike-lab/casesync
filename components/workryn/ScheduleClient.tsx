@@ -241,12 +241,12 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
             <div className="sched-grid-corner" style={{
               width: STAFF_COL_W, minWidth: STAFF_COL_W, flexShrink: 0,
               position:'sticky', left:0, zIndex:3,
-              background:'var(--w-bg-card, #fff)',
-              borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
-              borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',
+              background:'var(--w-bg-card, #1e2030)',
+              borderRight:'1px solid var(--w-border-subtle, #2d3148)',
+              borderBottom:'1px solid var(--w-border-subtle, #2d3148)',
               display:'flex', alignItems:'center', paddingLeft:16,
               fontWeight:600, fontSize:11, letterSpacing:'0.08em',
-              color:'var(--w-text-muted, #6b7280)',
+              color:'var(--w-text-muted, #8892a4)',
             }}>
               STAFF
             </div>
@@ -259,18 +259,18 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                     flex:1, minWidth:110,
                     display:'flex', flexDirection:'column', alignItems:'center',
                     justifyContent:'center', padding:'8px 0',
-                    borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
-                    borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',
+                    borderRight:'1px solid var(--w-border-subtle, #2d3148)',
+                    borderBottom:'1px solid var(--w-border-subtle, #2d3148)',
                     background: isToday
-                      ? 'var(--w-accent-bg, #eff6ff)'
-                      : 'var(--w-bg-card, #fff)',
+                      ? 'var(--w-accent-bg, #1e3a5f)'
+                      : 'var(--w-bg-card, #1e2030)',
                   }}
                 >
                   <span className="sched-col-day" style={{
                     fontSize:11, fontWeight:600, letterSpacing:'0.06em',
                     color: isToday
-                      ? 'var(--w-accent, #2563eb)'
-                      : 'var(--w-text-muted, #6b7280)',
+                      ? 'var(--w-accent, #3b82f6)'
+                      : 'var(--w-text-muted, #8892a4)',
                     textTransform:'uppercase',
                   }}>
                     {DAYS_SHORT[day.getDay()]}
@@ -278,8 +278,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                   <span className={`sched-col-num${isToday?' sched-col-num-today':''}`} style={{
                     fontSize:18, fontWeight:700, lineHeight:1.2,
                     color: isToday
-                      ? 'var(--w-accent, #2563eb)'
-                      : 'var(--w-text-primary, #111827)',
+                      ? 'var(--w-accent, #3b82f6)'
+                      : 'var(--w-text-primary, #e2e8f0)',
                   }}>
                     {day.getDate()}
                   </span>
@@ -290,29 +290,29 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
 
           {/* Unassigned row */}
           {unassignedThisWeek.length > 0 && (
-            <div className="sched-grid-row sched-unassigned-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)'}}>
+            <div className="sched-grid-row sched-unassigned-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #2d3148)'}}>
               {/* Staff cell */}
               <div className="sched-user-cell" style={{
                 width: STAFF_COL_W, minWidth: STAFF_COL_W, flexShrink: 0,
                 position:'sticky', left:0, zIndex:2,
-                background:'var(--w-bg-card, #fff)',
-                borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
+                background:'var(--w-bg-card, #1e2030)',
+                borderRight:'1px solid var(--w-border-subtle, #2d3148)',
                 display:'flex', alignItems:'center', gap:10, padding:'8px 12px',
               }}>
                 <div className="sched-avatar" style={{
                   width:32, height:32, borderRadius:'50%', flexShrink:0,
-                  background:'var(--w-border-subtle, #e5e7eb)',
+                  background:'var(--w-border-subtle, #2d3148)',
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:12, fontWeight:700, color:'var(--w-text-muted, #6b7280)',
+                  fontSize:12, fontWeight:700, color:'var(--w-text-muted, #8892a4)',
                 }}>?</div>
                 <div className="sched-user-info" style={{display:'flex',flexDirection:'column',minWidth:0}}>
                   <span className="sched-user-name" style={{
                     fontSize:13, fontWeight:600,
-                    color:'var(--w-text-primary, #111827)',
+                    color:'var(--w-text-primary, #e2e8f0)',
                     whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                   }}>Unassigned</span>
                   <span className="sched-user-role" style={{
-                    fontSize:11, color:'var(--w-text-muted, #6b7280)',
+                    fontSize:11, color:'var(--w-text-muted, #8892a4)',
                   }}>Open Shifts</span>
                 </div>
               </div>
@@ -322,8 +322,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 return (
                   <div key={di} className="sched-day-cell" style={{
                     flex:1, minWidth:110, padding:'4px 6px',
-                    borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
-                    background: isToday ? 'var(--w-accent-bg, #eff6ff)' : 'transparent',
+                    borderRight:'1px solid var(--w-border-subtle, #2d3148)',
+                    background: isToday ? 'var(--w-accent-bg, #1e3a5f)' : 'transparent',
                     display:'flex', flexDirection:'column', gap:3, minHeight:56,
                     cursor: isManager ? 'pointer' : 'default',
                   }}
@@ -336,7 +336,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                       <div className="sched-cell-add" style={{
                         display:'flex',alignItems:'center',justifyContent:'center',
                         height:'100%', opacity:0, transition:'opacity 0.15s',
-                        color:'var(--w-text-muted, #9ca3af)',
+                        color:'var(--w-text-muted, #8892a4)',
                       }}>
                         <Plus size={14}/>
                       </div>
@@ -351,14 +351,14 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
           {visibleUsers.map(user=>(
             <div key={user.id} className="sched-grid-row" style={{
               display:'flex',
-              borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',
+              borderBottom:'1px solid var(--w-border-subtle, #2d3148)',
             }}>
               {/* Sticky staff column */}
               <div className="sched-user-cell" style={{
                 width: STAFF_COL_W, minWidth: STAFF_COL_W, flexShrink: 0,
                 position:'sticky', left:0, zIndex:2,
-                background:'var(--w-bg-card, #fff)',
-                borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
+                background:'var(--w-bg-card, #1e2030)',
+                borderRight:'1px solid var(--w-border-subtle, #2d3148)',
                 display:'flex', alignItems:'center', gap:10, padding:'8px 12px',
               }}>
                 <div className="sched-avatar" style={{
@@ -372,11 +372,11 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 <div className="sched-user-info" style={{display:'flex',flexDirection:'column',minWidth:0}}>
                   <span className="sched-user-name" style={{
                     fontSize:13, fontWeight:600,
-                    color:'var(--w-text-primary, #111827)',
+                    color:'var(--w-text-primary, #e2e8f0)',
                     whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                   }}>{user.name||'Unnamed'}</span>
                   <span className="sched-user-role" style={{
-                    fontSize:11, color:'var(--w-text-muted, #6b7280)',
+                    fontSize:11, color:'var(--w-text-muted, #8892a4)',
                   }}>{user.jobTitle || getRoleLabel(user.role)}</span>
                 </div>
               </div>
@@ -388,8 +388,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 return (
                   <div key={di} className="sched-day-cell" style={{
                     flex:1, minWidth:110, padding:'4px 6px',
-                    borderRight:'1px solid var(--w-border-subtle, #e5e7eb)',
-                    background: isToday ? 'var(--w-accent-bg, #eff6ff)' : 'transparent',
+                    borderRight:'1px solid var(--w-border-subtle, #2d3148)',
+                    background: isToday ? 'var(--w-accent-bg, #1e3a5f)' : 'transparent',
                     display:'flex', flexDirection:'column', gap:3, minHeight:56,
                     cursor: isManager ? 'pointer' : 'default',
                     position:'relative',
@@ -403,7 +403,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                       <div className="sched-cell-add" style={{
                         display:'flex',alignItems:'center',justifyContent:'center',
                         height:'100%', opacity:0, transition:'opacity 0.15s',
-                        color:'var(--w-text-muted, #9ca3af)',
+                        color:'var(--w-text-muted, #8892a4)',
                       }}>
                         <Plus size={14}/>
                       </div>
@@ -415,7 +415,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
           ))}
 
           {visibleUsers.length===0&&(
-            <div className="sched-empty" style={{padding:'40px 24px',textAlign:'center',color:'var(--w-text-muted, #6b7280)'}}>
+            <div className="sched-empty" style={{padding:'40px 24px',textAlign:'center',color:'var(--w-text-muted, #8892a4)'}}>
               No staff to display.
             </div>
           )}
@@ -424,10 +424,10 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {/* Hover styles for rows and cells */}
         <style>{`
           .sched-grid-row:hover > .sched-user-cell {
-            background: var(--w-bg-hover, #f9fafb) !important;
+            background: var(--w-bg-hover, #252840) !important;
           }
           .sched-grid-row:hover > .sched-day-cell {
-            background: var(--w-bg-hover, #f9fafb) !important;
+            background: var(--w-bg-hover, #252840) !important;
           }
           .sched-grid-row:hover > .sched-day-cell[style*="eff6ff"] {
             background: var(--w-accent-bg-hover, #dbeafe) !important;
@@ -451,12 +451,12 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
       <div className="sched-day-view">
         {/* Unassigned row */}
         {unassigned.length > 0 && (
-          <div className="sched-day-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',alignItems:'stretch'}}>
+          <div className="sched-day-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #2d3148)',alignItems:'stretch'}}>
             <div className="sched-user-cell" style={{borderRight:'1px solid var(--w-border-subtle)',minWidth:220,display:'flex',alignItems:'center',gap:10,padding:'10px 16px'}}>
-              <div className="sched-avatar" style={{width:32,height:32,borderRadius:'50%',background:'var(--w-border-subtle,#e5e7eb)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'var(--w-text-muted,#6b7280)'}}>?</div>
+              <div className="sched-avatar" style={{width:32,height:32,borderRadius:'50%',background:'var(--w-border-subtle,#2d3148)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'var(--w-text-muted,#8892a4)'}}>?</div>
               <div className="sched-user-info" style={{display:'flex',flexDirection:'column'}}>
-                <span className="sched-user-name" style={{fontSize:13,fontWeight:600,color:'var(--w-text-primary,#111827)'}}>Unassigned</span>
-                <span className="sched-user-role" style={{fontSize:11,color:'var(--w-text-muted,#6b7280)'}}>Open Shifts</span>
+                <span className="sched-user-name" style={{fontSize:13,fontWeight:600,color:'var(--w-text-primary,#e2e8f0)'}}>Unassigned</span>
+                <span className="sched-user-role" style={{fontSize:11,color:'var(--w-text-muted,#8892a4)'}}>Open Shifts</span>
               </div>
             </div>
             <div className="sched-day-shifts" style={{flex:1,display:'flex',flexWrap:'wrap',gap:6,padding:'8px 12px',alignItems:'flex-start'}}>
@@ -464,9 +464,9 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 <div key={shift.id} className="sched-day-chip"
                   style={{borderLeft:`3px solid ${shift.color}`,background:shift.color+'18',borderRadius:4,padding:'4px 8px',display:'flex',alignItems:'center',gap:6,cursor:'pointer',minWidth:120}}
                   onClick={()=>openEdit(shift)}>
-                  <span className="sched-day-chip-time" style={{fontSize:11,fontWeight:600,color:'var(--w-text-muted,#6b7280)'}}>{fmt(shift.startTime)}–{fmt(shift.endTime)}</span>
-                  <span className="sched-day-chip-title" style={{fontSize:12,fontWeight:500,color:'var(--w-text-primary,#111827)'}}>{shift.title}</span>
-                  {isManager&&<button className="sched-shift-del" style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--w-text-muted,#9ca3af)'}} onClick={e=>{e.stopPropagation();handleDelete(shift.id)}}><X size={10}/></button>}
+                  <span className="sched-day-chip-time" style={{fontSize:11,fontWeight:600,color:'var(--w-text-muted,#8892a4)'}}>{fmt(shift.startTime)}–{fmt(shift.endTime)}</span>
+                  <span className="sched-day-chip-title" style={{fontSize:12,fontWeight:500,color:'var(--w-text-primary,#e2e8f0)'}}>{shift.title}</span>
+                  {isManager&&<button className="sched-shift-del" style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--w-text-muted,#8892a4)'}} onClick={e=>{e.stopPropagation();handleDelete(shift.id)}}><X size={10}/></button>}
                 </div>
               ))}
             </div>
@@ -476,17 +476,17 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {visibleUsers.map(user=>{
           const userShifts = dayShiftsAll.filter(s=>s.user?.id===user.id)
           return (
-            <div key={user.id} className="sched-day-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',alignItems:'stretch'}}>
+            <div key={user.id} className="sched-day-row" style={{display:'flex',borderBottom:'1px solid var(--w-border-subtle, #2d3148)',alignItems:'stretch'}}>
               <div className="sched-user-cell" style={{borderRight:'1px solid var(--w-border-subtle)',minWidth:220,display:'flex',alignItems:'center',gap:10,padding:'10px 16px'}}>
                 <div className="sched-avatar" style={{width:32,height:32,borderRadius:'50%',background:user.avatarColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#fff'}}>{getInitials(user.name||'?')}</div>
                 <div className="sched-user-info" style={{display:'flex',flexDirection:'column'}}>
-                  <span className="sched-user-name" style={{fontSize:13,fontWeight:600,color:'var(--w-text-primary,#111827)'}}>{user.name||'Unnamed'}</span>
-                  <span className="sched-user-role" style={{fontSize:11,color:'var(--w-text-muted,#6b7280)'}}>{user.jobTitle || getRoleLabel(user.role)}</span>
+                  <span className="sched-user-name" style={{fontSize:13,fontWeight:600,color:'var(--w-text-primary,#e2e8f0)'}}>{user.name||'Unnamed'}</span>
+                  <span className="sched-user-role" style={{fontSize:11,color:'var(--w-text-muted,#8892a4)'}}>{user.jobTitle || getRoleLabel(user.role)}</span>
                 </div>
               </div>
               <div className="sched-day-shifts" style={{flex:1,display:'flex',flexWrap:'wrap',gap:6,padding:'8px 12px',alignItems:'flex-start'}}>
                 {userShifts.length===0&&isManager&&(
-                  <button className="sched-day-add-btn" style={{display:'flex',alignItems:'center',gap:4,padding:'4px 10px',border:'1px dashed var(--w-border-subtle,#e5e7eb)',borderRadius:4,background:'transparent',cursor:'pointer',fontSize:12,color:'var(--w-text-muted,#6b7280)'}} onClick={()=>openNew(user.id,cursor)}>
+                  <button className="sched-day-add-btn" style={{display:'flex',alignItems:'center',gap:4,padding:'4px 10px',border:'1px dashed var(--w-border-subtle,#2d3148)',borderRadius:4,background:'transparent',cursor:'pointer',fontSize:12,color:'var(--w-text-muted,#8892a4)'}} onClick={()=>openNew(user.id,cursor)}>
                     <Plus size={14}/> Add shift
                   </button>
                 )}
@@ -494,16 +494,16 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                   <div key={shift.id} className="sched-day-chip"
                     style={{borderLeft:`3px solid ${shift.color}`,background:shift.color+'18',borderRadius:4,padding:'4px 8px',display:'flex',alignItems:'center',gap:6,cursor:'pointer',minWidth:120}}
                     onClick={()=>openEdit(shift)}>
-                    <span className="sched-day-chip-time" style={{fontSize:11,fontWeight:600,color:'var(--w-text-muted,#6b7280)'}}>{fmt(shift.startTime)}–{fmt(shift.endTime)}</span>
-                    <span className="sched-day-chip-title" style={{fontSize:12,fontWeight:500,color:'var(--w-text-primary,#111827)'}}>{shift.title}</span>
-                    {isManager&&<button className="sched-shift-del" style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--w-text-muted,#9ca3af)'}} onClick={e=>{e.stopPropagation();handleDelete(shift.id)}}><X size={10}/></button>}
+                    <span className="sched-day-chip-time" style={{fontSize:11,fontWeight:600,color:'var(--w-text-muted,#8892a4)'}}>{fmt(shift.startTime)}–{fmt(shift.endTime)}</span>
+                    <span className="sched-day-chip-title" style={{fontSize:12,fontWeight:500,color:'var(--w-text-primary,#e2e8f0)'}}>{shift.title}</span>
+                    {isManager&&<button className="sched-shift-del" style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',padding:2,color:'var(--w-text-muted,#8892a4)'}} onClick={e=>{e.stopPropagation();handleDelete(shift.id)}}><X size={10}/></button>}
                   </div>
                 ))}
               </div>
             </div>
           )
         })}
-        {visibleUsers.length===0&&<div className="sched-empty" style={{padding:'40px 24px',textAlign:'center',color:'var(--w-text-muted,#6b7280)'}}>No staff to display.</div>}
+        {visibleUsers.length===0&&<div className="sched-empty" style={{padding:'40px 24px',textAlign:'center',color:'var(--w-text-muted,#8892a4)'}}>No staff to display.</div>}
       </div>
     )
   }
@@ -515,20 +515,20 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         display:'flex', alignItems:'center', justifyContent:'space-between',
         flexWrap:'wrap', gap:12,
         padding:'12px 16px',
-        borderBottom:'1px solid var(--w-border-subtle, #e5e7eb)',
+        borderBottom:'1px solid var(--w-border-subtle, #2d3148)',
       }}>
         {/* Left: nav */}
         <div className="sched-week-nav" style={{display:'flex',alignItems:'center',gap:4}}>
-          <button className="sched-nav-btn" onClick={prev} style={{padding:6,border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,background:'transparent',cursor:'pointer',display:'flex',alignItems:'center'}}>
+          <button className="sched-nav-btn" onClick={prev} style={{padding:6,border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,background:'transparent',cursor:'pointer',display:'flex',alignItems:'center'}}>
             <ChevronLeft size={16}/>
           </button>
-          <span className="sched-week-label" style={{minWidth:160,textAlign:'center',fontWeight:600,fontSize:14,color:'var(--w-text-primary,#111827)'}}>
+          <span className="sched-week-label" style={{minWidth:160,textAlign:'center',fontWeight:600,fontSize:14,color:'var(--w-text-primary,#e2e8f0)'}}>
             {headerLabel()}
           </span>
-          <button className="sched-nav-btn" onClick={next} style={{padding:6,border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,background:'transparent',cursor:'pointer',display:'flex',alignItems:'center'}}>
+          <button className="sched-nav-btn" onClick={next} style={{padding:6,border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,background:'transparent',cursor:'pointer',display:'flex',alignItems:'center'}}>
             <ChevronRight size={16}/>
           </button>
-          <button className="sched-today-btn" onClick={goToday} style={{marginLeft:4,padding:'5px 10px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,background:'transparent',cursor:'pointer',fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>
+          <button className="sched-today-btn" onClick={goToday} style={{marginLeft:4,padding:'5px 10px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,background:'transparent',cursor:'pointer',fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>
             Today
           </button>
         </div>
@@ -536,15 +536,15 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {/* Right: toolbar */}
         <div className="sched-toolbar" style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           {/* View toggle */}
-          <div className="sched-view-toggle" style={{display:'flex',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,overflow:'hidden'}}>
+          <div className="sched-view-toggle" style={{display:'flex',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,overflow:'hidden'}}>
             {(['day','week','month'] as ViewMode[]).map(v=>(
               <button key={v}
                 className={`sched-view-btn${view===v?' sched-view-btn-active':''}`}
                 onClick={()=>setView(v)}
                 style={{
                   padding:'5px 12px', border:'none', cursor:'pointer', fontSize:12, fontWeight:500,
-                  background: view===v ? 'var(--w-accent,#2563eb)' : 'transparent',
-                  color: view===v ? '#fff' : 'var(--w-text-muted,#6b7280)',
+                  background: view===v ? 'var(--w-accent,#3b82f6)' : 'transparent',
+                  color: view===v ? '#fff' : 'var(--w-text-muted,#8892a4)',
                   transition:'background 0.15s, color 0.15s',
                 }}
               >
@@ -555,7 +555,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
 
           {canSeeAll&&(
             <select className="sched-filter" value={filterUserId} onChange={e=>setFilterUserId(e.target.value)}
-              style={{padding:'5px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:12,color:'var(--w-text-primary,#111827)',background:'var(--w-bg-card,#fff)',cursor:'pointer'}}>
+              style={{padding:'5px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:12,color:'var(--w-text-primary,#e2e8f0)',background:'var(--w-bg-card,#1e2030)',cursor:'pointer'}}>
               <option value="">All Staff</option>
               {users.map(u=><option key={u.id} value={u.id}>{u.name||'Unnamed'}</option>)}
             </select>
@@ -566,7 +566,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
               setEditingId(null)
               setForm({userId:'',title:'Shift',date:cursor.toISOString().split('T')[0],startTime:'09:00',endTime:'17:00',color:SHIFT_COLORS[0],departmentId:'',notes:''})
               setShowModal(true)
-            }} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 12px',background:'var(--w-accent,#2563eb)',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600}}>
+            }} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 12px',background:'var(--w-accent,#3b82f6)',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600}}>
               <Plus size={14}/> Add Shift
             </button>
           )}
@@ -581,48 +581,48 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
       {/* Modal */}
       {showModal&&(
         <div className="sched-overlay" onClick={()=>setShowModal(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50}}>
-          <div className="sched-modal" onClick={e=>e.stopPropagation()} style={{background:'var(--w-bg-card,#fff)',borderRadius:12,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',overflow:'hidden'}}>
-            <div className="sched-modal-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px',borderBottom:'1px solid var(--w-border-subtle,#e5e7eb)'}}>
-              <h3 style={{margin:0,fontSize:15,fontWeight:700,color:'var(--w-text-primary,#111827)'}}>{editingId?'Edit Shift':'New Shift'}</h3>
-              <button className="sched-modal-close" onClick={()=>setShowModal(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w-text-muted,#6b7280)',display:'flex',alignItems:'center'}}><X size={16}/></button>
+          <div className="sched-modal" onClick={e=>e.stopPropagation()} style={{background:'var(--w-bg-card,#1e2030)',borderRadius:12,width:'100%',maxWidth:440,boxShadow:'0 20px 60px rgba(0,0,0,0.15)',overflow:'hidden'}}>
+            <div className="sched-modal-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px',borderBottom:'1px solid var(--w-border-subtle,#2d3148)'}}>
+              <h3 style={{margin:0,fontSize:15,fontWeight:700,color:'var(--w-text-primary,#e2e8f0)'}}>{editingId?'Edit Shift':'New Shift'}</h3>
+              <button className="sched-modal-close" onClick={()=>setShowModal(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--w-text-muted,#8892a4)',display:'flex',alignItems:'center'}}><X size={16}/></button>
             </div>
             <div className="sched-modal-body" style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
               <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Employee</span>
-                <select value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}>
+                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Employee</span>
+                <select value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}>
                   <option value="">Unassigned</option>
                   {users.map(u=><option key={u.id} value={u.id}>{u.name||'Unnamed'}</option>)}
                 </select>
               </label>
               <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Title</span>
-                <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}/>
+                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Title</span>
+                <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}/>
               </label>
               <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Date</span>
-                <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}/>
+                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Date</span>
+                <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}/>
               </label>
               <div className="sched-field-row" style={{display:'flex',gap:8}}>
                 <label className="sched-field" style={{flex:1,display:'flex',flexDirection:'column',gap:4}}>
-                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Start</span>
-                  <input type="time" value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}/>
+                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Start</span>
+                  <input type="time" value={form.startTime} onChange={e=>setForm({...form,startTime:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}/>
                 </label>
                 <label className="sched-field" style={{flex:1,display:'flex',flexDirection:'column',gap:4}}>
-                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>End</span>
-                  <input type="time" value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}/>
+                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>End</span>
+                  <input type="time" value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}/>
                 </label>
               </div>
               {departments.length>0&&(
                 <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Department</span>
-                  <select value={form.departmentId} onChange={e=>setForm({...form,departmentId:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13}}>
+                  <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Department</span>
+                  <select value={form.departmentId} onChange={e=>setForm({...form,departmentId:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13}}>
                     <option value="">None</option>
                     {departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </label>
               )}
               <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Color</span>
+                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Color</span>
                 <div className="sched-color-row" style={{display:'flex',gap:6}}>
                   {SHIFT_COLORS.map(c=>(
                     <button key={c}
@@ -637,15 +637,15 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
                 </div>
               </label>
               <label className="sched-field" style={{display:'flex',flexDirection:'column',gap:4}}>
-                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Notes</span>
-                <textarea value={form.notes} rows={2} onChange={e=>setForm({...form,notes:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,fontSize:13,resize:'vertical'}}/>
+                <span style={{fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Notes</span>
+                <textarea value={form.notes} rows={2} onChange={e=>setForm({...form,notes:e.target.value})} style={{padding:'6px 8px',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,fontSize:13,resize:'vertical'}}/>
               </label>
             </div>
-            <div className="sched-modal-footer" style={{display:'flex',alignItems:'center',gap:8,padding:'12px 20px',borderTop:'1px solid var(--w-border-subtle,#e5e7eb)'}}>
+            <div className="sched-modal-footer" style={{display:'flex',alignItems:'center',gap:8,padding:'12px 20px',borderTop:'1px solid var(--w-border-subtle,#2d3148)'}}>
               {editingId&&<button className="sched-btn-danger" onClick={()=>{handleDelete(editingId);setShowModal(false)}} style={{padding:'6px 12px',background:'#fee2e2',color:'#dc2626',border:'none',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600}}>Delete</button>}
               <div style={{flex:1}}/>
-              <button className="sched-btn-ghost" onClick={()=>setShowModal(false)} style={{padding:'6px 12px',background:'transparent',border:'1px solid var(--w-border-subtle,#e5e7eb)',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:500,color:'var(--w-text-muted,#6b7280)'}}>Cancel</button>
-              <button className="sched-btn-primary" onClick={handleSave} disabled={saving} style={{padding:'6px 14px',background:'var(--w-accent,#2563eb)',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:4,opacity:saving?0.7:1}}>
+              <button className="sched-btn-ghost" onClick={()=>setShowModal(false)} style={{padding:'6px 12px',background:'transparent',border:'1px solid var(--w-border-subtle,#2d3148)',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:500,color:'var(--w-text-muted,#8892a4)'}}>Cancel</button>
+              <button className="sched-btn-primary" onClick={handleSave} disabled={saving} style={{padding:'6px 14px',background:'var(--w-accent,#3b82f6)',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:4,opacity:saving?0.7:1}}>
                 {saving?<Loader2 size={14} className="sched-spin"/>:null}
                 {editingId?'Update':'Create'}
               </button>
@@ -682,14 +682,14 @@ function ShiftChip({
     >
       <span className="sched-shift-time" style={{
         fontSize:10, fontWeight:700,
-        color:'var(--w-text-muted, #6b7280)',
+        color:'var(--w-text-muted, #8892a4)',
         whiteSpace:'nowrap', flexShrink:0,
       }}>
         {fmtShort(shift.startTime)}–{fmtShort(shift.endTime)}
       </span>
       <span className="sched-shift-title" style={{
         fontSize:11, fontWeight:500,
-        color:'var(--w-text-primary, #111827)',
+        color:'var(--w-text-primary, #e2e8f0)',
         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
         flex:1, minWidth:0,
       }}>
@@ -701,7 +701,7 @@ function ShiftChip({
           style={{
             marginLeft:'auto', flexShrink:0,
             background:'none', border:'none', cursor:'pointer', padding:2,
-            color:'var(--w-text-muted,#9ca3af)', display:'flex', alignItems:'center',
+            color:'var(--w-text-muted,#8892a4)', display:'flex', alignItems:'center',
             opacity:0.6,
           }}
           onClick={e=>{ e.stopPropagation(); onDelete(shift.id) }}
