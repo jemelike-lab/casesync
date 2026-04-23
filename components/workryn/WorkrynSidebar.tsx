@@ -4,7 +4,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Timer, ListChecks, MessageCircle, ClipboardCheck,
-  CalendarDays, BookOpen, Settings, LogOut, Landmark, ShieldCheck,
+  CalendarDays,
+  Umbrella, BookOpen, Settings, LogOut, Landmark, ShieldCheck,
   ChevronRight, Bell, Check, Mail, User, ArrowLeftRight, Menu, X,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
@@ -34,6 +35,7 @@ const navItems = [
   { href: '/w/tickets',      label: 'Tickets',      icon: MessageCircle },
   { href: '/w/evaluations',  label: 'Evaluations',  icon: ClipboardCheck },
   { href: '/w/schedule',     label: 'Schedule',     icon: CalendarDays },
+  { href: '/w/pto',          label: 'PTO',          icon: Umbrella },
   { href: '/w/training',     label: 'Training',     icon: BookOpen },
   { href: '/w/departments',  label: 'Departments',  icon: Landmark },
   { href: '/w/profile',      label: 'Profile',      icon: User },
