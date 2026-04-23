@@ -756,7 +756,7 @@ export default function BLHAssistant() {
                     <button
                       key={idx}
                       className="blh-bot-prompt-btn"
-                      onClick={() => sendMessage(prompt)}
+                      onClick={() => { sendMessage(prompt); setTimeout(() => inputRef.current?.focus(), 50) }}
                       style={{
                         background: 'rgba(139,92,246,0.1)',
                         border: '1px solid rgba(139,92,246,0.25)',
