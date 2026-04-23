@@ -5,7 +5,7 @@ import { validateUUID } from '@/lib/validation'
 
 const REVIEWER_ROLES = ['TEAM_MANAGER', 'SUPERVISOR', 'OWNER', 'ADMIN', 'MANAGER']
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Only managers and supervisors can review PTO requests' }, { status: 403 })
   }
 
-  const { id } = params
+  const { id } = await params
   if (!validateUUID(id)) {
     return NextResponse.json({ error: 'Invalid request ID' }, { status: 400 })
   }
