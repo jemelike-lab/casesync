@@ -83,16 +83,18 @@ export default function GlobalSearch({ userId, profile }: Props) {
 
     function onPointerDown(event: MouseEvent) {
       if (!panelRef.current) return
+      // Only close if click is outside the entire search component
       if (!panelRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('mousedown', onPointerDown)
+    // Use capture phase so we get the event before React synthetic handlers
+    document.addEventListener('pointerdown', onPointerDown, true)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('pointerdown', onPointerDown, true)
     }
   }, [])
 
@@ -151,7 +153,16 @@ export default function GlobalSearch({ userId, profile }: Props) {
     <div ref={panelRef} style={{ position: 'relative', minWidth: 0, flex: '1 1 320px', maxWidth: 420 }}>
       <button
         type="button"
-        onClick={() => setOpen(prev => !prev)}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => {
+          setOpen(prev => {
+            const next = !prev
+            if (next) {
+              window.setTimeout(() => inputRef.current?.focus(), 0)
+            }
+            return next
+          })
+        }}
         style={{
           width: '100%',
           height: 36,
