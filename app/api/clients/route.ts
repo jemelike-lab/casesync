@@ -2,7 +2,7 @@ import { isSupervisorLike } from '@/lib/roles'
 import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact } from '@/lib/types'
+import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact, Client } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500 })
     }
 
-    const pageClients = clients ?? []
+    const pageClients = (clients ?? []) as unknown as Client[]
     const total = count ?? 0
     const hasMore = from + limit < total
 
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
       }).length,
     }
 
-    const allClients = fullScopeResult?.data ?? pageClients
+    const allClients = (fullScopeResult?.data ?? pageClients) as unknown as Client[]
     const fullSummary = isFiltered ? {
       total: allClients.length,
       overdue: allClients.filter(isOverdue).length,
