@@ -1,90 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWorkrynSession } from '@/lib/workryn/auth'
+import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { validateUUID } from '@/lib/validation'
 
-const REVIEWER_ROLES = ['TEAM_MANAGER', 'SUPERVISOR', 'OWNER', 'ADMIN', 'MANAGER']
+const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getWorkrynSession()
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!REVIEWER_ROLES.includes(session.user.role)) {
-    return NextResponse.json({ error: 'Only managers and supervisors can review PTO requests' }, { status: 403 })
-  }
+  const { user } = session
+  if (!ELEVATED_ROLES.includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
-  if (!validateUUID(id)) {
-    return NextResponse.json({ error: 'Invalid request ID' }, { status: 400 })
-  }
+  let body: { action: string; reviewNote?: string }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const body = await req.json()
   const { action, reviewNote } = body
+  if (action !== 'APPROVED' && action !== 'DENIED') return NextResponse.json({ error: 'action must be APPROVED or DENIED' }, { status: 400 })
 
-  if (!['APPROVED', 'DENIED'].includes(action)) {
-    return NextResponse.json({ error: 'action must be APPROVED or DENIED' }, { status: 400 })
+  const ptoRequest = await db.ptoRequest.findUnique({ where: { id } })
+  if (!ptoRequest) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
+  if (ptoRequest.status !== 'PENDING') return NextResponse.json({ error: 'Request has already been reviewed' }, { status: 400 })
+  if (ptoRequest.userId === user.id) return NextResponse.json({ error: 'Cannot review your own request' }, { status: 403 })
+
+  const now = new Date()
+  const includeOpts = {
+    user: { select: { id: true, name: true, avatarColor: true, email: true, jobTitle: true } },
+    type: { select: { id: true, name: true, code: true, color: true, icon: true, excludeFromPayroll: true } },
+    reviewedBy: { select: { id: true, name: true } },
   }
 
-  const request = await db.ptoRequest.findUnique({
-    where: { id },
-    include: { type: true, user: { select: { id: true, name: true } } },
-  })
+  const balanceUpdate = action === 'APPROVED'
+    ? { pending: { decrement: ptoRequest.totalHours }, used: { increment: ptoRequest.totalHours } }
+    : { pending: { decrement: ptoRequest.totalHours } }
 
-  if (!request) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
-  if (request.status !== 'PENDING') {
-    return NextResponse.json({ error: `Request is already ${request.status}` }, { status: 400 })
-  }
-  if (request.userId === session.user.id) {
-    return NextResponse.json({ error: 'Cannot review your own request' }, { status: 403 })
-  }
-
-  // Transaction: update request + adjust balance
   const [updated] = await db.$transaction([
     db.ptoRequest.update({
       where: { id },
-      data: {
-        status: action,
-        reviewedById: session.user.id,
-        reviewedAt: new Date(),
-        reviewNote: reviewNote?.trim() || null,
-      },
-      include: {
-        user: { select: { id: true, name: true, avatarColor: true, email: true, jobTitle: true } },
-        type: { select: { id: true, name: true, code: true, color: true, icon: true, excludeFromPayroll: true } },
-        reviewedBy: { select: { id: true, name: true } },
-      },
+      data: { status: action, reviewedById: user.id, reviewedAt: now, reviewNote: reviewNote ?? null },
+      include: includeOpts,
     }),
-    // Move hours from pending → used (approved) or release pending (denied)
     db.ptoBalance.update({
-      where: { userId_typeId: { userId: request.userId, typeId: request.typeId } },
-      data: action === 'APPROVED'
-        ? { pending: { decrement: request.totalHours }, used: { increment: request.totalHours } }
-        : { pending: { decrement: request.totalHours } },
+      where: { userId_typeId: { userId: ptoRequest.userId, typeId: ptoRequest.typeId } },
+      data: balanceUpdate,
     }),
   ])
 
-  // Create notification for requester
-  await db.notification.create({
-    data: {
-      userId: request.userId,
-      type: 'PTO',
-      category: 'PTO',
-      title: `PTO ${action === 'APPROVED' ? 'Approved' : 'Denied'}`,
-      message: `Your ${request.type.name} request (${request.totalHours}hrs) was ${action.toLowerCase()} by ${session.user.name || 'a manager'}${reviewNote ? ': ' + reviewNote.trim() : ''}`,
-      link: '/w/pto',
-    },
+  return NextResponse.json({
+    ...updated,
+    startDate: updated.startDate.toISOString(),
+    endDate: updated.endDate.toISOString(),
+    reviewedAt: updated.reviewedAt?.toISOString() ?? null,
+    createdAt: updated.createdAt.toISOString(),
   })
-
-  // Audit log
-  await db.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: `PTO_${action}`,
-      resourceType: 'PTO_REQUEST',
-      resourceId: id,
-      details: `${action} ${request.user.name}'s ${request.type.name} request (${request.totalHours}hrs)`,
-    },
-  })
-
-  return NextResponse.json(updated)
 }

@@ -1,151 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWorkrynSession } from '@/lib/workryn/auth'
+import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { validateUUID } from '@/lib/validation'
 
-const ELEVATED_ROLES = ['TEAM_MANAGER', 'SUPERVISOR', 'OWNER', 'ADMIN', 'MANAGER']
-const VALID_STATUSES = ['PENDING', 'APPROVED', 'DENIED', 'CANCELLED']
+const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 export async function GET(req: NextRequest) {
-  const session = await getWorkrynSession()
+  const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const url = new URL(req.url)
-  const status = url.searchParams.get('status')
-  const userId = url.searchParams.get('userId')
-  const startAfter = url.searchParams.get('startAfter')
-  const startBefore = url.searchParams.get('startBefore')
+  const { user } = session
+  const isElevated = ELEVATED_ROLES.includes(user.role)
+  const url = req.nextUrl
+  const statusFilter = url.searchParams.get('status')
+  const userIdFilter = url.searchParams.get('userId')
+  const limit = Math.min(Number(url.searchParams.get('limit') || '200'), 500)
 
-  // Validate inputs
-  if (status && !VALID_STATUSES.includes(status)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-  }
-  if (userId && !validateUUID(userId)) {
-    return NextResponse.json({ error: 'Invalid userId' }, { status: 400 })
-  }
-
-  const isElevated = ELEVATED_ROLES.includes(session.user.role)
-
-  // Build where clause — planners see only their own
-  const where: any = {}
-  if (!isElevated) {
-    where.userId = session.user.id
-  } else if (userId) {
-    where.userId = userId
-  }
-  if (status) where.status = status
-  if (startAfter || startBefore) {
-    where.startDate = {}
-    if (startAfter) where.startDate.gte = new Date(startAfter)
-    if (startBefore) where.startDate.lte = new Date(startBefore)
-  }
+  const where: Record<string, unknown> = {}
+  if (!isElevated) { where.userId = user.id } else if (userIdFilter) { where.userId = userIdFilter }
+  if (statusFilter && statusFilter !== 'ALL') { where.status = statusFilter }
 
   const requests = await db.ptoRequest.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
     include: {
       user: { select: { id: true, name: true, avatarColor: true, email: true, jobTitle: true } },
       type: { select: { id: true, name: true, code: true, color: true, icon: true, excludeFromPayroll: true } },
       reviewedBy: { select: { id: true, name: true } },
     },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
   })
 
-  return NextResponse.json(requests)
+  const serialized = requests.map((r) => ({
+    ...r,
+    startDate: r.startDate.toISOString(),
+    endDate: r.endDate.toISOString(),
+    reviewedAt: r.reviewedAt?.toISOString() ?? null,
+    createdAt: r.createdAt.toISOString(),
+  }))
+
+  return NextResponse.json(serialized)
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getWorkrynSession()
+  const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const { typeId, startDate, endDate, totalHours, isHalfDay, halfDayPeriod, notes, documentUrl, documentName } = body
+  const { user } = session
+  let body: { typeId: string; startDate: string; endDate: string; totalHours: number; isHalfDay?: boolean; halfDayPeriod?: string | null; notes?: string | null }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  // Validation
-  if (!typeId || !startDate || !endDate || !totalHours) {
-    return NextResponse.json({ error: 'typeId, startDate, endDate, totalHours are required' }, { status: 400 })
-  }
-  if (!validateUUID(typeId)) {
-    return NextResponse.json({ error: 'Invalid typeId' }, { status: 400 })
-  }
-  if (totalHours <= 0 || totalHours > 480) {
-    return NextResponse.json({ error: 'totalHours must be between 0 and 480' }, { status: 400 })
-  }
-  if (new Date(startDate) > new Date(endDate)) {
-    return NextResponse.json({ error: 'startDate must be before endDate' }, { status: 400 })
-  }
-  if (isHalfDay && !['AM', 'PM'].includes(halfDayPeriod)) {
-    return NextResponse.json({ error: 'halfDayPeriod must be AM or PM for half-day requests' }, { status: 400 })
-  }
+  const { typeId, startDate, endDate, totalHours, isHalfDay, halfDayPeriod, notes } = body
+  if (!typeId || !startDate || !endDate || !totalHours) return NextResponse.json({ error: 'typeId, startDate, endDate, and totalHours are required' }, { status: 400 })
+  if (totalHours <= 0) return NextResponse.json({ error: 'totalHours must be positive' }, { status: 400 })
 
-  // Check type exists
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+  if (start > end) return NextResponse.json({ error: 'Start date must be before or equal to end date' }, { status: 400 })
+
   const ptoType = await db.ptoType.findUnique({ where: { id: typeId } })
-  if (!ptoType || !ptoType.isActive) {
-    return NextResponse.json({ error: 'PTO type not found or inactive' }, { status: 404 })
-  }
+  if (!ptoType || !ptoType.isActive) return NextResponse.json({ error: 'Invalid PTO type' }, { status: 400 })
 
-  // Check balance
-  const balance = await db.ptoBalance.findUnique({
-    where: { userId_typeId: { userId: session.user.id, typeId } },
-  })
-  const available = balance ? balance.accrued + balance.adjustment - balance.used - balance.pending : 0
-  if (ptoType.maxAccrual > 0 && totalHours > available) {
-    return NextResponse.json({
-      error: `Insufficient balance. Available: ${available.toFixed(1)} hrs, Requested: ${totalHours} hrs`,
-    }, { status: 400 })
-  }
+  let balance = await db.ptoBalance.findUnique({ where: { userId_typeId: { userId: user.id, typeId } } })
+  if (!balance) { balance = await db.ptoBalance.create({ data: { userId: user.id, typeId, accrued: 0, used: 0, pending: 0, adjustment: 0 } }) }
 
-  // Check for overlapping requests
-  const overlap = await db.ptoRequest.findFirst({
-    where: {
-      userId: session.user.id,
-      status: { in: ['PENDING', 'APPROVED'] },
-      startDate: { lte: new Date(endDate) },
-      endDate: { gte: new Date(startDate) },
-    },
-  })
-  if (overlap) {
-    return NextResponse.json({ error: 'You already have a request overlapping these dates' }, { status: 409 })
-  }
+  const available = balance.accrued + balance.adjustment - balance.used - balance.pending
+  if (totalHours > available) return NextResponse.json({ error: `Insufficient balance. Available: ${available.toFixed(1)} hrs` }, { status: 400 })
 
-  // Create request + update pending balance
   const [request] = await db.$transaction([
     db.ptoRequest.create({
-      data: {
-        userId: session.user.id,
-        typeId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        totalHours,
-        isHalfDay: isHalfDay || false,
-        halfDayPeriod: halfDayPeriod || null,
-        notes: notes?.trim() || null,
-        documentUrl: documentUrl || null,
-        documentName: documentName || null,
-        status: 'PENDING',
-      },
+      data: { userId: user.id, typeId, startDate: start, endDate: end, totalHours, isHalfDay: isHalfDay ?? false, halfDayPeriod: halfDayPeriod ?? null, notes: notes ?? null, status: 'PENDING' },
       include: {
         user: { select: { id: true, name: true, avatarColor: true, email: true, jobTitle: true } },
         type: { select: { id: true, name: true, code: true, color: true, icon: true, excludeFromPayroll: true } },
+        reviewedBy: { select: { id: true, name: true } },
       },
     }),
-    // Increment pending hours
-    db.ptoBalance.upsert({
-      where: { userId_typeId: { userId: session.user.id, typeId } },
-      create: { userId: session.user.id, typeId, pending: totalHours },
-      update: { pending: { increment: totalHours } },
-    }),
+    db.ptoBalance.update({ where: { userId_typeId: { userId: user.id, typeId } }, data: { pending: { increment: totalHours } } }),
   ])
 
-  // Audit log
-  await db.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'PTO_REQUESTED',
-      resourceType: 'PTO_REQUEST',
-      resourceId: request.id,
-      details: `${ptoType.name}: ${totalHours}hrs from ${startDate} to ${endDate}`,
-    },
-  })
-
-  return NextResponse.json(request, { status: 201 })
+  return NextResponse.json({ ...request, startDate: request.startDate.toISOString(), endDate: request.endDate.toISOString(), reviewedAt: null, createdAt: request.createdAt.toISOString() }, { status: 201 })
 }
