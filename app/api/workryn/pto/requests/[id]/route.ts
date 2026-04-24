@@ -16,7 +16,7 @@ export async function PATCH(
 
   const { id } = await params
   let body: { action: string; reviewNote?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  try { body = await req.json() } catch (_e) { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { action, reviewNote } = body
   if (action !== 'APPROVED' && action !== 'DENIED') return NextResponse.json({ error: 'action must be APPROVED or DENIED' }, { status: 400 })

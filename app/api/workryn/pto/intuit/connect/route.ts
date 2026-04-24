@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   if (!clientId || !clientSecret) return NextResponse.json({ error: 'Intuit credentials not configured. Set INTUIT_CLIENT_ID and INTUIT_CLIENT_SECRET.' }, { status: 500 })
 
   let body: { code: string; realmId: string; redirectUri: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  try { body = await req.json() } catch (_e) { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { code, realmId, redirectUri } = body
   if (!code || !realmId || !redirectUri) return NextResponse.json({ error: 'code, realmId, and redirectUri are required' }, { status: 400 })
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       headers: { Authorization: 'Bearer ' + tokenData.access_token, Accept: 'application/json' },
     })
     if (infoRes.ok) { const info = await infoRes.json(); companyName = info?.CompanyInfo?.CompanyName ?? null }
-  } catch {}
+  } catch (_e) {}
 
   const connection = await db.intuitConnection.upsert({
     where: { realmId },

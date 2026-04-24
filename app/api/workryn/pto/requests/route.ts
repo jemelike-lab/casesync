@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { user } = session
   let body: { typeId: string; startDate: string; endDate: string; totalHours: number; isHalfDay?: boolean; halfDayPeriod?: string | null; notes?: string | null }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  try { body = await req.json() } catch (_e) { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { typeId, startDate, endDate, totalHours, isHalfDay, halfDayPeriod, notes } = body
   if (!typeId || !startDate || !endDate || !totalHours) return NextResponse.json({ error: 'typeId, startDate, endDate, and totalHours are required' }, { status: 400 })
