@@ -10,7 +10,7 @@ export const metadata = { title: 'PTO - Workryn' }
 export default async function PTOPage() {
   const session = await getWorkrynSession()
 
-  const { user } = session
+  const { user } = session!
   const isElevated = ELEVATED_ROLES.includes(user.role)
 
   const [types, balances, requests, allUsers, intuitMappings] = await Promise.all([
