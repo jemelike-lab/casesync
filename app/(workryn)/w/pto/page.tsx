@@ -1,49 +1,70 @@
+import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import PTOClient from '@/components/workryn/PTOClient'
-import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'PTO' }
+const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
-const ELEVATED_ROLES = ['TEAM_MANAGER', 'SUPERVISOR', 'OWNER', 'ADMIN', 'MANAGER']
+export const metadata = { title: 'PTO - Workryn' }
 
 export default async function PTOPage() {
   const session = await getWorkrynSession()
-  const isElevated = ELEVATED_ROLES.includes(session!.user.role)
 
-  const [types, myBalances, myRequests, allUsers, pendingCount, intuitMappings] = await Promise.all([
-    db.ptoType.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
-    db.ptoBalance.findMany({
-      where: { userId: session!.user.id },
-      include: { type: { select: { id: true, name: true, code: true, color: true, icon: true, maxAccrual: true, accrualRate: true } } },
-      orderBy: { type: { sortOrder: 'asc' } },
-    }),
+  const { user } = session
+  const isElevated = ELEVATED_ROLES.includes(user.role)
+
+  const [types, balances, requests, allUsers, intuitMappings] = await Promise.all([
+    db.ptoType.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    db.ptoBalance.findMany({ where: { userId: user.id }, include: { type: true } }),
     db.ptoRequest.findMany({
-      where: isElevated ? {} : { userId: session!.user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
+      where: isElevated ? {} : { userId: user.id },
       include: {
         user: { select: { id: true, name: true, avatarColor: true, email: true, jobTitle: true } },
         type: { select: { id: true, name: true, code: true, color: true, icon: true, excludeFromPayroll: true } },
         reviewedBy: { select: { id: true, name: true } },
       },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
     }),
-    isElevated ? db.user.findMany({ where: { isActive: true }, select: { id: true, name: true, email: true, avatarColor: true, jobTitle: true, role: true }, orderBy: { name: 'asc' } }) : Promise.resolve([]),
-    isElevated ? db.ptoRequest.count({ where: { status: 'PENDING' } }) : Promise.resolve(0),
-    isElevated ? db.intuitEmployeeMap.findMany({ include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { user: { name: 'asc' } } }) : Promise.resolve([]),
+    isElevated
+      ? db.user.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true, email: true, avatarColor: true, jobTitle: true, role: true },
+          orderBy: { name: 'asc' },
+        })
+      : [],
+    isElevated
+      ? db.intuitEmployeeMap.findMany({
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [],
   ])
 
-  const enrichedBalances = myBalances.map(b => ({ ...b, available: b.accrued + b.adjustment - b.used - b.pending }))
+  const balancesWithAvailable = balances.map((b) => ({
+    ...b,
+    available: b.accrued + b.adjustment - b.used - b.pending,
+  }))
+
+  const pendingCount = isElevated ? requests.filter((r) => r.status === 'PENDING').length : 0
+
+  const serializedRequests = requests.map((r) => ({
+    ...r,
+    startDate: r.startDate.toISOString(),
+    endDate: r.endDate.toISOString(),
+    reviewedAt: r.reviewedAt?.toISOString() ?? null,
+    createdAt: r.createdAt.toISOString(),
+  }))
 
   return (
     <PTOClient
-      currentUser={{ id: session!.user.id, name: session!.user.name || 'User', role: session!.user.role, avatarColor: session!.user.avatarColor }}
-      types={JSON.parse(JSON.stringify(types))}
-      balances={JSON.parse(JSON.stringify(enrichedBalances))}
-      initialRequests={JSON.parse(JSON.stringify(myRequests))}
-      allUsers={JSON.parse(JSON.stringify(allUsers))}
+      currentUser={{ id: user.id, name: user.name, role: user.role, avatarColor: user.avatarColor }}
+      types={types}
+      balances={balancesWithAvailable}
+      initialRequests={serializedRequests}
+      allUsers={allUsers}
       pendingCount={pendingCount}
-      intuitMappings={JSON.parse(JSON.stringify(intuitMappings))}
+      intuitMappings={intuitMappings}
       isElevated={isElevated}
     />
   )
