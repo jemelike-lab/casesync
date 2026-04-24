@@ -60,12 +60,12 @@ export default async function PTOPage() {
   return (
     <PTOClient
       currentUser={{ id: user.id, name: user.name, role: user.role, avatarColor: user.avatarColor }}
-      types={types}
-      balances={balancesWithAvailable}
-      initialRequests={serializedRequests}
-      allUsers={allUsers}
+      types={types as any}
+      balances={balancesWithAvailable as any}
+      initialRequests={serializedRequests as any}
+      allUsers={allUsers as any}
       pendingCount={pendingCount}
-      intuitMappings={intuitMappings}
+      intuitMappings={intuitMappings as any}
       isElevated={isElevated}
     />
   )
