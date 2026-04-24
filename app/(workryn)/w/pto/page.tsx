@@ -13,7 +13,7 @@ export default async function PTOPage() {
 
   const isElevated = ELEVATED_ROLES.includes(user.role)
 
-  const [types, balances, requests, allUsers, intuitMappings] = await Promise.all([
+  const [types, balances, requests, allUsers, intuitMappings, intuitConnection] = await Promise.all([
     db.ptoType.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
 
     db.ptoBalance.findMany({ where: { userId: user.id }, include: { type: true } }),
@@ -43,6 +43,10 @@ export default async function PTOPage() {
           orderBy: { createdAt: 'desc' },
         })
       : [],
+
+    isElevated
+      ? db.intuitConnection.findFirst({ where: { isActive: true } })
+      : null,
   ])
 
   const balancesWithAvailable = balances.map((b) => ({
@@ -71,6 +75,8 @@ export default async function PTOPage() {
       pendingCount={pendingCount}
       intuitMappings={intuitMappings as any}
       isElevated={isElevated}
+      intuitConnected={!!intuitConnection}
+      intuitCompanyName={(intuitConnection as any)?.companyName ?? null}
     />
   )
 }
