@@ -73,9 +73,6 @@ model User {
   notificationPreference NotificationPreference?
 
   // ── PTO relations ──
-  ptoBalances          PtoBalance[]    @relation("PtoBalances")
-  ptoRequests          PtoRequest[]    @relation("PtoRequests")
-  ptoReviewed          PtoRequest[]    @relation("PtoReviewer")
   intuitMapping        IntuitEmployeeMap? @relation("IntuitMapping")
 
 
