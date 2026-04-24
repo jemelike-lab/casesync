@@ -763,7 +763,7 @@ model PtoType {
 model PtoBalance {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(, fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   typeId      String
   type        PtoType  @relation(fields: [typeId], references: [id])
   accrued     Float    @default(0)
@@ -812,7 +812,7 @@ model PtoRequest {
 model IntuitEmployeeMap {
   id                String   @id @default(cuid())
   userId            String   @unique
-  user              User     @relation(, fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   intuitEmployeeId  String
   intuitDisplayName String?
   intuitEmail       String?
