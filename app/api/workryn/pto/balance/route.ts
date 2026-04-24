@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -19,7 +18,9 @@ export async function GET(req: NextRequest) {
   const balances = await db.ptoBalance.findMany({
     where: { userId: targetUserId },
     include: {
-      type: { select: { id: true, name: true, code: true, color: true, icon: true, maxAccrual: true, accrualRate: true } },
+      type: {
+        select: { id: true, name: true, code: true, color: true, icon: true, maxAccrual: true, accrualRate: true }
+      },
     },
     orderBy: { type: { sortOrder: 'asc' } },
   })
