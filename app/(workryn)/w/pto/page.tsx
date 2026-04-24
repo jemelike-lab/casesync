@@ -50,6 +50,7 @@ export default async function PTOPage() {
 
   const serializedRequests = requests.map((r) => ({
     ...r,
+    user: { ...r.user, name: r.user.name ?? '', email: r.user.email ?? '' },
     startDate: r.startDate.toISOString(),
     endDate: r.endDate.toISOString(),
     reviewedAt: r.reviewedAt?.toISOString() ?? null,
