@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -10,13 +9,15 @@ export const metadata = { title: 'PTO - Workryn' }
 
 export default async function PTOPage() {
   const session = await getWorkrynSession()
-
   const { user } = session!
+
   const isElevated = ELEVATED_ROLES.includes(user.role)
 
   const [types, balances, requests, allUsers, intuitMappings] = await Promise.all([
     db.ptoType.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+
     db.ptoBalance.findMany({ where: { userId: user.id }, include: { type: true } }),
+
     db.ptoRequest.findMany({
       where: isElevated ? {} : { userId: user.id },
       include: {
@@ -27,6 +28,7 @@ export default async function PTOPage() {
       orderBy: { createdAt: 'desc' },
       take: 200,
     }),
+
     isElevated
       ? db.user.findMany({
           where: { isActive: true },
@@ -34,6 +36,7 @@ export default async function PTOPage() {
           orderBy: { name: 'asc' },
         })
       : [],
+
     isElevated
       ? db.intuitEmployeeMap.findMany({
           include: { user: { select: { id: true, name: true, email: true } } },
