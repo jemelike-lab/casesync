@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -51,7 +50,13 @@ export default async function PTOPage() {
 
   const serializedRequests = requests.map((r) => ({
     ...r,
-    user: { ...r.user, name: r.user.name ?? '', email: r.user.email ?? '' },
+    user: {
+      ...r.user,
+      name: r.user.name ?? '',
+      email: r.user.email ?? '',
+      jobTitle: r.user.jobTitle ?? null,
+    },
+    reviewedBy: r.reviewedBy ? { ...r.reviewedBy, name: r.reviewedBy.name ?? '' } : null,
     startDate: r.startDate.toISOString(),
     endDate: r.endDate.toISOString(),
     reviewedAt: r.reviewedAt?.toISOString() ?? null,
@@ -63,7 +68,7 @@ export default async function PTOPage() {
       currentUser={{ id: user.id, name: user.name, role: user.role, avatarColor: user.avatarColor }}
       types={types as any}
       balances={balancesWithAvailable as any}
-      initialRequests={serializedRequests as any}
+      initialRequests={serializedRequests}
       allUsers={allUsers as any}
       pendingCount={pendingCount}
       intuitMappings={intuitMappings as any}

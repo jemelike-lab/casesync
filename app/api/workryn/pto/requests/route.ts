@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -9,7 +8,7 @@ export async function GET(req: NextRequest) {
   const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { user } = session
+  const { user } = session!
   const isElevated = ELEVATED_ROLES.includes(user.role)
   const url = req.nextUrl
   const statusFilter = url.searchParams.get('status')
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
   const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { user } = session
+  const { user } = session!
   let body: { typeId: string; startDate: string; endDate: string; totalHours: number; isHalfDay?: boolean; halfDayPeriod?: string | null; notes?: string | null }
   try { body = await req.json() } catch (_e) { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
