@@ -73,7 +73,7 @@ model User {
   notificationPreference NotificationPreference?
 
   // ── PTO relations ──
-  intuitMapping        IntuitEmployeeMap? @relation("IntuitMapping")
+  intuitMapping        IntuitEmployeeMap? @relation()
 
 
   // PTO
@@ -763,7 +763,7 @@ model PtoType {
 model PtoBalance {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation("PtoBalances", fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(, fields: [userId], references: [id], onDelete: Cascade)
   typeId      String
   type        PtoType  @relation(fields: [typeId], references: [id])
   accrued     Float    @default(0)
@@ -782,7 +782,7 @@ model PtoBalance {
 model PtoRequest {
   id            String    @id @default(cuid())
   userId        String
-  user          User      @relation("PtoRequests", fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation("PtoRequestUser", fields: [userId], references: [id], onDelete: Cascade)
   typeId        String
   type          PtoType   @relation(fields: [typeId], references: [id])
   startDate     DateTime
@@ -793,7 +793,7 @@ model PtoRequest {
   notes         String?
   status        String    @default("PENDING")
   reviewedById  String?
-  reviewedBy    User?     @relation("PtoReviewer", fields: [reviewedById], references: [id])
+  reviewedBy    User?     @relation("PtoRequestReviewer", fields: [reviewedById], references: [id])
   reviewedAt    DateTime?
   reviewNote    String?
   documentUrl   String?
@@ -812,7 +812,7 @@ model PtoRequest {
 model IntuitEmployeeMap {
   id                String   @id @default(cuid())
   userId            String   @unique
-  user              User     @relation("IntuitMapping", fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(, fields: [userId], references: [id], onDelete: Cascade)
   intuitEmployeeId  String
   intuitDisplayName String?
   intuitEmail       String?
@@ -836,106 +836,6 @@ model IntuitConnection {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  @@schema("public")
-  @@map("w_intuit_connection")
-}
-
-
-// -- PTO (Paid Time Off) ---------------------------------------------------
-
-model PtoType {
-  id                 String       @id @default(cuid())
-  name               String
-  code               String       @unique
-  color              String       @default("#6366f1")
-  icon               String       @default("umbrella")
-  accrualRate        Float        @default(0)
-  maxAccrual         Float        @default(0)
-  excludeFromPayroll Boolean      @default(false)
-  isActive           Boolean      @default(true)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-
-  balances   PtoBalance[]
-  requests   PtoRequest[]
-
-  @@schema("public")
-  @@map("w_pto_type")
-}
-
-model PtoBalance {
-  id         String   @id @default(cuid())
-  userId     String
-  typeId     String
-  accrued    Float    @default(0)
-  used       Float    @default(0)
-  pending    Float    @default(0)
-  adjustment Float    @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type PtoType @relation(fields: [typeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, typeId])
-  @@schema("public")
-  @@map("w_pto_balance")
-}
-
-model PtoRequest {
-  id             String    @id @default(cuid())
-  userId         String
-  typeId         String
-  startDate      DateTime
-  endDate        DateTime
-  totalHours     Float
-  isHalfDay      Boolean   @default(false)
-  halfDayPeriod  String?
-  notes          String?
-  status         String    @default("PENDING")
-  reviewedById   String?
-  reviewedAt     DateTime?
-  reviewNote     String?
-  intuitSynced   Boolean   @default(false)
-  intuitSyncError String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  user       User     @relation("PtoRequestUser", fields: [userId], references: [id], onDelete: Cascade)
-  type       PtoType  @relation(fields: [typeId], references: [id])
-  reviewedBy User?    @relation("PtoRequestReviewer", fields: [reviewedById], references: [id])
-
-  @@schema("public")
-  @@map("w_pto_request")
-}
-
-model IntuitEmployeeMap {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  intuitEmployeeId   String
-  intuitDisplayName  String?
-  intuitEmail        String?
-  syncStatus         String   @default("ACTIVE")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@schema("public")
-  @@map("w_intuit_employee_map")
-}
-
-model IntuitConnection {
-  id            String   @id @default(cuid())
-  realmId       String   @unique
-  accessToken   String
-  refreshToken  String
-  tokenExpiresAt DateTime
-  companyName   String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 
   @@schema("public")
   @@map("w_intuit_connection")
