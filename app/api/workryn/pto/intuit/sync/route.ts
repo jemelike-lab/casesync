@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -6,7 +5,7 @@ import { validateUUID } from '@/lib/validation'
 
 const ADMIN_ROLES = ['SUPERVISOR', 'OWNER', 'ADMIN']
 
-//  Helper: refresh Intuit OAuth token if expired 
+// Helper: refresh Intuit OAuth token if expired
 async function getIntuitToken(): Promise<{ accessToken: string; realmId: string } | null> {
   const conn = await db.intuitConnection.findFirst({ where: { isActive: true } })
   if (!conn) return null
@@ -42,7 +41,7 @@ async function getIntuitToken(): Promise<{ accessToken: string; realmId: string 
   return { accessToken: conn.accessToken, realmId: conn.realmId }
 }
 
-//  Helper: call QBO API 
+// Helper: call QBO API
 async function qboFetch(path: string, realmId: string, accessToken: string, options?: RequestInit) {
   const baseUrl = process.env.INTUIT_SANDBOX === 'true'
     ? 'https://sandbox-quickbooks.api.intuit.com'
@@ -60,7 +59,7 @@ async function qboFetch(path: string, realmId: string, accessToken: string, opti
   return res
 }
 
-//  POST /api/workryn/pto/intuit/sync 
+// POST /api/workryn/pto/intuit/sync
 // Actions: sync-employees, push-pto, auto-map
 export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
@@ -72,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   const { action, requestId } = await req.json()
 
-  //  SYNC EMPLOYEES: Pull QBO employees + auto-match to Workryn users 
+  // SYNC EMPLOYEES: Pull QBO employees + auto-match to Workryn users
   if (action === 'sync-employees') {
     const auth = await getIntuitToken()
     if (!auth) return NextResponse.json({ error: 'Intuit not connected' }, { status: 400 })
@@ -181,7 +180,7 @@ export async function POST(req: NextRequest) {
     })
     await db.auditLog.create({
       data: { userId: session.user.id, action: 'INTUIT_MANUAL_MAP', resourceType: 'INTUIT', resourceId: mapping.id,
-        details: `Manually mapped Workryn user ${userId}  QBO employee ${intuitEmployeeId} (${intuitDisplayName || 'unknown'})` },
+        details: `Manually mapped Workryn user ${userId} QBO employee ${intuitEmployeeId} (${intuitDisplayName || 'unknown'})` },
     })
     return NextResponse.json(mapping)
   }
@@ -192,7 +191,7 @@ export async function POST(req: NextRequest) {
     const ptoReq = await db.ptoRequest.findUnique({
       where: { id: requestId },
       include: {
-        user: { select: { id: true, name: true, intuitMapping: true } },
+        user: { select: { id: true, name: true } },
         type: { select: { name: true, code: true, excludeFromPayroll: true } },
       },
     })
@@ -213,7 +212,7 @@ export async function POST(req: NextRequest) {
       TxnDate: ptoReq.startDate.toISOString().split('T')[0],
       Hours: Math.floor(ptoReq.totalHours),
       Minutes: Math.round((ptoReq.totalHours % 1) * 60),
-      Description: `PTO: ${ptoReq.type.name}  ${ptoReq.totalHours}hrs (Workryn #${ptoReq.id.slice(-6)})`,
+      Description: `PTO: ${ptoReq.type.name} ${ptoReq.totalHours}hrs (Workryn #${ptoReq.id.slice(-6)})`,
     }
 
     const res = await qboFetch('/timeactivity', auth.realmId, auth.accessToken, { method: 'POST', body: JSON.stringify(timeActivity) })
@@ -238,7 +237,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ error: 'Unknown action. Use: sync-employees, manual-map, push-pto' }, { status: 400 })
 }
 
-//  GET: list current employee mappings 
+// GET: list current employee mappings
 export async function GET(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
