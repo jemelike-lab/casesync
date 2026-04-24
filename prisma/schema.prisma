@@ -73,7 +73,6 @@ model User {
   notificationPreference NotificationPreference?
 
   // ── PTO relations ──
-  intuitMapping        IntuitEmployeeMap? @relation()
 
 
   // PTO
