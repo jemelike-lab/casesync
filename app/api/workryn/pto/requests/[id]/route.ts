@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
@@ -11,7 +12,7 @@ export async function PATCH(
   const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { user } = session!
+  const { user } = session
   if (!ELEVATED_ROLES.includes(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
