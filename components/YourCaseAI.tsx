@@ -463,6 +463,7 @@ export default function BLHAssistant() {
     } finally {
       setLoading(false)
       streamingIdRef.current = null
+      setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [messages, loading, userId, currentClientId])
 
