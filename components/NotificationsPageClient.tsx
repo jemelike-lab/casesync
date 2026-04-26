@@ -38,11 +38,18 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
   const router = useRouter()
   const { notifications, archivedNotifications, unreadCount, markAllRead, markRead } = useNotifications(userId)
   const [activeTab, setActiveTab] = useState<'inbox' | 'archive'>('inbox')
+  const [initialLoad, setInitialLoad] = useState(true)
 
-  // P6 fix: clear bell badge on mount
   useEffect(() => {
-    markAllRead()
-  }, [userId])
+    // Give notifications a moment to load before showing empty state
+    const t = setTimeout(() => setInitialLoad(false), 800)
+    return () => clearTimeout(t)
+  }, [])
+
+  // P6 fix: clear bell badge on mount — only if there are unread items
+  useEffect(() => {
+    if (unreadCount > 0) markAllRead()
+  }, [userId, unreadCount])
   const visibleNotifications = useMemo(
     () => activeTab === 'inbox' ? notifications : archivedNotifications,
     [activeTab, notifications, archivedNotifications]
@@ -101,7 +108,11 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
       </div>
 
       <div style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'var(--surface)' }}>
-        {visibleNotifications.length === 0 ? (
+        {initialLoad ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
+            Loading…
+          </div>
+        ) : visibleNotifications.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
             {activeTab === 'inbox' ? 'No unread notifications.' : 'No archived notifications yet.'}
           </div>
