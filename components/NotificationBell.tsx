@@ -182,7 +182,7 @@ export default function NotificationBell({ userId }: Props) {
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {notifications.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
-                No notifications yet
+                {unreadCount === 0 ? 'All caught up 🎉' : 'Loading…'}
               </div>
             ) : (
               notifications.map(n => (
