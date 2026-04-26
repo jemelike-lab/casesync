@@ -78,7 +78,6 @@ export function useNotifications(userId: string | null) {
   }
 
   useEffect(() => {
-    let active = true
     if (!userId) return
     void fetchNotifications()
 
@@ -96,7 +95,8 @@ export function useNotifications(userId: string | null) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [userId, supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   return { notifications, archivedNotifications, unreadCount, markAllRead, markRead, refetch: fetchNotifications }
 }
