@@ -1,24 +1,12 @@
-import withSerwistInit from '@serwist/next'
-import { execSync } from 'child_process'
+/* eslint-disable @typescript-eslint/no-require-imports */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withPWA = require('next-pwa') as (config: any) => (nextConfig: any) => any
 
-// Use git commit hash as cache revision for precached pages
-const revision = (() => {
-  try {
-    return execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim().slice(0, 7)
-  } catch {
-    return crypto.randomUUID().slice(0, 7)
-  }
-})()
-
-const withSerwist = withSerwistInit({
-  swSrc: 'app/sw.ts',
-  swDest: 'public/sw.js',
-  cacheOnNavigation: true,
-  reloadOnOnline: false, // Don't force-reload when coming back online (form data safety)
+const pwaConfig = withPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  additionalPrecacheEntries: [
-    { url: '/offline', revision },
-  ],
 })
 
 const securityHeaders = [
@@ -32,9 +20,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Serwist + Next.js inject inline scripts at runtime that cannot be nonced via static headers.
+      // Next.js 16 + next-pwa inject inline scripts at runtime that cannot be nonced via static headers.
       // 'unsafe-inline' is kept here but is superseded by any nonce/hash present, so it does not
-      // weaken security for browsers that support CSP Level 2+.
+      // weaken security for browsers that support CSP Level 2+. To fully remove it, migrate to
+      // Next.js middleware-based dynamic nonce injection (see docs/csp-nonce-upgrade.md).
+      // 'unsafe-eval' is intentionally omitted — it is not required by Next.js 16.
       "script-src 'self' 'unsafe-inline'",
       // Inline styles are required by React/Tailwind CSS-in-JS patterns.
       "style-src 'self' 'unsafe-inline'",
@@ -58,23 +48,24 @@ const nextConfig = {
     },
   },
   images: {
-    formats: ['image/avif' as const, 'image/webp' as const],
+    formats: ['image/avif', 'image/webp'],
   },
+  // Turbopack is default in Next.js 16; empty config satisfies peer checks from plugins
+  turbopack: {},
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
   },
 }
 
-// Wrap with Serwist for PWA service worker generation
-const configWithSerwist = withSerwist(nextConfig)
+const configWithPWA = pwaConfig(nextConfig)
 
 // Wrap with Sentry only if @sentry/nextjs is installed and DSN is configured.
-let finalConfig = configWithSerwist
+// To enable: npm install @sentry/nextjs --legacy-peer-deps, then set NEXT_PUBLIC_SENTRY_DSN in Vercel.
+let finalConfig = configWithPWA
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { withSentryConfig } = require('@sentry/nextjs')
-    finalConfig = withSentryConfig(configWithSerwist, {
+    finalConfig = withSentryConfig(configWithPWA, {
       silent: true,
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
