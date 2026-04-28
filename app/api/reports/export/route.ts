@@ -126,15 +126,15 @@ export async function GET(req: NextRequest) {
     row_count: rows.length,
   })
 
+  // Audit: log CSV export
+  await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, userRole: profile?.role, action: 'report.export', resourceType: 'clients', details: { row_count: rows.length, format: 'csv' } }).catch(() => {})
+
   const label = canSeePhi ? 'phi' : 'safe'
   const filename = `casesync-export-${filter}-${label}-${new Date().toISOString().split('T')[0]}.csv`
 
   return new NextResponse(csv, {
     status: 200,
     headers: {
-
-    // Audit: log CSV export
-    await auditLog(req, { userId: authData.user.id, userEmail: authData.user.email ?? undefined, userRole: profile?.role, action: 'report.export', resourceType: 'clients', details: { row_count: rows.length, format: 'csv' } }).catch(() => {})
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Cache-Control': 'no-store',
