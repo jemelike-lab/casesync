@@ -85,7 +85,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   useEffect(() => { setSidebarOpen(false) }, [pathname])
 
   useEffect(() => {
-    fetch('/api/workryn/workryn/notifications')
+    fetch('/api/workryn/notifications')
       .then(r => r.json())
       .then(data => setNotifs(Array.isArray(data) ? data : []))
       .catch(() => {})
@@ -104,7 +104,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   }, [])
 
   async function markAllRead() {
-    await fetch('/api/workryn/workryn/notifications', { method: 'PATCH' })
+    await fetch('/api/workryn/notifications', { method: 'PATCH' })
     setNotifs(n => n.map(x => ({ ...x, isRead: true })))
   }
 
