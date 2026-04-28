@@ -1,12 +1,12 @@
 {
   "name": "CaseSync – Beatrice Loving Heart",
-  "short_name": "CaseSync",
+  "short_name": "Workryn",
   "description": "Case management portal for Beatrice Loving Heart & Health Care",
   "start_url": "/w/dashboard",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f7fb",
-  "theme_color": "#2563eb",
+  "background_color": "#0f0f11",
+  "theme_color": "#0f0f11",
   "orientation": "any",
   "id": "/",
   "icons": [

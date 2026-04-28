@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Tenor API (Google) - TENOR_KEY is a working public API key for development
-const TENOR_KEY = process.env.TENOR_API_KEY ?? 'AIzaSyAyimkuYQYF_FXVALexPzpAGBNu-DNnPaY'
+const TENOR_KEY = process.env.TENOR_API_KEY ?? ''
 const LIMIT = 9
 
 const FALLBACK_GIFS = [

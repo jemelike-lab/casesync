@@ -136,6 +136,8 @@ model TimeEntry {
   updatedAt     DateTime @updatedAt
 
   @@schema("public")
+  @@index([userId])
+  @@index([userId, clockInAt])
   @@map("w_time_entry")
 }
 
@@ -182,6 +184,9 @@ model Task {
   comments     TaskComment[]
 
   @@schema("public")
+  @@index([assignedToId])
+  @@index([status])
+  @@index([assignedToId, status])
   @@map("w_task")
 }
 
@@ -230,6 +235,8 @@ model Ticket {
   internalNotes TicketInternalNote[]
 
   @@schema("public")
+  @@index([status])
+  @@index([assignedToId])
   @@map("w_ticket")
 }
 
@@ -517,6 +524,7 @@ model AuditLog {
   createdAt    DateTime @default(now())
 
   @@schema("public")
+  @@index([createdAt])
   @@map("w_audit_log")
 }
 
@@ -617,6 +625,8 @@ model Notification {
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@schema("public")
+  @@index([userId])
+  @@index([userId, isRead])
   @@map("w_notification")
 }
 
@@ -667,6 +677,8 @@ model Shift {
   department   Department? @relation(fields: [departmentId], references: [id])
 
   @@schema("public")
+  @@index([userId])
+  @@index([userId, startTime])
   @@map("w_shift")
 }
 
