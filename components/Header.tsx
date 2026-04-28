@@ -245,6 +245,7 @@ export default function Header({ user, profile }: Props) {
         boxSizing: 'border-box',
       }}>
         <MobileNavItem href="/dashboard" icon="🏠" label="Home" active={dashboardActive} />
+        <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} accent />
         {(role === 'team_manager' || isSupervisorLike(role)) && (
           <MobileNavItem href="/team" icon="👥" label="Team" active={teamActive} />
         )}
@@ -257,7 +258,6 @@ export default function Header({ user, profile }: Props) {
         )}
         <MobileNavItem href="/settings/security" icon="🔐" label="Prefs" active={settingsActive} />
         <MobileNavItem href="/help" icon="📚" label="Help" active={helpActive} />
-        <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} />
         {/* Mobile help button */}
         <button
           onClick={() => setShowTour(true)}
@@ -293,7 +293,7 @@ export default function Header({ user, profile }: Props) {
   )
 }
 
-function MobileNavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+function MobileNavItem({ href, icon, label, active, accent }: { href: string; icon: string; label: string; active: boolean; accent?: boolean }) {
   return (
     <Link href={href} aria-current={active ? 'page' : undefined} style={{
       display: 'flex',
@@ -304,14 +304,14 @@ function MobileNavItem({ href, icon, label, active }: { href: string; icon: stri
       flex: '0 0 auto',
       minHeight: 44,
       justifyContent: 'center',
-      color: active ? 'var(--accent)' : 'var(--text-secondary)',
+      color: active ? 'var(--accent)' : accent ? '#818cf8' : 'var(--text-secondary)',
       textDecoration: 'none',
       padding: '4px 6px 2px',
       whiteSpace: 'nowrap',
       opacity: active ? 1 : 0.92,
       borderRadius: 12,
-      background: active ? 'rgba(0,122,255,0.14)' : 'transparent',
-      border: active ? '1px solid rgba(0,122,255,0.22)' : '1px solid transparent',
+      background: active ? 'rgba(0,122,255,0.14)' : accent ? 'rgba(99,102,241,0.1)' : 'transparent',
+      border: active ? '1px solid rgba(0,122,255,0.22)' : accent ? '1px solid rgba(99,102,241,0.2)' : '1px solid transparent',
     }}>
       <span style={{ fontSize: 19, lineHeight: 1 }}>{icon}</span>
       <span style={{ fontSize: 12, fontWeight: active ? 800 : 700, lineHeight: 1.1, letterSpacing: '0.01em', opacity: 1 }}>{label}</span>
