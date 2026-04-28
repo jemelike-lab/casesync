@@ -2,7 +2,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import { redirect } from 'next/navigation'
-import SettingsClient from '@/components/workryn/SettingsClient'
+import dynamic from 'next/dynamic'
+
+const SettingsClient = dynamic(
+  () => import('@/components/workryn/SettingsClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading settings...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Settings' }

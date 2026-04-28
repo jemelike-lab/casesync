@@ -2,7 +2,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
-import TicketDetailClient from '@/components/workryn/TicketDetailClient'
+import dynamic from 'next/dynamic'
+
+const TicketDetailClient = dynamic(
+  () => import('@/components/workryn/TicketDetailClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading ticket...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Ticket Detail' }

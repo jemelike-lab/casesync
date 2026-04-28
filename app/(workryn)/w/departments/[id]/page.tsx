@@ -2,7 +2,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { redirect, notFound } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
-import DepartmentDetailClient from '@/components/workryn/DepartmentDetailClient'
+import dynamic from 'next/dynamic'
+
+const DepartmentDetailClient = dynamic(
+  () => import('@/components/workryn/DepartmentDetailClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading department...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Department' }

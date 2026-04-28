@@ -1,4 +1,5 @@
 'use client'
+import '@/app/workryn-timeclock.css'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { LogIn, LogOut, Coffee, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 

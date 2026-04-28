@@ -27,14 +27,23 @@ export default async function DashboardPage() {
   const userId = session.user.id
   const weekStart = startOfWeek()
 
+  // Today boundaries for schedule
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
   let taskCount = 0
   let openTickets = 0
   let weeklyHours = 0
   let auditLogs: any[] = []
   let recentTasks: any[] = []
+  let completedCount = 0
+  let totalTaskCount = 0
+  let todayShifts: any[] = []
 
   try {
-    const [tc, ot, weekEntries, al, rt] = await Promise.all([
+    const [tc, ot, weekEntries, al, rt, done, total, shifts] = await Promise.all([
       db.task.count({ where: { assignedToId: userId } }),
       db.ticket.count({ where: { status: 'OPEN' } }),
       db.timeEntry.findMany({
@@ -51,6 +60,23 @@ export default async function DashboardPage() {
         take: 5,
         orderBy: { dueDate: 'asc' },
       }),
+      // Completed task count for productivity
+      db.task.count({
+        where: { assignedToId: userId, status: { in: ['DONE', 'COMPLETED'] } },
+      }),
+      // Total tasks for productivity denominator
+      db.task.count({
+        where: { assignedToId: userId },
+      }),
+      // Real shifts for today's schedule
+      db.shift.findMany({
+        where: {
+          userId,
+          startTime: { gte: todayStart, lte: todayEnd },
+        },
+        orderBy: { startTime: 'asc' },
+        take: 6,
+      }),
     ])
 
     taskCount = tc
@@ -59,6 +85,9 @@ export default async function DashboardPage() {
     weeklyHours = Math.round((weeklyMinutes / 60) * 10) / 10
     auditLogs = JSON.parse(JSON.stringify(al))
     recentTasks = JSON.parse(JSON.stringify(rt))
+    completedCount = done
+    totalTaskCount = total
+    todayShifts = JSON.parse(JSON.stringify(shifts))
   } catch (error) {
     console.error('[Workryn Dashboard] DB query failed:', error)
     // Render with empty data rather than crashing
@@ -70,6 +99,9 @@ export default async function DashboardPage() {
       stats={{ taskCount, openTickets, weeklyHours }}
       auditLogs={auditLogs}
       recentTasks={recentTasks}
+      completedCount={completedCount}
+      totalTaskCount={totalTaskCount}
+      todayShifts={todayShifts}
     />
   )
 }

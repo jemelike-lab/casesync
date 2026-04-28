@@ -1,4 +1,5 @@
 'use client'
+import '@/app/workryn-timeclock.css'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {

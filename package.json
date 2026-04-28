@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
@@ -13,8 +13,11 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@prisma/client": "^5.22.0",
+    "@sentry/nextjs": "^9",
+    "@serwist/next": "^9.5.7",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.1",
+    "@vercel/analytics": "^1",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
@@ -26,10 +29,9 @@
     "react-hot-toast": "^2.6.0",
     "recharts": "^2.15.0",
     "resend": "^4.0.0",
+    "serwist": "^9.5.7",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5",
-    "@vercel/analytics": "^1",
-    "@sentry/nextjs": "^9"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

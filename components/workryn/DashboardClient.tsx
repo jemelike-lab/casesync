@@ -8,6 +8,9 @@ interface Props {
   stats: { taskCount: number; openTickets: number; weeklyHours: number }
   auditLogs: Array<{ id: string; action: string; resourceType: string; details: string | null; createdAt: string; user: { name: string | null; avatarColor: string } }>
   recentTasks: Array<{ id: string; title: string; priority: string; status: string; dueDate: string | null }>
+  completedCount: number
+  totalTaskCount: number
+  todayShifts: Array<{ id: string; title: string | null; startTime: string; endTime: string | null }>
 }
 
 function greet(name: string) {
@@ -23,7 +26,7 @@ function DonutChart({ completed, total }: { completed: number; total: number }) 
   const offset = circ * (1 - percent / 100)
   return (
     <div className="wd-donut-wrap">
-      <svg viewBox="0 0 100 100" className="wd-donut-svg">
+      <svg viewBox="0 0 100 100" className="wd-donut-svg" role="img" aria-label={`Task progress: ${percent}% complete, ${completed} of ${total} tasks done`}>
         <defs>
           <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#10b981" />
@@ -47,16 +50,20 @@ const PRIORITY_COLOR: Record<string, string> = {
   HIGH: '#ef4444', MEDIUM: '#f59e0b', LOW: '#10b981', URGENT: '#dc2626'
 }
 
-export default function DashboardClient({ user, stats, auditLogs, recentTasks }: Props) {
-  const completedTasks = recentTasks.filter(t => t.status === 'COMPLETED' || t.status === 'DONE').length
-  const totalTasks = recentTasks.length || 1
-  const productivity = Math.round((completedTasks / totalTasks) * 100)
+const SHIFT_COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4']
 
-  const upcomingShifts = [
-    { id: '1', title: 'Morning Shift',  time: '9:00 AM',  color: '#10b981' },
-    { id: '2', title: 'Team Meeting',   time: '2:00 PM',  color: '#3b82f6' },
-    { id: '3', title: 'Client Call',    time: '4:30 PM',  color: '#8b5cf6' },
-  ]
+export default function DashboardClient({ user, stats, auditLogs, recentTasks, completedCount, totalTaskCount, todayShifts }: Props) {
+  // Use server-provided counts (queries both DONE and non-DONE tasks)
+  const productivity = totalTaskCount > 0 ? Math.round((completedCount / totalTaskCount) * 100) : 0
+  const remainingTasks = totalTaskCount - completedCount
+
+  // Format shift times for display
+  const formattedShifts = todayShifts.map((shift, i) => ({
+    id: shift.id,
+    title: shift.title || 'Shift',
+    time: new Date(shift.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    color: SHIFT_COLORS[i % SHIFT_COLORS.length],
+  }))
 
   return (
     <div className="wd">
@@ -109,7 +116,7 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
           <ArrowUpRight size={15} className="wd-stat-arrow-icon" />
         </Link>
 
-        <Link href="/w/schedule" className="wd-stat-card">
+        <Link href="/w/tasks" className="wd-stat-card">
           <div className="wd-stat-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>
             <TrendingUp size={20} strokeWidth={1.8} />
           </div>
@@ -130,19 +137,19 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
             <h2 className="wd-panel-title">Task Progress</h2>
           </div>
           <div className="wd-panel-body wd-chart-body">
-            <DonutChart completed={completedTasks} total={totalTasks} />
+            <DonutChart completed={completedCount} total={totalTaskCount} />
             <div className="wd-chart-legend">
               <div className="wd-chart-leg-item">
                 <span className="wd-chart-leg-dot" style={{ background: '#10b981' }} />
                 <div>
-                  <span className="wd-chart-leg-val">{completedTasks}</span>
+                  <span className="wd-chart-leg-val">{completedCount}</span>
                   <span className="wd-chart-leg-lbl">Completed</span>
                 </div>
               </div>
               <div className="wd-chart-leg-item">
                 <span className="wd-chart-leg-dot" style={{ background: '#a855f7' }} />
                 <div>
-                  <span className="wd-chart-leg-val">{totalTasks - completedTasks}</span>
+                  <span className="wd-chart-leg-val">{remainingTasks}</span>
                   <span className="wd-chart-leg-lbl">Remaining</span>
                 </div>
               </div>
@@ -157,18 +164,26 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks }:
             <Link href="/w/schedule" className="wd-panel-link">View schedule</Link>
           </div>
           <div className="wd-panel-body">
-            <div className="wd-timeline">
-              {upcomingShifts.map(shift => (
-                <div key={shift.id} className="wd-tl-row">
-                  <div className="wd-tl-dot" style={{ background: shift.color }} />
-                  <div className="wd-tl-line" />
-                  <div className="wd-tl-content">
-                    <span className="wd-tl-title">{shift.title}</span>
-                    <span className="wd-tl-time"><Clock size={11} />{shift.time}</span>
+            {formattedShifts.length === 0 ? (
+              <div className="wd-empty-state">
+                <CalendarDays size={24} />
+                <p>No shifts today</p>
+                <span>Your scheduled shifts will appear here.</span>
+              </div>
+            ) : (
+              <div className="wd-timeline">
+                {formattedShifts.map(shift => (
+                  <div key={shift.id} className="wd-tl-row">
+                    <div className="wd-tl-dot" style={{ background: shift.color }} />
+                    <div className="wd-tl-line" />
+                    <div className="wd-tl-content">
+                      <span className="wd-tl-title">{shift.title}</span>
+                      <span className="wd-tl-time"><Clock size={11} />{shift.time}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

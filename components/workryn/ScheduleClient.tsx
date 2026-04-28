@@ -1,4 +1,5 @@
 'use client'
+import '@/app/workryn-schedule.css'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, X, Loader2 } from 'lucide-react'
 import { getInitials } from '@/lib/workryn/utils'

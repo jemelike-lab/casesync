@@ -3,7 +3,12 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
 import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
-import EvaluationsClient from '@/components/workryn/EvaluationsClient'
+import dynamic from 'next/dynamic'
+
+const EvaluationsClient = dynamic(
+  () => import('@/components/workryn/EvaluationsClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading evaluations...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Performance Evaluations' }

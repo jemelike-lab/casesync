@@ -2,7 +2,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
 import { redirect } from 'next/navigation'
-import CourseBuilderClient from '@/components/workryn/CourseBuilderClient'
+import dynamic from 'next/dynamic'
+
+const CourseBuilderClient = dynamic(
+  () => import('@/components/workryn/CourseBuilderClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading course builder...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Course Builder' }

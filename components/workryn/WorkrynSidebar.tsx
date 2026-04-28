@@ -79,6 +79,50 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   const topbarBellRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Swipe gesture for mobile sidebar
+  useEffect(() => {
+    let startX = 0
+    let startY = 0
+    let tracking = false
+
+    function handleTouchStart(e: TouchEvent) {
+      const touch = e.touches[0]
+      startX = touch.clientX
+      startY = touch.clientY
+      // Only track swipes starting from the left 30px edge (open) or anywhere (close)
+      tracking = startX < 30 || sidebarOpen
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      if (!tracking) return
+      const touch = e.changedTouches[0]
+      const dx = touch.clientX - startX
+      const dy = Math.abs(touch.clientY - startY)
+
+      // Horizontal swipe must be > 60px and more horizontal than vertical
+      if (Math.abs(dx) > 60 && dy < Math.abs(dx) * 0.75) {
+        if (dx > 0 && !sidebarOpen && startX < 30) {
+          setSidebarOpen(true)
+        } else if (dx < 0 && sidebarOpen) {
+          setSidebarOpen(false)
+        }
+      }
+      tracking = false
+    }
+
+    // Only attach on mobile
+    const mq = window.matchMedia('(max-width: 768px)')
+    if (mq.matches) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true })
+      document.addEventListener('touchend', handleTouchEnd, { passive: true })
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [sidebarOpen])
+
   const unread = notifs.filter(n => !n.isRead).length
   const isAdmin = hasElevatedAccess(user.role)
 

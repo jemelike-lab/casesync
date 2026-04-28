@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getWorkrynSession } from '@/lib/workryn/auth'
 
-// Tenor API (Google) - TENOR_KEY is a working public API key for development
+// TENOR_API_KEY must be set in Vercel env vars — no hardcoded fallback
 const TENOR_KEY = process.env.TENOR_API_KEY ?? ''
 const LIMIT = 9
 
@@ -17,6 +18,15 @@ const FALLBACK_GIFS = [
 ]
 
 export async function GET(req: NextRequest) {
+  // Auth check — only authenticated Workryn users can search GIFs
+  const session = await getWorkrynSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // If no Tenor API key configured, return fallbacks
+  if (!TENOR_KEY) {
+    return NextResponse.json(FALLBACK_GIFS)
+  }
+
   const q = req.nextUrl.searchParams.get('q') ?? ''
 
   try {

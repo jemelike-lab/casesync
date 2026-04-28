@@ -1,4 +1,5 @@
 'use client'
+import '@/app/workryn-tickets.css'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {

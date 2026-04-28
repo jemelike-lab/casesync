@@ -3,7 +3,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
 import { notFound, redirect } from 'next/navigation'
-import CoursePlayerClient from '@/components/workryn/CoursePlayerClient'
+import dynamic from 'next/dynamic'
+
+const CoursePlayerClient = dynamic(
+  () => import('@/components/workryn/CoursePlayerClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading course...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Course' }

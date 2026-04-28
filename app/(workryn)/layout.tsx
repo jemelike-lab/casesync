@@ -4,6 +4,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
 import WorkrynOnboardingTour from '@/components/workryn/WorkrynOnboardingTour'
+import OfflineBanner from '@/components/workryn/OfflineBanner'
 
 /**
  * Maps CaseSync profile role → Workryn role.
@@ -76,6 +77,7 @@ export default async function WorkrynLayout({ children }: { children: React.Reac
         {children}
       </main>
       <WorkrynOnboardingTour />
+      <OfflineBanner />
     </div>
   )
 }

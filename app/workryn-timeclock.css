@@ -1,0 +1,305 @@
+   TIME CLOCK — Circular Glowing Display
+   ═══════════════════════════════════════════ */
+
+/* Clock face container — the main clock area */
+.w-app-shell .tc-clock-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 320px;
+  height: 320px;
+  margin: 20px auto 24px;
+}
+
+/* Outer ring — SVG progress circle */
+.w-app-shell .tc-ring-bg {
+  stroke: rgba(37,99,235,0.08);
+  fill: none;
+}
+
+.w-app-shell .tc-ring-progress {
+  fill: none;
+  stroke: url(#tc-gradient);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgba(37,99,235,0.4));
+  transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Inner glow behind clock */
+.w-app-shell .tc-clock-face::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Time display inside circle */
+.w-app-shell .tc-time {
+  font-size: 3.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--w-text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.w-app-shell .tc-time-seconds {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--w-text-muted);
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.w-app-shell .tc-date {
+  font-size: 0.8125rem;
+  color: var(--w-text-muted);
+  margin-top: 4px;
+}
+
+.w-app-shell .tc-user {
+  font-size: 0.75rem;
+  color: var(--w-text-muted);
+  opacity: 0.7;
+}
+
+/* Status badge */
+.w-app-shell .tc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.w-app-shell .tc-status-out {
+  background: rgba(100,116,139,0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(100,116,139,0.15);
+}
+
+.w-app-shell .tc-status-out .tc-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.w-app-shell .tc-status-active {
+  background: rgba(16,185,129,0.12);
+  color: #6ee7b7;
+  border: 1px solid rgba(16,185,129,0.2);
+  animation: tc-pulse 2s ease-in-out infinite;
+}
+
+.w-app-shell .tc-status-active .tc-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16,185,129,0.6);
+}
+
+@keyframes tc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+/* Clock In / Out button */
+.w-app-shell .tc-btn-clockin {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 99px;
+  font-size: 1rem;
+  max-width: 280px;
+  width: auto;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 0 rgba(37,99,235,0.3);
+  animation: tc-btn-glow 3s ease-in-out infinite;
+}
+
+.w-app-shell .tc-btn-clockin:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(37,99,235,0.45), 0 0 40px rgba(37,99,235,0.15);
+}
+
+.w-app-shell .tc-btn-clockin:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@keyframes tc-btn-glow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 0 rgba(37,99,235,0.3); }
+  50% { box-shadow: 0 4px 20px rgba(37,99,235,0.35), 0 0 0 8px rgba(37,99,235,0); }
+}
+
+.w-app-shell .tc-btn-clockout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 99px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+}
+
+.w-app-shell .tc-btn-clockout:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(239,68,68,0.4);
+}
+
+.w-app-shell .tc-btn-break {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid rgba(37,99,235,0.2);
+  background: rgba(37,99,235,0.08);
+  color: #93c5fd;
+  cursor: pointer;
+  transition: all var(--w-transition-smooth);
+  margin-top: 8px;
+}
+
+.w-app-shell .tc-btn-break:hover {
+  background: rgba(37,99,235,0.15);
+  border-color: rgba(37,99,235,0.3);
+  box-shadow: 0 0 20px rgba(37,99,235,0.1);
+}
+
+/* Stats sidebar */
+.w-app-shell .tc-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.w-app-shell .tc-stat-card {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--w-radius-lg);
+  padding: 18px;
+  transition: all var(--w-transition-smooth);
+}
+
+.w-app-shell .tc-stat-card:hover {
+  border-color: rgba(37,99,235,0.15);
+  box-shadow: 0 0 20px rgba(37,99,235,0.06);
+}
+
+.w-app-shell .tc-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--w-text-muted);
+  margin-bottom: 6px;
+}
+
+.w-app-shell .tc-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--w-text-primary);
+  letter-spacing: -0.03em;
+}
+
+.w-app-shell .tc-stat-sub {
+  font-size: 0.75rem;
+  color: var(--w-text-muted);
+  margin-top: 2px;
+}
+
+/* Weekly progress bar */
+.w-app-shell .tc-weekly-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.w-app-shell .tc-weekly-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+  border-radius: 99px;
+  transition: width 800ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(37,99,235,0.4);
+  position: relative;
+}
+
+.w-app-shell .tc-weekly-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; bottom: 0; width: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  animation: w-shimmer 2.5s ease-in-out infinite;
+}
+
+/* Break/overtime mini cards */
+.w-app-shell .tc-mini-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.w-app-shell .tc-mini-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--w-radius-md);
+  padding: 12px 14px;
+}
+
+.w-app-shell .tc-mini-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--w-text-muted);
+}
+
+.w-app-shell .tc-mini-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--w-text-primary);
+  margin-top: 2px;
+}
+
+/* Today's activity */
+.w-app-shell .tc-activity-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--w-text-muted);
+  font-size: 0.875rem;
+}
+
+.w-app-shell .tc-activity-empty svg {
+  opacity: 0.25;
+  margin-bottom: 10px;
+}
+
+/* ═══════════════════════════════════════════

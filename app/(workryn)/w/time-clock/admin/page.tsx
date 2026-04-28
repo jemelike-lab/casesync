@@ -3,7 +3,12 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
-import AdminTimeClockClient from '@/components/workryn/AdminTimeClockClient'
+import dynamic from 'next/dynamic'
+
+const AdminTimeClockClient = dynamic(
+  () => import('@/components/workryn/AdminTimeClockClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading time clock...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Admin: Time Tracking' }

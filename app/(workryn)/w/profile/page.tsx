@@ -2,7 +2,12 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
-import ProfileClient from '@/components/workryn/ProfileClient'
+import dynamic from 'next/dynamic'
+
+const ProfileClient = dynamic(
+  () => import('@/components/workryn/ProfileClient'),
+  { loading: () => <div style={{ padding: 32, color: '#94a3b8', fontSize: 14 }}>Loading profile...</div> }
+)
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Profile' }
