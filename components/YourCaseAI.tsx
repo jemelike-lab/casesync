@@ -381,6 +381,15 @@ export default function BLHAssistant() {
     }
   }, [open])
 
+  // Re-focus input when loading finishes (safety net for all code paths)
+  useEffect(() => {
+    if (!loading && open) {
+      requestAnimationFrame(() => {
+        setTimeout(() => inputRef.current?.focus(), 0)
+      })
+    }
+  }, [loading, open])
+
   const handleOpen = () => {
     setOpen(true)
     setHasOpenedBefore(true)
@@ -463,7 +472,10 @@ export default function BLHAssistant() {
     } finally {
       setLoading(false)
       streamingIdRef.current = null
-      setTimeout(() => inputRef.current?.focus(), 50)
+      // Use rAF + setTimeout to ensure React re-renders input as enabled before focusing
+      requestAnimationFrame(() => {
+        setTimeout(() => inputRef.current?.focus(), 0)
+      })
     }
   }, [messages, loading, userId, currentClientId])
 
@@ -757,7 +769,7 @@ export default function BLHAssistant() {
                     <button
                       key={idx}
                       className="blh-bot-prompt-btn"
-                      onClick={() => { sendMessage(prompt); setTimeout(() => inputRef.current?.focus(), 50) }}
+                      onClick={() => sendMessage(prompt)}
                       style={{
                         background: 'rgba(139,92,246,0.1)',
                         border: '1px solid rgba(139,92,246,0.25)',
