@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteSharePointFile } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
+import { auditLog } from '@/lib/audit'
 
 export async function DELETE(
   req: NextRequest,
@@ -26,6 +27,9 @@ export async function DELETE(
       .eq('file_path', itemId)
       .eq('storage_provider', 'sharepoint')
 
+
+    // Audit: log document deletion
+    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.delete', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('SharePoint delete error:', err)

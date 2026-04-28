@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import { canManageTeam } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import {
+import { auditLog } from '@/lib/audit'
   buildClientInsertPayload,
   buildImportIssueCsv,
   parseClientImportText,
@@ -160,6 +161,9 @@ export async function POST(req: NextRequest) {
   if (mode === 'validate') {
     await supabase.from('client_import_runs').insert(importRunBase)
 
+
+    // Audit: log bulk client import
+    await auditLog(req, { userId, userEmail: authData?.user?.email ?? undefined, action: 'client.create', resourceType: 'clients', details: { operation: 'bulk_import' } }).catch(() => {})
     return NextResponse.json({
       mode,
       ok: allErrors.length === 0,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDownloadUrl } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
+import { auditLog } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -17,6 +18,9 @@ export async function GET(
     }
 
     const url = await getDownloadUrl(itemId)
+
+    // Audit: log document download
+    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.view', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
     return NextResponse.redirect(url)
   } catch (err: any) {
     console.error('SharePoint download error:', err)

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { validateUUID } from '@/lib/validation'
+import { auditLog } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -795,6 +796,9 @@ export async function POST(req: NextRequest) {
 
   // Rate limiting: max 10 concurrent AI requests
   if (activeRequests >= MAX_CONCURRENT) {
+
+    // Audit: log AI query
+    auditLog(req, { userId: authData?.user?.id, userEmail: authData?.user?.email ?? undefined, action: 'client.view', resourceType: 'case-ai', resourceId: clientId, details: { prompt_length: prompt?.length ?? 0 } }).catch(() => {})
     return new Response(
       JSON.stringify({ error: 'BLH Bot is busy, please try again in a moment' }),
       { status: 429, headers: { 'Content-Type': 'application/json' } }

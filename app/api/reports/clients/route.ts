@@ -2,6 +2,7 @@ import { isSupervisorLike } from '@/lib/roles'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import {
+import { auditLog } from '@/lib/audit'
   SAFE_EXPORT_SELECT,
   SAFE_EXPORT_HEADERS,
   safeRowToCSV,
@@ -143,6 +144,9 @@ export async function GET(req: Request) {
     })
 
     const label = canSeePhi ? 'phi' : 'safe'
+
+    // Audit: log report generation
+    await auditLog(req, { userId, userEmail: authData?.user?.email ?? undefined, userRole: profile?.role, action: 'report.generate', resourceType: 'reports' }).catch(() => {})
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

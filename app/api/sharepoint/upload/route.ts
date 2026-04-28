@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { uploadToSharePoint } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
+import { auditLog } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('Supabase insert error:', error)
       // Still return success — file is in SharePoint
+
+    // Audit: log document upload
+    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.create', resourceType: 'sharepoint_document', details: { filename: file?.name } }).catch(() => {})
       return NextResponse.json({ id: itemId, name: file.name, webUrl })
     }
 

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact, Client } from '@/lib/types'
+import { auditLog } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 

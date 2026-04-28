@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
+import { auditLog } from '@/lib/audit'
   SAFE_EXPORT_SELECT,
   SAFE_EXPORT_HEADERS,
   safeRowToCSV,
@@ -131,6 +132,9 @@ export async function GET(req: NextRequest) {
   return new NextResponse(csv, {
     status: 200,
     headers: {
+
+    // Audit: log CSV export
+    await auditLog(req, { userId: authData.user.id, userEmail: authData.user.email ?? undefined, userRole: profile?.role, action: 'report.export', resourceType: 'clients', details: { row_count: rows.length, format: 'csv' } }).catch(() => {})
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Cache-Control': 'no-store',
