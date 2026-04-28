@@ -1,10 +1,17 @@
 'use client'
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Profile, Role, UserInvite, InviteStatus } from '@/lib/types'
 import { inviteUser, resendInviteReminder, removePendingInvite, updateUserRole, updateTeamManagerAssignment, deactivateUser } from '@/app/actions/admin'
 import Link from 'next/link'
+
+interface InternalDoc {
+  name: string
+  size: number
+  created: string
+  updated: string
+}
 
 interface Props {
   users: Profile[]
@@ -84,6 +91,16 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null)
   const [removingInviteId, setRemovingInviteId] = useState<string | null>(null)
   const [showInviteHistory, setShowInviteHistory] = useState(false)
+  const [internalDocs, setInternalDocs] = useState<InternalDoc[]>([])
+  const [docsLoading, setDocsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/internal-docs')
+      .then(r => r.ok ? r.json() : { files: [] })
+      .then(d => setInternalDocs(d.files ?? []))
+      .catch(() => setInternalDocs([]))
+      .finally(() => setDocsLoading(false))
+  }, [])
 
   function showToast(type: 'success' | 'error', message: string) {
     setToast({ type, message })
@@ -221,6 +238,59 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
         }}>
           ← Dashboard
         </Link>
+      </div>
+
+      <div className="card" style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Internal Documents
+        </h2>
+        {docsLoading ? (
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '8px 0' }}>Loading…</div>
+        ) : internalDocs.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '8px 0' }}>
+            No documents uploaded yet. Use the Supabase Dashboard or upload script to add files to the internal-docs bucket.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {internalDocs.map(doc => {
+              const sizeKB = Math.round((doc.size || 0) / 1024)
+              const ext = doc.name.split('.').pop()?.toUpperCase() ?? ''
+              const icon = ext === 'DOCX' ? '📄' : ext === 'PDF' ? '📕' : '📎'
+              return (
+                <div key={doc.name} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'var(--surface, rgba(255,255,255,0.04))',
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{doc.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {sizeKB > 0 ? `${sizeKB} KB` : 'Size unknown'} · {ext}
+                        {doc.updated && ` · Updated ${new Date(doc.updated).toLocaleDateString()}`}
+                      </div>
+                    </div>
+                  </div>
+                  <a
+                    href={`/api/internal-docs?file=${encodeURIComponent(doc.name)}`}
+                    download
+                    style={{
+                      fontSize: 12, fontWeight: 600, color: 'var(--accent)',
+                      textDecoration: 'none', padding: '6px 14px',
+                      border: '1px solid var(--border)', borderRadius: 6,
+                      background: 'transparent', cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Download
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
