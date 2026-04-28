@@ -29,7 +29,7 @@ export async function DELETE(
 
 
     // Audit: log document deletion
-    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.delete', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
+    await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, action: 'client.delete', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('SharePoint delete error:', err)

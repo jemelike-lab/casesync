@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 
 
     // Audit: log bulk client import
-    await auditLog(req, { userId, userEmail: authData?.user?.email ?? undefined, action: 'client.create', resourceType: 'clients', details: { operation: 'bulk_import' } }).catch(() => {})
+    await auditLog(req, { userId, action: 'client.create', resourceType: 'clients', details: { operation: 'bulk_import' } }).catch(() => {})
     return NextResponse.json({
       mode,
       ok: allErrors.length === 0,

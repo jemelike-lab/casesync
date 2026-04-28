@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       // Still return success — file is in SharePoint
 
     // Audit: log document upload
-    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.create', resourceType: 'sharepoint_document', details: { filename: file?.name } }).catch(() => {})
+    await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, action: 'client.create', resourceType: 'sharepoint_document', details: { filename: file?.name } }).catch(() => {})
       return NextResponse.json({ id: itemId, name: file.name, webUrl })
     }
 

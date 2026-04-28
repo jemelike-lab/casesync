@@ -20,7 +20,7 @@ export async function GET(
     const url = await getDownloadUrl(itemId)
 
     // Audit: log document download
-    await auditLog(req, { userId: session.user.id, userEmail: session.user.email ?? undefined, action: 'client.view', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
+    await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, action: 'client.view', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
     return NextResponse.redirect(url)
   } catch (err: any) {
     console.error('SharePoint download error:', err)
