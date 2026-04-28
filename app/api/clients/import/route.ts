@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { canManageTeam } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import {
 import { auditLog } from '@/lib/audit'
+import {
   buildClientInsertPayload,
   buildImportIssueCsv,
   parseClientImportText,
