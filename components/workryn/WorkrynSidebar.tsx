@@ -171,6 +171,10 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         <span className="w-mobile-title">Workryn</span>
+        <Link href="/dashboard" className="w-mobile-cs-toggle w-focus-ring" aria-label="Switch to CaseSync">
+          <ArrowLeftRight size={14} />
+          <span>CaseSync</span>
+        </Link>
         <button ref={topbarBellRef} className="w-btn w-btn-icon w-btn-ghost w-notif-bell w-focus-ring"
           onClick={() => { setNotifFromTopbar(true); setShowNotifs(v => !v) }} aria-label="Notifications">
           <Bell size={20} />
