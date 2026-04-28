@@ -25,7 +25,7 @@ function getAdminClient() {
   )
 }
 
-function getIp(req: NextRequest): string {
+function getIp(req: Request | NextRequest): string {
   return (
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
@@ -34,7 +34,7 @@ function getIp(req: NextRequest): string {
 }
 
 export async function auditLog(
-  req: NextRequest,
+  req: Request | NextRequest,
   payload: AuditPayload
 ): Promise<void> {
   try {
@@ -58,7 +58,7 @@ export async function auditLog(
 const BULK_THRESHOLD = 100
 
 export async function auditBulkAccess(
-  req: NextRequest,
+  req: Request | NextRequest,
   payload: AuditPayload & { count: number }
 ): Promise<void> {
   if (payload.count >= BULK_THRESHOLD) {
