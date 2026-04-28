@@ -1,6 +1,14 @@
-import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { isSupervisorLike } from '@/lib/roles'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import {
+  SAFE_EXPORT_SELECT,
+  SAFE_EXPORT_HEADERS,
+  safeRowToCSV,
+  PHI_EXPORT_SELECT,
+  PHI_EXPORT_HEADERS,
+  phiRowToCSV,
+} from '@/lib/export-columns'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +23,7 @@ export async function GET(req: Request) {
     const search = searchParams.get('search') ?? ''
     const assignedTo = searchParams.get('assignedTo') ?? ''
     const deadlineDate = searchParams.get('deadlineDate') ?? ''
+    const includePhi = searchParams.get('includePhi') === 'true'
 
     const supabase = await createServerClient()
     const { data: authData, error: authErr } = await supabase.auth.getUser()
@@ -37,14 +46,20 @@ export async function GET(req: Request) {
 
     const role = String(profile.role ?? '')
 
+    // PHI exports are supervisor/IT only
+    const canSeePhi =
+      includePhi && ['supervisor', 'it'].includes(role)
+
     const admin = createSupabaseJsClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    const selectString = canSeePhi ? PHI_EXPORT_SELECT : SAFE_EXPORT_SELECT
+
     let query = admin
       .from('clients')
-      .select('client_id, last_name, first_name, category, eligibility_code, eligibility_end_date, assigned_to, last_contact_date, last_contact_type, goal_pct, pos_status, assessment_due, spm_next_due, profiles!clients_assigned_to_fkey(full_name), three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date')
+      .select(selectString)
       .eq('is_active', true)
 
     if (role === 'supports_planner') {
@@ -88,16 +103,21 @@ export async function GET(req: Request) {
       query = query.eq('category', 'cpas')
     }
 
-    if (search.trim()) {
+    if (search.trim() && canSeePhi) {
       const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
       if (q) {
         query = query.or(
           `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
         )
       }
+    } else if (search.trim()) {
+      const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
+      if (q) {
+        query = query.ilike('category', `%${q}%`)
+      }
     }
 
-    query = query.order('last_name')
+    query = query.order('category')
 
     const { data, error } = await query
 
@@ -105,39 +125,28 @@ export async function GET(req: Request) {
       return new Response(error.message, { status: 500 })
     }
 
-    const headers = [
-      'Client ID', 'Last Name', 'First Name', 'Category', 'Eligibility Code', 'Eligibility End Date',
-      'Last Contact Date', 'Last Contact Type', 'Goal %', 'POS Status', 'Assigned To',
-      'Assessment Due', 'SPM Next Due'
-    ]
+    const headers = canSeePhi ? PHI_EXPORT_HEADERS : SAFE_EXPORT_HEADERS
+    const rowMapper = canSeePhi ? phiRowToCSV : safeRowToCSV
 
-    const rows = (data ?? []).map((client: any) => {
-      const plannerProfile = Array.isArray(client.profiles) ? client.profiles[0] : client.profiles
-      return [
-        client.client_id,
-        client.last_name,
-        client.first_name ?? '',
-        client.category,
-        client.eligibility_code ?? '',
-        client.eligibility_end_date ?? '',
-        client.last_contact_date ?? '',
-        client.last_contact_type ?? '',
-        client.goal_pct ?? '',
-        client.pos_status ?? '',
-        plannerProfile?.full_name ?? '',
-        client.assessment_due ?? '',
-        client.spm_next_due ?? '',
-      ]
-    })
+    const rows = (data ?? []).map((client: any) => rowMapper(client))
 
     const csv = [headers, ...rows]
       .map((row) => row.map(csvEscape).join(','))
       .join('\n')
 
+    // Audit trail (was missing before)
+    await admin.from('audit_exports').insert({
+      user_id: userId,
+      export_type: canSeePhi ? 'clients_csv_phi' : 'clients_csv',
+      filter_params: { filter, assignedTo, search, deadlineDate, includePhi: canSeePhi },
+      row_count: (data ?? []).length,
+    })
+
+    const label = canSeePhi ? 'phi' : 'safe'
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="casesync-export-${new Date().toISOString().split('T')[0]}.csv"`,
+        'Content-Disposition': `attachment; filename="casesync-export-${label}-${new Date().toISOString().split('T')[0]}.csv"`,
       },
     })
   } catch (err) {
