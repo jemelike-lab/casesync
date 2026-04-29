@@ -1,29 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
+import { checkReadOnly } from '@/lib/read-only'
 
 /**
  * CaseSync — Centralized API Authorization Guard
  *
  * Wraps any API route handler with auth + role validation so individual
- * routes never need to repeat the getUser → getProfile → check role flow.
+ * routes never need to repeat the getUser > getProfile > check role flow.
+ *
+ * Also enforces read-only mode: when CASESYNC_READ_ONLY=true, all write
+ * methods (POST/PUT/PATCH/DELETE) return 503 automatically.
  *
  * Usage:
  *   import { withAuth } from '@/lib/api-auth'
  *
- *   // Allow any authenticated user
  *   export const GET = withAuth(async (req, ctx) => {
- *     // ctx.user, ctx.profile, ctx.role, ctx.supabase, ctx.admin
  *     return NextResponse.json({ ok: true })
  *   })
  *
- *   // Restrict to specific roles
  *   export const POST = withAuth(
  *     async (req, ctx) => { ... },
  *     { roles: ['supervisor', 'it'] }
  *   )
  *
- *   // Restrict to elevated roles (team_manager, supervisor, it)
  *   export const DELETE = withAuth(
  *     async (req, ctx) => { ... },
  *     { roles: 'elevated' }
@@ -32,33 +32,26 @@ import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 
 // ---------- types ----------
 
-export type CaseSyncRole = 'supports_planner' | 'team_manager' | 'supervisor' | 'it'
+export type CaseSyncRole =
+  | 'supports_planner'
+  | 'team_manager'
+  | 'supervisor'
+  | 'it'
 
 const ELEVATED_ROLES: CaseSyncRole[] = ['team_manager', 'supervisor', 'it']
 const ALL_ROLES: CaseSyncRole[] = ['supports_planner', ...ELEVATED_ROLES]
 
 export interface AuthContext {
-  /** The authenticated Supabase user */
   user: { id: string; email?: string }
-  /** The user's profile row from the `profiles` table */
   profile: { id: string; role: string; full_name?: string | null }
-  /** Shorthand for profile.role */
   role: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  /** Supabase client authenticated as the user (uses publishable key + cookies) */
   supabase: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  /** Supabase admin client (service role) — use only after auth is confirmed */
   admin: any
 }
 
 export interface WithAuthOptions {
-  /**
-   * Which roles are allowed to access this route.
-   * - `CaseSyncRole[]` — explicit list of allowed roles
-   * - `'elevated'` — shorthand for team_manager, supervisor, it
-   * - `'any'` (default) — any authenticated user with a valid profile
-   */
   roles?: CaseSyncRole[] | 'elevated' | 'any'
 }
 
@@ -86,9 +79,14 @@ export function withAuth(handler: ApiHandler, options?: WithAuthOptions) {
     routeCtx?: { params: Record<string, string> }
   ): Promise<NextResponse | Response> {
     try {
+      // 0. Read-only mode check — block writes before doing any DB work
+      const readOnlyBlock = checkReadOnly(req)
+      if (readOnlyBlock) return readOnlyBlock
+
       // 1. Authenticate via Supabase session cookie
       const supabase = await createServerClient()
-      const { data: authData, error: authErr } = await supabase.auth.getUser()
+      const { data: authData, error: authErr } =
+        await supabase.auth.getUser()
 
       if (authErr || !authData?.user) {
         return NextResponse.json(
@@ -117,12 +115,14 @@ export function withAuth(handler: ApiHandler, options?: WithAuthOptions) {
       const role = String(profile.role ?? '').toLowerCase()
       if (!allowedRoles.includes(role as CaseSyncRole)) {
         return NextResponse.json(
-          { error: `Forbidden — role '${role}' does not have access to this resource` },
+          {
+            error: `Forbidden — role '${role}' does not have access to this resource`,
+          },
           { status: 403 }
         )
       }
 
-      // 4. Build the admin client (service role) for queries that need to bypass RLS
+      // 4. Build the admin client (service role) for RLS-bypassing queries
       const admin = createSupabaseJsClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -143,7 +143,8 @@ export function withAuth(handler: ApiHandler, options?: WithAuthOptions) {
 
       return await handler(req, ctx, routeCtx)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Internal server error'
+      const message =
+        err instanceof Error ? err.message : 'Internal server error'
       console.error('[api-auth] Unhandled error:', message)
       return NextResponse.json({ error: message }, { status: 500 })
     }
