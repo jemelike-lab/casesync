@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { enforceMfa } from '@/lib/enforce-mfa'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
@@ -26,6 +27,9 @@ export default async function WorkrynLayout({ children }: { children: React.Reac
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  // Enforce MFA for all roles (HIPAA compliance)
+  await enforceMfa()
 
   let session = await getWorkrynSession()
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Header from '@/components/Header'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
@@ -27,6 +27,8 @@ interface Props {
 export default function SecurityPageClient({ user, profile, factors }: Props) {
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const mfaRequired = searchParams.get('mfa_required') === '1'
   const [enrolling, setEnrolling] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [totpSecret, setTotpSecret] = useState<string | null>(null)
@@ -119,6 +121,15 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
       <Header user={user} profile={profile} />
       <main style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 100px' }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 24 }}>🔐 Security Settings</h1>
+
+        {mfaRequired && !activeFactor && (
+          <div style={{ background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 13 }}>
+            <div style={{ fontWeight: 600, color: '#ff9f0a', marginBottom: 4 }}>Two-factor authentication is required</div>
+            <div style={{ color: 'var(--text-secondary)' }}>
+              Your organization requires all users to enable 2FA for HIPAA compliance. Please set up an authenticator app below to continue using CaseSync.
+            </div>
+          </div>
+        )}
 
         {message && (
           <div style={{ background: 'rgba(48,209,88,0.1)', border: '1px solid rgba(48,209,88,0.3)', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#30d158' }}>

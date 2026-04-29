@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Profile } from '@/lib/types'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import SecurityPageClient from './SecurityPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -22,10 +23,12 @@ export default async function SecurityPage() {
   const factors = (mfaData?.all ?? []) as any[]
 
   return (
-    <SecurityPageClient
-      user={user}
-      profile={profile as Profile}
-      factors={factors}
-    />
+    <Suspense fallback={null}>
+      <SecurityPageClient
+        user={user}
+        profile={profile as Profile}
+        factors={factors}
+      />
+    </Suspense>
   )
 }

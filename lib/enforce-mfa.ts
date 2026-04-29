@@ -1,12 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-const MFA_REQUIRED_ROLES = ['supervisor', 'it']
+const MFA_REQUIRED_ROLES = ['supervisor', 'it', 'team_manager', 'supports_planner', 'case_manager']
 
 /**
  * Check if the current user's role requires MFA and if they have it enabled.
  * Call this in server-rendered layouts for protected routes.
  * Redirects to /settings/security if MFA is required but not enrolled.
+ *
+ * All roles now require MFA for HIPAA compliance (Phase 1, April 2026).
  */
 export async function enforceMfa() {
   try {
