@@ -18,13 +18,16 @@ export async function enforceMfa() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, mfa_email_enabled')
       .eq('id', user.id)
       .single()
 
     if (!profile || !MFA_REQUIRED_ROLES.includes(profile.role)) return
 
-    // Check if user has MFA enrolled
+    // Check if user has email MFA enabled
+    if (profile.mfa_email_enabled) return
+
+    // Check if user has TOTP MFA enrolled
     const { data: factors } = await supabase.auth.mfa.listFactors()
     const totpFactors = (factors as any)?.totp ?? (factors as any)?.all?.filter((f: any) => f.factor_type === 'totp') ?? []
     const hasVerifiedFactor = Array.isArray(totpFactors) && totpFactors.some(

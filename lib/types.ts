@@ -8,6 +8,7 @@ export interface Profile {
   created_at: string
   team_manager_id?: string | null
   joined_at?: string | null
+  mfa_email_enabled?: boolean
 }
 
 export type InviteStatus = 'pending' | 'accepted' | 'expired'

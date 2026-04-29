@@ -39,6 +39,15 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
   const [unenrolling, setUnenrolling] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [message, setMessage] = useState('')
+  // Email MFA state
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailCode, setEmailCode] = useState('')
+  const [emailVerifying, setEmailVerifying] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [emailUnenrolling, setEmailUnenrolling] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const emailMfaEnabled = profile?.mfa_email_enabled === true
 
   const activeFactor = factors.find(f => f.status === 'verified')
   const lastLogin = user.last_sign_in_at
@@ -100,6 +109,56 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
     setUnenrolling(false)
   }
 
+  async function sendEmailCode() {
+    setEmailSending(true)
+    setEmailError('')
+    try {
+      const res = await fetch('/api/auth/mfa-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setEmailError(data.error || 'Failed to send code'); return }
+      setEmailSent(true)
+    } catch { setEmailError('Network error') }
+    finally { setEmailSending(false) }
+  }
+
+  async function verifyEmailCode() {
+    if (emailCode.length < 6) return
+    setEmailVerifying(true)
+    setEmailError('')
+    try {
+      const res = await fetch('/api/auth/mfa-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', code: emailCode }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setEmailError(data.error || 'Verification failed'); return }
+      setMessage('✅ Email 2FA enabled successfully!')
+      setEmailSent(false)
+      setEmailCode('')
+      router.refresh()
+    } catch { setEmailError('Network error') }
+    finally { setEmailVerifying(false) }
+  }
+
+  async function unenrollEmail() {
+    if (!confirm('Disable email 2FA?')) return
+    setEmailUnenrolling(true)
+    try {
+      const res = await fetch('/api/auth/mfa-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unenroll' }),
+      })
+      if (res.ok) { setMessage('Email 2FA has been disabled.'); router.refresh() }
+    } catch { /* ignore */ }
+    finally { setEmailUnenrolling(false) }
+  }
+
   async function signOutAll() {
     setSigningOut(true)
     const { error } = await supabase.auth.signOut({ scope: 'global' })
@@ -122,11 +181,11 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
       <main style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 100px' }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 24 }}>🔐 Security Settings</h1>
 
-        {mfaRequired && !activeFactor && (
+        {mfaRequired && !activeFactor && !emailMfaEnabled && (
           <div style={{ background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 13 }}>
             <div style={{ fontWeight: 600, color: '#ff9f0a', marginBottom: 4 }}>Two-factor authentication is required</div>
             <div style={{ color: 'var(--text-secondary)' }}>
-              Your organization requires all users to enable 2FA for HIPAA compliance. Please set up an authenticator app below to continue using CaseSync.
+              Your organization requires all users to enable 2FA for HIPAA compliance. Choose one of the options below — either an authenticator app or email verification code.
             </div>
           </div>
         )}
@@ -148,9 +207,9 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
-              <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Two-Factor Authentication</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Authenticator App</h2>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                Add an extra layer of security with TOTP
+                Use Google Authenticator, Authy, or similar
               </div>
             </div>
             {activeFactor ? (
@@ -211,6 +270,72 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
               {verifyError && <div style={{ fontSize: 12, color: '#ff453a', marginBottom: 8 }}>{verifyError}</div>}
               <button onClick={startEnroll} disabled={enrolling} className="btn-primary" style={{ fontSize: 13 }}>
                 {enrolling ? 'Loading…' : 'Enable 2FA'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Email Code 2FA */}
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Email Verification Code</h2>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                Receive a 6-digit code at {user.email}
+              </div>
+            </div>
+            {emailMfaEnabled ? (
+              <span style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+                ✓ Enabled
+              </span>
+            ) : (
+              <span style={{ background: 'rgba(255,159,10,0.15)', color: '#ff9f0a', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+                Not enabled
+              </span>
+            )}
+          </div>
+
+          {emailMfaEnabled ? (
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                A verification code will be sent to your email each time you sign in.
+              </div>
+              <button onClick={unenrollEmail} disabled={emailUnenrolling} style={{ background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#ff453a', cursor: 'pointer' }}>
+                {emailUnenrolling ? 'Disabling…' : 'Disable email 2FA'}
+              </button>
+            </div>
+          ) : emailSent ? (
+            <div>
+              <div style={{ fontSize: 13, marginBottom: 12 }}>
+                We sent a 6-digit code to <strong>{user.email}</strong>. Enter it below:
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <input
+                  type="text"
+                  placeholder="000000"
+                  value={emailCode}
+                  onChange={e => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  style={{ ...inputStyle, maxWidth: 140, fontFamily: 'monospace', letterSpacing: '0.2em', textAlign: 'center' }}
+                />
+              </div>
+              {emailError && <div style={{ fontSize: 12, color: '#ff453a', marginBottom: 8 }}>{emailError}</div>}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={verifyEmailCode} disabled={emailCode.length < 6 || emailVerifying} className="btn-primary" style={{ fontSize: 13 }}>
+                  {emailVerifying ? 'Verifying…' : 'Activate email 2FA'}
+                </button>
+                <button onClick={sendEmailCode} disabled={emailSending} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
+                  {emailSending ? 'Sending…' : 'Resend code'}
+                </button>
+                <button onClick={() => { setEmailSent(false); setEmailCode(''); setEmailError('') }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {emailError && <div style={{ fontSize: 12, color: '#ff453a', marginBottom: 8 }}>{emailError}</div>}
+              <button onClick={sendEmailCode} disabled={emailSending} className="btn-primary" style={{ fontSize: 13 }}>
+                {emailSending ? 'Sending…' : 'Enable email 2FA'}
               </button>
             </div>
           )}
