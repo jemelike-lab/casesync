@@ -52,6 +52,7 @@ export default function RootLayout({
         <SessionGuard />
         <InstallBanner />
         <Analytics />
+      <script dangerouslySetInnerHTML={{__html: "if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});}"}} />
       </body>
     </html>
   )
