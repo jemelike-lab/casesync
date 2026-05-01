@@ -627,6 +627,20 @@
 
 .wd-header { margin-bottom: 32px; }
 
+.wd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wd-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--w-radius-md);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .wd-greeting {
   font-size: 1.75rem;
   font-weight: 800;
