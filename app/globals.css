@@ -393,7 +393,7 @@ input[type="time"] {
     padding: 0 16px !important;
   }
 
-  main {
+  main:not(.w-page-content) {
     padding: 16px !important;
     padding-bottom: 80px !important;
   }
