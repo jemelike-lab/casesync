@@ -1303,7 +1303,7 @@
 
 
 /* MOBILE TOPBAR (hidden on desktop) */
-.w-mobile-topbar { display:none; position:fixed; top:0; left:0; right:0; min-height:56px; padding:0 12px; padding-top:env(safe-area-inset-top,0px); background:linear-gradient(180deg,rgba(12,22,41,0.97),rgba(15,27,51,0.95)); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid rgba(255,255,255,0.06); z-index:41; align-items:center; gap:12px; }
+.w-mobile-topbar { display:none; position:fixed; top:0; left:0; right:0; min-height:56px; padding:0 12px; padding-top:constant(safe-area-inset-top); padding-top:env(safe-area-inset-top,0px); background:linear-gradient(180deg,rgba(12,22,41,0.97),rgba(15,27,51,0.95)); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid rgba(255,255,255,0.06); z-index:41; align-items:center; gap:12px; }
 .w-mobile-title { flex:1; font-size:1.0625rem; font-weight:700; color:#f1f5f9; letter-spacing:-0.01em; }
 .w-hamburger { display:flex; align-items:center; justify-content:center; width:40px; height:40px; background:transparent; border:none; color:#f1f5f9; cursor:pointer; border-radius:12px; flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:background 200ms ease; }
 .w-hamburger:hover,.w-hamburger:active { background:rgba(255,255,255,0.08); }
@@ -1314,7 +1314,7 @@
   .w-sidebar-backdrop { display:block; }
   .w-sidebar { transform:translateX(-100%); transition:transform 280ms cubic-bezier(0.4,0,0.2,1); z-index:50; }
   .w-sidebar.open { transform:translateX(0); box-shadow:8px 0 30px rgba(0,0,0,0.4); }
-  .w-app-shell .w-page-content { margin-left:0; padding:calc(56px + env(safe-area-inset-top,0px) + 24px) 16px 24px; }
+  .w-app-shell .w-page-content { margin-left:0; padding:80px 16px 24px; padding-top:calc(56px + constant(safe-area-inset-top) + 24px); padding-top:calc(56px + env(safe-area-inset-top,0px) + 24px); }
   .wd-stats { grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
   .wd-stat-card { padding:14px; }
   .wd-stat-value { font-size:1.25rem; }
