@@ -1635,10 +1635,10 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
             clients={clients}
             planners={planners}
             teamManagers={teamManagers}
-            onOpenAllClients={() => { window.location.href = `/team?full=1&filter=all` }}
-            onOpenOverdue={() => { window.location.href = `/team?full=1&filter=overdue` }}
-            onOpenDueThisWeek={() => { window.location.href = `/team?full=1&filter=due_this_week` }}
-            onOpenQuiet={() => { window.location.href = `/team?full=1&filter=no_contact_7` }}
+            onOpenAllClients={() => { window.location.href = `/team?filter=all` }}
+            onOpenOverdue={() => { window.location.href = `/team?filter=overdue` }}
+            onOpenDueThisWeek={() => { window.location.href = `/team?filter=due_this_week` }}
+            onOpenQuiet={() => { window.location.href = `/team?filter=no_contact_7` }}
           />
           <TeamManagerSummaryTable clients={clients} planners={planners} teamManagers={teamManagers} />
         </>

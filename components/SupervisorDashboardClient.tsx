@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact } from '@/lib/types'
+import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact, getOverdueCount, formatDate } from '@/lib/types'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
 
@@ -300,16 +300,65 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Active Clients" value={totalStats.clients} onClick={() => setActiveFilter('all')} active={activeFilter === 'all'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" onClick={() => setActiveFilter('overdue')} active={activeFilter === 'overdue'} />
-        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" onClick={() => setActiveFilter('due_today')} active={activeFilter === 'due_today'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" onClick={() => setActiveFilter('due_this_week')} active={activeFilter === 'due_this_week'} />
-        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" onClick={() => setActiveFilter('due_next_14_days')} active={activeFilter === 'due_next_14_days'} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: activeFilter && activeFilter !== 'all' ? 12 : 28 }}>
+        <StatCard label="Active Clients" value={totalStats.clients} onClick={() => setActiveFilter(activeFilter === 'all' ? null : 'all')} active={activeFilter === 'all'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" onClick={() => setActiveFilter(activeFilter === 'overdue' ? null : 'overdue')} active={activeFilter === 'overdue'} />
+        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" onClick={() => setActiveFilter(activeFilter === 'due_today' ? null : 'due_today')} active={activeFilter === 'due_today'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" onClick={() => setActiveFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')} active={activeFilter === 'due_this_week'} />
+        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" onClick={() => setActiveFilter(activeFilter === 'due_next_14_days' ? null : 'due_next_14_days')} active={activeFilter === 'due_next_14_days'} />
         <StatCard label="Supports Planners" value={planners.length} href="/team?full=1" active={false} />
       </div>
 
-      {fullFilterLabel && (
+      {/* Compact client list — appears inline when a stat card filter is active */}
+      {activeFilter && filteredClients.length > 0 && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: `3px solid ${activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : activeFilter === 'due_next_14_days' ? 'var(--accent)' : activeFilter === 'no_contact_7' ? 'var(--yellow)' : 'var(--border)'}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : 'var(--text)' }}>
+                {activeFilter === 'all' ? 'Active Clients' : activeFilter === 'overdue' ? 'Overdue' : activeFilter === 'due_today' ? 'Due Today' : activeFilter === 'due_this_week' ? 'Due This Week' : activeFilter === 'due_next_14_days' ? 'Next 14 Days' : activeFilter === 'no_contact_7' ? 'No Contact 7+ Days' : 'Filtered'}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 99, padding: '2px 8px' }}>
+                {filteredClients.length} client{filteredClients.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <button onClick={() => setActiveFilter(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, padding: '4px 8px' }}>✕</button>
+          </div>
+          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            {filteredClients.map((client, idx) => {
+              const daysSince = getDaysSinceContact(client.last_contact_date)
+              const overdueCount = getOverdueCount(client)
+              const risk = getRiskLevel(client)
+              return (
+                <Link key={client.id} href={`/clients/${client.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', textDecoration: 'none', borderBottom: idx < filteredClients.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: risk === 'high' ? 'var(--red)' : risk === 'medium' ? 'var(--orange)' : 'var(--green)' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {client.last_name}{client.first_name ? `, ${client.first_name}` : ''}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
+                      {client.client_id} · {client.category.toUpperCase()}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: client.profiles?.full_name ? 'var(--text-secondary)' : 'var(--orange)', fontWeight: 500, minWidth: 80, textAlign: 'right', flexShrink: 0 }}>
+                    {client.profiles?.full_name?.split(' ')[0] ?? 'Unassigned'}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                    {overdueCount > 0 && <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 700, background: 'rgba(255,69,58,0.12)', borderRadius: 4, padding: '2px 6px' }}>{overdueCount} overdue</span>}
+                    {daysSince !== null && daysSince >= 7 && <span style={{ fontSize: 11, color: 'var(--yellow)', fontWeight: 600 }}>{daysSince}d no contact</span>}
+                    {client.spm_next_due && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>SPM {formatDate(client.spm_next_due)}</span>}
+                  </div>
+                  <span style={{ fontSize: 14, color: 'var(--text-secondary)', flexShrink: 0 }}>→</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Legacy full-view: only when navigated with ?full=1 and no inline filter active */}
+      {fullFilterLabel && !activeFilter && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
