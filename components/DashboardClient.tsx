@@ -73,6 +73,124 @@ function StatCard({ label, value, color, onClick, active }: {
   )
 }
 
+function StatClientList({ clients, label, color, onClose }: {
+  clients: Client[]
+  label: string
+  color: string
+  onClose: () => void
+}) {
+  if (clients.length === 0) return null
+
+  return (
+    <div className="card slide-in-up" style={{
+      padding: 0,
+      overflow: 'hidden',
+      marginBottom: 20,
+      borderLeft: `3px solid ${color}`,
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 14px',
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--surface-2)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color }}>{label}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 99, padding: '2px 8px' }}>
+            {clients.length} client{clients.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontSize: 13,
+            padding: '4px 8px',
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+        {clients.map((client, idx) => {
+          const daysSince = getDaysSinceContact(client.last_contact_date)
+          const overdueCount = getOverdueCount(client)
+          const risk = getRiskLevel(client)
+
+          return (
+            <Link
+              key={client.id}
+              href={`/clients/${client.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '10px 14px',
+                textDecoration: 'none',
+                borderBottom: idx < clients.length - 1 ? '1px solid var(--border)' : 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            >
+              {/* Risk indicator */}
+              <div style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                flexShrink: 0,
+                background: risk === 'high' ? 'var(--red)' : risk === 'medium' ? 'var(--orange)' : 'var(--green)',
+              }} />
+
+              {/* Name & ID */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {client.last_name}{client.first_name ? `, ${client.first_name}` : ''}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
+                  {client.client_id} · {client.category.toUpperCase()}
+                </div>
+              </div>
+
+              {/* Planner */}
+              <div style={{ fontSize: 11, color: client.profiles?.full_name ? 'var(--text-secondary)' : 'var(--orange)', fontWeight: 500, minWidth: 80, textAlign: 'right', flexShrink: 0 }}>
+                {client.profiles?.full_name?.split(' ')[0] ?? 'Unassigned'}
+              </div>
+
+              {/* Key metric based on context */}
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                {overdueCount > 0 && (
+                  <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 700, background: 'rgba(255,69,58,0.12)', borderRadius: 4, padding: '2px 6px' }}>
+                    {overdueCount} overdue
+                  </span>
+                )}
+                {daysSince !== null && daysSince >= 7 && (
+                  <span style={{ fontSize: 11, color: 'var(--yellow)', fontWeight: 600 }}>
+                    {daysSince}d no contact
+                  </span>
+                )}
+                {client.spm_next_due && (
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                    SPM {formatDate(client.spm_next_due)}
+                  </span>
+                )}
+              </div>
+
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)', flexShrink: 0 }}>→</span>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAlert }: {
   overdue: number; dueThisWeek: number; eligibilitySoon: number;
   activeAlert: FilterType | null; onAlert: (f: FilterType | null) => void
@@ -1632,12 +1750,33 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       />
 
       {/* Stats — always show full-scope counts so clicking any card shows correct data */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: alertFilter ? 10 : 24 }}>
         <StatCard label="Active Clients" value={fullSummaryStats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
         <StatCard label="Overdue" value={fullSummaryStats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
         <StatCard label="Due This Week" value={fullSummaryStats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
         <StatCard label="No Contact 7+ Days" value={fullSummaryStats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
       </div>
+
+      {/* Compact client list for the active stat filter */}
+      {alertFilter && alertFilter !== 'all' && filtered.length > 0 && (
+        <StatClientList
+          clients={filtered}
+          label={
+            alertFilter === 'overdue' ? 'Overdue'
+            : alertFilter === 'due_this_week' ? 'Due This Week'
+            : alertFilter === 'no_contact_7' ? 'No Contact 7+ Days'
+            : alertFilter === 'eligibility_ending_soon' ? 'Eligibility Ending Soon'
+            : String(alertFilter)
+          }
+          color={
+            alertFilter === 'overdue' ? 'var(--red)'
+            : alertFilter === 'due_this_week' ? 'var(--orange)'
+            : alertFilter === 'no_contact_7' ? 'var(--yellow)'
+            : 'var(--accent)'
+          }
+          onClose={() => handleAlertClick(null)}
+        />
+      )}
 
       {fullMode && (
         <div className="card" style={{ marginBottom: 16, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
