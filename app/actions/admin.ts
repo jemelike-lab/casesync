@@ -197,7 +197,7 @@ export async function removePendingInvite(inviteId: string) {
 
   if (userId) {
     // Revoke all active sessions before deleting
-    await supabase.rpc('revoke_user_sessions', { target_user_id: userId }).catch(() => {})
+    try { await supabase.rpc('revoke_user_sessions', { target_user_id: userId }) } catch { /* non-fatal */ }
 
     const { error: profileDeleteError } = await supabase
       .from('profiles')
@@ -275,9 +275,9 @@ export async function removeUser(userId: string) {
   }
 
   // Revoke all active sessions before deleting
-  await supabase.rpc('revoke_user_sessions', { target_user_id: userId }).catch((err: unknown) => {
+  try { await supabase.rpc('revoke_user_sessions', { target_user_id: userId }) } catch (err) {
     console.error('[removeUser] session revocation error:', err)
-  })
+  }
 
   const { error: inviteError } = await supabase
     .from('user_invites')
