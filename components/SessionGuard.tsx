@@ -49,11 +49,6 @@ export default function SessionGuard() {
           redirectToLogin('signed_out')
           break
 
-        case 'USER_DELETED':
-          setAuthed(false)
-          redirectToLogin('account_removed')
-          break
-
         default:
           // SIGNED_IN, INITIAL_SESSION, PASSWORD_RECOVERY, etc.
           setAuthed(!!session)
