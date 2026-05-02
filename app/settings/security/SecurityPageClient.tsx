@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Header from '@/components/Header'
 import { createClient } from '@/lib/supabase/client'
@@ -46,6 +46,11 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
   const [emailVerifying, setEmailVerifying] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [emailUnenrolling, setEmailUnenrolling] = useState(false)
+
+  // About / Check for Updates state
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'update-available' | 'applying' | 'error'>('idle')
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
+  const [serverVersion, setServerVersion] = useState<string | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const emailMfaEnabled = profile?.mfa_email_enabled === true
 
@@ -173,6 +178,43 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
   const inputStyle: React.CSSProperties = {
     background: '#1c1c1e', border: '1px solid #333336', borderRadius: 6, color: '#f5f5f7',
     padding: '8px 12px', fontSize: 13, width: '100%',
+  }
+
+  async function checkForUpdates() {
+    setUpdateStatus('checking')
+    setUpdateMessage(null)
+    setServerVersion(null)
+    try {
+      const res = await fetch('/api/version', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to check')
+      const data = await res.json()
+      setServerVersion(data.shortVersion)
+      const reg = await navigator.serviceWorker?.getRegistration()
+      if (reg) { await reg.update(); await new Promise(r => setTimeout(r, 1500)) }
+      const hasWaitingSW = !!reg?.waiting
+      if (hasWaitingSW) {
+        setUpdateStatus('update-available')
+        setUpdateMessage(`Version ${data.shortVersion} is available`)
+      } else {
+        setUpdateStatus('up-to-date')
+        setUpdateMessage(`You're on the latest version (${data.shortVersion})`)
+        setTimeout(() => setUpdateStatus('idle'), 5000)
+      }
+    } catch {
+      setUpdateStatus('error')
+      setUpdateMessage('Could not check for updates. Try again later.')
+      setTimeout(() => setUpdateStatus('idle'), 5000)
+    }
+  }
+
+  async function applyUpdate() {
+    setUpdateStatus('applying')
+    setUpdateMessage('Applying update…')
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration()
+      if (reg?.waiting) { reg.waiting.postMessage('SKIP_WAITING'); await new Promise(r => setTimeout(r, 800)) }
+      window.location.reload()
+    } catch { window.location.reload() }
   }
 
   return (
@@ -358,6 +400,74 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
           <button onClick={signOutAll} disabled={signingOut} style={{ background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#ff453a', cursor: 'pointer' }}>
             {signingOut ? 'Signing out…' : 'Sign out all sessions'}
           </button>
+        </div>
+
+        {/* About & Check for Updates */}
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>About CaseSync</h2>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+              CaseSync updates automatically, but you can manually check for and apply the latest version here. Especially useful for the installed PWA.
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {(updateStatus === 'idle' || updateStatus === 'error' || updateStatus === 'up-to-date') && (
+                <button onClick={checkForUpdates} style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                  🔄 Check for Updates
+                </button>
+              )}
+              {updateStatus === 'checking' && (
+                <button disabled style={{ background: '#333', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#999', cursor: 'not-allowed' }}>
+                  Checking…
+                </button>
+              )}
+              {updateStatus === 'update-available' && (
+                <button onClick={applyUpdate} style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                  ⬇️ Apply Update
+                </button>
+              )}
+              {updateStatus === 'applying' && (
+                <button disabled style={{ background: '#333', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#999', cursor: 'not-allowed' }}>
+                  Applying…
+                </button>
+              )}
+            </div>
+            {updateMessage && (
+              <div style={{
+                marginTop: 10, padding: '8px 12px', borderRadius: 6, fontSize: 12,
+                background: updateStatus === 'error' ? 'rgba(255,69,58,0.1)' : 'rgba(48,209,88,0.1)',
+                border: `1px solid ${updateStatus === 'error' ? 'rgba(255,69,58,0.3)' : 'rgba(48,209,88,0.3)'}`,
+                color: updateStatus === 'error' ? '#ff453a' : '#30d158',
+              }}>
+                {updateMessage}
+              </div>
+            )}
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Application</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>CaseSync</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Organization</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>Beatrice Loving Heart</div>
+              </div>
+              {serverVersion && (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Server Version</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, fontFamily: 'monospace' }}>{serverVersion}</div>
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Platform</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>
+                  {typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)')?.matches ? 'Installed (PWA)' : 'Browser')}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </>
