@@ -10,6 +10,7 @@ const DATA_RATE_WINDOW_MS = 60 * 1000
 const PUBLIC_PATHS = [
   '/login', '/accept-invite', '/reset-password', '/onboarding',
   '/offline', '/security', '/api/auth', '/api/health', '/api/webhooks',
+  '/api/version',
 ]
 
 const DATA_API_PREFIXES = [
@@ -77,7 +78,9 @@ export async function proxy(request: NextRequest) {
 
   if (user.user_metadata?.disabled) {
     await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('reason', 'account_deactivated')
+    return NextResponse.redirect(loginUrl)
   }
 
   const now = Math.floor(Date.now() / 1000)
