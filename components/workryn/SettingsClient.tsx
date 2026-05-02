@@ -5,7 +5,7 @@ import {
   User as UserIcon, Palette, Lock, Bell, Camera, Trash2, Save,
   Loader2, Check, AlertCircle, Sun, Moon, Monitor, Eye, EyeOff,
   BellOff, Volume2, Mail, Smartphone, MessageSquare,
-  MoonStar, ShieldAlert,
+  MoonStar, ShieldAlert, Info, RefreshCw, CheckCircle2, Download,
 } from 'lucide-react'
 import { getInitials, formatDate } from '@/lib/workryn/utils'
 import { useTheme, type Theme } from '@/components/workryn/ThemeProvider'
@@ -115,6 +115,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'security', label: 'Security', icon: Lock },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'about', label: 'About', icon: Info },
 ] as const
 
 const AVATAR_COLORS = [
@@ -191,6 +192,11 @@ export default function SettingsClient({ profile: initialProfile, departments }:
   const pendingChannelChangesRef = useRef<ChannelMatrixFull>({})
 
   const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
+
+  // About / Check for Updates state
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'update-available' | 'applying' | 'error'>('idle')
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
+  const [serverVersion, setServerVersion] = useState<string | null>(null)
 
   // Lazy-load notification preferences the first time the user opens the section.
   useEffect(() => {
@@ -476,6 +482,66 @@ export default function SettingsClient({ profile: initialProfile, departments }:
     } finally {
       setPasswordSaving(false)
       setTimeout(() => setPasswordMessage(null), 4000)
+    }
+  }
+
+  async function checkForUpdates() {
+    setUpdateStatus('checking')
+    setUpdateMessage(null)
+    setServerVersion(null)
+    try {
+      // 1. Fetch the latest version from the server
+      const res = await fetch('/api/version', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to check for updates')
+      const data = await res.json()
+      setServerVersion(data.shortVersion)
+
+      // 2. Check if the service worker has a waiting update
+      const reg = await navigator.serviceWorker?.getRegistration()
+      if (reg) {
+        await reg.update() // Force SW update check
+        // Give it a moment to detect a new SW
+        await new Promise(r => setTimeout(r, 1500))
+      }
+
+      const hasWaitingSW = !!reg?.waiting
+      // 3. Compare: if the page was loaded with a different commit than what
+      //    the server now reports, or if there's a waiting SW, an update is available.
+      //    We embed the build version at build time via the API response.
+      const currentPageVersion = document.querySelector<HTMLMetaElement>('meta[name="x-casesync-version"]')?.content
+      const versionMismatch = currentPageVersion && currentPageVersion !== data.shortVersion
+
+      if (hasWaitingSW || versionMismatch) {
+        setUpdateStatus('update-available')
+        setUpdateMessage(`Version ${data.shortVersion} is available`)
+      } else {
+        setUpdateStatus('up-to-date')
+        setUpdateMessage(`You're on the latest version (${data.shortVersion})`)
+        setTimeout(() => setUpdateStatus('idle'), 5000)
+      }
+    } catch {
+      setUpdateStatus('error')
+      setUpdateMessage('Could not check for updates. Try again later.')
+      setTimeout(() => setUpdateStatus('idle'), 5000)
+    }
+  }
+
+  async function applyUpdate() {
+    setUpdateStatus('applying')
+    setUpdateMessage('Applying update…')
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration()
+      if (reg?.waiting) {
+        // Tell the waiting SW to activate
+        reg.waiting.postMessage('SKIP_WAITING')
+        // Wait a beat for activation, then reload
+        await new Promise(r => setTimeout(r, 800))
+      }
+      // Hard reload to get fresh assets
+      window.location.reload()
+    } catch {
+      // Fallback: just reload
+      window.location.reload()
     }
   }
 
@@ -1067,6 +1133,94 @@ export default function SettingsClient({ profile: initialProfile, departments }:
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* ABOUT */}
+          {section === 'about' && (
+            <div className="settings-section animate-slide-up">
+              <h2 style={{ marginBottom: 4 }}>About CaseSync</h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
+                App information and updates
+              </p>
+
+              <div className="settings-card glass-card">
+                <h3 style={{ marginBottom: 16 }}>Check for Updates</h3>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
+                  CaseSync updates automatically, but you can manually check for and apply the latest version here.
+                  This is especially useful if you have the app installed as a PWA on your home screen.
+                </p>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {(updateStatus === 'idle' || updateStatus === 'error' || updateStatus === 'up-to-date') && (
+                    <button
+                      className="btn btn-gradient focus-ring"
+                      onClick={checkForUpdates}
+                    >
+                      <RefreshCw size={16} /> Check for Updates
+                    </button>
+                  )}
+
+                  {updateStatus === 'checking' && (
+                    <button className="btn btn-gradient focus-ring" disabled>
+                      <Loader2 size={16} className="spin" /> Checking…
+                    </button>
+                  )}
+
+                  {updateStatus === 'update-available' && (
+                    <button
+                      className="btn btn-gradient focus-ring"
+                      onClick={applyUpdate}
+                      style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+                    >
+                      <Download size={16} /> Apply Update
+                    </button>
+                  )}
+
+                  {updateStatus === 'applying' && (
+                    <button className="btn btn-gradient focus-ring" disabled>
+                      <Loader2 size={16} className="spin" /> Applying…
+                    </button>
+                  )}
+                </div>
+
+                {updateMessage && (
+                  <div className={`settings-alert ${updateStatus === 'error' ? 'error' : updateStatus === 'up-to-date' ? 'success' : updateStatus === 'update-available' ? 'success' : ''}`}
+                    style={{ marginTop: 16 }}
+                  >
+                    {updateStatus === 'up-to-date' && <CheckCircle2 size={16} />}
+                    {updateStatus === 'update-available' && <Download size={16} />}
+                    {updateStatus === 'error' && <AlertCircle size={16} />}
+                    {updateMessage}
+                  </div>
+                )}
+              </div>
+
+              <div className="settings-card glass-card" style={{ marginTop: 16 }}>
+                <h3 style={{ marginBottom: 16 }}>App Information</h3>
+                <div className="account-info-grid">
+                  <div>
+                    <div className="account-info-label">Application</div>
+                    <div className="account-info-value">CaseSync</div>
+                  </div>
+                  <div>
+                    <div className="account-info-label">Organization</div>
+                    <div className="account-info-value">Beatrice Loving Heart</div>
+                  </div>
+                  {serverVersion && (
+                    <div>
+                      <div className="account-info-label">Server Version</div>
+                      <div className="account-info-value" style={{ fontFamily: 'monospace' }}>{serverVersion}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="account-info-label">Platform</div>
+                    <div className="account-info-value">
+                      {typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)')?.matches ? 'Installed (PWA)' : 'Browser')}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </main>

@@ -196,6 +196,9 @@ export async function removePendingInvite(inviteId: string) {
   if (inviteDeleteError) return { error: inviteDeleteError.message }
 
   if (userId) {
+    // Revoke all active sessions before deleting
+    await supabase.rpc('revoke_user_sessions', { target_user_id: userId }).catch(() => {})
+
     const { error: profileDeleteError } = await supabase
       .from('profiles')
       .delete()
@@ -237,10 +240,24 @@ export async function updateTeamManagerAssignment(userId: string, teamManagerId:
 
 export async function deactivateUser(userId: string) {
   const supabase = createAdminClient()
+
+  // Ban the user permanently — this prevents any new sign-ins and
+  // blocks refresh-token exchanges. Existing JWTs stay valid until
+  // their exp claim, but the 60-second SessionGuard freshness check
+  // will catch the disabled metadata and sign them out.
   const { error } = await supabase.auth.admin.updateUserById(userId, {
-    user_metadata: { disabled: true }
+    user_metadata: { disabled: true },
+    ban_duration: '876000h', // ~100 years = effectively permanent
   })
   if (error) return { error: error.message }
+
+  // Revoke all refresh tokens so existing sessions can't be extended
+  const { error: revokeError } = await supabase.rpc('revoke_user_sessions', { target_user_id: userId })
+  if (revokeError) {
+    // Non-fatal: the ban + SessionGuard will still catch them
+    console.error('[deactivateUser] session revocation error:', revokeError)
+  }
+
   return { success: true }
 }
 
@@ -256,6 +273,11 @@ export async function removeUser(userId: string) {
   if (historyCount > 0) {
     return { error: 'Cannot remove a user with activity history. Deactivate them instead.' }
   }
+
+  // Revoke all active sessions before deleting
+  await supabase.rpc('revoke_user_sessions', { target_user_id: userId }).catch((err: unknown) => {
+    console.error('[removeUser] session revocation error:', err)
+  })
 
   const { error: inviteError } = await supabase
     .from('user_invites')

@@ -1,8 +1,16 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+
+const REASON_MESSAGES: Record<string, string> = {
+  session_timeout: 'Your session has expired due to inactivity. Please sign in again.',
+  session_expired: 'Your session has expired. Please sign in again.',
+  signed_out: 'You have been signed out.',
+  account_removed: 'Your account has been removed. Contact an administrator if you think this is a mistake.',
+  account_deactivated: 'Your account has been deactivated. Contact an administrator for assistance.',
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -13,6 +21,15 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false)
   const [showRecoveryAction, setShowRecoveryAction] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Show contextual message based on redirect reason
+  useEffect(() => {
+    const reason = searchParams.get('reason')
+    if (reason && REASON_MESSAGES[reason]) {
+      setMessage(REASON_MESSAGES[reason])
+    }
+  }, [searchParams])
 
   const supabase = useMemo(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return null
