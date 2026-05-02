@@ -1,4 +1,5 @@
 'use client'
+import { useState, useMemo } from 'react'
 
 import { useMemo } from 'react'
 import Link from 'next/link'
@@ -59,13 +60,13 @@ interface PlannerStats {
   topOverdueClients: Array<{ id: string; name: string }>
 }
 
-function StatCard({ label, value, color, href, active }: { label: string; value: number | string; color?: string; href?: string; active?: boolean }) {
-  const interactive = Boolean(href)
+function StatCard({ label, value, color, href, active, onClick }: { label: string; value: number | string; color?: string; href?: string; active?: boolean; onClick?: () => void }) {
+  const interactive = Boolean(href) || Boolean(onClick)
 
   return (
     <button
       type="button"
-      onClick={() => { if (href) window.location.href = href }}
+      onClick={() => { if (onClick) onClick(); else if (href) window.location.href = href }}
       style={{
         textAlign: 'center',
         padding: '20px 24px',
@@ -124,7 +125,8 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
 
   const totalStats = useMemo(() => {
     // Use full unfiltered scope for stat cards so numbers are accurate across all filters
-    const statsSource = allScopedClients ?? clients
+    const [activeFilter, setActiveFilter] = useState<typeof currentFilter>(currentFilter)
+  const statsSource = allScopedClients ?? clients
     return {
       clients: statsSource.length,
       overdue: statsSource.filter(isOverdue).length,
@@ -137,6 +139,21 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       }).length,
     }
   }, [clients, allScopedClients])
+
+  const filteredClients = useMemo(() => {
+    const source = allScopedClients ?? clients
+    if (!activeFilter || activeFilter === 'all') return source
+    if (activeFilter === 'overdue') return source.filter(isOverdue)
+    if (activeFilter === 'due_today') return source.filter(isDueToday)
+    if (activeFilter === 'due_this_week') return source.filter(isDueThisWeek)
+    if (activeFilter === 'due_next_14_days') return source.filter(c => isDueNext14Days(c) && !isOverdue(c) && !isDueToday(c) && !isDueThisWeek(c))
+    if (activeFilter === 'no_contact_7') return source.filter(c => {
+      if (!c.last_contact_date) return true
+      const days = getDaysSinceContact(c.last_contact_date)
+      return days !== null && days >= 7
+    })
+    return source
+  }, [clients, allScopedClients, activeFilter])
 
   const rebalanceSuggestions = useMemo(() => {
     const donors = plannerStats
@@ -262,7 +279,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </div>
       </div>
 
-      {fullFilterLabel && (
+      {activeFilter && (
         <>
           <TeamSavedViewsBar views={savedViews} activeSavedViewId={activeSavedViewId} />
           <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
@@ -270,26 +287,26 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
               Queue view
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
-              Working queue: <strong style={{ color: 'var(--text)' }}>{fullFilterLabel}</strong>
+              Working queue: <strong style={{ color: 'var(--text)' }}>{activeFilter === 'all' ? 'Active Clients' : activeFilter === 'overdue' ? 'Overdue' : activeFilter === 'due_today' ? 'Due Today' : activeFilter === 'due_this_week' ? 'Due This Week' : activeFilter === 'due_next_14_days' ? 'Next 14 Days' : activeFilter === 'no_contact_7' ? 'No Contact 7+ Days' : 'Filtered'}</strong>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <QueueSwitchButton label="Active Clients" href={fullViewHref('all')} active={currentFilter === 'all'} />
-              <QueueSwitchButton label="🔴 Overdue" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
-              <QueueSwitchButton label="📍 Due Today" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
-              <QueueSwitchButton label="🟠 Due This Week" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
-              <QueueSwitchButton label="🗓️ Next 14 Days" href={fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
-              <QueueSwitchButton label="📵 No Contact 7+ Days" href={fullViewHref('no_contact_7')} active={currentFilter === 'no_contact_7'} />
+              <QueueSwitchButton label="Active Clients" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('all') }} active={activeFilter === 'all'} />
+              <QueueSwitchButton label="🔴 Overdue" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('overdue') }} active={activeFilter === 'overdue'} />
+              <QueueSwitchButton label="📍 Due Today" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_today') }} active={activeFilter === 'due_today'} />
+              <QueueSwitchButton label="🟠 Due This Week" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_this_week') }} active={activeFilter === 'due_this_week'} />
+              <QueueSwitchButton label="🗓️ Next 14 Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_next_14_days') }} active={activeFilter === 'due_next_14_days'} />
+              <QueueSwitchButton label="📵 No Contact 7+ Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('no_contact_7') }} active={activeFilter === 'no_contact_7'} />
             </div>
           </div>
         </>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatCard label="Active Clients" value={totalStats.clients} href={fullViewHref('all')} active={currentFilter === 'all'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" href={fullViewHref('overdue')} active={currentFilter === 'overdue'} />
-        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" href={fullViewHref('due_today')} active={currentFilter === 'due_today'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" href={fullViewHref('due_this_week')} active={currentFilter === 'due_this_week'} />
-        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" href={fullViewHref('due_next_14_days')} active={currentFilter === 'due_next_14_days'} />
+        <StatCard label="Active Clients" value={totalStats.clients} onClick={() => setActiveFilter('all')} active={activeFilter === 'all'} />
+        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" onClick={() => setActiveFilter('overdue')} active={activeFilter === 'overdue'} />
+        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" onClick={() => setActiveFilter('due_today')} active={activeFilter === 'due_today'} />
+        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" onClick={() => setActiveFilter('due_this_week')} active={activeFilter === 'due_this_week'} />
+        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" onClick={() => setActiveFilter('due_next_14_days')} active={activeFilter === 'due_next_14_days'} />
         <StatCard label="Supports Planners" value={planners.length} href="/team?full=1" active={false} />
       </div>
 
@@ -300,13 +317,13 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
               Queue Items
             </h3>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              {clients.length} client{clients.length !== 1 ? 's' : ''} in this queue
+              {filteredClients.length} client{filteredClients.length !== 1 ? 's' : ''} in this queue
             </div>
           </div>
-          {clients.length === 0 ? (
+          {filteredClients.length === 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No clients matched this queue.</div>
           ) : (
-            <ClientGrid clients={clients} pinnedIds={[]} onTogglePin={() => {}} />
+            <ClientGrid clients={filteredClients} pinnedIds={[]} onTogglePin={() => {}} />
           )}
         </div>
       )}
