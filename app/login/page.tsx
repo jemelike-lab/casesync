@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 
@@ -21,15 +21,16 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false)
   const [showRecoveryAction, setShowRecoveryAction] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
 
-  // Show contextual message based on redirect reason
+  // Show contextual message based on redirect reason (read from URL without useSearchParams)
   useEffect(() => {
-    const reason = searchParams.get('reason')
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const reason = params.get('reason')
     if (reason && REASON_MESSAGES[reason]) {
       setMessage(REASON_MESSAGES[reason])
     }
-  }, [searchParams])
+  }, [])
 
   const supabase = useMemo(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return null
