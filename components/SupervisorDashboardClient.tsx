@@ -16,7 +16,7 @@ interface Props {
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
   fullFilterLabel?: string | null
-  currentFilter?: 'all' | 'overdue' | 'due_today' | 'due_this_week' | 'due_next_14_days' | 'no_contact_7' | null
+  currentFilter?: 'all' | 'overdue' | 'due_today' | 'due_this_week' | 'due_next_14_days' | 'no_contact_7' | 'planners' | null
   plannerFilters?: string[]
   category?: string | null
   savedViews?: SavedViewRecord[]
@@ -306,11 +306,11 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" onClick={() => setActiveFilter(activeFilter === 'due_today' ? null : 'due_today')} active={activeFilter === 'due_today'} />
         <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" onClick={() => setActiveFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')} active={activeFilter === 'due_this_week'} />
         <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" onClick={() => setActiveFilter(activeFilter === 'due_next_14_days' ? null : 'due_next_14_days')} active={activeFilter === 'due_next_14_days'} />
-        <StatCard label="Supports Planners" value={planners.length} href="/team?full=1" active={false} />
+        <StatCard label="Supports Planners" value={planners.length} onClick={() => setActiveFilter(activeFilter === 'planners' ? null : 'planners')} active={activeFilter === 'planners'} />
       </div>
 
       {/* Compact client list — appears inline when a stat card filter is active */}
-      {activeFilter && filteredClients.length > 0 && (
+      {activeFilter && activeFilter !== 'planners' && filteredClients.length > 0 && (
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: `3px solid ${activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : activeFilter === 'due_next_14_days' ? 'var(--accent)' : activeFilter === 'no_contact_7' ? 'var(--yellow)' : 'var(--border)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -351,6 +351,62 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
                   </div>
                   <span style={{ fontSize: 14, color: 'var(--text-secondary)', flexShrink: 0 }}>→</span>
                 </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Compact planner list — appears when Supports Planners stat card is clicked */}
+      {activeFilter === 'planners' && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: '3px solid var(--accent)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Supports Planners</span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 99, padding: '2px 8px' }}>
+                {plannerStats.length} planner{plannerStats.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <button onClick={() => setActiveFilter(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, padding: '4px 8px' }}>✕</button>
+          </div>
+          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            {plannerStats.map((ps, idx) => {
+              const loadColor = ps.loadStatus === 'rebalance' ? 'var(--red)' : ps.loadStatus === 'watch' ? 'var(--orange)' : 'var(--green)'
+              return (
+                <div key={ps.planner.id}
+                  onClick={() => { window.location.href = `/team?filter=all&planner=${encodeURIComponent(ps.planner.id)}` }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: idx < plannerStats.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+                  {/* Load status dot */}
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: loadColor }} />
+                  {/* Planner name */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {ps.planner.full_name ?? 'Unknown'}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
+                      {ps.loadStatus === 'rebalance' ? 'Needs rebalance' : ps.loadStatus === 'watch' ? 'Watch' : 'Balanced'}
+                    </div>
+                  </div>
+                  {/* Client count */}
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, minWidth: 50, textAlign: 'right' }}>
+                    {ps.clientCount} client{ps.clientCount !== 1 ? 's' : ''}
+                  </div>
+                  {/* Overdue badge */}
+                  {ps.overdue > 0 && (
+                    <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 700, background: 'rgba(255,69,58,0.12)', borderRadius: 4, padding: '2px 6px', flexShrink: 0 }}>
+                      {ps.overdue} overdue
+                    </span>
+                  )}
+                  {/* Due this week */}
+                  {ps.dueThisWeek > 0 && (
+                    <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 600, flexShrink: 0 }}>
+                      {ps.dueThisWeek} due
+                    </span>
+                  )}
+                  <span style={{ fontSize: 14, color: 'var(--text-secondary)', flexShrink: 0 }}>→</span>
+                </div>
               )
             })}
           </div>
