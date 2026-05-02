@@ -1,29 +1,25 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import IdleTimeout from './IdleTimeout'
 
 /**
- * SessionGuard — mounts IdleTimeout for any authenticated user and
- * handles critical auth lifecycle events:
+ * SessionGuard — security layer mounted in root layout for all routes.
  *
- *  • TOKEN_EXPIRED  — redirect to /login immediately
- *  • SIGNED_OUT     — redirect to /login (covers admin-revoked sessions)
- *  • USER_DELETED   — redirect to /login
- *
- * Also sets up a periodic session-freshness check so that even if the
- * browser tab is idle (no user interaction to trigger IdleTimeout), an
- * expired or revoked session is caught.
+ *  1. IdleTimeout — 15min inactivity → warning → signout
+ *  2. Auth event handling — SIGNED_OUT, TOKEN_REFRESHED
+ *  3. Periodic freshness check — 60s getUser() poll
+ *  4. PWA close detection — sendBeacon signout on swipe-away
  */
 export default function SessionGuard() {
   const [authed, setAuthed] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const isStandalone = useRef(false)
 
   const redirectToLogin = useCallback(
     (reason: string) => {
-      // Avoid redirect loops if already on /login
       if (typeof window !== 'undefined' && window.location.pathname === '/login') return
       router.push(`/login?reason=${reason}`)
     },
@@ -31,6 +27,12 @@ export default function SessionGuard() {
   )
 
   useEffect(() => {
+    // Detect if running as installed PWA (standalone mode)
+    isStandalone.current =
+      typeof window !== 'undefined' &&
+      (window.matchMedia?.('(display-mode: standalone)')?.matches ||
+       (window.navigator as any).standalone === true)
+
     supabase.auth.getSession().then(({ data }) => {
       setAuthed(!!data.session)
     })
@@ -40,24 +42,18 @@ export default function SessionGuard() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       switch (event) {
         case 'TOKEN_REFRESHED':
-          // Good — session still valid
           setAuthed(!!session)
           break
-
         case 'SIGNED_OUT':
           setAuthed(false)
           redirectToLogin('signed_out')
           break
-
         default:
-          // SIGNED_IN, INITIAL_SESSION, PASSWORD_RECOVERY, etc.
           setAuthed(!!session)
       }
     })
 
-    // ── Periodic session freshness check ──
-    // Every 60s, validate the session server-side. If revoked/expired,
-    // onAuthStateChange → SIGNED_OUT handles the redirect.
+    // ── Periodic session freshness check (60s) ──
     const freshnessInterval = setInterval(async () => {
       const { data, error } = await supabase.auth.getUser()
       if (error || !data.user) {
@@ -68,9 +64,42 @@ export default function SessionGuard() {
       }
     }, 60_000)
 
+    // ── PWA close / swipe-away detection ──
+    // When a PWA is swiped away on iOS/Android, the page transitions
+    // through visibilitychange → pagehide → process kill. We use
+    // sendBeacon to fire a signout request that survives the kill.
+    //
+    // We only do this for standalone (installed) PWAs — in a regular
+    // browser tab, closing a tab shouldn't sign you out since you
+    // might have other tabs open.
+
+    function handleVisibilityChange() {
+      if (
+        document.visibilityState === 'hidden' &&
+        isStandalone.current
+      ) {
+        // Fire-and-forget signout via beacon
+        navigator.sendBeacon('/api/auth/signout')
+        // Also clear client-side session storage
+        supabase.auth.signOut()
+      }
+    }
+
+    function handlePageHide() {
+      if (isStandalone.current) {
+        // Fallback for browsers that fire pagehide but not visibilitychange
+        navigator.sendBeacon('/api/auth/signout')
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePageHide)
+
     return () => {
       subscription.unsubscribe()
       clearInterval(freshnessInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
     }
   }, [supabase, redirectToLogin])
 
