@@ -23,11 +23,11 @@ interface Props {
   activeSavedViewId?: string | null
 }
 
-function QueueSwitchButton({ label, href, active }: { label: string; href: string; active?: boolean }) {
+function QueueSwitchButton({ label, href, active, onClick }: { label: string; href: string; active?: boolean; onClick?: (e: React.MouseEvent) => void }) {
   return (
     <button
       type="button"
-      onClick={() => { window.location.href = href }}
+      onClick={(e) => { if (onClick) { onClick(e) } else { window.location.href = href } }}
       style={{
         padding: '8px 12px',
         borderRadius: 999,
