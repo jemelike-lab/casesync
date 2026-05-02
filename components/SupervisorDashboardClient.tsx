@@ -121,10 +121,11 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
     })
   }, [clients, planners])
 
+  const [activeFilter, setActiveFilter] = useState<typeof currentFilter>(currentFilter)
+
   const totalStats = useMemo(() => {
     // Use full unfiltered scope for stat cards so numbers are accurate across all filters
-    const [activeFilter, setActiveFilter] = useState<typeof currentFilter>(currentFilter)
-  const statsSource = allScopedClients ?? clients
+    const statsSource = allScopedClients ?? clients
     return {
       clients: statsSource.length,
       overdue: statsSource.filter(isOverdue).length,
