@@ -323,7 +323,7 @@ export default function LoginPage() {
             🔒 Secure case management portal
           </p>
           <p style={{ textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 8, marginBottom: 0, letterSpacing: '0.04em' }}>
-            © {new Date().getFullYear()} VELOX &quot;Automated Operations&quot; LLC. All rights reserved.
+            {`\u00A9 ${new Date().getFullYear()} VELOX "Automated Operations" LLC. All rights reserved.`}
           </p>
         </div>
       </div>
