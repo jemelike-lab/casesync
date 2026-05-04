@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'CaseSync',
-  description: 'Case Management Portal',
+  description: 'Case Management Portal — Designed and developed by VELOX Automated Operations',
 }
 
 export const viewport: Viewport = {
@@ -32,6 +32,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f0f11" />
+        <meta name="author" content="VELOX Automated Operations LLC" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CaseSync" />

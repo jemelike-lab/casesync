@@ -322,6 +322,9 @@ export default function LoginPage() {
           <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.18)', marginTop: 28, marginBottom: 0, letterSpacing: '0.03em' }}>
             🔒 Secure case management portal
           </p>
+          <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.12)', marginTop: 8, marginBottom: 0, letterSpacing: '0.04em' }}>
+            © {new Date().getFullYear()} VELOX &quot;Automated Operations&quot; LLC. All rights reserved.
+          </p>
         </div>
       </div>
     </>
