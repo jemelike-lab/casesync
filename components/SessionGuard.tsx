@@ -69,36 +69,27 @@ export default function SessionGuard() {
     // through visibilitychange → pagehide → process kill. We use
     // sendBeacon to fire a signout request that survives the kill.
     //
-    // We only do this for standalone (installed) PWAs — in a regular
-    // browser tab, closing a tab shouldn't sign you out since you
-    // might have other tabs open.
+    // IMPORTANT: We do NOT sign out on visibilitychange because it
+    // fires on every in-app navigation, share sheet open, notification
+    // pull-down, and other benign transitions. Instead we only use
+    // pagehide — which fires once on actual page unload — with a
+    // check for event.persisted (bfcache) to avoid false positives.
+    //
+    // Only active for standalone (installed) PWAs — in a regular
+    // browser tab, closing shouldn't sign you out.
 
-    function handleVisibilityChange() {
-      if (
-        document.visibilityState === 'hidden' &&
-        isStandalone.current
-      ) {
-        // Fire-and-forget signout via beacon
-        navigator.sendBeacon('/api/auth/signout')
-        // Also clear client-side session storage
-        supabase.auth.signOut()
-      }
-    }
-
-    function handlePageHide() {
-      if (isStandalone.current) {
-        // Fallback for browsers that fire pagehide but not visibilitychange
+    function handlePageHide(e: PageTransitionEvent) {
+      if (isStandalone.current && !e.persisted) {
+        // Fire-and-forget signout via beacon — survives process kill
         navigator.sendBeacon('/api/auth/signout')
       }
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('pagehide', handlePageHide)
 
     return () => {
       subscription.unsubscribe()
       clearInterval(freshnessInterval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pagehide', handlePageHide)
     }
   }, [supabase, redirectToLogin])
