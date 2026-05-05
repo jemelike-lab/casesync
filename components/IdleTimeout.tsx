@@ -60,12 +60,41 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
     events.forEach(e => window.addEventListener(e, reset))
     reset()
 
+    // Visibility change handler — catches laptop close/reopen.
+    // setTimeout is suspended while the laptop is asleep, so we
+    // must check real elapsed time when the tab becomes visible.
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return
+
+      const cookie = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('cs_last_activity='))
+      const lastActivity = cookie ? parseInt(cookie.split('=')[1], 10) : 0
+      const now = Math.floor(Date.now() / 1000)
+      const elapsed = now - lastActivity
+
+      if (lastActivity && elapsed * 1000 > timeoutMs) {
+        // Timed out while asleep — sign out immediately
+        handleLogout()
+      } else if (lastActivity && elapsed * 1000 > timeoutMs - warningMs) {
+        // Within warning window — show warning with correct remaining time
+        const remaining = Math.floor((timeoutMs / 1000) - elapsed)
+        setShowWarning(true)
+        setCountdown(Math.max(remaining, 0))
+      } else {
+        // Still within timeout — reset timers with fresh activity
+        reset()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
       events.forEach(e => window.removeEventListener(e, reset))
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [reset])
+  }, [reset, timeoutMs, warningMs, handleLogout])
 
   if (!showWarning) return null
 
