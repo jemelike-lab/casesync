@@ -134,7 +134,7 @@ export async function proxy(request: NextRequest) {
   }
 
   response.cookies.set('cs_last_activity', String(now), {
-    httpOnly: true,
+    httpOnly: false, // client JS needs to read for visibility change timeout
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
