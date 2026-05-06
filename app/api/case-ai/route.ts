@@ -1351,8 +1351,8 @@ RULES:
       if (!pass1Res.ok) {
         clearTimeout(timeoutId)
         const errText = await pass1Res.text()
-        console.error('Anthropic pass1 error:', errText)
-        return new Response('AI service error', { status: 502 })
+        console.error('Anthropic pass1 error:', pass1Res.status, errText)
+        return new Response('API error: ' + pass1Res.status + ' - ' + errText.substring(0, 200), { status: 502 })
       }
 
       pass1Data = await pass1Res.json()
