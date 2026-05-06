@@ -1456,10 +1456,7 @@ When a user asks a question that requires searching data (like "who has eligibil
           }
         })
 
-        await auditLog(supabase, userId, 'bot_query', {
-          query: messages[messages.length - 1]?.content || '',
-          toolsUsed,
-        })
+        auditLog(req, { userId, action: 'bot_query' })
 
         return new Response(readable, {
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -1475,10 +1472,7 @@ When a user asks a question that requires searching data (like "who has eligibil
         .map((b: { text?: string }) => b.text || '')
         .join('')
 
-      await auditLog(supabase, userId, 'bot_query', {
-        query: messages[messages.length - 1]?.content || '',
-        toolsUsed: [],
-      })
+      auditLog(req, { userId, action: 'bot_query' })
 
       return new Response(finalText, {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
