@@ -670,6 +670,22 @@ input[type="time"] {
   outline-offset: 2px;
 }
 
+/* Shimmer sweep animation on hover */
+@keyframes shimmerSweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.shimmer-sweep {
+  animation: shimmerSweep 1.5s ease-in-out !important;
+}
+
+/* Responsive: 2 cols on tablets, 1 col on phones */
+@media (max-width: 900px) {
+  .premium-stat-card {
+    min-height: 120px !important;
+  }
+}
+
 /* Recharts tooltip cursor fix */
 .recharts-tooltip-cursor {
   fill: rgba(255,255,255,0.03) !important;
@@ -681,9 +697,8 @@ input[type="time"] {
 /* Light theme overrides for premium cards */
 [data-theme="light"] .premium-stat-card {
   border-color: rgba(0,0,0,0.08) !important;
-  background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 100%) !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
 }
 [data-theme="light"] .premium-stat-card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
 }

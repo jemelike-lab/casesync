@@ -1,76 +1,70 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useCountUp } from '@/hooks/useCountUp'
 import {
   Users, AlertTriangle, Clock, PhoneOff, UserCheck, UserCog, UserX,
 } from 'lucide-react'
 
-/* ─── Types ─────────────────────────────────────────────────────────── */
+/* ─── Animated Arc (SVG progress ring) ───────────────────────────── */
 
-interface StatCardProps {
-  label: string
-  value: number
-  icon: React.ReactNode
-  color: string       // hex accent color
-  colorRgb: string    // r,g,b for rgba
-  active?: boolean
-  onClick?: () => void
-  /** Optional breakdown segments for the severity ring */
-  segments?: { color: string; value: number; label: string }[]
-  /** Optional secondary line under the number */
-  subtitle?: string
-}
+function ProgressArc({ pct, color, size = 56 }: { pct: number; color: string; size?: number }) {
+  const [animPct, setAnimPct] = useState(0)
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimPct(Math.min(pct, 100)), 100)
+    return () => clearTimeout(timer)
+  }, [pct])
 
-/* ─── Severity Ring (SVG donut) ─────────────────────────────────── */
-
-function SeverityRing({ segments, size = 44 }: {
-  segments: { color: string; value: number; label: string }[]
-  size?: number
-}) {
-  const total = segments.reduce((s, seg) => s + seg.value, 0)
-  if (total === 0) return null
-
-  const radius = 17
-  const circumference = 2 * Math.PI * radius
-  let offset = 0
+  const r = (size - 6) / 2
+  const circ = 2 * Math.PI * r
+  const dashLen = circ * (animPct / 100)
 
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx="20" cy="20" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-      {segments.filter(s => s.value > 0).map((seg, i) => {
-        const pct = seg.value / total
-        const dashLen = circumference * pct
-        const dashOffset = circumference * offset
-        offset += pct
-        return (
-          <circle
-            key={i}
-            cx="20" cy="20" r={radius}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth="5"
-            strokeDasharray={`${dashLen} ${circumference - dashLen}`}
-            strokeDashoffset={-dashOffset}
-            strokeLinecap="round"
-            style={{
-              transition: 'stroke-dasharray 0.8s ease, stroke-dashoffset 0.8s ease',
-              filter: `drop-shadow(0 0 3px ${seg.color}40)`,
-            }}
-          />
-        )
-      })}
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+      <circle
+        cx={size / 2} cy={size / 2} r={r}
+        fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5"
+      />
+      <circle
+        cx={size / 2} cy={size / 2} r={r}
+        fill="none" stroke={color} strokeWidth="5"
+        strokeDasharray={`${dashLen} ${circ - dashLen}`}
+        strokeLinecap="round"
+        style={{
+          transition: 'stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          filter: `drop-shadow(0 0 6px ${color}80)`,
+        }}
+      />
     </svg>
   )
 }
 
-/* ─── Single Premium Stat Card ──────────────────────────────────── */
+/* ─── Hero Stat Card ─────────────────────────────────────────────── */
 
-function PremiumStatCard({
-  label, value, icon, color, colorRgb, active, onClick, segments, subtitle,
-}: StatCardProps) {
-  const animated = useCountUp(value)
+interface HeroCardProps {
+  label: string
+  value: number
+  total?: number
+  icon: React.ReactNode
+  gradient: string
+  glowColor: string
+  active?: boolean
+  onClick?: () => void
+  subtitle?: string
+  delay?: number
+}
+
+function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, onClick, subtitle, delay = 0 }: HeroCardProps) {
+  const animated = useCountUp(value, 1000)
   const [hovered, setHovered] = useState(false)
+  const [entered, setEntered] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setEntered(true), delay)
+    return () => clearTimeout(timer)
+  }, [delay])
+
+  const pct = total && total > 0 ? Math.round((value / total) * 100) : 0
 
   return (
     <button
@@ -83,84 +77,92 @@ function PremiumStatCard({
         position: 'relative',
         overflow: 'hidden',
         textAlign: 'left',
-        padding: '20px 18px 16px',
-        borderRadius: 16,
-        border: active
-          ? `1px solid rgba(${colorRgb}, 0.6)`
-          : '1px solid rgba(255,255,255,0.06)',
-        background: active
-          ? `linear-gradient(135deg, rgba(${colorRgb}, 0.14) 0%, rgba(${colorRgb}, 0.04) 100%)`
-          : 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        padding: 0,
+        borderRadius: 20,
+        border: active ? '2px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.06)',
+        background: gradient,
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        opacity: entered ? 1 : 0,
+        transform: entered
+          ? hovered ? 'translateY(-4px) scale(1.02)' : 'translateY(0) scale(1)'
+          : 'translateY(20px) scale(0.95)',
+        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: hovered
-          ? `0 8px 32px rgba(${colorRgb}, 0.15), 0 0 0 1px rgba(${colorRgb}, 0.12)`
-          : '0 2px 8px rgba(0,0,0,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        minHeight: 110,
+          ? `0 20px 60px ${glowColor}40, 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.1)`
+          : `0 4px 20px ${glowColor}20, inset 0 1px 0 rgba(255,255,255,0.06)`,
+        minHeight: 140,
       }}
     >
-      {/* Glow orb */}
+      {/* Noise texture overlay */}
       <div style={{
-        position: 'absolute',
-        top: -30,
-        right: -30,
-        width: 80,
-        height: 80,
-        borderRadius: '50%',
-        background: `radial-gradient(circle, rgba(${colorRgb}, ${hovered ? 0.2 : 0.08}) 0%, transparent 70%)`,
-        transition: 'all 0.4s ease',
+        position: 'absolute', inset: 0, borderRadius: 20,
+        background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.03\'/%3E%3C/svg%3E")',
+        pointerEvents: 'none', opacity: 0.5,
+      }} />
+
+      {/* Animated shimmer sweep */}
+      <div className={hovered ? 'shimmer-sweep' : ''} style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)',
+        backgroundSize: '200% 100%',
         pointerEvents: 'none',
       }} />
 
-      {/* Top row: icon + severity ring */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: `rgba(${colorRgb}, 0.12)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color,
-          flexShrink: 0,
-        }}>
-          {icon}
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '20px 20px 18px' }}>
+        {/* Top row: icon + arc */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 12,
+            background: 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            {icon}
+          </div>
+          {total && total > 0 && pct > 0 && (
+            <div style={{ position: 'relative' }}>
+              <ProgressArc pct={pct} color="rgba(255,255,255,0.9)" size={48} />
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.9)',
+              }}>
+                {pct}%
+              </div>
+            </div>
+          )}
         </div>
-        {segments && segments.length > 0 && (
-          <SeverityRing segments={segments} />
-        )}
-      </div>
 
-      {/* Number */}
-      <div style={{
-        fontSize: 34,
-        fontWeight: 800,
-        color,
-        lineHeight: 1,
-        letterSpacing: '-0.02em',
-        fontVariantNumeric: 'tabular-nums',
-      }}>
-        {animated}
-      </div>
-
-      {/* Label + subtitle */}
-      <div>
+        {/* Number */}
         <div style={{
-          fontSize: 12,
+          fontSize: 44,
+          fontWeight: 900,
+          color: '#fff',
+          lineHeight: 1,
+          letterSpacing: '-0.03em',
+          fontVariantNumeric: 'tabular-nums',
+          textShadow: '0 2px 12px rgba(0,0,0,0.3)',
+        }}>
+          {animated}
+        </div>
+
+        {/* Label */}
+        <div style={{
+          fontSize: 13,
           fontWeight: 600,
-          color: 'var(--text-secondary)',
-          letterSpacing: '0.02em',
-          lineHeight: 1.3,
+          color: 'rgba(255,255,255,0.75)',
+          marginTop: 6,
+          letterSpacing: '0.01em',
         }}>
           {label}
         </div>
         {subtitle && (
           <div style={{
-            fontSize: 10,
-            color: `rgba(${colorRgb}, 0.7)`,
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.5)',
             marginTop: 2,
             fontWeight: 500,
           }}>
@@ -169,49 +171,69 @@ function PremiumStatCard({
         )}
       </div>
 
-      {/* Bottom shimmer line */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 2,
-        background: active
-          ? `linear-gradient(90deg, transparent, rgba(${colorRgb}, 0.5), transparent)`
-          : 'transparent',
-        transition: 'background 0.3s ease',
-      }} />
-
-      {/* Hover ring tooltip for severity segments */}
-      {hovered && segments && segments.some(s => s.value > 0) && (
+      {/* Active indicator bar */}
+      {active && (
         <div style={{
-          position: 'absolute',
-          top: 6,
-          right: 52,
-          background: 'rgba(15,15,17,0.95)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8,
-          padding: '6px 10px',
-          fontSize: 10,
-          lineHeight: 1.6,
-          zIndex: 10,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-        }}>
-          {segments.filter(s => s.value > 0).map((seg, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: seg.color, flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-secondary)' }}>{seg.label}:</span>
-              <span style={{ color: 'var(--text)', fontWeight: 700 }}>{seg.value}</span>
-            </div>
-          ))}
-        </div>
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+          background: 'rgba(255,255,255,0.6)',
+          borderRadius: '0 0 20px 20px',
+          boxShadow: '0 0 12px rgba(255,255,255,0.4)',
+        }} />
       )}
     </button>
   )
 }
 
-/* ─── Stat Card Grid (exported) ─────────────────────────────────── */
+/* ─── Compact Stat Pill (for secondary stats) ────────────────────── */
+
+function StatPill({ label, value, icon, active, onClick, color }: {
+  label: string; value: number; icon: React.ReactNode; active?: boolean; onClick?: () => void; color?: string
+}) {
+  const animated = useCountUp(value)
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="premium-stat-card"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '10px 16px',
+        borderRadius: 14,
+        border: active ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.06)',
+        background: active
+          ? 'rgba(255,255,255,0.08)'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.25s ease',
+        transform: hovered ? 'translateY(-1px)' : 'none',
+        boxShadow: hovered ? '0 4px 16px rgba(0,0,0,0.2)' : 'none',
+        textAlign: 'left',
+      }}
+    >
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: 'rgba(255,255,255,0.06)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: color ?? 'var(--text-secondary)',
+        flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: color ?? 'var(--text)', lineHeight: 1 }}>{animated}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, fontWeight: 500 }}>{label}</div>
+      </div>
+    </button>
+  )
+}
+
+/* ─── Exported Grid ──────────────────────────────────────────────── */
 
 interface StatGridProps {
   totalClients: number
@@ -221,7 +243,6 @@ interface StatGridProps {
   plannerCount: number
   tmCount: number
   unassignedPlanners: number
-  /** Overdue breakdown by severity */
   criticalCount?: number
   redCount?: number
   activeFilter?: string | null
@@ -233,88 +254,90 @@ interface StatGridProps {
 export default function PremiumStatGrid({
   totalClients, overdue, dueThisWeek, noContact,
   plannerCount, tmCount, unassignedPlanners,
-  criticalCount = 0, redCount = 0,
   activeFilter, onFilterClick, onRosterClick, activeRosterFilter,
 }: StatGridProps) {
-  const overdueSegments = [
-    { color: '#ff453a', value: criticalCount, label: 'Critical (14d+)' },
-    { color: '#ff6b5a', value: redCount, label: 'Overdue (1-14d)' },
-  ]
-
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-      gap: 12,
-      marginBottom: 24,
-    }}>
-      <PremiumStatCard
-        label="Active Clients"
-        value={totalClients}
-        icon={<Users size={18} />}
-        color="var(--text)"
-        colorRgb="255,255,255"
-        active={activeFilter === 'all'}
-        onClick={() => onFilterClick?.('all')}
-      />
-      <PremiumStatCard
-        label="Overdue"
-        value={overdue}
-        icon={<AlertTriangle size={18} />}
-        color="#ff453a"
-        colorRgb="255,69,58"
-        active={activeFilter === 'overdue'}
-        onClick={() => onFilterClick?.('overdue')}
-        segments={overdueSegments}
-        subtitle={criticalCount > 0 ? `${criticalCount} critical` : undefined}
-      />
-      <PremiumStatCard
-        label="Due This Week"
-        value={dueThisWeek}
-        icon={<Clock size={18} />}
-        color="#ff9f0a"
-        colorRgb="255,159,10"
-        active={activeFilter === 'due_this_week'}
-        onClick={() => onFilterClick?.('due_this_week')}
-      />
-      <PremiumStatCard
-        label="No Contact 7+ Days"
-        value={noContact}
-        icon={<PhoneOff size={18} />}
-        color="#ffd60a"
-        colorRgb="255,214,10"
-        active={activeFilter === 'no_contact_7'}
-        onClick={() => onFilterClick?.('no_contact_7')}
-      />
-      <PremiumStatCard
-        label="Support Planners"
-        value={plannerCount}
-        icon={<UserCheck size={18} />}
-        color="var(--text)"
-        colorRgb="255,255,255"
-        active={activeRosterFilter === 'planners'}
-        onClick={() => onRosterClick?.('planners')}
-      />
-      <PremiumStatCard
-        label="Team Managers"
-        value={tmCount}
-        icon={<UserCog size={18} />}
-        color="var(--text)"
-        colorRgb="255,255,255"
-        active={activeRosterFilter === 'team_managers'}
-        onClick={() => onRosterClick?.('team_managers')}
-      />
-      {unassignedPlanners > 0 && (
-        <PremiumStatCard
-          label="Unassigned Planners"
-          value={unassignedPlanners}
-          icon={<UserX size={18} />}
-          color={unassignedPlanners > 0 ? '#ff9f0a' : '#30d158'}
-          colorRgb={unassignedPlanners > 0 ? '255,159,10' : '48,209,88'}
-          active={activeRosterFilter === 'unassigned_planners'}
-          onClick={() => onRosterClick?.('unassigned_planners')}
+    <div style={{ marginBottom: 28 }}>
+      {/* Hero row — 4 big cards with staggered entrance */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 14,
+        marginBottom: 14,
+      }}>
+        <HeroStatCard
+          label="Active Clients"
+          value={totalClients}
+          icon={<Users size={20} strokeWidth={2.5} />}
+          gradient="linear-gradient(135deg, #1a1c2e 0%, #2a2d4a 50%, #1e2040 100%)"
+          glowColor="#4a5080"
+          active={activeFilter === 'all'}
+          onClick={() => onFilterClick?.('all')}
+          delay={0}
         />
-      )}
+        <HeroStatCard
+          label="Overdue"
+          value={overdue}
+          total={totalClients}
+          icon={<AlertTriangle size={20} strokeWidth={2.5} />}
+          gradient="linear-gradient(135deg, #3d1219 0%, #6b1d2a 50%, #4a1520 100%)"
+          glowColor="#ff453a"
+          active={activeFilter === 'overdue'}
+          onClick={() => onFilterClick?.('overdue')}
+          subtitle={overdue > 0 ? `${Math.round((overdue / Math.max(totalClients, 1)) * 100)}% of caseload` : undefined}
+          delay={60}
+        />
+        <HeroStatCard
+          label="Due This Week"
+          value={dueThisWeek}
+          total={totalClients}
+          icon={<Clock size={20} strokeWidth={2.5} />}
+          gradient="linear-gradient(135deg, #2d2210 0%, #4a3818 50%, #352a12 100%)"
+          glowColor="#ff9f0a"
+          active={activeFilter === 'due_this_week'}
+          onClick={() => onFilterClick?.('due_this_week')}
+          delay={120}
+        />
+        <HeroStatCard
+          label="No Contact 7+ Days"
+          value={noContact}
+          total={totalClients}
+          icon={<PhoneOff size={20} strokeWidth={2.5} />}
+          gradient="linear-gradient(135deg, #2a2a10 0%, #484818 50%, #363612 100%)"
+          glowColor="#ffd60a"
+          active={activeFilter === 'no_contact_7'}
+          onClick={() => onFilterClick?.('no_contact_7')}
+          delay={180}
+        />
+      </div>
+
+      {/* Secondary row — compact pills */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <StatPill
+          label="Support Planners"
+          value={plannerCount}
+          icon={<UserCheck size={16} />}
+          active={activeRosterFilter === 'planners'}
+          onClick={() => onRosterClick?.('planners')}
+        />
+        <StatPill
+          label="Team Managers"
+          value={tmCount}
+          icon={<UserCog size={16} />}
+          active={activeRosterFilter === 'team_managers'}
+          onClick={() => onRosterClick?.('team_managers')}
+        />
+        {unassignedPlanners > 0 && (
+          <StatPill
+            label="Unassigned Planners"
+            value={unassignedPlanners}
+            icon={<UserX size={16} />}
+            color="#ff9f0a"
+            active={activeRosterFilter === 'unassigned_planners'}
+            onClick={() => onRosterClick?.('unassigned_planners')}
+          />
+        )}
+      </div>
     </div>
   )
 }
