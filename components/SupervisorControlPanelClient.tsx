@@ -275,7 +275,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
     <div style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 80 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>🧭 Supervisor Control Panel</h1>
-        <Link href="/dashboard" style={{
+        <Link href="/dashboard?full=1" style={{
           fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
           padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
         }}>

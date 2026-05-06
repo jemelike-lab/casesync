@@ -272,7 +272,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
               </Link>
             </>
           )}
-          <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6 }}>
+          <Link href="/dashboard?full=1" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6 }}>
             ← Dashboard
           </Link>
         </div>

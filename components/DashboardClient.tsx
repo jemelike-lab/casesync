@@ -1562,6 +1562,16 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
   return (
     <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
+      {/* Back to Control Panel link for supervisors */}
+      {isSupervisor && (
+        <Link href="/dashboard" style={{
+          display: 'inline-block', fontSize: 13, color: 'var(--accent)',
+          textDecoration: 'none', padding: '6px 12px', marginBottom: 12,
+          border: '1px solid var(--border)', borderRadius: 6,
+        }}>
+          ← Control Panel
+        </Link>
+      )}
       {/* Confetti overlay */}
       {showConfetti && (
         <Confetti onDone={() => setShowConfetti(false)} />
