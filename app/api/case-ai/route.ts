@@ -1360,7 +1360,8 @@ RULES:
       }
 
       pass1Data = await pass1Res.json()
-      console.log('[BLH Bot] Pass1 stop_reason:', pass1Data.stop_reason, 'content_types:', pass1Data.content?.map((b: {type: string}) => b.type))
+      const debugInfo = `[DEBUG] stop_reason=${pass1Data.stop_reason} content_types=${pass1Data.content?.map((b: {type: string}) => b.type).join(',')} `
+      console.log('[BLH Bot] Pass1:', debugInfo)
     } catch (fetchErr) {
       clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
@@ -1445,6 +1446,8 @@ RULES:
         const encoder = new TextEncoder()
         const readable = new ReadableStream({
           async start(ctrl) {
+            // TEMPORARY DEBUG: show that tool path was taken
+            ctrl.enqueue(encoder.encode(`${debugInfo}[TOOL=${toolUseBlock.name}] `))
             const reader = pass2Res.body!.getReader()
             const decoder = new TextDecoder()
             try {
@@ -1489,7 +1492,8 @@ RULES:
 
       auditLog(req, { userId, action: 'bot_query' })
 
-      return new Response(finalText, {
+      // TEMPORARY DEBUG: prefix with debug info
+      return new Response(debugInfo + finalText, {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       })
     }
