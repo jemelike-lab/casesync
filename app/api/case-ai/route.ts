@@ -1411,6 +1411,9 @@ RULES:
       const timeoutId2 = setTimeout(() => controller2.abort(), 30000)
 
       try {
+        // Pass2 must include tools since messages contain tool_use/tool_result blocks
+        const pass2System = systemPrompt + '\n\nIMPORTANT: You just received tool results. Summarize the data clearly and directly for the user. Do NOT say "let me try" or attempt another search — answer with the data you have.'
+
         const pass2Res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: apiHeaders,
@@ -1419,10 +1422,9 @@ RULES:
             model: 'claude-haiku-4-5',
             max_tokens: 1024,
             stream: true,
-            system: systemPrompt,
+            system: pass2System,
             messages: pass2Messages,
             tools: BOT_TOOLS,
-            tool_choice: { type: 'none' },
           }),
         })
 
