@@ -1356,6 +1356,7 @@ RULES:
       }
 
       pass1Data = await pass1Res.json()
+      console.log('[BLH Bot] Pass1 stop_reason:', pass1Data.stop_reason, 'content_types:', pass1Data.content?.map((b: {type: string}) => b.type))
     } catch (fetchErr) {
       clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
@@ -1377,6 +1378,7 @@ RULES:
     if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
       // Execute the requested tool
       toolsUsed.push(toolUseBlock.name)
+      console.log('[BLH Bot] Executing tool:', toolUseBlock.name, 'input:', JSON.stringify(toolUseBlock.input))
       let toolResult = ''
 
       try {
@@ -1471,6 +1473,7 @@ RULES:
       }
     } else {
       // No tool use - extract text from pass1 response directly
+      console.log('[BLH Bot] No tool use - returning pass1 text directly')
       finalText = pass1Data.content
         .filter((b: { type: string }) => b.type === 'text')
         .map((b: { text?: string }) => b.text || '')
