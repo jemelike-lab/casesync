@@ -1426,7 +1426,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   // Base: current page from API
   const baseClients = useMemo(() => clients, [clients])
 
-  const stats = useMemo(() => summaryStats, [summaryStats])
+  const stats = useMemo(() => fullSummaryStats, [fullSummaryStats])
 
   // Confetti: show once per session when all current
   useEffect(() => {

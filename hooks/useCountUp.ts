@@ -1,12 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export function useCountUp(target: number, duration = 800): number {
   const [count, setCount] = useState(0)
+  const prevTarget = useRef(0)
+  const hasMounted = useRef(false)
 
   useEffect(() => {
-    if (target === 0) {
-      const timeoutId = window.setTimeout(() => setCount(0), 0)
-      return () => window.clearTimeout(timeoutId)
+    // On first mount, animate from 0 to target
+    // On subsequent changes, animate from previous value to new target
+    const startValue = hasMounted.current ? prevTarget.current : 0
+    hasMounted.current = true
+    prevTarget.current = target
+
+    if (target === startValue) {
+      setCount(target)
+      return
     }
 
     // Respect reduced motion
@@ -21,7 +29,7 @@ export function useCountUp(target: number, duration = 800): number {
       const elapsed = Date.now() - start
       const progress = Math.min(elapsed / duration, 1)
       const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.round(eased * target))
+      setCount(Math.round(startValue + (target - startValue) * eased))
       if (progress < 1) animId = requestAnimationFrame(tick)
     }
 

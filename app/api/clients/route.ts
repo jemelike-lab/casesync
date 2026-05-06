@@ -51,9 +51,12 @@ export async function GET(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    const clientSelect = 'id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(id, full_name, role)'
+
     let query = admin
       .from('clients')
-      .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(id, full_name, role)', { count: 'exact' })
+      .select(clientSelect, { count: 'exact' })
+      .eq('is_active', true)
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
@@ -67,34 +70,35 @@ export async function GET(req: NextRequest) {
     const now = nowDate.toISOString().split('T')[0]
     const todayStart = new Date(nowDate)
     todayStart.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(todayStart)
-    tomorrow.setDate(tomorrow.getDate() + 1)
     const weekLater = new Date(todayStart)
     weekLater.setDate(weekLater.getDate() + 7)
     const twoWeeksLater = new Date(todayStart)
     twoWeeksLater.setDate(twoWeeksLater.getDate() + 14)
 
+    // Must match the 12 fields in lib/types.ts isOverdue/isDueThisWeek (excludes spm_next_due)
     const deadlineFields = [
       'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
       'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
       'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
-      'doc_mdh_date', 'spm_next_due',
+      'doc_mdh_date',
     ]
 
+    // deadlineDate filter still includes spm_next_due for calendar day-click
+    const deadlineDateFields = [...deadlineFields, 'spm_next_due']
+
     if (deadlineDate) {
-      query = query.or(deadlineFields.map(f => `${f}.eq.${deadlineDate}`).join(','))
+      query = query.or(deadlineDateFields.map(f => `${f}.eq.${deadlineDate}`).join(','))
     } else if (filter === 'overdue') {
       query = query.or(deadlineFields.map(f => `${f}.lt.${now}`).join(','))
     } else if (filter === 'due_today') {
       query = query.or(deadlineFields.map(f => `${f}.eq.${now}`).join(','))
     } else if (filter === 'due_this_week') {
-      const t = tomorrow.toISOString().split('T')[0]
+      // Include today through +7 days to match client-side isDueThisWeek (orange ≤3d, yellow ≤7d)
       const w = weekLater.toISOString().split('T')[0]
-      query = query.or(deadlineFields.map(f => `and(${f}.gte.${t},${f}.lte.${w})`).join(','))
+      query = query.or(deadlineFields.map(f => `and(${f}.gte.${now},${f}.lte.${w})`).join(','))
     } else if (filter === 'due_next_14_days') {
-      const t = tomorrow.toISOString().split('T')[0]
       const tw = twoWeeksLater.toISOString().split('T')[0]
-      query = query.or(deadlineFields.map(f => `and(${f}.gte.${t},${f}.lte.${tw})`).join(','))
+      query = query.or(deadlineFields.map(f => `and(${f}.gte.${now},${f}.lte.${tw})`).join(','))
     } else if (filter === 'co') {
       query = query.eq('category', 'co')
     } else if (filter === 'cfc') {
@@ -125,9 +129,12 @@ export async function GET(req: NextRequest) {
     query = query.range(from, to)
 
     const isFiltered = (filter !== 'all' && !deadlineDate) || search.trim()
+
+    // Always fetch full scope for accurate stat counts (not page-scoped)
     let fullScopeQuery = admin
       .from('clients')
-      .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, profiles!clients_assigned_to_fkey(id, full_name, role)')
+      .select(clientSelect)
+      .eq('is_active', true)
 
     if (role === 'supports_planner') {
       fullScopeQuery = fullScopeQuery.eq('assigned_to', userId)
@@ -139,7 +146,7 @@ export async function GET(req: NextRequest) {
 
     const [filteredResult, fullScopeResult] = await Promise.all([
       query,
-      isFiltered ? fullScopeQuery : Promise.resolve(null),
+      fullScopeQuery,
     ])
 
     const { data: clients, error, count } = filteredResult
@@ -153,19 +160,9 @@ export async function GET(req: NextRequest) {
     const total = count ?? 0
     const hasMore = from + limit < total
 
-    const summary = {
-      total,
-      overdue: pageClients.filter(isOverdue).length,
-      dueThisWeek: pageClients.filter(isDueThisWeek).length,
-      eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
-      noContact: pageClients.filter(client => {
-        const days = getDaysSinceContact(client.last_contact_date)
-        return days !== null && days >= 7
-      }).length,
-    }
-
-    const allClients = (fullScopeResult?.data ?? pageClients) as unknown as Client[]
-    const fullSummary = isFiltered ? {
+    // Full-scope stats — always computed from ALL clients, never page-scoped
+    const allClients = (fullScopeResult?.data ?? []) as unknown as Client[]
+    const fullSummary = {
       total: allClients.length,
       overdue: allClients.filter(isOverdue).length,
       dueThisWeek: allClients.filter(isDueThisWeek).length,
@@ -174,7 +171,19 @@ export async function GET(req: NextRequest) {
         const days = getDaysSinceContact(client.last_contact_date)
         return days !== null && days >= 7
       }).length,
-    } : summary
+    }
+
+    // Page-scoped summary (for filtered result count display)
+    const summary = isFiltered ? {
+      total,
+      overdue: pageClients.filter(isOverdue).length,
+      dueThisWeek: pageClients.filter(isDueThisWeek).length,
+      eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
+      noContact: pageClients.filter(client => {
+        const days = getDaysSinceContact(client.last_contact_date)
+        return days !== null && days >= 7
+      }).length,
+    } : fullSummary
 
     return new Response(JSON.stringify({ clients: pageClients, total, hasMore, summary, fullSummary }), {
       headers: { 'Content-Type': 'application/json' },

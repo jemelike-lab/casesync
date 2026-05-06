@@ -201,14 +201,17 @@ export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
-  const date = new Date(dateStr)
+  // Use date-only comparison to match DB view logic (current_date is date-only)
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)  // midnight local
   const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())  // midnight local
+  const diffMs = date.getTime() - today.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
   if (diffDays < -14) return 'critical'  // 14+ days overdue — pulsing red
   if (diffDays < 0) return 'red'          // 1-14 days overdue
-  if (diffDays <= 3) return 'orange'      // due within 3 days
+  if (diffDays <= 3) return 'orange'      // due within 3 days (including today)
   if (diffDays <= 7) return 'yellow'      // due within 7 days
   return 'green'                           // 7+ days out
 }
@@ -245,10 +248,12 @@ export const URGENCY_COLORS_RGB: Record<StatusLevel, string> = {
 
 export function getSpmDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
-  const date = new Date(dateStr)
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
   const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const diffMs = date.getTime() - today.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
   if (diffDays < -14) return 'critical'
   if (diffDays < 0) return 'red'
@@ -259,9 +264,11 @@ export function getSpmDateStatus(dateStr: string | null): StatusLevel {
 
 export function getDaysSinceContact(dateStr: string | null): number | null {
   if (!dateStr) return null
-  const date = new Date(dateStr)
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
   const now = new Date()
-  return Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 export function isOverdue(client: Client): boolean {
@@ -343,13 +350,15 @@ export function isDueNext14Days(client: Client): boolean {
   ]
 
   const now = new Date()
-  const in14 = new Date(now)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const in14 = new Date(today)
   in14.setDate(in14.getDate() + 14)
 
   return datesToCheck.some((d) => {
     if (!d) return false
-    const date = new Date(d)
-    return date >= now && date <= in14
+    const [y, m, day] = d.split('-').map(Number)
+    const date = new Date(y, m - 1, day)
+    return date >= today && date <= in14
   })
 }
 
