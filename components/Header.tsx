@@ -48,8 +48,14 @@ export default function Header({ user, profile }: Props) {
   const [showTour, setShowTour] = useState(false)
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      // Server-side signout clears cookies properly
+      await fetch('/api/auth/signout', { method: 'POST' })
+    } catch {
+      // Fallback to client-side
+      await supabase.auth.signOut()
+    }
+    router.push('/login?reason=signed_out')
     router.refresh()
   }
 

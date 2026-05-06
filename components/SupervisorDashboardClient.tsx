@@ -9,6 +9,7 @@ import {
 import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact, getOverdueCount, formatDate } from '@/lib/types'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
+import PremiumStatGrid from './PremiumStatGrid'
 
 interface Props {
   clients: Client[]
@@ -259,22 +260,40 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
 
   return (
     <div style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom))' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{title}</h1>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Premium Header */}
+      <div style={{
+        marginBottom: 24, borderRadius: 22, padding: '24px 28px',
+        background: 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
+        border: '1px solid rgba(100,140,255,0.12)',
+        position: 'relative', overflow: 'hidden',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+      }}>
+        <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(160,180,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+            {mode === 'supervisor' ? 'Supervisor Overview' : 'Team Manager Overview'}
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#fff' }}>{title}</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           {mode === 'supervisor' && (
             <>
-              <Link href="/team?view=transfer" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
-                Transfer Board →
-              </Link>
-              <Link href="/team?view=assign-planners" style={{ fontSize: 13, color: 'var(--text)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)' }}>
-                Team Manager Board →
-              </Link>
+              <Link href="/team?view=transfer" style={{
+                fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                transition: 'all 0.2s',
+              }}>Transfer Board →</Link>
+              <Link href="/team?view=assign-planners" style={{
+                fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                transition: 'all 0.2s',
+              }}>Team Manager Board →</Link>
             </>
           )}
-          <Link href="/dashboard?full=1" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6 }}>
-            ← Dashboard
-          </Link>
+          <Link href="/dashboard?full=1" style={{
+            fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
+            background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.25)', color: '#5ac8fa',
+          }}>← Dashboard</Link>
         </div>
       </div>
 
@@ -300,14 +319,17 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: activeFilter && activeFilter !== 'all' ? 12 : 28 }}>
-        <StatCard label="Active Clients" value={totalStats.clients} onClick={() => setActiveFilter(activeFilter === 'all' ? null : 'all')} active={activeFilter === 'all'} />
-        <StatCard label="Overdue" value={totalStats.overdue} color="var(--red)" onClick={() => setActiveFilter(activeFilter === 'overdue' ? null : 'overdue')} active={activeFilter === 'overdue'} />
-        <StatCard label="Due Today" value={totalStats.dueToday} color="#ff7a00" onClick={() => setActiveFilter(activeFilter === 'due_today' ? null : 'due_today')} active={activeFilter === 'due_today'} />
-        <StatCard label="Due This Week" value={totalStats.dueThisWeek} color="var(--orange)" onClick={() => setActiveFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')} active={activeFilter === 'due_this_week'} />
-        <StatCard label="Next 14 Days" value={totalStats.dueNext14Days} color="var(--accent)" onClick={() => setActiveFilter(activeFilter === 'due_next_14_days' ? null : 'due_next_14_days')} active={activeFilter === 'due_next_14_days'} />
-        <StatCard label="Supports Planners" value={planners.length} onClick={() => setActiveFilter(activeFilter === 'planners' ? null : 'planners')} active={activeFilter === 'planners'} />
-      </div>
+      <PremiumStatGrid
+        totalClients={totalStats.clients}
+        overdue={totalStats.overdue}
+        dueThisWeek={totalStats.dueThisWeek}
+        noContact={0}
+        plannerCount={planners.length}
+        tmCount={0}
+        unassignedPlanners={0}
+        activeFilter={activeFilter === 'all' ? 'all' : activeFilter === 'overdue' ? 'overdue' : activeFilter === 'due_this_week' ? 'due_this_week' : activeFilter === 'no_contact_7' ? 'no_contact_7' : undefined}
+        onFilterClick={(f) => setActiveFilter(activeFilter === f ? null : f as typeof activeFilter)}
+      />
 
       {/* Compact client list — appears inline when a stat card filter is active */}
       {activeFilter && activeFilter !== 'planners' && filteredClients.length > 0 && (
@@ -478,8 +500,14 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16, background: 'rgba(88,86,214,0.08)', border: '1px solid rgba(88,86,214,0.18)' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+      <div style={{
+        marginBottom: 16, borderRadius: 18, padding: '20px 24px',
+        background: 'linear-gradient(160deg, #1a1230 0%, #251845 40%, #1c1035 100%)',
+        border: '1px solid rgba(138,100,255,0.15)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(138,100,255,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
           Workload + rebalance readout
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10 }}>
@@ -500,19 +528,33 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
             : 'No urgent donor/receiver split right now — the planner table still shows who to watch.'}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Link href="/team?view=transfer" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
-            Open Transfer Board →
-          </Link>
-          <Link href="/team?full=1&filter=overdue" style={{ fontSize: 12, color: 'var(--text)', textDecoration: 'none', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
-            Review Overdue Queue →
-          </Link>
+          <Link href="/team?view=transfer" style={{
+            fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
+            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            transition: 'all 0.2s',
+          }}>Open Transfer Board →</Link>
+          <Link href="/team?full=1&filter=overdue" style={{
+            fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
+            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            transition: 'all 0.2s',
+          }}>Review Overdue Queue →</Link>
         </div>
       </div>
 
-      <div className="card">
-        <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Supports Planners
-        </h3>
+      {/* Premium planner table */}
+      <div style={{
+        borderRadius: 22, overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+      }}>
+        <div style={{
+          padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.015)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Supports Planners
+          </span>
+        </div>
         {plannerStats.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No supports planners found.</p>
         ) : (
