@@ -38,6 +38,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ClientQuickSearch from './ClientQuickSearch'
+import BulkContactModal from './BulkContactModal'
 import { createSavedView, updateSavedView, deleteSavedView } from '@/app/actions/saved-views'
 
 interface Props {
@@ -1084,6 +1085,8 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [bulkAssignId, setBulkAssignId] = useState('')
   const [bulkAssigning, setBulkAssigning] = useState(false)
+  const [showBulkContact, setShowBulkContact] = useState(false)
+  const [bulkContactToast, setBulkContactToast] = useState('')
   const [activeDayFilter, setActiveDayFilter] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
@@ -1506,6 +1509,20 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     ))
   }, [currentUserId])
 
+  const handleBulkContactSuccess = useCallback((updatedIds: string[], date: string, type: string) => {
+    // Optimistic update — set last_contact_date/type for all affected clients
+    setClients(prev => prev.map(c =>
+      updatedIds.includes(c.id)
+        ? { ...c, last_contact_date: date, last_contact_type: type }
+        : c
+    ))
+    setShowBulkContact(false)
+    setSelectedIds([])
+    setShowSelect(false)
+    setBulkContactToast(`Logged ${updatedIds.length} contact${updatedIds.length !== 1 ? 's' : ''}`)
+    setTimeout(() => setBulkContactToast(''), 4000)
+  }, [])
+
   async function handleBulkAssign() {
     if (!bulkAssignId || selectedIds.length === 0) return
     setBulkAssigning(true)
@@ -1878,6 +1895,13 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         {showSelect && selectedIds.length > 0 && (
           <>
             <button
+              className="btn-primary"
+              style={{ fontSize: 12, minHeight: 36 }}
+              onClick={() => setShowBulkContact(true)}
+            >
+              📞 Log {selectedIds.length} Contact{selectedIds.length !== 1 ? 's' : ''}
+            </button>
+            <button
               className="btn-secondary"
               style={{ fontSize: 12, minHeight: 36 }}
               onClick={() => exportSelectedToCsv(clients.filter(c => selectedIds.includes(c.id)))}
@@ -2039,11 +2063,48 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       <QuickActions
         profile={profile}
         onLogContact={() => {
-          // Focus first client card log contact button or open a global contact modal
-          const btn = document.querySelector('button[title="Log Contact"]') as HTMLButtonElement | null
-          btn?.click()
+          if (showSelect && selectedIds.length > 0) {
+            // If clients are selected, open bulk contact modal
+            setShowBulkContact(true)
+          } else {
+            // Otherwise fall back to clicking first client card's log button
+            const btn = document.querySelector('button[title="Log Contact"]') as HTMLButtonElement | null
+            btn?.click()
+          }
         }}
       />
+
+      {/* Bulk Contact Modal */}
+      {showBulkContact && selectedIds.length > 0 && (
+        <BulkContactModal
+          clients={clients.filter(c => selectedIds.includes(c.id))}
+          onClose={() => setShowBulkContact(false)}
+          onSuccess={handleBulkContactSuccess}
+        />
+      )}
+
+      {/* Bulk Contact Success Toast */}
+      {bulkContactToast && (
+        <div
+          className="slide-in-up"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1100,
+            background: '#30d158',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 700,
+            boxShadow: '0 4px 16px rgba(48,209,88,0.4)',
+          }}
+        >
+          ✓ {bulkContactToast}
+        </div>
+      )}
     </div>
   )
 }
