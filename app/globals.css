@@ -677,6 +677,13 @@ input[type="time"] {
   opacity: 1 !important;
   transform: translateX(3px) !important;
 }
+.drilldown-row:hover {
+  background: rgba(255,255,255,0.05) !important;
+  transform: translateX(3px);
+}
+.drilldown-row:hover > div:last-child {
+  opacity: 0.8 !important;
+}
 
 /* Meter fill entrance */
 .meter-fill {
