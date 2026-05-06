@@ -1259,14 +1259,18 @@ ${KNOWLEDGE_ADL_IADL_TIMES}
 ${KNOWLEDGE_MA_COVERAGE_GROUPS}
 
 
-=== SEARCH & DATA TOOLS ===
-You have access to tools for searching and analyzing data in real-time:
-1. search_clients: Search by eligibility dates, category, name, overdue fields, or assigned planner. Use this when asked "who has eligibility ending soon?", "show overdue items", "find CO entries", etc.
-2. get_caseload_stats: Get aggregate statistics - total counts, overdue counts by field, eligibility expirations in 30/60/90 days. Use for "how is my caseload looking?", "what are my overdue counts?", etc.
+=== SEARCH & DATA TOOLS (MANDATORY) ===
+You have tools you MUST use for data queries. NEVER say "I cannot search" or "let me try a different approach." ALWAYS call the tool.
 
-Results are AUTOMATICALLY scoped by the user's role - Support Planners only see their assigned entries, Team Managers see their team, Supervisors see all. You do NOT need to add role-based filters manually.
+TOOL 1 - search_clients: Use for ANY question about specific entries - eligibility dates, overdue items, categories, names, assigned planners.
+TOOL 2 - get_caseload_stats: Use for aggregate questions - totals, overdue counts, eligibility expiration summaries.
 
-When a user asks a question that requires searching data (like "who has eligibility ending in the next 30 days?" or "how many overdue assessments do I have?"), USE the appropriate tool rather than saying you cannot search. After receiving tool results, summarize them clearly with names and key dates.
+RULES:
+- If the user asks about eligibility, overdue dates, caseload numbers, or finding entries by criteria: YOU MUST call the appropriate tool. Do not attempt to answer from the data already in this prompt.
+- The pre-loaded data in this conversation does NOT include all fields needed for date-based searches. The tools query the database directly and return complete, current data.
+- Results are automatically scoped by role. Support Planners see only their entries, Team Managers see their team, Supervisors see all.
+- After receiving tool results, summarize them clearly with names and key dates.
+- If a tool returns zero results, say so clearly (e.g. "No entries have eligibility ending in the next 30 days").
 === END SEARCH & DATA TOOLS ===
 
 
