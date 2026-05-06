@@ -201,69 +201,55 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
 
   return (
     <div style={{
-      background: 'rgba(255,69,58,0.08)',
-      border: '1px solid rgba(255,69,58,0.25)',
-      borderRadius: 10,
-      padding: '10px 16px',
+      background: 'linear-gradient(90deg, rgba(255,69,58,0.06) 0%, rgba(255,69,58,0.02) 50%, rgba(255,159,10,0.04) 100%)',
+      border: '1px solid rgba(255,69,58,0.15)',
+      borderRadius: 16,
+      padding: '12px 20px',
       marginBottom: 20,
       display: 'flex',
-      gap: 16,
+      gap: 12,
       flexWrap: 'wrap',
       alignItems: 'center',
     }}>
-      <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>Needs attention:</span>
+      <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff453a', flexShrink: 0, boxShadow: '0 0 6px rgba(255,69,58,0.5)' }} />
+      <span style={{ fontSize: 12, color: 'rgba(255,150,150,0.7)', fontWeight: 600, letterSpacing: '0.02em' }}>Needs attention:</span>
       {overdue > 0 && (
         <button
           onClick={() => onAlert(activeAlert === 'overdue' ? null : 'overdue')}
           style={{
-            background: activeAlert === 'overdue' ? 'rgba(255,69,58,0.2)' : 'transparent',
-            border: '1px solid rgba(255,69,58,0.4)',
-            borderRadius: 6,
-            color: 'var(--red)',
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '4px 10px',
-            cursor: 'pointer',
-            minHeight: 28,
+            background: activeAlert === 'overdue' ? 'rgba(255,69,58,0.2)' : 'rgba(255,69,58,0.1)',
+            border: activeAlert === 'overdue' ? '1px solid rgba(255,69,58,0.4)' : '1px solid rgba(255,69,58,0.2)',
+            borderRadius: 10, color: '#ff6b6b', fontSize: 12, fontWeight: 700,
+            padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
-          🔴 {overdue} overdue
+          {overdue} overdue
         </button>
       )}
       {dueThisWeek > 0 && (
         <button
           onClick={() => onAlert(activeAlert === 'due_this_week' ? null : 'due_this_week')}
           style={{
-            background: activeAlert === 'due_this_week' ? 'rgba(255,159,10,0.2)' : 'transparent',
-            border: '1px solid rgba(255,159,10,0.4)',
-            borderRadius: 6,
-            color: 'var(--orange)',
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '4px 10px',
-            cursor: 'pointer',
-            minHeight: 28,
+            background: activeAlert === 'due_this_week' ? 'rgba(255,159,10,0.2)' : 'rgba(255,159,10,0.08)',
+            border: activeAlert === 'due_this_week' ? '1px solid rgba(255,159,10,0.4)' : '1px solid rgba(255,159,10,0.15)',
+            borderRadius: 10, color: '#ffb340', fontSize: 12, fontWeight: 700,
+            padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
-          🟠 {dueThisWeek} due this week
+          {dueThisWeek} due this week
         </button>
       )}
       {eligibilitySoon > 0 && (
         <button
           onClick={() => onAlert(activeAlert === 'eligibility_ending_soon' ? null : 'eligibility_ending_soon')}
           style={{
-            background: activeAlert === 'eligibility_ending_soon' ? 'rgba(255,214,10,0.2)' : 'transparent',
-            border: '1px solid rgba(255,214,10,0.4)',
-            borderRadius: 6,
-            color: 'var(--yellow)',
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '4px 10px',
-            cursor: 'pointer',
-            minHeight: 28,
+            background: activeAlert === 'eligibility_ending_soon' ? 'rgba(0,122,255,0.15)' : 'rgba(0,122,255,0.08)',
+            border: activeAlert === 'eligibility_ending_soon' ? '1px solid rgba(0,122,255,0.3)' : '1px solid rgba(0,122,255,0.15)',
+            borderRadius: 10, color: '#5ac8fa', fontSize: 12, fontWeight: 700,
+            padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
-          ⏳ {eligibilitySoon} eligibility ending soon
+          {eligibilitySoon} eligibility ending soon
         </button>
       )}
     </div>
@@ -1602,32 +1588,43 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       )}
 
       {fullMode && (
-        <div className="card" style={{ marginBottom: 16, padding: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
-                View mode
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                Switch between card view and the denser operations table.
-              </div>
+        <div style={{
+          marginBottom: 16, padding: '14px 20px', borderRadius: 16,
+          background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(160,180,255,0.5)' }}>
+              View mode
             </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button
-                className="btn-secondary"
-                style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'grid' ? 'var(--accent)' : undefined }}
-                onClick={() => setViewMode('grid')}
-              >
-                Grid
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ fontSize: 12, minHeight: 36, borderColor: viewMode === 'table' ? 'var(--accent)' : undefined }}
-                onClick={() => setViewMode('table')}
-              >
-                Ops table
-              </button>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
+              Switch between card view and the denser operations table.
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 3 }}>
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                fontSize: 12, fontWeight: viewMode === 'grid' ? 700 : 500, padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                color: viewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
+                background: viewMode === 'grid' ? 'rgba(0,122,255,0.2)' : 'transparent',
+                transition: 'all 0.2s',
+              }}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              style={{
+                fontSize: 12, fontWeight: viewMode === 'table' ? 700 : 500, padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                color: viewMode === 'table' ? '#fff' : 'var(--text-secondary)',
+                background: viewMode === 'table' ? 'rgba(0,122,255,0.2)' : 'transparent',
+                transition: 'all 0.2s',
+              }}
+            >
+              Ops table
+            </button>
           </div>
         </div>
       )}
@@ -1691,13 +1688,17 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         onSelect={handleSavedViewSelect}
       />
 
-      <div className="card" style={{ marginBottom: 16, padding: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+      <div style={{
+        marginBottom: 16, padding: '16px 20px', borderRadius: 16,
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(160,180,255,0.5)' }}>
               Manage current view
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
               Save this filter/search/sort state for one-click reuse.
             </div>
           </div>
