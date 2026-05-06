@@ -741,6 +741,14 @@ input[type="time"] {
 .cal-header-cell:last-child::after {
   display: none;
 }
+/* Tooltip */
+@keyframes calTooltipIn {
+  from { opacity: 0; transform: translateY(-50%) scale(0.95); }
+  to { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+.cal-tooltip {
+  animation: calTooltipIn 0.2s ease;
+}
 
 .premium-stat-card {
   font-family: inherit;

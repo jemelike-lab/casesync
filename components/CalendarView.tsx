@@ -22,6 +22,93 @@ function toDateKey(date: Date): string {
 
 const UC: Record<CalendarEvent['urgency'], string> = { overdue: '#ff453a', today: '#ff9f0a', this_week: '#ffd60a', this_month: '#ffd60a', future: '#30d158' }
 const UL: Record<CalendarEvent['urgency'], string> = { overdue: 'OVERDUE', today: 'TODAY', this_week: 'This Week', this_month: 'This Month', future: 'Upcoming' }
+const UBG: Record<CalendarEvent['urgency'], string> = { overdue: 'rgba(255,69,58,0.12)', today: 'rgba(255,159,10,0.1)', this_week: 'rgba(255,214,10,0.08)', this_month: 'rgba(255,214,10,0.06)', future: 'rgba(48,209,88,0.08)' }
+
+/* ─── Hover Tooltip ────────────────────────────────────────────── */
+function CalendarTooltip({ events, position }: { events: CalendarEvent[]; position: 'left' | 'right' }) {
+  // Group events by client
+  const byClient = new Map<string, CalendarEvent[]>()
+  events.forEach(e => {
+    if (!byClient.has(e.clientId)) byClient.set(e.clientId, [])
+    byClient.get(e.clientId)!.push(e)
+  })
+
+  return (
+    <div className="cal-tooltip" style={{
+      position: 'absolute',
+      top: '50%', transform: 'translateY(-50%)',
+      [position === 'right' ? 'left' : 'right']: 'calc(100% + 10px)',
+      zIndex: 100,
+      width: 280,
+      background: 'linear-gradient(160deg, rgba(20,26,56,0.98) 0%, rgba(12,16,38,0.99) 100%)',
+      border: '1px solid rgba(100,140,255,0.2)',
+      borderRadius: 16,
+      padding: '14px 16px',
+      boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,140,255,0.08)',
+      backdropFilter: 'blur(20px)',
+      pointerEvents: 'none',
+    }}>
+      {/* Header */}
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(160,180,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+        {events.length} deadline{events.length !== 1 ? 's' : ''} · {byClient.size} client{byClient.size !== 1 ? 's' : ''}
+      </div>
+
+      {/* Client cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+        {Array.from(byClient.entries()).map(([clientId, clientEvents]) => {
+          const first = clientEvents[0]
+          const worstUrgency = clientEvents.reduce((worst, e) => {
+            const order = { overdue: 0, today: 1, this_week: 2, this_month: 3, future: 4 }
+            return order[e.urgency] < order[worst] ? e.urgency : worst
+          }, 'future' as CalendarEvent['urgency'])
+
+          return (
+            <div key={clientId} style={{
+              borderRadius: 12, padding: '10px 12px',
+              background: UBG[worstUrgency],
+              borderLeft: `3px solid ${UC[worstUrgency]}`,
+            }}>
+              {/* Client name + urgency badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#e0e8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {first.clientName}
+                </span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 6, flexShrink: 0,
+                  background: `${UC[worstUrgency]}25`, color: UC[worstUrgency],
+                  border: `1px solid ${UC[worstUrgency]}40`,
+                }}>
+                  {UL[worstUrgency]}
+                </span>
+              </div>
+
+              {/* Deadline types */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {clientEvents.map((evt, j) => (
+                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: UC[evt.urgency], flexShrink: 0, boxShadow: `0 0 4px ${UC[evt.urgency]}60` }} />
+                    <span style={{ color: '#a0b4e0' }}>{evt.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Planner + ID */}
+              <div style={{ fontSize: 10, color: '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
+                <span>ID {first.client_id}</span>
+                {first.plannerName && (
+                  <>
+                    <span style={{ opacity: 0.4 }}>·</span>
+                    <span>{first.plannerName}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -58,6 +145,7 @@ export default function CalendarView({ assignedTo }: Props) {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -259,14 +347,26 @@ export default function CalendarView({ assignedTo }: Props) {
                 else if (isT) bg = 'rgba(0,122,255,0.08)'
 
                 const cellClass = `cal-cell${hasOD?' cal-has-overdue':''}${hasTW&&!hasOD?' cal-has-week':''}${hasFut&&!hasOD&&!hasTW?' cal-has-future':''}`
+                const isHovered = dk === hoveredCell && hasEv
+                const colIdx = i % 7 // 0=Sun through 6=Sat
+                const tooltipPos = colIdx >= 4 ? 'left' as const : 'right' as const
 
                 return (
-                  <div key={i} className={day ? cellClass : ''} onClick={()=>day&&setSelectedDate(dk===selectedDate?null:dk)} style={{
-                    minHeight:95, padding:'7px 7px 5px',
-                    borderRight:'1px solid rgba(100,140,255,0.08)',
-                    borderBottom:'1px solid rgba(100,140,255,0.08)',
-                    background:bg, cursor:day?'pointer':'default',
-                  }}>
+                  <div
+                    key={i}
+                    className={day ? cellClass : ''}
+                    onClick={()=>day&&setSelectedDate(dk===selectedDate?null:dk)}
+                    onMouseEnter={()=>day&&hasEv&&setHoveredCell(dk)}
+                    onMouseLeave={()=>setHoveredCell(null)}
+                    style={{
+                      minHeight:95, padding:'7px 7px 5px',
+                      borderRight:'1px solid rgba(100,140,255,0.08)',
+                      borderBottom:'1px solid rgba(100,140,255,0.08)',
+                      background:bg, cursor:day?'pointer':'default',
+                    }}
+                  >
+                    {/* Tooltip */}
+                    {isHovered && <CalendarTooltip events={ce} position={tooltipPos} />}
                     {day && (<>
                       {/* Day number + event count */}
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
