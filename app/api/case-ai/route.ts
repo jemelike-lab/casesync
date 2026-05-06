@@ -1334,6 +1334,7 @@ RULES:
 
     // ---- Pass 1: Non-streaming call with tools ----
     let pass1Data: { content: Array<{ type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string }>; stop_reason: string }
+    let debugInfo = ''
     try {
       const pass1Res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -1360,7 +1361,7 @@ RULES:
       }
 
       pass1Data = await pass1Res.json()
-      const debugInfo = `[DEBUG] stop_reason=${pass1Data.stop_reason} content_types=${pass1Data.content?.map((b: {type: string}) => b.type).join(',')} `
+      debugInfo = `[DEBUG] stop_reason=${pass1Data.stop_reason} content_types=${pass1Data.content?.map((b: {type: string}) => b.type).join(',')} `
       console.log('[BLH Bot] Pass1:', debugInfo)
     } catch (fetchErr) {
       clearTimeout(timeoutId)
