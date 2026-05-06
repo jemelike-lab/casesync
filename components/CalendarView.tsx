@@ -14,76 +14,43 @@ interface CalendarEvent {
   urgency: 'overdue' | 'today' | 'this_week' | 'this_month' | 'future'
 }
 
-interface Props {
-  assignedTo?: string | null
-}
+interface Props { assignedTo?: string | null }
 
 function toDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const URGENCY_COLORS: Record<CalendarEvent['urgency'], string> = {
-  overdue: '#ff453a',
-  today: '#ff9f0a',
-  this_week: '#ffd60a',
-  this_month: '#ffd60a',
-  future: '#30d158',
-}
-
-const URGENCY_LABEL: Record<CalendarEvent['urgency'], string> = {
-  overdue: 'OVERDUE',
-  today: 'TODAY',
-  this_week: 'This Week',
-  this_month: 'This Month',
-  future: 'Upcoming',
-}
-
-const URGENCY_GRADIENT: Record<CalendarEvent['urgency'], string> = {
-  overdue: 'linear-gradient(135deg, rgba(255,69,58,0.15) 0%, rgba(255,69,58,0.05) 100%)',
-  today: 'linear-gradient(135deg, rgba(255,159,10,0.15) 0%, rgba(255,159,10,0.05) 100%)',
-  this_week: 'linear-gradient(135deg, rgba(255,214,10,0.12) 0%, rgba(255,214,10,0.04) 100%)',
-  this_month: 'linear-gradient(135deg, rgba(255,214,10,0.08) 0%, rgba(255,214,10,0.02) 100%)',
-  future: 'linear-gradient(135deg, rgba(48,209,88,0.12) 0%, rgba(48,209,88,0.04) 100%)',
-}
+const UC: Record<CalendarEvent['urgency'], string> = { overdue: '#ff453a', today: '#ff9f0a', this_week: '#ffd60a', this_month: '#ffd60a', future: '#30d158' }
+const UL: Record<CalendarEvent['urgency'], string> = { overdue: 'OVERDUE', today: 'TODAY', this_week: 'This Week', this_month: 'This Month', future: 'Upcoming' }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December']
-const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 type ViewType = 'day' | 'week' | 'month'
 
 function getMonday(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d
+  const d = new Date(date); d.setHours(0,0,0,0)
+  const day = d.getDay(); d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day)); return d
 }
 
-/* ─── Stat Chip ────────────────────────────────────────────────── */
-function StatChip({ label, count, color, colorRgb }: { label: string; count: number; color: string; colorRgb: string }) {
-  const animated = useCountUp(count)
+function StatChip({ label, count, color, rgb }: { label: string; count: number; color: string; rgb: string }) {
+  const n = useCountUp(count)
   if (count === 0) return null
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-      borderRadius: 12, background: `rgba(${colorRgb}, 0.1)`,
-      border: `1px solid rgba(${colorRgb}, 0.2)`,
+      borderRadius: 12, background: `rgba(${rgb}, 0.12)`, border: `1px solid rgba(${rgb}, 0.25)`,
     }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}60` }} />
-      <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{animated}</span>
-      <span style={{ fontSize: 11, color: `rgba(${colorRgb}, 0.7)`, fontWeight: 600 }}>{label}</span>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}80` }} />
+      <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{n}</span>
+      <span style={{ fontSize: 11, color: `rgba(${rgb}, 0.8)`, fontWeight: 600 }}>{label}</span>
     </div>
   )
 }
 
 export default function CalendarView({ assignedTo }: Props) {
   const router = useRouter()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date(); today.setHours(0,0,0,0)
   const todayKey = toDateKey(today)
 
   const [view, setView] = useState<ViewType>('month')
@@ -95,205 +62,137 @@ export default function CalendarView({ assignedTo }: Props) {
   const [loading, setLoading] = useState(false)
 
   const range = useMemo(() => {
-    if (view === 'day') {
-      const key = toDateKey(currentDate)
-      return { start: key, end: key }
-    }
-    if (view === 'week') {
-      const weekStart = getMonday(currentDate)
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekEnd.getDate() + 6)
-      return { start: toDateKey(weekStart), end: toDateKey(weekEnd) }
-    }
-    const monthStart = new Date(year, month, 1)
-    const monthEnd = new Date(year, month + 1, 0)
-    return { start: toDateKey(monthStart), end: toDateKey(monthEnd) }
+    if (view === 'day') { const k = toDateKey(currentDate); return { start: k, end: k } }
+    if (view === 'week') { const ws = getMonday(currentDate); const we = new Date(ws); we.setDate(we.getDate()+6); return { start: toDateKey(ws), end: toDateKey(we) } }
+    return { start: toDateKey(new Date(year,month,1)), end: toDateKey(new Date(year,month+1,0)) }
   }, [view, currentDate, year, month])
 
   useEffect(() => {
-    const controller = new AbortController()
-    const params = new URLSearchParams()
-    params.set('start', range.start)
-    params.set('end', range.end)
-    if (assignedTo) params.set('assignedTo', assignedTo)
+    const c = new AbortController(); const p = new URLSearchParams()
+    p.set('start', range.start); p.set('end', range.end)
+    if (assignedTo) p.set('assignedTo', assignedTo)
     setLoading(true)
-    fetch(`/api/calendar?${params.toString()}`, { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Failed (${res.status})`)
-        return res.json() as Promise<{ events: CalendarEvent[] }>
-      })
-      .then((payload) => setEvents(payload.events ?? []))
-      .catch((error) => { if (!controller.signal.aborted) { console.error(error); setEvents([]) } })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
+    fetch(`/api/calendar?${p}`, { signal: c.signal })
+      .then(r => r.ok ? r.json() as Promise<{events:CalendarEvent[]}> : Promise.reject())
+      .then(d => setEvents(d.events ?? []))
+      .catch(() => { if (!c.signal.aborted) setEvents([]) })
+      .finally(() => { if (!c.signal.aborted) setLoading(false) })
+    return () => c.abort()
   }, [range.start, range.end, assignedTo])
 
   const eventsMap = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>()
-    for (const evt of events) {
-      if (!map.has(evt.date)) map.set(evt.date, [])
-      map.get(evt.date)!.push(evt)
-    }
-    return map
+    const m = new Map<string, CalendarEvent[]>()
+    for (const e of events) { if (!m.has(e.date)) m.set(e.date, []); m.get(e.date)!.push(e) }
+    return m
   }, [events])
 
-  // Stats
   const stats = useMemo(() => {
-    let overdue = 0, thisWeek = 0, upcoming = 0
-    events.forEach(e => {
-      if (e.urgency === 'overdue') overdue++
-      else if (e.urgency === 'today' || e.urgency === 'this_week') thisWeek++
-      else upcoming++
-    })
-    return { overdue, thisWeek, upcoming, total: events.length }
+    let o=0,w=0,u=0
+    events.forEach(e => { if (e.urgency==='overdue') o++; else if (e.urgency==='today'||e.urgency==='this_week') w++; else u++ })
+    return { overdue:o, thisWeek:w, upcoming:u }
   }, [events])
 
   const dayEvents = eventsMap.get(toDateKey(currentDate)) ?? []
   const weekStart = getMonday(currentDate)
-  const weekDays: Date[] = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(d.getDate() + i); return d })
+  const weekDays = Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(d.getDate()+i);return d})
   const weekEnd = weekDays[6]
+  const firstDay = new Date(year,month,1).getDay()
+  const daysInMonth = new Date(year,month+1,0).getDate()
+  const cells: (number|null)[] = [...Array(firstDay).fill(null),...Array.from({length:daysInMonth},(_,i)=>i+1)]
+  while (cells.length%7!==0) cells.push(null)
 
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
-  while (cells.length % 7 !== 0) cells.push(null)
-
-  function monthDateKey(day: number) {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  }
-  function prevMonth() { if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1); setSelectedDate(null) }
-  function nextMonth() { if (month === 11) { setYear(y => y + 1); setMonth(0) } else setMonth(m => m + 1); setSelectedDate(null) }
+  function mdk(day:number) { return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` }
+  function prevMonth() { if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1); setSelectedDate(null) }
+  function nextMonth() { if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1); setSelectedDate(null) }
 
   useEffect(() => {
-    if (view !== 'month') return
+    if (view!=='month') return
     if (selectedDate && eventsMap.has(selectedDate)) return
-    const todayMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`
-    const eventKeysInMonth = Array.from(eventsMap.keys()).filter(k => k.startsWith(todayMonthKey)).sort()
-    if (!eventKeysInMonth.length) { setSelectedDate(null); return }
-    setSelectedDate(eventKeysInMonth.find(k => k >= todayKey) ?? eventKeysInMonth[0])
+    const mk = `${year}-${String(month+1).padStart(2,'0')}`
+    const ek = Array.from(eventsMap.keys()).filter(k=>k.startsWith(mk)).sort()
+    if (!ek.length) { setSelectedDate(null); return }
+    setSelectedDate(ek.find(k=>k>=todayKey) ?? ek[0])
   }, [view, year, month, eventsMap, selectedDate, todayKey])
 
   const selectedEvents = selectedDate ? (eventsMap.get(selectedDate) ?? []) : []
 
-  /* ─── DeadlineItem ─────────────────────────────────────────────── */
-  function DeadlineItem({ evt, idx }: { evt: CalendarEvent; idx: number }) {
+  function DI({ evt, idx }: { evt: CalendarEvent; idx: number }) {
     return (
-      <div
-        onClick={() => router.push(`/clients/${evt.clientId}`)}
-        className="drilldown-row"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-          background: URGENCY_GRADIENT[evt.urgency],
-          borderRadius: 14, cursor: 'pointer',
-          borderLeft: `3px solid ${URGENCY_COLORS[evt.urgency]}`,
-          transition: 'all 0.25s ease',
-          opacity: 0, animation: `slideInRow 0.35s ${idx * 0.05}s ease forwards`,
-        }}
-      >
-        <div style={{
-          width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-          background: URGENCY_COLORS[evt.urgency],
-          boxShadow: `0 0 6px ${URGENCY_COLORS[evt.urgency]}60`,
-        }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{evt.clientName}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-            {evt.label} • ID {evt.client_id}{evt.plannerName ? ` • ${evt.plannerName}` : ''}
-          </div>
+      <div onClick={()=>router.push(`/clients/${evt.clientId}`)} className="drilldown-row" style={{
+        display:'flex', alignItems:'center', gap:14, padding:'14px 16px',
+        background: `linear-gradient(90deg, ${UC[evt.urgency]}10 0%, transparent 100%)`,
+        borderRadius:14, cursor:'pointer', borderLeft:`3px solid ${UC[evt.urgency]}`,
+        transition:'all 0.25s', opacity:0, animation:`slideInRow 0.35s ${idx*0.05}s ease forwards`,
+      }}>
+        <div style={{ width:10, height:10, borderRadius:'50%', background:UC[evt.urgency], boxShadow:`0 0 8px ${UC[evt.urgency]}60`, flexShrink:0 }} />
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>{evt.clientName}</div>
+          <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>{evt.label} • ID {evt.client_id}{evt.plannerName?` • ${evt.plannerName}`:''}</div>
         </div>
-        <span style={{
-          fontSize: 10, padding: '3px 10px', borderRadius: 8, fontWeight: 700,
-          background: `${URGENCY_COLORS[evt.urgency]}18`,
-          color: URGENCY_COLORS[evt.urgency],
-          border: `1px solid ${URGENCY_COLORS[evt.urgency]}30`,
-          flexShrink: 0,
-        }}>
-          {URGENCY_LABEL[evt.urgency]}
-        </span>
-        <span style={{ fontSize: 14, color: 'var(--text-secondary)', opacity: 0.3 }}>→</span>
+        <span style={{ fontSize:10, padding:'3px 10px', borderRadius:8, fontWeight:700, background:`${UC[evt.urgency]}18`, color:UC[evt.urgency], border:`1px solid ${UC[evt.urgency]}30`, flexShrink:0 }}>{UL[evt.urgency]}</span>
+        <span style={{ fontSize:14, color:'var(--text-secondary)', opacity:0.3 }}>→</span>
       </div>
     )
   }
 
+  const navBtn: React.CSSProperties = { background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'8px 14px', color:'#fff', cursor:'pointer', fontSize:14, transition:'background 0.2s' }
+  const todayBtn: React.CSSProperties = { background:'rgba(0,122,255,0.12)', border:'1px solid rgba(0,122,255,0.25)', borderRadius:10, padding:'8px 16px', color:'#5ac8fa', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.2s' }
+
   return (
     <div>
-      {/* ─── Top Controls ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        {/* View toggle */}
-        <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 3 }}>
-          {(['day', 'week', 'month'] as ViewType[]).map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              padding: '7px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: view === v ? 700 : 500,
-              background: view === v ? 'rgba(0,122,255,0.2)' : 'transparent',
-              color: view === v ? '#5ac8fa' : 'var(--text-secondary)',
-              transition: 'all 0.2s',
-            }}>
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
+      {/* ─── Top Bar ───────────────────────────────────────────────── */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+        <div style={{ display:'flex', gap:4, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:3 }}>
+          {(['day','week','month'] as ViewType[]).map(v=>(
+            <button key={v} onClick={()=>setView(v)} style={{
+              padding:'7px 18px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13,
+              fontWeight:view===v?700:500, background:view===v?'rgba(0,122,255,0.2)':'transparent',
+              color:view===v?'#5ac8fa':'var(--text-secondary)', transition:'all 0.2s',
+            }}>{v[0].toUpperCase()+v.slice(1)}</button>
           ))}
         </div>
-
-        {/* Stat chips */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <StatChip label="overdue" count={stats.overdue} color="#ff453a" colorRgb="255,69,58" />
-          <StatChip label="this week" count={stats.thisWeek} color="#ffd60a" colorRgb="255,214,10" />
-          <StatChip label="upcoming" count={stats.upcoming} color="#30d158" colorRgb="48,209,88" />
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          <StatChip label="overdue" count={stats.overdue} color="#ff453a" rgb="255,69,58" />
+          <StatChip label="this week" count={stats.thisWeek} color="#ffd60a" rgb="255,214,10" />
+          <StatChip label="upcoming" count={stats.upcoming} color="#30d158" rgb="48,209,88" />
         </div>
-
-        {loading && <div style={{ fontSize: 12, color: 'rgba(160,180,255,0.4)' }}>Loading…</div>}
+        {loading && <div style={{ fontSize:12, color:'rgba(160,180,255,0.4)' }}>Loading…</div>}
       </div>
 
       {/* ─── Day View ──────────────────────────────────────────────── */}
-      {view === 'day' && (
+      {view==='day' && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-            <button onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() - 1); setCurrentDate(d) }} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>←</button>
-            <span style={{ fontSize: 17, fontWeight: 700, flex: 1, textAlign: 'center', color: '#fff' }}>
-              {currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-            <button onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() + 1); setCurrentDate(d) }} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>→</button>
-            <button onClick={() => setCurrentDate(new Date(today))} style={{ background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 10, padding: '8px 14px', color: '#5ac8fa', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Today</button>
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+            <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()-1);setCurrentDate(d)}} style={navBtn}>←</button>
+            <span style={{ fontSize:17, fontWeight:700, flex:1, textAlign:'center', color:'#fff' }}>{currentDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span>
+            <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()+1);setCurrentDate(d)}} style={navBtn}>→</button>
+            <button onClick={()=>setCurrentDate(new Date(today))} style={todayBtn}>Today</button>
           </div>
-          {dayEvents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 15 }}>No deadlines on this day ✅</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{dayEvents.map((evt, i) => <DeadlineItem key={i} evt={evt} idx={i} />)}</div>
-          )}
+          {dayEvents.length===0 ? <div style={{textAlign:'center',padding:'48px 0',color:'rgba(255,255,255,0.25)',fontSize:15}}>No deadlines ✅</div>
+            : <div style={{display:'flex',flexDirection:'column',gap:6}}>{dayEvents.map((e,i)=><DI key={i} evt={e} idx={i}/>)}</div>}
         </div>
       )}
 
       {/* ─── Week View ─────────────────────────────────────────────── */}
-      {view === 'week' && (
+      {view==='week' && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-            <button onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() - 7); setCurrentDate(d) }} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>←</button>
-            <span style={{ fontSize: 16, fontWeight: 700, flex: 1, textAlign: 'center', color: '#fff' }}>
-              Week of {MONTH_NAMES_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_NAMES_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}
-            </span>
-            <button onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() + 7); setCurrentDate(d) }} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>→</button>
-            <button onClick={() => setCurrentDate(new Date(today))} style={{ background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 10, padding: '8px 14px', color: '#5ac8fa', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Today</button>
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+            <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()-7);setCurrentDate(d)}} style={navBtn}>←</button>
+            <span style={{ fontSize:16, fontWeight:700, flex:1, textAlign:'center', color:'#fff' }}>Week of {MONTH_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}</span>
+            <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()+7);setCurrentDate(d)}} style={navBtn}>→</button>
+            <button onClick={()=>setCurrentDate(new Date(today))} style={todayBtn}>Today</button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {weekDays.map((dayDate, i) => {
-              const dk = toDateKey(dayDate)
-              const isToday = dk === todayKey
-              const isPast = dk < todayKey
-              const items = eventsMap.get(dk) ?? []
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            {weekDays.map((dd,i)=>{
+              const dk=toDateKey(dd), isT=dk===todayKey, past=dk<todayKey, items=eventsMap.get(dk)??[]
               return (
-                <div key={i} style={{
-                  borderLeft: isToday ? '3px solid #5ac8fa' : '3px solid rgba(255,255,255,0.06)',
-                  paddingLeft: 16, opacity: isPast ? 0.5 : 1, transition: 'opacity 0.3s',
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: isToday ? '#5ac8fa' : 'rgba(255,255,255,0.35)', marginBottom: 8 }}>
-                    {dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                    {items.length > 0 && <span style={{ marginLeft: 8, fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>{items.length}</span>}
+                <div key={i} style={{ borderLeft:isT?'3px solid #5ac8fa':'3px solid rgba(255,255,255,0.08)', paddingLeft:16, opacity:past?0.5:1 }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:isT?'#5ac8fa':'rgba(255,255,255,0.4)', marginBottom:8 }}>
+                    {dd.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
+                    {items.length>0 && <span style={{ marginLeft:8, fontSize:10, padding:'2px 8px', borderRadius:8, background:'rgba(255,255,255,0.06)', color:'var(--text-secondary)' }}>{items.length}</span>}
                   </div>
-                  {items.length === 0 ? (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.15)', fontStyle: 'italic', paddingLeft: 4 }}>(nothing due)</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{items.map((evt, j) => <DeadlineItem key={j} evt={evt} idx={j} />)}</div>
-                  )}
+                  {items.length===0 ? <div style={{fontSize:12,color:'rgba(255,255,255,0.15)',fontStyle:'italic'}}>(nothing due)</div>
+                    : <div style={{display:'flex',flexDirection:'column',gap:6}}>{items.map((e,j)=><DI key={j} evt={e} idx={j}/>)}</div>}
                 </div>
               )
             })}
@@ -302,149 +201,138 @@ export default function CalendarView({ assignedTo }: Props) {
       )}
 
       {/* ─── Month View ────────────────────────────────────────────── */}
-      {view === 'month' && (
+      {view==='month' && (
         <div>
-          {/* Nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
-            <button onClick={prevMonth} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>←</button>
-            <span style={{ fontSize: 20, fontWeight: 800, minWidth: 200, textAlign: 'center', color: '#fff' }}>{MONTH_NAMES[month]} {year}</span>
-            <button onClick={nextMonth} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', color: '#fff', cursor: 'pointer', fontSize: 14 }}>→</button>
-            <button onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()) }} style={{ background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 10, padding: '8px 14px', color: '#5ac8fa', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Today</button>
+          <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:20, flexWrap:'wrap' }}>
+            <button onClick={prevMonth} style={navBtn}>←</button>
+            <span style={{ fontSize:20, fontWeight:800, minWidth:200, textAlign:'center', color:'#fff' }}>{MONTH_NAMES[month]} {year}</span>
+            <button onClick={nextMonth} style={navBtn}>→</button>
+            <button onClick={()=>{setYear(today.getFullYear());setMonth(today.getMonth())}} style={todayBtn}>Today</button>
           </div>
 
           {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-            {[{ label: 'Overdue', color: '#ff453a' }, { label: 'Today', color: '#ff9f0a' }, { label: 'This Week', color: '#ffd60a' }, { label: 'Future', color: '#30d158' }].map(({ label, color }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', boxShadow: `0 0 4px ${color}40` }} />
-                {label}
+          <div style={{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' }}>
+            {[{l:'Overdue',c:'#ff453a'},{l:'Today',c:'#ff9f0a'},{l:'This Week',c:'#ffd60a'},{l:'Future',c:'#30d158'}].map(({l,c})=>(
+              <div key={l} style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'rgba(255,255,255,0.5)' }}>
+                <span style={{ width:8, height:8, borderRadius:'50%', background:c, boxShadow:`0 0 4px ${c}50` }} />{l}
               </div>
             ))}
           </div>
 
-          {/* Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-            {/* Day headers */}
-            {DAYS.map(d => (
-              <div key={d} style={{
-                padding: '10px 4px', textAlign: 'center', fontSize: 11, fontWeight: 700,
-                color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em',
-                background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)',
-              }}>
-                {d}
-              </div>
-            ))}
+          {/* Calendar Grid — BRIGHT design */}
+          <div style={{
+            borderRadius:16, overflow:'hidden',
+            border:'1px solid rgba(255,255,255,0.12)',
+            background:'linear-gradient(180deg, rgba(20,25,50,0.95) 0%, rgba(15,18,35,0.98) 100%)',
+            boxShadow:'0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}>
+            {/* Day headers — bright and visible */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
+              {DAYS.map(d=>(
+                <div key={d} style={{
+                  padding:'12px 4px', textAlign:'center', fontSize:12, fontWeight:700,
+                  color:'#8b9cc7', letterSpacing:'0.1em', textTransform:'uppercase',
+                  background:'rgba(30,40,80,0.8)',
+                  borderBottom:'2px solid rgba(100,140,255,0.15)',
+                  borderRight:'1px solid rgba(100,140,255,0.06)',
+                }}>
+                  {d}
+                </div>
+              ))}
+            </div>
 
             {/* Day cells */}
-            {cells.map((day, i) => {
-              const dk = day ? monthDateKey(day) : null
-              const cellEvents = dk ? (eventsMap.get(dk) ?? []) : []
-              const isToday = dk === todayKey
-              const isSelected = dk === selectedDate
-              const hasOverdue = cellEvents.some(e => e.urgency === 'overdue')
-              const hasThisWeek = cellEvents.some(e => e.urgency === 'this_week' || e.urgency === 'today')
-              const hasEvents = cellEvents.length > 0
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
+              {cells.map((day,i)=>{
+                const dk = day ? mdk(day) : null
+                const ce = dk ? (eventsMap.get(dk)??[]) : []
+                const isT = dk===todayKey, isSel = dk===selectedDate
+                const hasOD = ce.some(e=>e.urgency==='overdue')
+                const hasTW = ce.some(e=>e.urgency==='this_week'||e.urgency==='today')
+                const hasFut = ce.some(e=>e.urgency==='future')
+                const hasEv = ce.length>0
 
-              let cellBg = 'transparent'
-              if (isSelected) cellBg = 'rgba(0,122,255,0.12)'
-              else if (hasOverdue) cellBg = 'rgba(255,69,58,0.06)'
-              else if (hasThisWeek) cellBg = 'rgba(255,214,10,0.04)'
-              else if (isToday) cellBg = 'rgba(0,122,255,0.04)'
+                let bg = 'transparent'
+                let borderC = 'rgba(100,140,255,0.06)'
+                if (isSel) { bg = 'rgba(0,122,255,0.15)'; borderC = 'rgba(0,122,255,0.25)' }
+                else if (hasOD) bg = 'rgba(255,69,58,0.08)'
+                else if (hasTW) bg = 'rgba(255,214,10,0.06)'
+                else if (hasFut) bg = 'rgba(48,209,88,0.04)'
+                else if (isT) bg = 'rgba(0,122,255,0.06)'
 
-              return (
-                <div
-                  key={i}
-                  onClick={() => day && setSelectedDate(dk === selectedDate ? null : dk)}
-                  style={{
-                    minHeight: 85, padding: '6px 6px 4px',
-                    borderRight: '1px solid rgba(255,255,255,0.03)',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                    background: cellBg,
-                    cursor: day ? 'pointer' : 'default',
-                    transition: 'background 0.2s',
-                    position: 'relative',
-                  }}
-                >
-                  {day && (
-                    <>
-                      <div style={{
-                        fontSize: 13, fontWeight: isToday ? 800 : 400, textAlign: 'right', paddingRight: 4,
-                        color: isToday ? '#5ac8fa' : hasEvents ? '#fff' : 'rgba(255,255,255,0.25)',
-                      }}>
-                        {isToday && <span style={{
-                          display: 'inline-block', width: 24, height: 24, lineHeight: '24px', textAlign: 'center',
-                          borderRadius: '50%', background: 'rgba(0,122,255,0.25)', marginRight: 2,
-                        }}>{day}</span>}
-                        {!isToday && day}
+                return (
+                  <div key={i} onClick={()=>day&&setSelectedDate(dk===selectedDate?null:dk)} style={{
+                    minHeight:90, padding:'6px 6px 4px',
+                    borderRight:`1px solid ${borderC}`,
+                    borderBottom:`1px solid ${borderC}`,
+                    background:bg, cursor:day?'pointer':'default',
+                    transition:'background 0.2s',
+                  }}>
+                    {day && (<>
+                      {/* Day number */}
+                      <div style={{ textAlign:'right', paddingRight:4, marginBottom:4 }}>
+                        {isT ? (
+                          <span style={{
+                            display:'inline-flex', width:28, height:28, alignItems:'center', justifyContent:'center',
+                            borderRadius:'50%', background:'#007aff', color:'#fff',
+                            fontSize:13, fontWeight:800, boxShadow:'0 0 12px rgba(0,122,255,0.5)',
+                          }}>{day}</span>
+                        ) : (
+                          <span style={{
+                            fontSize:14, fontWeight:hasEv?700:400,
+                            color:hasEv ? '#c8d4f0' : '#5a6a8a',
+                          }}>{day}</span>
+                        )}
                       </div>
-                      {hasEvents && (
-                        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          {cellEvents.slice(0, 2).map((evt, j) => (
+                      {/* Events */}
+                      {hasEv && (
+                        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                          {ce.slice(0,2).map((evt,j)=>(
                             <div key={j} style={{
-                              fontSize: 10, padding: '2px 5px', borderRadius: 6,
-                              background: `${URGENCY_COLORS[evt.urgency]}15`,
-                              color: URGENCY_COLORS[evt.urgency],
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                              borderLeft: `2px solid ${URGENCY_COLORS[evt.urgency]}`,
-                              fontWeight: 600,
+                              fontSize:10, padding:'3px 6px', borderRadius:6,
+                              background:`${UC[evt.urgency]}20`,
+                              color:UC[evt.urgency], fontWeight:700,
+                              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                              borderLeft:`3px solid ${UC[evt.urgency]}`,
+                              boxShadow:`inset 0 0 8px ${UC[evt.urgency]}08`,
                             }}>
                               {evt.clientName.split(',')[0]}
                             </div>
                           ))}
-                          {cellEvents.length > 2 && (
-                            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', paddingLeft: 4 }}>+{cellEvents.length - 2} more</div>
-                          )}
+                          {ce.length>2 && <div style={{ fontSize:9, color:'#5a6a8a', paddingLeft:4, fontWeight:600 }}>+{ce.length-2} more</div>}
                         </div>
                       )}
-                      {/* Dot indicator for selected */}
-                      {isSelected && (
-                        <div style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#5ac8fa' }} />
-                      )}
-                    </>
-                  )}
-                </div>
-              )
-            })}
+                      {/* Selected dot */}
+                      {isSel && <div style={{ position:'relative' }}><div style={{ position:'absolute', bottom:-2, left:'50%', transform:'translateX(-50%)', width:5, height:5, borderRadius:'50%', background:'#5ac8fa', boxShadow:'0 0 6px #5ac8fa' }} /></div>}
+                    </>)}
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
-          {/* ─── Selected Day Detail Panel ──────────────────────────── */}
+          {/* ─── Detail Panel ──────────────────────────────────────── */}
           <div style={{
-            marginTop: 20, borderRadius: 18, overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.05)',
-            background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+            marginTop:20, borderRadius:18, overflow:'hidden',
+            border:'1px solid rgba(255,255,255,0.08)',
+            background:'linear-gradient(160deg, rgba(20,25,50,0.6) 0%, rgba(15,18,35,0.4) 100%)',
           }}>
             <div style={{
-              padding: '14px 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              background: 'rgba(255,255,255,0.015)',
-              display: 'flex', alignItems: 'center', gap: 10,
+              padding:'14px 20px', borderBottom:'1px solid rgba(100,140,255,0.1)',
+              background:'rgba(30,40,80,0.5)', display:'flex', alignItems:'center', gap:10,
             }}>
-              {selectedDate && selectedEvents.length > 0 && (
-                <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: selectedEvents.some(e => e.urgency === 'overdue') ? '#ff453a' : '#ffd60a', boxShadow: `0 0 6px ${selectedEvents.some(e => e.urgency === 'overdue') ? 'rgba(255,69,58,0.5)' : 'rgba(255,214,10,0.5)'}` }} />
+              {selectedDate && selectedEvents.length>0 && (
+                <div className="pulse-dot" style={{ width:8, height:8, borderRadius:'50%', background:selectedEvents.some(e=>e.urgency==='overdue')?'#ff453a':'#ffd60a', boxShadow:`0 0 8px ${selectedEvents.some(e=>e.urgency==='overdue')?'rgba(255,69,58,0.6)':'rgba(255,214,10,0.6)'}` }} />
               )}
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                {selectedDate
-                  ? `Deadlines — ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
-                  : 'Deadlines'}
+              <span style={{ fontSize:13, fontWeight:700, color:'#c8d4f0' }}>
+                {selectedDate ? `Deadlines — ${new Date(selectedDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}` : 'Deadlines'}
               </span>
-              {selectedEvents.length > 0 && (
-                <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                  {selectedEvents.length}
-                </span>
-              )}
+              {selectedEvents.length>0 && <span style={{ fontSize:11, padding:'2px 10px', borderRadius:20, background:'rgba(100,140,255,0.1)', color:'#8b9cc7', fontWeight:600 }}>{selectedEvents.length}</span>}
             </div>
-            <div style={{ padding: '12px 16px 16px' }}>
-              {selectedDate == null ? (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', padding: 12, textAlign: 'center' }}>
-                  {loading ? 'Loading deadlines…' : 'No due clients found in this month.'}
-                </div>
-              ) : selectedEvents.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', padding: 12, textAlign: 'center' }}>No deadlines on this day</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {selectedEvents.map((evt, i) => <DeadlineItem key={i} evt={evt} idx={i} />)}
-                </div>
-              )}
+            <div style={{ padding:'12px 16px 16px' }}>
+              {!selectedDate ? <div style={{fontSize:13,color:'#5a6a8a',padding:12,textAlign:'center'}}>{loading?'Loading…':'No due clients in this month.'}</div>
+                : selectedEvents.length===0 ? <div style={{fontSize:13,color:'#5a6a8a',padding:12,textAlign:'center'}}>No deadlines</div>
+                : <div style={{display:'flex',flexDirection:'column',gap:6}}>{selectedEvents.map((e,i)=><DI key={i} evt={e} idx={i}/>)}</div>}
             </div>
           </div>
         </div>
