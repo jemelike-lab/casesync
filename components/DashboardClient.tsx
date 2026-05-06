@@ -39,6 +39,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import ClientQuickSearch from './ClientQuickSearch'
 import BulkContactModal from './BulkContactModal'
+import PremiumStatGrid from './PremiumStatGrid'
 import { createSavedView, updateSavedView, deleteSavedView } from '@/app/actions/saved-views'
 
 interface Props {
@@ -354,90 +355,81 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
   }
 
   return (
-    <div className="card slide-in-up" style={{
+    <div style={{
       marginBottom: 16,
+      borderRadius: 22,
+      padding: '24px 28px',
       background: allCurrent
-        ? 'linear-gradient(135deg, rgba(48,209,88,0.08) 0%, rgba(0,0,0,0) 100%)'
-        : 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,0,0,0) 100%)',
-      border: allCurrent
-        ? '1px solid rgba(48,209,88,0.2)'
-        : '1px solid rgba(0,122,255,0.15)',
+        ? 'linear-gradient(160deg, #0c2a1a 0%, #142e20 40%, #0e2418 100%)'
+        : 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
+      border: allCurrent ? '1px solid rgba(48,209,88,0.15)' : '1px solid rgba(100,140,255,0.12)',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 20 }}>{icon}</span>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-          {greeting}, {firstName}
-        </h2>
+      {showConfetti && <Confetti onDone={onDismissConfetti} />}
+
+      {/* Decorative orb */}
+      <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: allCurrent ? 'radial-gradient(circle, rgba(48,209,88,0.08) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Date */}
+      <div style={{ fontSize: 12, fontWeight: 500, color: allCurrent ? 'rgba(100,220,140,0.5)' : 'rgba(160,180,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <p style={{ margin: '0 0 6px', fontSize: 15, color: allCurrent ? 'var(--green)' : 'var(--text)', fontWeight: 700 }}>
-          {allCurrent ? '✅ ' : ''}{summaryHeadline}
-        </p>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          {summaryBody}
-        </p>
+      {/* Greeting */}
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 10 }}>
+        {greeting}, {firstName} 👋
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {stats.overdue > 0 && (
-          <button
-            onClick={() => onFilter(activeFilter === 'overdue' ? null : 'overdue')}
-            style={{
-              background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.15)',
-              border: '1px solid rgba(255,69,58,0.4)',
-              borderRadius: 20,
-              color: '#ff453a',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '5px 12px',
-              cursor: 'pointer',
-              minHeight: 30,
-              transition: 'background 0.15s',
-            }}
-          >
-            🔴 {overdueCount} overdue
-          </button>
-        )}
-        {stats.dueThisWeek > 0 && (
-          <button
-            onClick={() => onFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')}
-            style={{
-              background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.15)',
-              border: '1px solid rgba(255,159,10,0.4)',
-              borderRadius: 20,
-              color: '#ff9f0a',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '5px 12px',
-              cursor: 'pointer',
-              minHeight: 30,
-              transition: 'background 0.15s',
-            }}
-          >
-            🟠 {dueCount} due this week
-          </button>
-        )}
-        {stats.noContact > 0 && (
-          <button
-            onClick={() => onFilter(activeFilter === 'no_contact_7' ? null : 'no_contact_7')}
-            style={{
-              background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.25)' : 'rgba(255,214,10,0.12)',
-              border: '1px solid rgba(255,214,10,0.3)',
-              borderRadius: 20,
-              color: '#ffd60a',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '5px 12px',
-              cursor: 'pointer',
-              minHeight: 30,
-              transition: 'background 0.15s',
-            }}
-          >
-            ⏰ {noContactCount} no contact 7d+
-          </button>
-        )}
+      {/* Summary */}
+      <div style={{ fontSize: 14, color: allCurrent ? 'rgba(100,220,140,0.8)' : 'rgba(200,210,255,0.7)', fontWeight: 600, marginBottom: 16 }}>
+        {allCurrent ? '✅ ' : ''}{summaryHeadline}
       </div>
+
+      {/* Metric pills */}
+      {!allCurrent && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {stats.overdue > 0 && (
+            <button
+              onClick={() => onFilter(activeFilter === 'overdue' ? null : 'overdue')}
+              style={{
+                background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.12)',
+                border: activeFilter === 'overdue' ? '1px solid rgba(255,69,58,0.5)' : '1px solid rgba(255,69,58,0.25)',
+                borderRadius: 12, color: '#ff6b6b', fontSize: 13, fontWeight: 700,
+                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              {overdueCount} overdue
+            </button>
+          )}
+          {stats.dueThisWeek > 0 && (
+            <button
+              onClick={() => onFilter(activeFilter === 'due_this_week' ? null : 'due_this_week')}
+              style={{
+                background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.1)',
+                border: activeFilter === 'due_this_week' ? '1px solid rgba(255,159,10,0.5)' : '1px solid rgba(255,159,10,0.2)',
+                borderRadius: 12, color: '#ffb340', fontSize: 13, fontWeight: 700,
+                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              {dueCount} due this week
+            </button>
+          )}
+          {stats.noContact > 0 && (
+            <button
+              onClick={() => onFilter(activeFilter === 'no_contact_7' ? null : 'no_contact_7')}
+              style={{
+                background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.2)' : 'rgba(255,214,10,0.08)',
+                border: activeFilter === 'no_contact_7' ? '1px solid rgba(255,214,10,0.4)' : '1px solid rgba(255,214,10,0.15)',
+                borderRadius: 12, color: '#ffe066', fontSize: 13, fontWeight: 700,
+                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              {noContactCount} no contact 7d+
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -827,19 +819,28 @@ function NextBestMoveCard({ profile, stats, onFilter }: {
   }
 
   return (
-    <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, rgba(88,86,214,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(88,86,214,0.18)' }}>
-      <div style={{ fontSize: 12, color: '#b7a7ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+    <div style={{
+      marginBottom: 16, borderRadius: 18, padding: '20px 24px',
+      background: 'linear-gradient(160deg, #1a1230 0%, #251845 40%, #1c1035 100%)',
+      border: '1px solid rgba(138,100,255,0.15)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(138,100,255,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ fontSize: 11, color: 'rgba(180,160,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         Suggested focus
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
         {title}
       </div>
-      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+      <div style={{ fontSize: 13, color: 'rgba(200,190,255,0.6)', lineHeight: 1.6, marginBottom: 14 }}>
         {body}
       </div>
       <button
-        className="btn-secondary"
-        style={{ fontSize: 12, minHeight: 34 }}
+        style={{
+          fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 10,
+          background: 'rgba(138,100,255,0.15)', border: '1px solid rgba(138,100,255,0.3)',
+          color: '#b7a7ff', cursor: 'pointer', transition: 'all 0.2s',
+        }}
         onClick={() => onFilter(ctaFilter)}
       >
         {ctaLabel}
@@ -1776,13 +1777,18 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         onFilter={handleGreetingFilter}
       />
 
-      {/* Stats — always show full-scope counts so clicking any card shows correct data */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: alertFilter ? 10 : 24 }}>
-        <StatCard label="Active Clients" value={fullSummaryStats.total} onClick={() => handleAlertClick(alertFilter === 'all' ? null : 'all')} active={alertFilter === 'all'} />
-        <StatCard label="Overdue" value={fullSummaryStats.overdue} color="var(--red)" onClick={() => handleAlertClick(alertFilter === 'overdue' ? null : 'overdue')} active={alertFilter === 'overdue'} />
-        <StatCard label="Due This Week" value={fullSummaryStats.dueThisWeek} color="var(--orange)" onClick={() => handleAlertClick(alertFilter === 'due_this_week' ? null : 'due_this_week')} active={alertFilter === 'due_this_week'} />
-        <StatCard label="No Contact 7+ Days" value={fullSummaryStats.noContact} color="var(--yellow)" onClick={() => handleAlertClick(alertFilter === 'no_contact_7' ? null : 'no_contact_7')} active={alertFilter === 'no_contact_7'} />
-      </div>
+      {/* Stats — premium stat cards */}
+      <PremiumStatGrid
+        totalClients={fullSummaryStats.total}
+        overdue={fullSummaryStats.overdue}
+        dueThisWeek={fullSummaryStats.dueThisWeek}
+        noContact={fullSummaryStats.noContact}
+        plannerCount={0}
+        tmCount={0}
+        unassignedPlanners={0}
+        activeFilter={alertFilter}
+        onFilterClick={(f) => handleAlertClick(alertFilter === f ? null : f as FilterType)}
+      />
 
       {/* Compact client list for the active stat filter */}
       {alertFilter && alertFilter !== 'all' && filtered.length > 0 && (
