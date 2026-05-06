@@ -1324,7 +1324,8 @@ RULES:
     const apiHeaders = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2024-04-04',
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'tools-2024-04-04',
     }
 
     const formattedMessages = messages.map((m: { role: string; content: string }) => ({
