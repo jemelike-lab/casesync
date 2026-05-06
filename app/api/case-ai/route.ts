@@ -1352,7 +1352,11 @@ RULES:
         clearTimeout(timeoutId)
         const errText = await pass1Res.text()
         console.error('Anthropic pass1 error:', pass1Res.status, errText)
-        return new Response('API error: ' + pass1Res.status + ' - ' + errText.substring(0, 200), { status: 502 })
+        // TEMPORARY DEBUG: return 200 so frontend chat UI renders the error
+        return new Response('[DEBUG PASS1] Anthropic ' + pass1Res.status + ': ' + errText.substring(0, 500), {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        })
       }
 
       pass1Data = await pass1Res.json()
@@ -1430,7 +1434,11 @@ RULES:
         if (!pass2Res.ok) {
           const errText = await pass2Res.text()
           console.error('Anthropic pass2 error:', errText)
-          return new Response('AI service error', { status: 502 })
+          // TEMPORARY DEBUG: return 200 so frontend chat UI renders the error
+          return new Response('[DEBUG PASS2] Anthropic ' + pass2Res.status + ': ' + errText.substring(0, 500), {
+            status: 200,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          })
         }
 
         // Stream pass2 response
