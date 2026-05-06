@@ -922,8 +922,8 @@ async function executeSearchClients(
 ) {
   const limit = Math.min(Number(input.limit) || 20, 50);
   let query = supabase.from('clients').select(
-    'id, first_name, last_name, ma_number, category, status, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date'
-  );
+    'id, client_id, first_name, last_name, category, is_active, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, goal_pct, pos_status, last_contact_date'
+  ).eq('is_active', true);
 
   // Role-based scoping (roles stored lowercase in profiles table)
   if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
@@ -988,8 +988,8 @@ async function executeCaseloadStats(
   userId: string
 ) {
   let query = supabase.from('clients').select(
-    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, status'
-  );
+    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, is_active'
+  ).eq('is_active', true);
 
   // Same role-based scoping (roles stored lowercase in profiles table)
   if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
@@ -1032,7 +1032,7 @@ async function executeCaseloadStats(
 
   return JSON.stringify({
     total: rows.length,
-    active: rows.filter((r: Record<string, unknown>) => r.status === 'active').length,
+    active: rows.filter((r: Record<string, unknown>) => r.is_active === true).length,
     overdue_counts: overdueCounts,
     eligibility_expiring: eligExpiring
   });
