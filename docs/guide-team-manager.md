@@ -1,351 +1,260 @@
 # CaseSync Guide — Team Manager
 **Beatrice Loving Heart (BLH)**
-*Your complete guide to using the CaseSync case management portal*
+*Your complete guide to the CaseSync case management portal*
 
 ---
 
 ## Table of Contents
 1. [Getting Started](#1-getting-started)
 2. [Your Dashboard](#2-your-dashboard)
-3. [Working with Clients](#3-working-with-clients)
-4. [Logging Contact](#4-logging-contact)
-5. [Monthly Monitoring (SPM)](#5-monthly-monitoring-spm)
-6. [Documents](#6-documents)
+3. [Client Cards & Urgency System](#3-client-cards--urgency-system)
+4. [Client Detail Page](#4-client-detail-page)
+5. [Bulk Contact Logger](#5-bulk-contact-logger)
+6. [Team Page](#6-team-page)
 7. [Calendar](#7-calendar)
-8. [Chat](#8-chat)
-9. [BLH Bot](#9-blh-bot)
-10. [Mobile App](#10-mobile-app)
-11. [Team Dashboard](#11-team-dashboard)
-12. [Assigning Clients to Planners](#12-assigning-clients-to-planners)
-13. [Monitoring Your Team's Compliance](#13-monitoring-your-teams-compliance)
-14. [Using BLH Bot for Team Questions](#14-using-blh-bot-for-team-questions)
-15. [Quick Reference](#15-quick-reference)
+8. [BLH Bot & AI Intelligence](#8-blh-bot--ai-intelligence)
+9. [Assigning & Reassigning Clients](#9-assigning--reassigning-clients)
+10. [Monitoring Your Team](#10-monitoring-your-team)
+11. [Mobile App (PWA)](#11-mobile-app-pwa)
+12. [Quick Reference](#12-quick-reference)
 
 ---
 
 ## 1. Getting Started
 
-### Receiving Your Invitation
-
-Your Supervisor will send you an invitation email from CaseSync. This email contains a secure sign-up link.
-
-1. Open the invitation email in your inbox.
-2. Click the **"Accept Invitation"** or **"Set Up Your Account"** link.
-3. The link will open CaseSync in your browser and prompt you to create a password.
-
-> 💡 **Tip:** Check your spam or junk folder if you don't see the email within a few minutes.
-
-### Setting Your Password
-
-1. On the password setup screen, enter a password that is:
-   - At least 8 characters long
-   - Contains at least one uppercase letter
-   - Contains at least one number or symbol
-2. Confirm your password by typing it again.
-3. Click **Save Password**.
-
-> 💡 **Tip:** Use a password manager to generate and store a strong password. Never share your CaseSync password with anyone, including your Supervisor.
-
 ### Logging In
 
-1. Go to your organization's CaseSync URL.
-2. Enter your email address.
-3. Enter your password.
-4. Click **Sign In**.
-
-If you forget your password, click **"Forgot password?"** on the login page.
+1. Go to **blhcasesync.com** in your browser.
+2. Enter your email address and password.
+3. Click **Sign In**.
 
 ### Your Role and Permissions
 
 As a Team Manager, you can:
-- View and edit all clients assigned to your team
-- View all contact logs and SPMs submitted by your planners
-- Assign and reassign clients to planners on your team
-- View your team's compliance dashboard
-- Communicate with your planners via Chat
+- View and edit all clients assigned to your team's planners
+- View your team's compliance and workload stats
+- Assign and reassign clients to planners
+- Use the bulk contact logger
 - Use BLH Bot for team-level questions
+- Access the Calendar and Chat
 
 You cannot:
-- Access client records for teams you don't manage (unless granted by a Supervisor)
-- Invite new users to the system (Supervisor only)
-- Change user roles (Supervisor only)
 - Access the Supervisor Dashboard or Admin Panel
+- Invite or deactivate users
+- View clients outside your team (unless granted by a Supervisor)
 
 ---
 
 ## 2. Your Dashboard
 
-The Dashboard is your personal home base — it shows *your* assigned clients and upcoming deadlines. The Team Dashboard (Section 11) shows your team's activity.
+Your dashboard shows your personal greeting, urgency stats, and client list.
 
-### What You See
+### Greeting Card & Urgency Status
 
-| Element | What It Does |
-|---|---|
-| **Greeting** | Shows your name and today's date |
-| **Alert Banner** | Highlights clients needing immediate attention |
-| **Week Strip** | Shows deadlines in the next 7 days |
-| **Client Cards** | Each card = one of your clients (if you carry a caseload) |
-| **Search Bar** | Find a client by name |
-| **Filter Bar** | Narrow by status, flag, or deadline type |
-| **Sort** | Change order of client cards |
+The greeting card shows your name, today's date, and colored urgency pills:
+- **Red pill**: count of overdue clients
+- **Orange pill**: due this week
+- **Yellow pill**: no contact 7+ days
 
-### Understanding the Alert Banner
+Click any pill to instantly filter your client list.
 
-The orange/red banner appears when:
-- A client has a **missed Monthly Monitoring** submission
-- A **deadline is overdue**
-- A **service authorization is expiring** soon
-- You've flagged a client for follow-up
+### Suggested Focus
 
-Click any alert to go directly to that client.
+A smart suggestion card recommends your best next move — for example, "Start with overdue pressure, then work the upcoming queue" with a one-click action button.
 
-### Understanding the Week Strip
+### Premium Stat Cards
 
-The week strip shows a 7-day timeline. Each deadline chip shows:
-- Client initials or name
-- Deadline type (SPM, Contact Log, etc.)
-- Color: 🔴 Red = overdue | 🟡 Amber = due within 3 days | 🟢 Green = on track
+Four animated cards at a glance:
+- **Active Clients** — your team's total
+- **Overdue** — with animated arc showing % of caseload
+- **Due This Week** — upcoming deadline count
+- **No Contact 7+ Days** — clients needing outreach
+
+Click any stat card to filter the client list to just those clients.
+
+### Week Strip, Alert Banner, View Mode, Saved Views
+
+All the same features as the Supports Planner dashboard. See the SP guide for details.
 
 ---
 
-## 3. Calendar
+## 3. Client Cards & Urgency System
 
-### Accessing the Calendar
+### The 5-Tier Urgency System
 
-Click **Calendar** in the top navigation.
+| Color | Meaning | Threshold |
+|---|---|---|
+| 🟢 Green | On track | 7+ days until due |
+| 🟡 Yellow | Upcoming | Due within 7 days |
+| 🟠 Orange | Due soon | Due within 3 days |
+| 🔴 Red | Overdue | 1–14 days overdue |
+| 🔴 Critical | Critical | 14+ days overdue (pulsing) |
 
-### Views
+### Client Card Features
 
-- **Month** — planning ahead, spotting busy weeks
-- **Week** — day-by-day breakdown
-- **Day** — detailed single-day view
-
-### What Appears on Your Calendar
-
-- Your personal deadlines (if you carry clients)
-- Team-wide SPM deadlines (visible on the Team Dashboard calendar)
-
----
-
-## 4. Chat
-
-### Direct Messages
-
-- Send private messages to your planners, colleagues, or Supervisor.
-- Click **+ New Message**, search for the person, and start typing.
-
-### Team Channels
-
-- Use your team channel to make announcements, share reminders, or coordinate.
-- All planners on your team should be in the team channel.
-
-### Client Threads
-
-- Discuss specific clients in threads attached to their profile.
-- These keep client discussions organized and auditable.
-
-### Chat Best Practices for Team Managers
-
-- Post deadline reminders (e.g., "SPMs due in 5 days — let me know if you need help")
-- Use DMs for private feedback to planners
-- Avoid discussing sensitive client information in group channels
-- Respond to planner messages within one business day
+Same as the SP guide — hover lift, urgency glow, compact date pills, health score ring, risk badges, quick Log button, and swipe gestures on mobile.
 
 ---
 
-## 5. BLH Bot
+## 4. Client Detail Page
 
-BLH Bot is your AI assistant, available anytime via the purple button 🟣 in the bottom-right corner.
+Click any client name to open the premium 2-column detail page.
 
-### What Team Managers Can Ask
+### Layout
 
-| Question | Example |
-|---|---|
-| Team status | "Which of my planners have overdue SPMs?" |
-| Client lookup | "What are the deadlines for [client name]?" |
-| Policy | "What's the SPM submission deadline?" |
-| Procedures | "How do I reassign a client to a different planner?" |
-| Help | "How do I export a report?" |
+- **Full-width Hero Header** — name, ID, category, health ring, status pills, Edit button
+- **Left Column** — Key Deadlines grid (10 interactive date tiles with hover popups), Contact details, Plans & Assessments, CO Details, Notes, Activity Log
+- **Right Column** — AI Intelligence, Client Info with reassignment, Med Tech, Forms, Authorizations, Reporting, Documents
 
----
+### Hover Popups
 
-## 6. Mobile App
+Hover any date tile in the Key Deadlines grid to see a floating popup with the urgency label, countdown ("12d overdue"), date, and action prompt.
 
-### Installing CaseSync on Your Phone
+### Collapsible Sections
 
-**On iPhone (Safari):**
-1. Open CaseSync in Safari.
-2. Tap the **Share** button → **"Add to Home Screen"** → **Add**.
-
-**On Android (Chrome):**
-1. Open CaseSync in Chrome.
-2. Tap **⋮** → **"Add to Home Screen"** or **"Install App"** → **Install**.
-
-The CaseSync icon will appear on your home screen and launch in full-screen mode.
+Less-critical sections are collapsed by default. Click any section header to expand.
 
 ---
 
-## 7. Team Dashboard
+## 5. Bulk Contact Logger
 
-The Team Dashboard is your overview of your entire team's activity and compliance.
-
-### Accessing the Team Dashboard
-
-Click **Team** in the top navigation bar.
-
-### What You See
-
-| Section | What It Shows |
-|---|---|
-| **Planner Overview** | List of all your Supports Planners |
-| **Client Count** | How many clients each planner manages |
-| **SPM Compliance** | % of SPMs submitted on time per planner |
-| **Overdue Flags** | Number of overdue deadlines per planner |
-| **Last Active** | When each planner last logged in |
-
-### Compliance Stats
-
-The compliance column shows a color-coded status for each planner:
-- 🟢 **Green** — all SPMs submitted, no overdue items
-- 🟡 **Amber** — 1–2 overdue items or approaching deadline
-- 🔴 **Red** — multiple overdue items or missed SPMs
-
-> 💡 **Tip:** Use this view at the start of each week to quickly identify which planners may need support or a reminder.
-
-### Drilling Down
-
-Click any planner's name to see:
-- Their full client list
-- Individual compliance status per client
-- Recent contact log activity
+Select multiple clients on the dashboard → click **📞 Log N Contacts** → choose date, type, and note → all clients updated at once. See the SP guide for step-by-step details.
 
 ---
 
-## 8. Assigning Clients to Planners
+## 6. Team Page
 
-### Assigning a New Client
+Click **Team** in the top navigation to see your team's overview.
 
-When a new client is added to your team:
-1. Open the client's profile.
-2. Click **Assign Planner** (or look for the "Assigned To" field in the profile).
-3. Select the planner from the dropdown list.
-4. Click **Save**.
+### Premium Team Dashboard
 
-The client will now appear on the planner's Dashboard.
+The Team page has been redesigned with:
 
-### Reassigning a Client
+- **Header Banner** — deep navy gradient with your role label and bold title
+- **Stat Cards** — same premium cards as the dashboard (overdue, due this week, no contact) scoped to your team
+- **Workload Readout** — a gradient card showing your team's overall load status
 
-If a planner leaves, takes leave, or has too many clients:
-1. Open the client's profile.
-2. Click **Edit** → change the "Assigned To" field.
-3. Select the new planner.
-4. Click **Save**.
+### Planner Workload Section
 
-The client will move from the old planner's Dashboard to the new one. All historical data (contact logs, SPMs, documents) remains attached to the client record.
+Each planner on your team is shown as a card row with:
+- **Avatar circle** with initials
+- **Animated load bar** showing relative caseload size
+- **Color coding**: red (3+ overdue), orange (1-2 overdue), green (0 overdue)
+- **Metric chips** — colored pills showing overdue/due/quiet counts
 
-> 💡 **Tip:** Notify both the outgoing and incoming planner via Chat when making a reassignment, especially if there are active situations that require handoff notes.
+**Hover any metric chip** to see a tooltip explaining what it means (e.g., "3 overdue deadlines").
 
-### Reviewing Your Team's Caseload Balance
+**Click any planner row** to navigate to the Team page filtered to that planner's clients.
 
-From the Team Dashboard, review each planner's client count. Consider reassigning if:
+### Team Roster
+
+Below the workload section, a roster shows all planners and team managers with:
+- Avatar circles
+- Role pills (green for SP, orange for TM)
+- Client count badges
+
+---
+
+## 7. Calendar
+
+Same premium calendar as the SP guide — urgency-colored cells, hover tooltips with client details, month/week/day views. As a Team Manager, your calendar shows deadlines across your entire team.
+
+---
+
+## 8. BLH Bot & AI Intelligence
+
+### BLH Bot
+
+Available via the purple button 🟣. As a TM, you can ask team-level questions:
+- "Which of my planners have overdue SPMs?"
+- "Show me a compliance summary for my team"
+- "Who is [client name] assigned to?"
+- "How do I reassign a client?"
+
+### AI Intelligence (Client Detail)
+
+On any client's detail page, the AI card lets you ask questions or generate summaries about that specific client.
+
+---
+
+## 9. Assigning & Reassigning Clients
+
+### From the Client Detail Page
+
+1. Open a client's profile
+2. In the right sidebar, find the **Client Info** card
+3. Scroll to the **Reassign** section
+4. Search for a planner by name
+5. Select the planner from the dropdown
+6. Click **Reassign**
+
+The client will move to the new planner's dashboard. An email notification is sent to the new planner automatically.
+
+### Reviewing Caseload Balance
+
+From the Team page, review each planner's client count and overdue metrics. Consider reassigning if:
 - One planner has significantly more clients than others
-- A planner is consistently missing deadlines (may indicate overload)
-- A new planner joins and needs clients assigned
+- A planner is consistently overloaded (red metric chips)
+- A new planner joins and needs clients
 
 ---
 
-## 9. Monitoring Your Team's Compliance
+## 10. Monitoring Your Team
 
-### SPM Compliance Check
-
-1. Go to the **Team Dashboard**.
-2. Sort by **SPM Compliance** (lowest first) to see who needs attention.
-3. Click on a planner to see which specific clients are missing SPMs.
-4. Send a Chat DM to the planner with a reminder.
-
-### Overdue Deadline Review
-
-1. From the Team Dashboard, click **View Overdue Items**.
-2. You'll see a list of every overdue deadline across your team, sorted by date.
-3. Click any item to go to the client profile.
-
-### Weekly Compliance Routine (Recommended)
+### Weekly Routine
 
 | Day | Action |
 |---|---|
-| **Monday** | Review Team Dashboard for overdue items from previous week |
-| **10th of month** | Send SPM reminder to all planners via team Chat channel |
+| **Monday** | Review Team page for overdue items from previous week |
+| **10th of month** | Send SPM reminder to planners |
 | **14th of month** | Final SPM reminder — check who hasn't submitted |
-| **16th of month** | Review SPM compliance report — follow up with any late submitters |
+| **16th of month** | Review compliance — follow up with late submitters |
 
-### Flagging Clients That Need Attention
+### Using Metric Chips
 
-1. Open the client's profile.
-2. Click the **Flag** icon.
-3. Add a note (e.g., "Needs SPM review before 15th").
-4. The assigned planner will see the flag on their Dashboard.
+On the Planner Workload section, each planner's metric chips give you an instant read:
+- **Red chip** = overdue deadlines (needs immediate attention)
+- **Orange chip** = due this week
+- **Yellow chip** = no contact 7+ days
 
----
-
-## 10. Using BLH Bot for Team Questions
-
-BLH Bot can help you manage your team more efficiently.
-
-### Team-Specific Questions You Can Ask
-
-- **"Show me a summary of my team's compliance this month"**
-- **"Which clients on my team are overdue for SPMs?"**
-- **"Who is [client name] assigned to?"**
-- **"How do I send a bulk reminder to my planners?"**
-- **"What's the policy on reassigning clients mid-month?"**
-- **"Explain the SPM requirements for [service type]"**
-
-### Generating a Team Summary
-
-Ask BLH Bot: "Give me a compliance summary for my team" — it will pull your team's current stats and highlight the most urgent items.
-
-### Getting Policy Guidance
-
-BLH Bot is trained on BLH's policies and procedures. Use it to quickly answer planner questions before escalating to your Supervisor.
+Hover any chip for a full description.
 
 ---
 
-## 11. Quick Reference
+## 11. Mobile App (PWA)
 
-### Keyboard Shortcuts (Desktop)
+Same as the SP guide — install on iPhone via Safari Share → Add to Home Screen, or Android via Chrome menu → Install App. All TM features including the Team page work on mobile.
+
+---
+
+## 12. Quick Reference
+
+### Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
-| `/` | Focus the search bar |
-| `Esc` | Close a modal or cancel editing |
-| `Ctrl+S` / `Cmd+S` | Save (in edit mode) |
-| `?` | Open keyboard shortcuts help |
+| `/` | Focus search bar |
+| `N` | Add new client |
+| `C` | Go to Calendar |
+| `?` | Show shortcuts |
 
-### Key Dates
+### Urgency Colors
 
-| Date | Action |
-|---|---|
-| 1st of month | Review prior month compliance, plan current month |
-| 10th of month | Send SPM reminder to your team |
-| 15th of month | SPM deadline — all planners must have submitted |
-| 16th of month | Review compliance, follow up with late submitters |
-
-### Common Issues & Solutions
-
-| Problem | Solution |
-|---|---|
-| Planner can't see their client | Check that client is assigned to them in the client profile |
-| SPM not showing in compliance report | Ask planner to resubmit; check that "Submit" was clicked (not just saved) |
-| Need to add a new user | Contact your Supervisor — only Supervisors can invite users |
-| Can't reassign a client | Ensure you have edit access; contact Supervisor if access is restricted |
+| Color | Badge | Meaning |
+|---|---|---|
+| 🟢 | On track | 7+ days out |
+| 🟡 | UPCOMING | Within 7 days |
+| 🟠 | DUE SOON | Within 3 days |
+| 🔴 | OVERDUE | 1–14 days past |
+| 🔴 pulsing | CRITICAL | 14+ days past |
 
 ### Getting Help
 
-1. **BLH Bot** — first stop for any question
-2. **Chat** — message your Supervisor or a colleague
-3. **Supervisor** — for access requests, policy questions, or escalated issues
+1. **BLH Bot** — purple button on any page
+2. **AI Intelligence** — on client detail pages
+3. **Supervisor** — for access requests, policy, or escalation
 
 ---
 
-*CaseSync is built for Beatrice Loving Heart (BLH). For technical issues, contact your Supervisor.*
-*Guide version: 2025 | Role: Team Manager*
+*CaseSync is built for Beatrice Loving Heart (BLH) by VELOX Automated Operations.*
+*Guide version: 2026 | Role: Team Manager*
