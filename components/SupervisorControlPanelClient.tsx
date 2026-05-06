@@ -285,75 +285,171 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         </Link>
       </div>
 
-      {/* Welcome section with urgent client-specific tasks */}
+      {/* ─── Premium Welcome Hero ─────────────────────────────────────── */}
       {(() => {
         const hour = new Date().getHours()
         const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
         const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
         const hasUrgent = urgentClients.length > 0
+        const overdueRate = scopedSummary.total_clients > 0
+          ? Math.round((scopedSummary.overdue_clients / scopedSummary.total_clients) * 100)
+          : 0
+        const orgHealth = overdueRate <= 10 ? 'Excellent' : overdueRate <= 25 ? 'Good' : overdueRate <= 50 ? 'Needs Attention' : 'Critical'
+        const orgColor = overdueRate <= 10 ? '#30d158' : overdueRate <= 25 ? '#ffd60a' : overdueRate <= 50 ? '#ff9f0a' : '#ff453a'
 
         return (
-          <div className="card" style={{
-            marginBottom: 20,
-            background: 'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(0,0,0,0) 100%)',
-            border: '1px solid rgba(37,99,235,0.2)',
-          }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-              {greeting}, {firstName} 👋
-            </div>
-            {hasUrgent ? (
-              <>
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
-                  {urgentClients.length} urgent {urgentClients.length === 1 ? 'client needs' : 'clients need'} immediate attention across the org:
+          <div style={{ marginBottom: 24, display: 'flex', gap: 16 }}>
+            {/* Left: Greeting + org health meter */}
+            <div style={{
+              flex: '0 0 280px',
+              borderRadius: 22,
+              padding: '28px 24px',
+              background: 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
+              border: '1px solid rgba(100,140,255,0.12)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Decorative circles */}
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle, ${orgColor}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(160,180,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {urgentClients.slice(0, 5).map((client) => {
-                    const assignedPlanner = planners.find(p => p.id === client.assigned_to)
-                    return (
-                      <Link
-                        key={client.id}
-                        href={`/clients/${client.id}`}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '12px 14px',
-                          background: 'var(--surface-2)',
-                          border: '1px solid var(--border)',
-                          borderRadius: 10,
-                          textDecoration: 'none',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--accent)'
-                          e.currentTarget.style.transform = 'translateX(4px)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--border)'
-                          e.currentTarget.style.transform = 'translateX(0)'
-                        }}
-                      >
-                        <div style={{ fontSize: 24, lineHeight: 1 }}>🚨</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-                            {client.first_name} {client.last_name}
-                          </div>
-                          <div style={{ fontSize: 12, color: 'var(--red)', fontWeight: 500 }}>
-                            Overdue
-                            {assignedPlanner ? ` · Assigned to ${assignedPlanner.full_name}` : ' · Unassigned'}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 18, color: 'var(--text-secondary)' }}>→</div>
-                      </Link>
-                    )
-                  })}
+                <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                  {greeting},
                 </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                No urgent overdue clients across the org right now — the team is in good shape.
+                <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                  {firstName} 👋
+                </div>
               </div>
-            )}
+
+              {/* Org Health Meter */}
+              <div style={{ position: 'relative', zIndex: 1, marginTop: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(160,180,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Org Health</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: orgColor }}>{orgHealth}</span>
+                </div>
+                {/* Meter bar */}
+                <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                  <div className="meter-fill" style={{
+                    height: '100%',
+                    width: `${100 - overdueRate}%`,
+                    borderRadius: 3,
+                    background: `linear-gradient(90deg, ${orgColor}, ${orgColor}aa)`,
+                    boxShadow: `0 0 10px ${orgColor}40`,
+                    transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                  <span style={{ fontSize: 10, color: 'rgba(160,180,255,0.35)' }}>{scopedSummary.overdue_clients} overdue of {scopedSummary.total_clients}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(160,180,255,0.35)' }}>{100 - overdueRate}% on track</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Urgent clients list */}
+            <div style={{
+              flex: 1,
+              borderRadius: 22,
+              background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              padding: hasUrgent ? '20px 20px 16px' : '28px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}>
+              {hasUrgent ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                    <div className="pulse-dot" style={{
+                      width: 10, height: 10, borderRadius: '50%', background: '#ff453a',
+                      boxShadow: '0 0 8px rgba(255,69,58,0.6)',
+                    }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ff6b6b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {urgentClients.length} Urgent — Needs Attention
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflowY: 'auto' }}>
+                    {urgentClients.slice(0, 5).map((client, idx) => {
+                      const assignedPlanner = planners.find(p => p.id === client.assigned_to)
+                      const isUnassigned = !client.assigned_to
+                      return (
+                        <Link
+                          key={client.id}
+                          href={`/clients/${client.id}`}
+                          className="urgent-row"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 14,
+                            padding: '12px 16px',
+                            background: isUnassigned
+                              ? 'linear-gradient(90deg, rgba(255,69,58,0.08) 0%, rgba(255,69,58,0.02) 100%)'
+                              : 'linear-gradient(90deg, rgba(255,159,10,0.06) 0%, rgba(255,159,10,0.01) 100%)',
+                            borderRadius: 14,
+                            textDecoration: 'none',
+                            borderLeft: isUnassigned ? '3px solid #ff453a' : '3px solid #ff9f0a',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            opacity: 0,
+                            transform: 'translateX(-12px)',
+                            animation: `slideInRow 0.4s ${idx * 0.08}s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                          }}
+                        >
+                          {/* Number badge */}
+                          <div style={{
+                            width: 30, height: 30, borderRadius: 10,
+                            background: isUnassigned ? 'rgba(255,69,58,0.15)' : 'rgba(255,159,10,0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 13, fontWeight: 800,
+                            color: isUnassigned ? '#ff453a' : '#ff9f0a',
+                            flexShrink: 0,
+                          }}>
+                            {idx + 1}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                              {client.first_name} {client.last_name}
+                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 500, marginTop: 1 }}>
+                              {isUnassigned ? (
+                                <span style={{ color: '#ff453a' }}>Unassigned — needs planner</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-secondary)' }}>Assigned to {assignedPlanner?.full_name ?? 'Unknown'}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: 18, color: 'var(--text-secondary)', opacity: 0.4,
+                            transition: 'opacity 0.2s, transform 0.2s',
+                          }}>
+                            →
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: '50%',
+                    background: 'rgba(48,209,88,0.1)', border: '2px solid rgba(48,209,88,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+                  }}>
+                    ✓
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#30d158' }}>All clear</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No urgent clients across the org right now.</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )
       })()}
