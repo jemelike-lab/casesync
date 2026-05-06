@@ -862,6 +862,182 @@ NOTES:
 `;
 
 
+
+// ---- Tool definitions for BLH Bot function calling ----
+
+const BOT_TOOLS = [
+  {
+    name: "search_clients" as const,
+    description: "Search and filter across the caseload. Use when user asks about eligibility ending soon, overdue items, specific categories, or date ranges. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        eligibility_ending_within_days: {
+          type: "number" as const,
+          description: "Find entries whose eligibility_end_date is within this many days from today."
+        },
+        category: {
+          type: "string" as const,
+          description: "Filter by category code (e.g. CO, CFC, CPAS, HCBO)."
+        },
+        name_search: {
+          type: "string" as const,
+          description: "Search by name (partial match)."
+        },
+        overdue_field: {
+          type: "string" as const,
+          description: "Find entries overdue on this field. Valid: pos_deadline, assessment_due, eligibility_end_date, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date"
+        },
+        assigned_to_id: {
+          type: "string" as const,
+          description: "Filter by assigned planner UUID."
+        },
+        limit: {
+          type: "number" as const,
+          description: "Max results to return (default 20, max 50)."
+        }
+      },
+      required: [] as string[]
+    }
+  },
+  {
+    name: "get_caseload_stats" as const,
+    description: "Get aggregate stats: total count, overdue counts by field, eligibility expirations in 30/60/90 days. Results are scoped by role.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [] as string[]
+    }
+  }
+];
+
+// ---- Tool execution functions ----
+
+async function executeSearchClients(
+  supabase: ReturnType<typeof createClient>,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const limit = Math.min(Number(input.limit) || 20, 50);
+  let query = supabase.from('clients').select(
+    'id, first_name, last_name, ma_number, category, status, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date'
+  );
+
+  // Role-based scoping
+  if (userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    query = query.eq('assigned_to', userId);
+  } else if (userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    // Team managers see their direct reports - get team member IDs first
+    const { data: teamMembers } = await supabase
+      .from('users')
+      .select('id')
+      .eq('manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    query = query.in('assigned_to', teamIds);
+  }
+  // SUPERVISOR, ADMIN, OWNER see all - no filter needed
+
+  if (input.eligibility_ending_within_days) {
+    const today = new Date();
+    const future = new Date(today);
+    future.setDate(future.getDate() + Number(input.eligibility_ending_within_days));
+    query = query.gte('eligibility_end_date', today.toISOString().split('T')[0])
+                 .lte('eligibility_end_date', future.toISOString().split('T')[0]);
+  }
+
+  if (input.category) {
+    query = query.ilike('category', String(input.category));
+  }
+
+  if (input.name_search) {
+    const search = String(input.name_search).replace(/[%_]/g, '');
+    query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
+  }
+
+  if (input.overdue_field) {
+    const validFields = new Set([
+      'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
+      'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
+      'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date'
+    ]);
+    const field = String(input.overdue_field);
+    if (validFields.has(field)) {
+      query = query.lt(field, new Date().toISOString().split('T')[0]).not(field, 'is', null);
+    }
+  }
+
+  if (input.assigned_to_id) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(String(input.assigned_to_id))) {
+      query = query.eq('assigned_to', String(input.assigned_to_id));
+    }
+  }
+
+  const { data, error } = await query.order('eligibility_end_date', { ascending: true }).limit(limit);
+
+  if (error) return JSON.stringify({ error: error.message });
+  return JSON.stringify({ count: (data || []).length, results: data || [] });
+}
+
+async function executeCaseloadStats(
+  supabase: ReturnType<typeof createClient>,
+  userRole: string,
+  userId: string
+) {
+  let query = supabase.from('clients').select(
+    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, status'
+  );
+
+  // Same role-based scoping
+  if (userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    query = query.eq('assigned_to', userId);
+  } else if (userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase
+      .from('users')
+      .select('id')
+      .eq('manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    query = query.in('assigned_to', teamIds);
+  }
+
+  const { data, error } = await query;
+  if (error) return JSON.stringify({ error: error.message });
+
+  const rows = data || [];
+  const today = new Date().toISOString().split('T')[0];
+  const d30 = new Date(); d30.setDate(d30.getDate() + 30);
+  const d60 = new Date(); d60.setDate(d60.getDate() + 60);
+  const d90 = new Date(); d90.setDate(d90.getDate() + 90);
+
+  const overdueFields = [
+    'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
+    'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
+    'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date'
+  ];
+
+  const overdueCounts: Record<string, number> = {};
+  for (const f of overdueFields) {
+    overdueCounts[f] = rows.filter((r: Record<string, unknown>) => r[f] && String(r[f]) < today).length;
+  }
+
+  const eligExpiring = {
+    within_30_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d30.toISOString().split('T')[0]).length,
+    within_60_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d60.toISOString().split('T')[0]).length,
+    within_90_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d90.toISOString().split('T')[0]).length,
+  };
+
+  return JSON.stringify({
+    total: rows.length,
+    active: rows.filter((r: Record<string, unknown>) => r.status === 'active').length,
+    overdue_counts: overdueCounts,
+    eligibility_expiring: eligExpiring
+  });
+}
+
+
 export async function POST(req: NextRequest) {
   const aiRateLimit = await checkAiRateLimit(req, '/api/case-ai')
   if (aiRateLimit) return aiRateLimit
@@ -1079,6 +1255,18 @@ ${KNOWLEDGE_NAVIGATION}
 ${KNOWLEDGE_ADL_IADL_TIMES}
 
 ${KNOWLEDGE_MA_COVERAGE_GROUPS}
+
+
+=== SEARCH & DATA TOOLS ===
+You have access to tools for searching and analyzing data in real-time:
+1. search_clients: Search by eligibility dates, category, name, overdue fields, or assigned planner. Use this when asked "who has eligibility ending soon?", "show overdue items", "find CO entries", etc.
+2. get_caseload_stats: Get aggregate statistics - total counts, overdue counts by field, eligibility expirations in 30/60/90 days. Use for "how is my caseload looking?", "what are my overdue counts?", etc.
+
+Results are AUTOMATICALLY scoped by the user's role - Support Planners only see their assigned entries, Team Managers see their team, Supervisors see all. You do NOT need to add role-based filters manually.
+
+When a user asks a question that requires searching data (like "who has eligibility ending in the next 30 days?" or "how many overdue assessments do I have?"), USE the appropriate tool rather than saying you cannot search. After receiving tool results, summarize them clearly with names and key dates.
+=== END SEARCH & DATA TOOLS ===
+
 
 === RESPONSE STYLE BY ROLE ===
 - If the user is a Supports Planner, default to: immediate client actions, due-next guidance, submission readiness, and what to do today.
