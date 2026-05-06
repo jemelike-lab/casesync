@@ -925,15 +925,14 @@ async function executeSearchClients(
     'id, first_name, last_name, ma_number, category, status, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date'
   );
 
-  // Role-based scoping
-  if (userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+  // Role-based scoping (roles stored lowercase in profiles table)
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
     query = query.eq('assigned_to', userId);
-  } else if (userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
-    // Team managers see their direct reports - get team member IDs first
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
     const { data: teamMembers } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id')
-      .eq('manager_id', userId);
+      .eq('team_manager_id', userId);
     const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
     teamIds.push(userId);
     query = query.in('assigned_to', teamIds);
@@ -992,14 +991,14 @@ async function executeCaseloadStats(
     'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, status'
   );
 
-  // Same role-based scoping
-  if (userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+  // Same role-based scoping (roles stored lowercase in profiles table)
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
     query = query.eq('assigned_to', userId);
-  } else if (userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
     const { data: teamMembers } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id')
-      .eq('manager_id', userId);
+      .eq('team_manager_id', userId);
     const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
     teamIds.push(userId);
     query = query.in('assigned_to', teamIds);
@@ -1422,6 +1421,8 @@ RULES:
             stream: true,
             system: systemPrompt,
             messages: pass2Messages,
+            tools: BOT_TOOLS,
+            tool_choice: { type: 'none' },
           }),
         })
 
