@@ -1311,31 +1311,45 @@ When a user asks a question that requires searching data (like "who has eligibil
       return new Response('AI service not configured', { status: 503 })
     }
 
-    // 30-second timeout for Anthropic requests
+    // 30-second timeout for Anthropic API
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-    let anthropicRes: Response
+    const apiHeaders = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    }
+
+    const formattedMessages = messages.map((m: { role: string; content: string }) => ({
+      role: m.role,
+      content: m.content,
+    }))
+
+    // ---- Pass 1: Non-streaming call with tools ----
+    let pass1Data: { content: Array<{ type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string }>; stop_reason: string }
     try {
-      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const pass1Res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
+        headers: apiHeaders,
+        signal: controller.signal,
         body: JSON.stringify({
           model: 'claude-haiku-4-5',
           max_tokens: 1024,
-          stream: true,
           system: systemPrompt,
-          messages: messages.map((m: { role: string; content: string }) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: formattedMessages,
+          tools: BOT_TOOLS,
         }),
-        signal: controller.signal,
       })
+
+      if (!pass1Res.ok) {
+        clearTimeout(timeoutId)
+        const errText = await pass1Res.text()
+        console.error('Anthropic pass1 error:', errText)
+        return new Response('AI service error', { status: 502 })
+      }
+
+      pass1Data = await pass1Res.json()
     } catch (fetchErr) {
       clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
@@ -1348,57 +1362,126 @@ When a user asks a question that requires searching data (like "who has eligibil
     }
     clearTimeout(timeoutId)
 
-    if (!anthropicRes.ok) {
-      const err = await anthropicRes.text()
-      console.error('Anthropic error:', err)
-      return new Response('AI service error', { status: 500 })
-    }
+    // Check if the model wants to use a tool
+    const toolUseBlock = pass1Data.content.find((b: { type: string }) => b.type === 'tool_use')
+    const toolsUsed: string[] = []
 
-    const encoder = new TextEncoder()
-    const readable = new ReadableStream({
-      async start(controller) {
-        const reader = anthropicRes.body!.getReader()
-        const decoder = new TextDecoder()
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            const chunk = decoder.decode(value, { stream: true })
-            for (const line of chunk.split('\n')) {
-              if (!line.startsWith('data: ')) continue
-              const data = line.slice(6).trim()
-              if (!data || data === '[DONE]') continue
-              try {
-                const parsed = JSON.parse(data)
-                if (
-                  parsed.type === 'content_block_delta' &&
-                  parsed.delta?.type === 'text_delta' &&
-                  parsed.delta?.text
-                ) {
-                  controller.enqueue(encoder.encode(parsed.delta.text))
+    let finalText = ''
+
+    if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
+      // Execute the requested tool
+      toolsUsed.push(toolUseBlock.name)
+      let toolResult = ''
+
+      try {
+        if (toolUseBlock.name === 'search_clients') {
+          toolResult = await executeSearchClients(supabase, toolUseBlock.input, userRole, userId)
+        } else if (toolUseBlock.name === 'get_caseload_stats') {
+          toolResult = await executeCaseloadStats(supabase, userRole, userId)
+        } else {
+          toolResult = JSON.stringify({ error: 'Unknown tool: ' + toolUseBlock.name })
+        }
+      } catch (toolErr) {
+        console.error('Tool execution error:', toolErr)
+        toolResult = JSON.stringify({ error: 'Tool execution failed' })
+      }
+
+      // ---- Pass 2: Streaming call with tool results ----
+      const pass2Messages = [
+        ...formattedMessages,
+        { role: 'assistant' as const, content: pass1Data.content },
+        {
+          role: 'user' as const,
+          content: [{
+            type: 'tool_result' as const,
+            tool_use_id: toolUseBlock.id,
+            content: toolResult,
+          }],
+        },
+      ]
+
+      const controller2 = new AbortController()
+      const timeoutId2 = setTimeout(() => controller2.abort(), 30000)
+
+      try {
+        const pass2Res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: apiHeaders,
+          signal: controller2.signal,
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5',
+            max_tokens: 1024,
+            stream: true,
+            system: systemPrompt,
+            messages: pass2Messages,
+          }),
+        })
+
+        clearTimeout(timeoutId2)
+
+        if (!pass2Res.ok) {
+          const errText = await pass2Res.text()
+          console.error('Anthropic pass2 error:', errText)
+          return new Response('AI service error', { status: 502 })
+        }
+
+        // Stream pass2 response
+        const encoder = new TextEncoder()
+        const readable = new ReadableStream({
+          async start(ctrl) {
+            const reader = pass2Res.body!.getReader()
+            const decoder = new TextDecoder()
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                const chunk = decoder.decode(value, { stream: true })
+                for (const line of chunk.split('\n')) {
+                  if (!line.startsWith('data: ') || line.includes('[DONE]')) continue
+                  const data = line.slice(6).trim()
+                  if (!data) continue
+                  try {
+                    const parsed = JSON.parse(data)
+                    if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                      ctrl.enqueue(encoder.encode(parsed.delta.text))
+                    }
+                  } catch { /* skip malformed */ }
                 }
-              } catch { /* skip malformed */ }
+              }
+            } finally {
+              ctrl.close()
             }
           }
-        } catch (err) {
-          console.error('Stream error:', err)
-        } finally {
-          controller.close()
-        }
-      },
-    })
+        })
 
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-cache',
-      },
-    })
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Internal error'
-    console.error('case-ai error:', msg)
-    return new Response(msg, { status: 500 })
+        await auditLog(supabase, userId, 'bot_query', {
+          query: messages[messages.length - 1]?.content || '',
+          toolsUsed,
+        })
+
+        return new Response(readable, {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        })
+      } catch (pass2Err) {
+        clearTimeout(timeoutId2)
+        throw pass2Err
+      }
+    } else {
+      // No tool use - extract text from pass1 response directly
+      finalText = pass1Data.content
+        .filter((b: { type: string }) => b.type === 'text')
+        .map((b: { text?: string }) => b.text || '')
+        .join('')
+
+      await auditLog(supabase, userId, 'bot_query', {
+        query: messages[messages.length - 1]?.content || '',
+        toolsUsed: [],
+      })
+
+      return new Response(finalText, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    }
   } finally {
     activeRequests--
   }
