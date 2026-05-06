@@ -790,6 +790,78 @@ LTSS NAVIGATION:
 - Most important tab in LTSS (Client Summary) lists: Client eligibility, current enrollment, program snapshot, waiver information, and who is assigned to their case
 `
 
+const KNOWLEDGE_ADL_IADL_TIMES = `
+=== ADL/IADL STANDARDIZED TIMES (SOP Reference) ===
+
+ADL (Activities of Daily Living) Standard Times:
+- Bathing/Grooming: 30 min per session
+- Dressing: 15 min per session
+- Eating/Feeding assistance: 30 min per meal
+- Toileting: 15 min per session
+- Transferring/Mobility: 15 min per session
+- Personal Hygiene: 15 min per session
+
+IADL (Instrumental Activities of Daily Living) Standard Times:
+- Meal Preparation: 60 min per meal
+- Laundry: 60 min per load
+- Light Housekeeping: 60 min per session
+- Heavy Housekeeping: 120 min per session
+- Grocery Shopping: 90 min per trip (includes travel)
+- Medication Management: 15 min per session
+- Community Integration/Errands: time varies by activity
+- Companion/Supervision: billed per hour as authorized
+
+Key Rules:
+- POS hours must align with assessed needs from POC/interRAI
+- Total weekly hours cannot exceed what RUG score authorizes
+- All time entries must match actual delivered service
+- If time exceeds standard, narrative justification required in POS
+- Overnight hours (sleep cycle) are NOT billable unless active care documented
+`;
+
+
+const KNOWLEDGE_MA_COVERAGE_GROUPS = `
+=== MARYLAND MA COVERAGE GROUPS ===
+
+COMMUNITY OPTIONS (CO):
+  CO1: Community Options Waiver - Home & Community Based
+  CO Codes: OAA (Assisted Living, NOT MFP), OAM (Assisted Living, MFP eligible),
+            OAH (Private residence, NOT MFP), OHM (Private residence, MFP eligible)
+
+HOME & COMMUNITY BASED OPTIONS (HCBO):
+  HCBO: Model Waiver (formerly known as Waiver for Older Adults)
+  Note: If participant is HCBO, they are NOT HealthChoice eligible
+
+CFC (Community First Choice):
+  State Plan Service (NOT a waiver)
+  No special program code - uses standard MA
+  Eligibility: Institutional level of care + community-based
+  Services: Personal assistance, community integration
+
+CPAS (Community Personal Assistance Services):
+  State Plan Service (NOT a waiver)
+  No special program code - uses standard MA
+  For individuals not meeting institutional level of care
+
+MEDICAID CATEGORIES:
+  A01-A06: Aged categories
+  D01-D06: Disabled categories
+  F01: Foster Care
+  S03: QMB (Qualified Medicare Beneficiary) - Medicare Savings
+  S07: SLMB (Specified Low Income Medicare Beneficiary) - Medicare Savings
+  S14: QI (Qualifying Individual) - Medicare Savings
+
+ELIGIBILITY:
+  C13M: MAGI groups (excluding Pregnant Women)
+  C13P: Pregnant Women
+
+NOTES:
+  HealthChoice eligible unless: on Medicare, in institution, out of state, or in Model Waiver
+  Medicare Savings Programs: S03 (QMB), S07 (SLMB), S14 (QI)
+  CFC and CPAS have NO special program codes - they are State Plan Services not waivers
+`;
+
+
 export async function POST(req: NextRequest) {
   const aiRateLimit = await checkAiRateLimit(req, '/api/case-ai')
   if (aiRateLimit) return aiRateLimit
@@ -1003,6 +1075,10 @@ ${KNOWLEDGE_SUPPLEMENTAL_ACP}
 ${KNOWLEDGE_GLOSSARY}
 
 ${KNOWLEDGE_NAVIGATION}
+
+${KNOWLEDGE_ADL_IADL_TIMES}
+
+${KNOWLEDGE_MA_COVERAGE_GROUPS}
 
 === RESPONSE STYLE BY ROLE ===
 - If the user is a Supports Planner, default to: immediate client actions, due-next guidance, submission readiness, and what to do today.
