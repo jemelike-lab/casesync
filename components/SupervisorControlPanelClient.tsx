@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Profile, Client } from '@/lib/types'
 import ClientQuickSearch from '@/components/ClientQuickSearch'
+import PremiumStatGrid from '@/components/PremiumStatGrid'
+import TeamHealthPanel from '@/components/TeamHealthPanel'
 import type { AssigneeSummaryRow } from '@/lib/dashboard-summary'
 
 type ClientFilter = 'all' | 'overdue' | 'due_this_week' | 'no_contact_7'
@@ -361,22 +363,28 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         maxResults={8}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <ClickableStatCard label="Active Clients" value={scopedSummary.total_clients} active={clientFilter === 'all'} onClick={() => openClientFilter('all')} />
-        <ClickableStatCard label="Overdue" value={scopedSummary.overdue_clients} color="var(--red)" active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
-        <ClickableStatCard label="Due This Week" value={scopedSummary.due_this_week_clients} color="var(--orange)" active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
-        <ClickableStatCard label="No Contact 7+ Days" value={scopedSummary.no_contact_7_days_clients} color="var(--yellow)" active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />
-        <ClickableStatCard label="Support Planners" value={planners.length} active={rosterFilter === 'planners'} onClick={() => openRosterFilter('planners')} />
-        <ClickableStatCard label="Team Managers" value={teamManagers.length} active={rosterFilter === 'team_managers'} onClick={() => openRosterFilter('team_managers')} />
-        <ClickableStatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} active={rosterFilter === 'unassigned_planners'} onClick={() => openRosterFilter('unassigned_planners')} />
-      </div>
+      <PremiumStatGrid
+        totalClients={scopedSummary.total_clients}
+        overdue={scopedSummary.overdue_clients}
+        dueThisWeek={scopedSummary.due_this_week_clients}
+        noContact={scopedSummary.no_contact_7_days_clients}
+        plannerCount={planners.length}
+        tmCount={teamManagers.length}
+        unassignedPlanners={unassignedPlanners}
+        activeFilter={clientFilter === 'all' ? undefined : clientFilter}
+        onFilterClick={(f) => openClientFilter(f as ClientFilter)}
+        activeRosterFilter={rosterFilter === 'all' ? undefined : rosterFilter}
+        onRosterClick={(f) => openRosterFilter(f as RosterFilter)}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 16, marginBottom: 24 }}>
-        <div className="card">
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Team Health Summary
-          </h2>
-          <div style={{ display: 'grid', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <TeamHealthPanel
+            planners={planners}
+            summaryByAssignee={summaryByAssignee ?? {}}
+          />
+          {/* Action-oriented focus cards */}
+          <div style={{ display: 'grid', gap: 10 }}>
             <FocusCard tone="red" title={`${scopedSummary.overdue_clients} overdue client${scopedSummary.overdue_clients !== 1 ? 's' : ''}`} body="Priority one: clear overdue work before the rest of the week piles up." active={clientFilter === 'overdue'} onClick={() => openClientFilter('overdue')} />
             <FocusCard tone="orange" title={`${scopedSummary.due_this_week_clients} due this week`} body="Good place to rebalance planners if one caseload is getting too heavy." active={clientFilter === 'due_this_week'} onClick={() => openClientFilter('due_this_week')} />
             <FocusCard tone="yellow" title={`${scopedSummary.no_contact_7_days_clients} no-contact client${scopedSummary.no_contact_7_days_clients !== 1 ? 's' : ''} (7+ days)`} body="Worth checking for silent drift before those cases become urgent." active={clientFilter === 'no_contact_7'} onClick={() => openClientFilter('no_contact_7')} />

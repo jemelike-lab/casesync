@@ -660,3 +660,30 @@ input[type="time"] {
 [data-theme="light"] header button.btn-secondary:hover {
   background: rgba(255,255,255,0.28) !important;
 }
+
+/* ===== Premium Stat Cards ===== */
+.premium-stat-card {
+  font-family: inherit;
+}
+.premium-stat-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Recharts tooltip cursor fix */
+.recharts-tooltip-cursor {
+  fill: rgba(255,255,255,0.03) !important;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--text-secondary) !important;
+}
+
+/* Light theme overrides for premium cards */
+[data-theme="light"] .premium-stat-card {
+  border-color: rgba(0,0,0,0.08) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 100%) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .premium-stat-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
