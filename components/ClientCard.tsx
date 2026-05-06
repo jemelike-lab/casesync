@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useRef, useCallback } from 'react'
-import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount, getClientHealthScore } from '@/lib/types'
+import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount, getClientHealthScore, URGENCY_LABELS, URGENCY_COLORS_RGB } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
 import StatusDot from './StatusDot'
 import HealthScoreRing from './HealthScoreRing'
@@ -21,30 +21,26 @@ function DateBadge({ label, date }: { label: string; date: string | null }) {
   const status = getDateStatus(date)
   if (!date || status === 'none') return null
 
-  const labels: Record<StatusLevel, string> = {
-    red: 'Overdue',
-    orange: '< 7d',
-    yellow: '< 30d',
-    green: 'On track',
-    none: '',
-  }
+  const rgb = URGENCY_COLORS_RGB[status]
+  const isCritical = status === 'critical'
 
   return (
-    <div style={{
+    <div className={isCritical ? 'pulse-subtle' : undefined} style={{
       display: 'flex',
       alignItems: 'center',
       gap: 5,
       fontSize: 11,
       padding: '3px 8px',
       borderRadius: 6,
-      background: `rgba(${status === 'red' ? '255,69,58' : status === 'orange' ? '255,159,10' : status === 'yellow' ? '255,214,10' : '48,209,88'}, 0.12)`,
+      background: `rgba(${rgb}, ${isCritical ? '0.2' : '0.12'})`,
+      ...(isCritical ? { border: '1px solid rgba(255,69,58,0.4)' } : {}),
     }}>
       <StatusDot status={status} size={6} />
       <span style={{ color: 'var(--text-secondary)' }}>{label}:</span>
-      <span style={{ color: `var(--${status})`, fontWeight: 500 }}>
+      <span style={{ color: `var(--${status === 'critical' ? 'red' : status})`, fontWeight: isCritical ? 700 : 500 }}>
         {formatDate(date)}
       </span>
-      <span style={{ color: 'var(--text-secondary)' }}>· {labels[status]}</span>
+      <span style={{ color: 'var(--text-secondary)' }}>· {URGENCY_LABELS[status]}</span>
     </div>
   )
 }
@@ -54,40 +50,26 @@ function SpmDueBadge({ date }: { date: string | null }) {
   const status = getSpmDateStatus(date)
   if (status === 'none') return null
 
-  const colorMap: Record<StatusLevel, string> = {
-    green: '48,209,88',
-    yellow: '255,214,10',
-    orange: '255,159,10',
-    red: '255,69,58',
-    none: '150,150,150',
-  }
-
-  const labelMap: Record<StatusLevel, string> = {
-    green: 'On track',
-    yellow: '7-14d',
-    orange: '< 7d',
-    red: 'Overdue',
-    none: '',
-  }
-
-  const rgb = colorMap[status]
+  const rgb = URGENCY_COLORS_RGB[status]
+  const isCritical = status === 'critical'
 
   return (
-    <div style={{
+    <div className={isCritical ? 'pulse-subtle' : undefined} style={{
       display: 'flex',
       alignItems: 'center',
       gap: 5,
       fontSize: 11,
       padding: '3px 8px',
       borderRadius: 6,
-      background: `rgba(${rgb}, 0.12)`,
+      background: `rgba(${rgb}, ${isCritical ? '0.2' : '0.12'})`,
+      ...(isCritical ? { border: '1px solid rgba(255,69,58,0.4)' } : {}),
     }}>
       <StatusDot status={status} size={6} />
       <span style={{ color: 'var(--text-secondary)' }}>SPM due:</span>
-      <span style={{ color: `var(--${status})`, fontWeight: 500 }}>
+      <span style={{ color: `var(--${status === 'critical' ? 'red' : status})`, fontWeight: isCritical ? 700 : 500 }}>
         {formatDate(date)}
       </span>
-      <span style={{ color: 'var(--text-secondary)' }}>· {labelMap[status]}</span>
+      <span style={{ color: 'var(--text-secondary)' }}>· {URGENCY_LABELS[status]}</span>
     </div>
   )
 }
@@ -104,6 +86,7 @@ function worstStatus(client: Client): StatusLevel {
     client.co_financial_redet_date,
   ]
   const statuses = dates.map(d => getDateStatus(d))
+  if (statuses.includes('critical')) return 'critical'
   if (statuses.includes('red')) return 'red'
   if (statuses.includes('orange')) return 'orange'
   if (statuses.includes('yellow')) return 'yellow'
@@ -185,7 +168,7 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
   const noContact = daysSince !== null && daysSince >= 7
   const [showModal, setShowModal] = useState(false)
   const overdueCount = getOverdueCount(c)
-  const isOverdueCard = status === 'red'
+  const isOverdueCard = status === 'red' || status === 'critical'
   const healthScore = getClientHealthScore(c)
 
   // Swipe state
@@ -223,6 +206,7 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
 
   // Left border color based on urgency
   const leftBorderColor: Record<StatusLevel, string> = {
+    critical: '#ff453a',
     red: '#ff453a',
     orange: '#ff9f0a',
     yellow: '#ffd60a',
@@ -231,6 +215,7 @@ export default function ClientCard({ client: c, isPinned, onTogglePin, selected,
   }
 
   const borderColor: Record<StatusLevel, string> = {
+    critical: 'rgba(255,69,58,0.6)',
     red: 'rgba(255,69,58,0.4)',
     orange: 'rgba(255,159,10,0.4)',
     yellow: 'rgba(255,214,10,0.4)',

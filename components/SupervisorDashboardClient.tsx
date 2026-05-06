@@ -232,7 +232,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       const row: Record<string, any> = { plannerName: planner.full_name ?? 'Unknown', plannerId: planner.id }
       DEADLINE_TYPES.forEach(({ key, short }) => {
         const total = pc.filter(c => (c as any)[key]).length
-        const overdue = pc.filter(c => (c as any)[key] && getDateStatus((c as any)[key]) === 'red').length
+        const overdue = pc.filter(c => { const s = getDateStatus((c as any)[key]); return s === 'red' || s === 'critical' }).length
         row[short] = total > 0 ? Math.round((overdue / total) * 100) : null
       })
       return row

@@ -22,11 +22,12 @@ function PrintRow({ label, value }: { label: string; value: string | null | bool
 function PrintDateRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null
   const status = getDateStatus(value)
-  const color = status === 'red' ? '#c0392b' : status === 'orange' ? '#e67e22' : status === 'yellow' ? '#f39c12' : '#27ae60'
+  const color = status === 'critical' ? '#8b0000' : status === 'red' ? '#c0392b' : status === 'orange' ? '#e67e22' : status === 'yellow' ? '#f39c12' : '#27ae60'
+  const suffix = status === 'critical' ? ' ⚠ CRITICAL' : status === 'red' ? ' (Overdue)' : ''
   return (
     <tr>
       <td style={{ padding: '6px 12px', fontWeight: 600, width: '40%', verticalAlign: 'top', borderBottom: '1px solid #ddd', color: '#333', fontSize: 13 }}>{label}</td>
-      <td style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', fontSize: 13, color: status !== 'none' ? color : '#111' }}>{formatDate(value)}</td>
+      <td style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', fontSize: 13, color: status !== 'none' ? color : '#111', fontWeight: status === 'critical' ? 700 : 400 }}>{formatDate(value)}{suffix}</td>
     </tr>
   )
 }

@@ -110,7 +110,17 @@ export interface ActivityLog {
   profiles?: { full_name: string | null } | null
 }
 
-export type StatusLevel = 'green' | 'yellow' | 'orange' | 'red' | 'none'
+export type StatusLevel = 'green' | 'yellow' | 'orange' | 'red' | 'critical' | 'none'
+
+/**
+ * 5-tier urgency system:
+ *   🟢 green    — On track (7+ days out)
+ *   🟡 yellow   — Due within 7 days
+ *   🟠 orange   — Due within 3 days
+ *   🔴 red      — Overdue 1-14 days
+ *   🔴💥 critical — Critically overdue (14+ days)
+ */
+export type UrgencyTier = 'green' | 'yellow' | 'orange' | 'red' | 'critical'
 
 export type FilterType =
   | 'all'
@@ -196,10 +206,41 @@ export function getDateStatus(dateStr: string | null): StatusLevel {
   const diffMs = date.getTime() - now.getTime()
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffDays < 0) return 'red'
-  if (diffDays <= 7) return 'orange'
-  if (diffDays <= 30) return 'yellow'
-  return 'green'
+  if (diffDays < -14) return 'critical'  // 14+ days overdue — pulsing red
+  if (diffDays < 0) return 'red'          // 1-14 days overdue
+  if (diffDays <= 3) return 'orange'      // due within 3 days
+  if (diffDays <= 7) return 'yellow'      // due within 7 days
+  return 'green'                           // 7+ days out
+}
+
+/**
+ * getUrgencyTier — named alias matching the Enhancement Roadmap spec.
+ * Use this in new code; getDateStatus is kept for backward compatibility.
+ */
+export function getUrgencyTier(dueDate: Date | string | null): UrgencyTier | 'none' {
+  if (!dueDate) return 'none'
+  const dateStr = typeof dueDate === 'string' ? dueDate : dueDate.toISOString().split('T')[0]
+  return getDateStatus(dateStr)
+}
+
+/** Human-readable labels for each urgency tier */
+export const URGENCY_LABELS: Record<StatusLevel, string> = {
+  critical: 'Critical',
+  red: 'Overdue',
+  orange: '≤ 3 days',
+  yellow: '≤ 7 days',
+  green: 'On track',
+  none: '',
+}
+
+/** RGB color values for urgency tiers (used in rgba backgrounds) */
+export const URGENCY_COLORS_RGB: Record<StatusLevel, string> = {
+  critical: '255,69,58',
+  red: '255,69,58',
+  orange: '255,159,10',
+  yellow: '255,214,10',
+  green: '48,209,88',
+  none: '150,150,150',
 }
 
 export function getSpmDateStatus(dateStr: string | null): StatusLevel {
@@ -209,9 +250,10 @@ export function getSpmDateStatus(dateStr: string | null): StatusLevel {
   const diffMs = date.getTime() - now.getTime()
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
+  if (diffDays < -14) return 'critical'
   if (diffDays < 0) return 'red'
-  if (diffDays <= 7) return 'orange'
-  if (diffDays <= 14) return 'yellow'
+  if (diffDays <= 3) return 'orange'
+  if (diffDays <= 7) return 'yellow'
   return 'green'
 }
 
@@ -237,7 +279,10 @@ export function isOverdue(client: Client): boolean {
     client.two57_date,
     client.doc_mdh_date,
   ]
-  return datesToCheck.some(d => d && getDateStatus(d) === 'red')
+  return datesToCheck.some(d => {
+    const s = d ? getDateStatus(d) : 'none'
+    return s === 'red' || s === 'critical'
+  })
 }
 
 export function isDueToday(client: Client): boolean {
@@ -275,7 +320,10 @@ export function isDueThisWeek(client: Client): boolean {
     client.two57_date,
     client.doc_mdh_date,
   ]
-  return datesToCheck.some(d => d && getDateStatus(d) === 'orange')
+  return datesToCheck.some(d => {
+    const s = d ? getDateStatus(d) : 'none'
+    return s === 'orange' || s === 'yellow'
+  })
 }
 
 export function isDueNext14Days(client: Client): boolean {
@@ -307,7 +355,7 @@ export function isDueNext14Days(client: Client): boolean {
 
 export function isEligibilityEndingSoon(client: Client): boolean {
   const s = getDateStatus(client.eligibility_end_date)
-  return s === 'yellow' || s === 'orange' || s === 'red'
+  return s === 'yellow' || s === 'orange' || s === 'red' || s === 'critical'
 }
 
 export function formatDate(dateStr: string | null): string {
@@ -336,7 +384,8 @@ export function clientPriorityScore(client: Client): number {
   for (const field of PRIORITY_DATE_FIELDS) {
     const d = client[field] as string | null
     const status = getDateStatus(d)
-    if (status === 'red') score += 10
+    if (status === 'critical') score += 20
+    else if (status === 'red') score += 10
     else if (status === 'orange') score += 5
     else if (status === 'yellow') score += 2
   }
@@ -348,7 +397,8 @@ export function clientPriorityScore(client: Client): number {
 export function getOverdueCount(client: Client): number {
   return PRIORITY_DATE_FIELDS.filter(field => {
     const d = client[field] as string | null
-    return getDateStatus(d) === 'red'
+    const s = getDateStatus(d)
+    return s === 'red' || s === 'critical'
   }).length
 }
 
@@ -414,12 +464,14 @@ export function getClientHealthScore(client: Client): number {
     const diffMs = date.getTime() - now.getTime()
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffDays < 0) {
-      score -= 15 // overdue
+    if (diffDays < -14) {
+      score -= 25 // critically overdue (14+ days)
+    } else if (diffDays < 0) {
+      score -= 15 // overdue (1-14 days)
+    } else if (diffDays <= 3) {
+      score -= 10 // due within 3 days
     } else if (diffDays <= 7) {
-      score -= 8 // due within 7 days
-    } else if (diffDays <= 30) {
-      score -= 3 // due within 30 days
+      score -= 6 // due within 7 days
     }
   }
 
@@ -452,8 +504,12 @@ export function getRiskLevel(client: Client): RiskLevel {
     client.two57_date,
     client.doc_mdh_date,
   ]
-  const overdueCount = datesToCheck.filter(d => d && getDateStatus(d) === 'red').length
-  if (overdueCount >= 3) return 'high'
+  const overdueCount = datesToCheck.filter(d => {
+    const s = d ? getDateStatus(d) : 'none'
+    return s === 'red' || s === 'critical'
+  }).length
+  const hasCritical = datesToCheck.some(d => d && getDateStatus(d) === 'critical')
+  if (hasCritical || overdueCount >= 3) return 'high'
   if (overdueCount >= 1) return 'medium'
   return 'low'
 }

@@ -18,6 +18,7 @@ function worstStatus(client: Client) {
     client.assessment_due,
   ]
   const statuses = dates.map(d => getDateStatus(d))
+  if (statuses.includes('critical')) return 'critical' as const
   if (statuses.includes('red')) return 'red' as const
   if (statuses.includes('orange')) return 'orange' as const
   if (statuses.includes('yellow')) return 'yellow' as const

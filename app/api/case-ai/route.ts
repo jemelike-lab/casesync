@@ -14,14 +14,15 @@ const MAX_CONCURRENT = 10
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getDateStatus(dateStr: string | null): 'red' | 'orange' | 'yellow' | 'green' | 'none' {
+function getDateStatus(dateStr: string | null): 'critical' | 'red' | 'orange' | 'yellow' | 'green' | 'none' {
   if (!dateStr) return 'none'
   const date = new Date(dateStr)
   const now = new Date()
   const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays < -14) return 'critical'
   if (diffDays < 0) return 'red'
-  if (diffDays <= 7) return 'orange'
-  if (diffDays <= 30) return 'yellow'
+  if (diffDays <= 3) return 'orange'
+  if (diffDays <= 7) return 'yellow'
   return 'green'
 }
 
@@ -31,7 +32,10 @@ function getOverdueCount(client: Record<string, unknown>): number {
     'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
     'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date',
   ]
-  return fields.filter(f => getDateStatus(client[f] as string | null) === 'red').length
+  return fields.filter(f => {
+    const s = getDateStatus(client[f] as string | null)
+    return s === 'red' || s === 'critical'
+  }).length
 }
 
 function getDaysSinceContact(dateStr: string | null): number | null {
@@ -1191,7 +1195,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         const daysSince = getDaysSinceContact(c.last_contact_date as string | null)
         const overdueCount = getOverdueCount(c)
         const spmStatus = getDateStatus(c.spm_next_due as string | null)
-        const spmNote = spmStatus === 'red' ? ' ⚠️ SPM OVERDUE' : spmStatus === 'orange' ? ' ⏰ SPM due soon' : ''
+        const spmNote = spmStatus === 'critical' ? ' 🚨 SPM CRITICALLY OVERDUE' : spmStatus === 'red' ? ' ⚠️ SPM OVERDUE' : spmStatus === 'orange' ? ' ⏰ SPM due within 3 days' : spmStatus === 'yellow' ? ' ⏰ SPM due this week' : ''
         return `- ${name} (ID: ${c.client_id}) | Overdue: ${overdueCount} | Last contact: ${daysSince !== null ? `${daysSince}d ago` : 'never'} | Goal: ${c.goal_pct ?? 0}% | POS: ${c.pos_status ?? 'unknown'}${spmNote}`
       }).join('\n')
       clientContextStr = `\n\n=== YOUR CLIENTS (${clientCount} total) ===\n${clientList}\n=== END CLIENTS ===`

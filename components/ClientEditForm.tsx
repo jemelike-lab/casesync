@@ -110,7 +110,7 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
   label: string; field: string; value: string | boolean | number | null | undefined;
   type: 'date' | 'text' | 'boolean' | 'number' | 'select'; editing: boolean;
   onChange: (field: string, value: string | boolean | number | null) => void;
-  dateStatus?: 'green' | 'yellow' | 'orange' | 'red' | 'none';
+  dateStatus?: 'green' | 'yellow' | 'orange' | 'red' | 'critical' | 'none';
   selectOptions?: SelectOption[]; extra?: React.ReactNode;
   highlighted?: boolean
 }) {
@@ -122,7 +122,8 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
   else if (type === 'date') displayValue = formatDate(String(value).split('T')[0])
   else displayValue = String(value)
 
-  const isOverdueField = !editing && type === 'date' && dateStatus === 'red'
+  const isCriticalField = !editing && type === 'date' && dateStatus === 'critical'
+  const isOverdueField = !editing && type === 'date' && (dateStatus === 'red' || dateStatus === 'critical')
   const isDueSoonField = !editing && type === 'date' && dateStatus === 'orange'
 
   return (
@@ -174,15 +175,15 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
           <span style={{
             fontSize: 13, fontWeight: 500,
-            color: dateStatus ? `var(--${dateStatus === 'none' ? 'text-secondary' : dateStatus})` : 'var(--text)',
+            color: dateStatus ? `var(--${dateStatus === 'none' ? 'text-secondary' : dateStatus === 'critical' ? 'red' : dateStatus})` : 'var(--text)',
             textAlign: 'right',
           }}>
             {dateStatus && dateStatus !== 'none' && <StatusDot status={dateStatus} style={{ marginRight: 6 }} />}
             {displayValue}
           </span>
           {isOverdueField && (
-            <span style={{
-              background: 'rgba(255,69,58,0.2)',
+            <span className={isCriticalField ? 'pulse-subtle' : undefined} style={{
+              background: isCriticalField ? 'rgba(255,69,58,0.3)' : 'rgba(255,69,58,0.2)',
               border: '1px solid rgba(255,69,58,0.4)',
               color: '#ff453a',
               fontSize: 9,
@@ -193,7 +194,7 @@ function FieldRow({ label, field, value, type, editing, onChange, dateStatus, se
               letterSpacing: '0.08em',
               flexShrink: 0,
             }}>
-              OVERDUE
+              {isCriticalField ? 'CRITICAL' : 'OVERDUE'}
             </span>
           )}
           {isDueSoonField && (
@@ -363,7 +364,7 @@ function ClientAlertBanner({ formData, onScrollToOverdue }: {
   for (const { key } of DATE_FIELDS) {
     const d = formData[key] as string | null | undefined
     const status = getDateStatus(d ?? null)
-    if (status === 'red') overdueCount++
+    if (status === 'critical' || status === 'red') overdueCount++
     else if (status === 'orange') dueThisWeekCount++
     else if (status === 'yellow') dueThisMonthCount++
   }
@@ -480,7 +481,7 @@ function SmartSuggestion({ formData, client }: { formData: Partial<EditableClien
     const d = formData[key] as string | null | undefined
     if (!d) continue
     const status = getDateStatus(d)
-    if (status === 'red') {
+    if (status === 'red' || status === 'critical') {
       const date = new Date(d)
       const now = new Date()
       const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
@@ -1024,7 +1025,8 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
     for (const { field, sectionId } of OVERDUE_FIELD_TARGETS) {
       const d = formData[field as keyof typeof formData] as string | null | undefined
-      if (getDateStatus(d ?? null) !== 'red') continue
+      const fieldStatus = getDateStatus(d ?? null)
+      if (fieldStatus !== 'red' && fieldStatus !== 'critical') continue
 
       const fieldEl = document.getElementById(`field-${field}`)
       if (fieldEl) {
