@@ -750,6 +750,23 @@ input[type="time"] {
   animation: calTooltipIn 0.2s ease;
 }
 
+/* ===== Metric Chip Tooltips ===== */
+.metric-chip-tooltip {
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden;
+}
+.metric-chip-wrap:hover .metric-chip-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  visibility: visible;
+}
+.metric-chip-wrap:hover .metric-chip {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
 .premium-stat-card {
   font-family: inherit;
 }

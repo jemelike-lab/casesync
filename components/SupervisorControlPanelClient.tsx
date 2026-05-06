@@ -730,35 +730,74 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                     </div>
                   </div>
 
-                  {/* Metric chips */}
+                  {/* Metric chips with hover tooltips */}
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <Link href={teamLink('overdue', row.planner.id)} style={{
-                      textDecoration: 'none',
-                      fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
-                      background: row.overdue > 0 ? 'rgba(255,69,58,0.15)' : 'rgba(255,255,255,0.04)',
-                      color: row.overdue > 0 ? '#ff6b6b' : 'var(--text-secondary)',
-                      border: `1px solid ${row.overdue > 0 ? 'rgba(255,69,58,0.2)' : 'transparent'}`,
-                    }}>
-                      {row.overdue}
-                    </Link>
-                    <Link href={teamLink('due_this_week', row.planner.id)} style={{
-                      textDecoration: 'none',
-                      fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
-                      background: row.dueThisWeek > 0 ? 'rgba(255,159,10,0.12)' : 'rgba(255,255,255,0.04)',
-                      color: row.dueThisWeek > 0 ? '#ffb340' : 'var(--text-secondary)',
-                      border: `1px solid ${row.dueThisWeek > 0 ? 'rgba(255,159,10,0.2)' : 'transparent'}`,
-                    }}>
-                      {row.dueThisWeek}
-                    </Link>
-                    <Link href={teamLink('no_contact_7', row.planner.id)} style={{
-                      textDecoration: 'none',
-                      fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
-                      background: row.quiet > 0 ? 'rgba(255,214,10,0.1)' : 'rgba(255,255,255,0.04)',
-                      color: row.quiet > 0 ? '#ffe066' : 'var(--text-secondary)',
-                      border: `1px solid ${row.quiet > 0 ? 'rgba(255,214,10,0.15)' : 'transparent'}`,
-                    }}>
-                      {row.quiet}
-                    </Link>
+                    <div className="metric-chip-wrap" style={{ position: 'relative' }}>
+                      <Link href={teamLink('overdue', row.planner.id)} className="metric-chip" style={{
+                        textDecoration: 'none', display: 'block',
+                        fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
+                        background: row.overdue > 0 ? 'rgba(255,69,58,0.15)' : 'rgba(255,255,255,0.04)',
+                        color: row.overdue > 0 ? '#ff6b6b' : 'var(--text-secondary)',
+                        border: `1px solid ${row.overdue > 0 ? 'rgba(255,69,58,0.2)' : 'transparent'}`,
+                        transition: 'all 0.2s',
+                      }}>
+                        {row.overdue}
+                      </Link>
+                      <div className="metric-chip-tooltip" style={{
+                        position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+                        padding: '6px 12px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none',
+                        background: 'linear-gradient(160deg, rgba(60,20,25,0.98), rgba(40,12,18,0.98))',
+                        border: '1px solid rgba(255,69,58,0.3)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                        fontSize: 11, fontWeight: 600, color: '#ff9090', zIndex: 50,
+                      }}>
+                        <span style={{ color: '#fff', fontWeight: 800 }}>{row.overdue}</span> overdue deadline{row.overdue !== 1 ? 's' : ''}
+                        <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: 8, height: 8, background: 'rgba(40,12,18,0.98)', borderRight: '1px solid rgba(255,69,58,0.3)', borderBottom: '1px solid rgba(255,69,58,0.3)' }} />
+                      </div>
+                    </div>
+                    <div className="metric-chip-wrap" style={{ position: 'relative' }}>
+                      <Link href={teamLink('due_this_week', row.planner.id)} className="metric-chip" style={{
+                        textDecoration: 'none', display: 'block',
+                        fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
+                        background: row.dueThisWeek > 0 ? 'rgba(255,159,10,0.12)' : 'rgba(255,255,255,0.04)',
+                        color: row.dueThisWeek > 0 ? '#ffb340' : 'var(--text-secondary)',
+                        border: `1px solid ${row.dueThisWeek > 0 ? 'rgba(255,159,10,0.2)' : 'transparent'}`,
+                        transition: 'all 0.2s',
+                      }}>
+                        {row.dueThisWeek}
+                      </Link>
+                      <div className="metric-chip-tooltip" style={{
+                        position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+                        padding: '6px 12px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none',
+                        background: 'linear-gradient(160deg, rgba(50,40,15,0.98), rgba(35,28,10,0.98))',
+                        border: '1px solid rgba(255,159,10,0.3)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                        fontSize: 11, fontWeight: 600, color: '#ffc870', zIndex: 50,
+                      }}>
+                        <span style={{ color: '#fff', fontWeight: 800 }}>{row.dueThisWeek}</span> due this week
+                        <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: 8, height: 8, background: 'rgba(35,28,10,0.98)', borderRight: '1px solid rgba(255,159,10,0.3)', borderBottom: '1px solid rgba(255,159,10,0.3)' }} />
+                      </div>
+                    </div>
+                    <div className="metric-chip-wrap" style={{ position: 'relative' }}>
+                      <Link href={teamLink('no_contact_7', row.planner.id)} className="metric-chip" style={{
+                        textDecoration: 'none', display: 'block',
+                        fontSize: 12, fontWeight: 800, padding: '4px 10px', borderRadius: 8, minWidth: 32, textAlign: 'center',
+                        background: row.quiet > 0 ? 'rgba(255,214,10,0.1)' : 'rgba(255,255,255,0.04)',
+                        color: row.quiet > 0 ? '#ffe066' : 'var(--text-secondary)',
+                        border: `1px solid ${row.quiet > 0 ? 'rgba(255,214,10,0.15)' : 'transparent'}`,
+                        transition: 'all 0.2s',
+                      }}>
+                        {row.quiet}
+                      </Link>
+                      <div className="metric-chip-tooltip" style={{
+                        position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+                        padding: '6px 12px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none',
+                        background: 'linear-gradient(160deg, rgba(50,50,15,0.98), rgba(35,35,10,0.98))',
+                        border: '1px solid rgba(255,214,10,0.25)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                        fontSize: 11, fontWeight: 600, color: '#ffe88a', zIndex: 50,
+                      }}>
+                        <span style={{ color: '#fff', fontWeight: 800 }}>{row.quiet}</span> no contact 7+ days
+                        <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: 8, height: 8, background: 'rgba(35,35,10,0.98)', borderRight: '1px solid rgba(255,214,10,0.25)', borderBottom: '1px solid rgba(255,214,10,0.25)' }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )
