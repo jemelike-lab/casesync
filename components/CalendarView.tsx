@@ -219,22 +219,21 @@ export default function CalendarView({ assignedTo }: Props) {
             ))}
           </div>
 
-          {/* Calendar Grid — BRIGHT design */}
-          <div style={{
-            borderRadius:16, overflow:'hidden',
-            border:'1px solid rgba(255,255,255,0.12)',
-            background:'linear-gradient(180deg, rgba(20,25,50,0.95) 0%, rgba(15,18,35,0.98) 100%)',
-            boxShadow:'0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+          {/* Calendar Grid */}
+          <div className="cal-grid" style={{
+            borderRadius:18, overflow:'hidden',
+            border:'2px solid rgba(100,140,255,0.12)',
+            background:'linear-gradient(180deg, rgba(18,22,48,1) 0%, rgba(12,16,38,1) 100%)',
+            boxShadow:'0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(100,140,255,0.08)',
           }}>
-            {/* Day headers — bright and visible */}
+            {/* Day headers */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
               {DAYS.map(d=>(
-                <div key={d} style={{
-                  padding:'12px 4px', textAlign:'center', fontSize:12, fontWeight:700,
-                  color:'#8b9cc7', letterSpacing:'0.1em', textTransform:'uppercase',
-                  background:'rgba(30,40,80,0.8)',
-                  borderBottom:'2px solid rgba(100,140,255,0.15)',
-                  borderRight:'1px solid rgba(100,140,255,0.06)',
+                <div key={d} className="cal-header-cell" style={{
+                  padding:'14px 4px', textAlign:'center', fontSize:12, fontWeight:800,
+                  color:'#a0b4e0', letterSpacing:'0.12em', textTransform:'uppercase',
+                  background:'linear-gradient(180deg, rgba(35,45,90,0.9) 0%, rgba(25,32,70,0.9) 100%)',
+                  borderBottom:'2px solid rgba(100,140,255,0.2)',
                 }}>
                   {d}
                 </div>
@@ -252,58 +251,78 @@ export default function CalendarView({ assignedTo }: Props) {
                 const hasFut = ce.some(e=>e.urgency==='future')
                 const hasEv = ce.length>0
 
-                let bg = 'transparent'
-                let borderC = 'rgba(100,140,255,0.06)'
-                if (isSel) { bg = 'rgba(0,122,255,0.15)'; borderC = 'rgba(0,122,255,0.25)' }
+                let bg = 'rgba(14,18,40,0.6)'
+                if (isSel) bg = 'rgba(0,122,255,0.18)'
                 else if (hasOD) bg = 'rgba(255,69,58,0.08)'
                 else if (hasTW) bg = 'rgba(255,214,10,0.06)'
-                else if (hasFut) bg = 'rgba(48,209,88,0.04)'
-                else if (isT) bg = 'rgba(0,122,255,0.06)'
+                else if (hasFut) bg = 'rgba(48,209,88,0.05)'
+                else if (isT) bg = 'rgba(0,122,255,0.08)'
+
+                const cellClass = `cal-cell${hasOD?' cal-has-overdue':''}${hasTW&&!hasOD?' cal-has-week':''}${hasFut&&!hasOD&&!hasTW?' cal-has-future':''}`
 
                 return (
-                  <div key={i} onClick={()=>day&&setSelectedDate(dk===selectedDate?null:dk)} style={{
-                    minHeight:90, padding:'6px 6px 4px',
-                    borderRight:`1px solid ${borderC}`,
-                    borderBottom:`1px solid ${borderC}`,
+                  <div key={i} className={day ? cellClass : ''} onClick={()=>day&&setSelectedDate(dk===selectedDate?null:dk)} style={{
+                    minHeight:95, padding:'7px 7px 5px',
+                    borderRight:'1px solid rgba(100,140,255,0.08)',
+                    borderBottom:'1px solid rgba(100,140,255,0.08)',
                     background:bg, cursor:day?'pointer':'default',
-                    transition:'background 0.2s',
                   }}>
                     {day && (<>
-                      {/* Day number */}
-                      <div style={{ textAlign:'right', paddingRight:4, marginBottom:4 }}>
+                      {/* Day number + event count */}
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+                        <div>
+                          {hasEv && (
+                            <span style={{
+                              fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:10,
+                              background: hasOD ? 'rgba(255,69,58,0.2)' : hasTW ? 'rgba(255,214,10,0.15)' : 'rgba(48,209,88,0.15)',
+                              color: hasOD ? '#ff6b6b' : hasTW ? '#ffe066' : '#4ade80',
+                            }}>
+                              {ce.length}
+                            </span>
+                          )}
+                        </div>
                         {isT ? (
                           <span style={{
-                            display:'inline-flex', width:28, height:28, alignItems:'center', justifyContent:'center',
-                            borderRadius:'50%', background:'#007aff', color:'#fff',
-                            fontSize:13, fontWeight:800, boxShadow:'0 0 12px rgba(0,122,255,0.5)',
+                            display:'inline-flex', width:30, height:30, alignItems:'center', justifyContent:'center',
+                            borderRadius:'50%', background:'linear-gradient(135deg, #007aff, #0055cc)',
+                            color:'#fff', fontSize:14, fontWeight:800,
+                            boxShadow:'0 0 16px rgba(0,122,255,0.5), 0 2px 8px rgba(0,0,0,0.3)',
                           }}>{day}</span>
                         ) : (
                           <span style={{
                             fontSize:14, fontWeight:hasEv?700:400,
-                            color:hasEv ? '#c8d4f0' : '#5a6a8a',
+                            color:isSel ? '#fff' : hasEv ? '#d0daf0' : '#4a5a7a',
                           }}>{day}</span>
                         )}
                       </div>
-                      {/* Events */}
+
+                      {/* Event pills */}
                       {hasEv && (
-                        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                        <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
                           {ce.slice(0,2).map((evt,j)=>(
-                            <div key={j} style={{
-                              fontSize:10, padding:'3px 6px', borderRadius:6,
-                              background:`${UC[evt.urgency]}20`,
+                            <div key={j} className="cal-evt-pill" style={{
+                              fontSize:10, padding:'3px 7px', borderRadius:7,
+                              background:`${UC[evt.urgency]}22`,
                               color:UC[evt.urgency], fontWeight:700,
                               overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
                               borderLeft:`3px solid ${UC[evt.urgency]}`,
-                              boxShadow:`inset 0 0 8px ${UC[evt.urgency]}08`,
+                              boxShadow:`0 1px 4px ${UC[evt.urgency]}15`,
                             }}>
                               {evt.clientName.split(',')[0]}
                             </div>
                           ))}
-                          {ce.length>2 && <div style={{ fontSize:9, color:'#5a6a8a', paddingLeft:4, fontWeight:600 }}>+{ce.length-2} more</div>}
+                          {ce.length>2 && <div style={{ fontSize:9, color:'#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
                         </div>
                       )}
-                      {/* Selected dot */}
-                      {isSel && <div style={{ position:'relative' }}><div style={{ position:'absolute', bottom:-2, left:'50%', transform:'translateX(-50%)', width:5, height:5, borderRadius:'50%', background:'#5ac8fa', boxShadow:'0 0 6px #5ac8fa' }} /></div>}
+
+                      {/* Selected indicator */}
+                      {isSel && (
+                        <div style={{
+                          position:'absolute', bottom:3, left:'50%', transform:'translateX(-50%)',
+                          width:20, height:3, borderRadius:2, background:'#5ac8fa',
+                          boxShadow:'0 0 8px #5ac8fa80',
+                        }} />
+                      )}
                     </>)}
                   </div>
                 )
