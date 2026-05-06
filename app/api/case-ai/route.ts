@@ -914,7 +914,8 @@ const BOT_TOOLS = [
 // ---- Tool execution functions ----
 
 async function executeSearchClients(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   input: Record<string, unknown>,
   userRole: string,
   userId: string
@@ -982,7 +983,8 @@ async function executeSearchClients(
 }
 
 async function executeCaseloadStats(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   userRole: string,
   userId: string
 ) {
