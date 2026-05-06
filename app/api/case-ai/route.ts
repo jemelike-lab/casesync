@@ -1334,7 +1334,6 @@ RULES:
 
     // ---- Pass 1: Non-streaming call with tools ----
     let pass1Data: { content: Array<{ type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string }>; stop_reason: string }
-    let debugInfo = ''
     try {
       const pass1Res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -1353,16 +1352,11 @@ RULES:
         clearTimeout(timeoutId)
         const errText = await pass1Res.text()
         console.error('Anthropic pass1 error:', pass1Res.status, errText)
-        // TEMPORARY DEBUG: return 200 so frontend chat UI renders the error
-        return new Response('[DEBUG PASS1] Anthropic ' + pass1Res.status + ': ' + errText.substring(0, 500), {
-          status: 200,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        })
+        return new Response('AI service error', { status: 502 })
       }
 
       pass1Data = await pass1Res.json()
-      debugInfo = `[DEBUG] stop_reason=${pass1Data.stop_reason} content_types=${pass1Data.content?.map((b: {type: string}) => b.type).join(',')} `
-      console.log('[BLH Bot] Pass1:', debugInfo)
+      console.log('[BLH Bot] Pass1 stop_reason:', pass1Data.stop_reason, 'content_types:', pass1Data.content?.map((b: {type: string}) => b.type))
     } catch (fetchErr) {
       clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
@@ -1436,19 +1430,13 @@ RULES:
         if (!pass2Res.ok) {
           const errText = await pass2Res.text()
           console.error('Anthropic pass2 error:', errText)
-          // TEMPORARY DEBUG: return 200 so frontend chat UI renders the error
-          return new Response('[DEBUG PASS2] Anthropic ' + pass2Res.status + ': ' + errText.substring(0, 500), {
-            status: 200,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          })
+          return new Response('AI service error', { status: 502 })
         }
 
         // Stream pass2 response
         const encoder = new TextEncoder()
         const readable = new ReadableStream({
           async start(ctrl) {
-            // TEMPORARY DEBUG: show that tool path was taken
-            ctrl.enqueue(encoder.encode(`${debugInfo}[TOOL=${toolUseBlock.name}] `))
             const reader = pass2Res.body!.getReader()
             const decoder = new TextDecoder()
             try {
@@ -1493,8 +1481,7 @@ RULES:
 
       auditLog(req, { userId, action: 'bot_query' })
 
-      // TEMPORARY DEBUG: prefix with debug info
-      return new Response(debugInfo + finalText, {
+      return new Response(finalText, {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       })
     }
