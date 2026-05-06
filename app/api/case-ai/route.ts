@@ -1393,8 +1393,8 @@ RULES:
         toolResult = JSON.stringify({ error: 'Tool execution failed' })
       }
 
-      // ---- Pass 2: Streaming call with tool results ----
-      const pass2Messages = [
+      // ---- Tool loop: execute tools until the model gives a text-only response ----
+      let loopMessages = [
         ...formattedMessages,
         { role: 'assistant' as const, content: pass1Data.content },
         {
@@ -1407,72 +1407,126 @@ RULES:
         },
       ]
 
-      const controller2 = new AbortController()
-      const timeoutId2 = setTimeout(() => controller2.abort(), 30000)
+      const MAX_TOOL_ROUNDS = 3
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        const loopController = new AbortController()
+        const loopTimeout = setTimeout(() => loopController.abort(), 30000)
 
+        try {
+          const loopRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: apiHeaders,
+            signal: loopController.signal,
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5',
+              max_tokens: 1024,
+              system: systemPrompt,
+              messages: loopMessages,
+              tools: BOT_TOOLS,
+            }),
+          })
+          clearTimeout(loopTimeout)
+
+          if (!loopRes.ok) {
+            const errText = await loopRes.text()
+            console.error(`Anthropic tool-loop round ${round + 1} error:`, errText)
+            return new Response('AI service error', { status: 502 })
+          }
+
+          const loopData = await loopRes.json() as typeof pass1Data
+          const nextToolUse = loopData.content.find((b: { type: string }) => b.type === 'tool_use')
+
+          if (!nextToolUse || !nextToolUse.name || !nextToolUse.input) {
+            // No more tool calls — extract final text and return
+            const finalAnswer = loopData.content
+              .filter((b: { type: string }) => b.type === 'text')
+              .map((b: { text?: string }) => b.text || '')
+              .join('')
+
+            auditLog(req, { userId, action: 'bot_query' })
+            return new Response(finalAnswer, {
+              headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            })
+          }
+
+          // Execute the next tool
+          toolsUsed.push(nextToolUse.name)
+          console.log(`[BLH Bot] Tool loop round ${round + 2}: ${nextToolUse.name}`)
+          let nextToolResult = ''
+          try {
+            if (nextToolUse.name === 'search_clients') {
+              nextToolResult = await executeSearchClients(supabase, nextToolUse.input, userRole, userId)
+            } else if (nextToolUse.name === 'get_caseload_stats') {
+              nextToolResult = await executeCaseloadStats(supabase, userRole, userId)
+            } else {
+              nextToolResult = JSON.stringify({ error: 'Unknown tool: ' + nextToolUse.name })
+            }
+          } catch (toolErr) {
+            console.error('Tool loop execution error:', toolErr)
+            nextToolResult = JSON.stringify({ error: 'Tool execution failed' })
+          }
+
+          // Append this round to the conversation and continue the loop
+          loopMessages = [
+            ...loopMessages,
+            { role: 'assistant' as const, content: loopData.content },
+            {
+              role: 'user' as const,
+              content: [{
+                type: 'tool_result' as const,
+                tool_use_id: nextToolUse.id,
+                content: nextToolResult,
+              }],
+            },
+          ]
+        } catch (loopErr) {
+          clearTimeout(loopTimeout)
+          if ((loopErr as Error).name === 'AbortError') {
+            return new Response(
+              JSON.stringify({ error: 'BLH Bot took too long. Please try again.' }),
+              { status: 504, headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+          throw loopErr
+        }
+      }
+
+      // If we exhausted all rounds, do one final call with tool_choice:none to force an answer
+      const finalController = new AbortController()
+      const finalTimeout = setTimeout(() => finalController.abort(), 30000)
       try {
-        // Pass2 must include tools since messages contain tool_use/tool_result blocks
-        const pass2System = systemPrompt + '\n\nIMPORTANT: You just received tool results. Summarize the data clearly and directly for the user. Do NOT say "let me try" or attempt another search — answer with the data you have.'
-
-        const pass2Res = await fetch('https://api.anthropic.com/v1/messages', {
+        const finalRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: apiHeaders,
-          signal: controller2.signal,
+          signal: finalController.signal,
           body: JSON.stringify({
             model: 'claude-haiku-4-5',
             max_tokens: 1024,
-            stream: true,
-            system: pass2System,
-            messages: pass2Messages,
+            system: systemPrompt,
+            messages: loopMessages,
             tools: BOT_TOOLS,
+            tool_choice: { type: 'none' },
           }),
         })
+        clearTimeout(finalTimeout)
 
-        clearTimeout(timeoutId2)
-
-        if (!pass2Res.ok) {
-          const errText = await pass2Res.text()
-          console.error('Anthropic pass2 error:', errText)
+        if (!finalRes.ok) {
           return new Response('AI service error', { status: 502 })
         }
 
-        // Stream pass2 response
-        const encoder = new TextEncoder()
-        const readable = new ReadableStream({
-          async start(ctrl) {
-            const reader = pass2Res.body!.getReader()
-            const decoder = new TextDecoder()
-            try {
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) break
-                const chunk = decoder.decode(value, { stream: true })
-                for (const line of chunk.split('\n')) {
-                  if (!line.startsWith('data: ') || line.includes('[DONE]')) continue
-                  const data = line.slice(6).trim()
-                  if (!data) continue
-                  try {
-                    const parsed = JSON.parse(data)
-                    if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                      ctrl.enqueue(encoder.encode(parsed.delta.text))
-                    }
-                  } catch { /* skip malformed */ }
-                }
-              }
-            } finally {
-              ctrl.close()
-            }
-          }
-        })
+        const finalData = await finalRes.json() as typeof pass1Data
+        const finalAnswer = finalData.content
+          .filter((b: { type: string }) => b.type === 'text')
+          .map((b: { text?: string }) => b.text || '')
+          .join('')
 
         auditLog(req, { userId, action: 'bot_query' })
-
-        return new Response(readable, {
+        return new Response(finalAnswer, {
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         })
-      } catch (pass2Err) {
-        clearTimeout(timeoutId2)
-        throw pass2Err
+      } catch (finalErr) {
+        clearTimeout(finalTimeout)
+        throw finalErr
       }
     } else {
       // No tool use - extract text from pass1 response directly
