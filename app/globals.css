@@ -807,3 +807,20 @@ input[type="time"] {
 [data-theme="light"] .premium-stat-card:hover {
   box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
 }
+
+/* ═══ Mobile PWA responsive fixes ═══ */
+@media (max-width: 768px) {
+  .stat-hero-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .stat-hero-grid .premium-stat-card {
+    min-height: 110px !important;
+  }
+}
+@media (max-width: 480px) {
+  .stat-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}

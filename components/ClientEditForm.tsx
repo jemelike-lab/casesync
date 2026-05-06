@@ -628,7 +628,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       </div>
 
       {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
+      <div className="client-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
 
         {/* ── LEFT COLUMN: Deadline tiles + data sections ── */}
         <div>
@@ -639,7 +639,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Key Deadlines</span>
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginLeft: 'auto' }}>Hover for details</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+            <div className="deadline-tile-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
               <DateTile label="Eligibility End" field="eligibility_end_date" date={f.eligibility_end_date} editing={editing} onChange={handleChange} highlighted={highlightedField === 'eligibility_end_date'} icon={<Shield size={13} />} />
               <DateTile label="3-Month Visit Due" field="three_month_visit_due" date={f.three_month_visit_due} editing={editing} onChange={handleChange} highlighted={highlightedField === 'three_month_visit_due'} icon={<Calendar size={13} />} />
               <DateTile label="Quarterly Waiver" field="quarterly_waiver_date" date={f.quarterly_waiver_date} editing={editing} onChange={handleChange} highlighted={highlightedField === 'quarterly_waiver_date'} icon={<FileText size={13} />} />
@@ -791,7 +791,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       )}
 
       {/* Responsive: stack on mobile */}
-      <style>{`@media(max-width:768px){div[style*="gridTemplateColumns: '1fr 360px'"]{grid-template-columns:1fr!important}}`}</style>
+      <style>{`@media(max-width:768px){.client-detail-grid{grid-template-columns:1fr!important}.deadline-tile-grid{grid-template-columns:1fr!important}}`}</style>
     </div>
   )
 }

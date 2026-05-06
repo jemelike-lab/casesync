@@ -298,9 +298,9 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         const orgColor = overdueRate <= 10 ? '#30d158' : overdueRate <= 25 ? '#ffd60a' : overdueRate <= 50 ? '#ff9f0a' : '#ff453a'
 
         return (
-          <div style={{ marginBottom: 24, display: 'flex', gap: 16 }}>
+          <div className="scp-hero-row" style={{ marginBottom: 24, display: 'flex', gap: 16 }}>
             {/* Left: Greeting + org health meter */}
-            <div style={{
+            <div className="scp-hero-welcome" style={{
               flex: '0 0 280px',
               borderRadius: 22,
               padding: '28px 24px',
@@ -473,7 +473,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         onRosterClick={(f) => openRosterFilter(f as RosterFilter)}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 16, marginBottom: 24 }}>
+      <div className="scp-two-col" style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 16, marginBottom: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <TeamHealthPanel
             planners={planners}
@@ -915,6 +915,25 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           This panel uses the same visual language as Admin, but only includes supervisor-safe actions. User invites, account removal, and audit controls remain in Admin.
         </div>
       </div>
+
+      {/* Mobile responsive overrides */}
+      <style>{`
+        @media (max-width: 768px) {
+          .scp-hero-row {
+            flex-direction: column !important;
+          }
+          .scp-hero-welcome {
+            flex: 1 1 auto !important;
+            min-height: auto !important;
+          }
+          .scp-two-col {
+            grid-template-columns: 1fr !important;
+          }
+          .premium-stat-card {
+            min-height: 100px !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
