@@ -40,7 +40,6 @@ const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer', app
 const glassCard: React.CSSProperties = {
   borderRadius: 18, border: '1px solid rgba(255,255,255,0.06)',
   background: 'linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.008) 100%)',
-  overflow: 'hidden',
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -122,15 +121,20 @@ function DateTile({ label, field, date, editing, onChange, highlighted, icon }: 
         cursor: editing ? 'default' : 'default',
       }}
     >
-      {/* Popover on hover */}
+      {/* Popover on hover — below tile */}
       {hovered && !editing && date && (
         <div style={{
-          position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', top: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
           background: 'linear-gradient(135deg, #1a1e2e, #141824)', border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 14, padding: '14px 18px', minWidth: 200, maxWidth: 280,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.5)', zIndex: 100, animation: 'popIn 0.15s ease',
-          pointerEvents: 'none',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5)', zIndex: 200, animation: 'popIn 0.15s ease',
         }}>
+          {/* Arrow pointing up */}
+          <div style={{
+            position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%) rotate(45deg)',
+            width: 10, height: 10, background: '#1a1e2e',
+            border: '1px solid rgba(255,255,255,0.12)', borderBottom: 'none', borderRight: 'none',
+          }} />
           <div style={{ fontSize: 11, fontWeight: 700, color: `rgb(${rgb})`, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
             {URGENCY_LABELS[status]}
           </div>
@@ -145,12 +149,6 @@ function DateTile({ label, field, date, editing, onChange, highlighted, icon }: 
               ⚡ Action needed — update this date
             </div>
           )}
-          {/* Arrow */}
-          <div style={{
-            position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%) rotate(45deg)',
-            width: 10, height: 10, background: '#1a1e2e',
-            border: '1px solid rgba(255,255,255,0.12)', borderTop: 'none', borderLeft: 'none',
-          }} />
         </div>
       )}
 
@@ -578,7 +576,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       )}
 
       {/* Popover animation */}
-      <style>{`@keyframes popIn{from{opacity:0;transform:translateX(-50%) translateY(4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+      <style>{`@keyframes popIn{from{opacity:0;transform:translateX(-50%) translateY(-4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
 
       {/* Back */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
