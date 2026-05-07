@@ -405,6 +405,64 @@ export default function TimeClockClient({ initialCurrentEntry, initialWeekEntrie
         </div>
       )}
 
+
+      {/* WEEKLY STATS — below clock on Clock tab */}
+      {tab === 'clock' && status && (
+        <div className="tc-week-stats">
+          <div className="tc-stat-card">
+            <span className="tc-stat-value">{status.todayTotal.workedMinutes > 0 ? formatDuration(status.todayTotal.workedMinutes) : '0m'}</span>
+            <span className="tc-stat-label">Today</span>
+          </div>
+          <div className="tc-stat-card">
+            <span className="tc-stat-value">{formatDuration(status.weekTotal.workedMinutes)}</span>
+            <span className="tc-stat-label">This Week</span>
+          </div>
+          <div className="tc-stat-card">
+            <span className="tc-stat-value">{status.weekTotal.days}</span>
+            <span className="tc-stat-label">Days Worked</span>
+          </div>
+          <div className="tc-stat-card">
+            <span className="tc-stat-value">{formatDuration(status.weekTotal.breakMinutes)}</span>
+            <span className="tc-stat-label">Breaks</span>
+          </div>
+        </div>
+      )}
+
+      {/* WEEKLY HOURS BAR CHART */}
+      {tab === 'clock' && (
+        <div className="tc-week-chart">
+          <div className="tc-section-label">This Week</div>
+          <div className="tc-bars">
+            {(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const).map((day, i) => {
+              const dayEntry = initialWeekEntries.find(e => {
+                const d = new Date(e.clockInAt)
+                return d.getDay() === (i === 6 ? 0 : i + 1)
+              })
+              const mins = dayEntry ? dayEntry.workedMinutes : 0
+              const pct = Math.min((mins / 480) * 100, 100)
+              const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1)
+              return (
+                <div key={day} className={`tc-bar-col${isToday ? ' tc-bar-today' : ''}`}>
+                  <div className="tc-bar-track">
+                    <div className="tc-bar-fill" style={{ height: `${pct}%` }} />
+                  </div>
+                  <span className="tc-bar-label">{day}</span>
+                  {mins > 0 && <span className="tc-bar-value">{formatDuration(mins)}</span>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* DIGITAL DATE DISPLAY */}
+      {tab === 'clock' && (
+        <div className="tc-digital-time">
+          <span className="tc-digital-date">{formatDate(new Date())}</span>
+        </div>
+      )}
+
+
       {/*  TIMESHEET TAB  */}
       {tab === 'timesheet' && (
         <div className="tc-timesheet-panel">
