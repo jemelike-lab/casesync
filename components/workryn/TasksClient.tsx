@@ -87,7 +87,7 @@ function Particles() {
     Array.from({ length: 14 }, (_, i) => ({
       id: i, left: `${Math.random()*100}%`, top: `${Math.random()*100}%`,
       size: 2 + Math.random()*2.5, duration: 18 + Math.random()*22,
-      delay: Math.random()*8, opacity: 0.1 + Math.random()*0.2,
+      delay: Math.random()*8, opacity: 0.2 + Math.random()*0.3,
     }))
   , [])
   return (
@@ -530,12 +530,13 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-ambient {
   position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(99,102,241,0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(16,185,129,0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(99,102,241,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(16,185,129,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 10%, rgba(139,92,246,0.08) 0%, transparent 50%);
 }
 .tk-particles { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; overflow:hidden; }
 .tk-particle {
-  position:absolute; border-radius:50%; background:rgba(99,102,241,0.5);
+  position:absolute; border-radius:50%; background:rgba(99,102,241,0.7);
   animation: tk-float linear infinite;
 }
 @keyframes tk-float {
@@ -550,6 +551,11 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-hero {
   display:flex; align-items:center; justify-content:space-between; gap:16px;
    position:relative; z-index:1; flex-wrap:wrap;
+}
+.tk-hero::before {
+  content:''; position:absolute; top:-20px; left:-20px; width:220px; height:220px;
+  background:radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  pointer-events:none; z-index:-1;
 }
 .tk-hero-title { font-size:2rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:2px; }
 .tk-hero-sub { font-size:0.9rem; color:var(--text-muted); }
@@ -581,7 +587,12 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 }
 .tk-stat-card::before {
   content:''; position:absolute; top:0; left:0; right:0; height:3.5px;
-  background:var(--tk-accent); opacity:0.7; transition:opacity 0.3s ease;
+  background:var(--tk-accent); opacity:1; transition:opacity 0.3s ease;
+}
+.tk-stat-card::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:60%;
+  background:var(--tk-accent); opacity:0.03; filter:blur(30px);
+  pointer-events:none; border-radius:inherit;
 }
 .tk-stat-card { box-shadow:0 2px 12px rgba(0,0,0,0.12), 0 0 20px rgba(99,102,241,0.04); }
 .tk-stat-card:hover { border-color:rgba(99,102,241,0.3); box-shadow:0 8px 32px rgba(0,0,0,0.2), 0 0 40px rgba(99,102,241,0.1); transform:translateY(-2px); }
@@ -620,6 +631,9 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   background:var(--brand-gradient, linear-gradient(90deg,#6366f1,#3b82f6));
   transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
   box-shadow:0 0 14px rgba(99,102,241,0.35);
+  background-size:200% 100%;
+  background-image:linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #6366f1 100%);
+  animation:tk-bar-shimmer 2s ease infinite;
 }
 .tk-urgent-badge {
   display:flex; align-items:center; gap:5px;
@@ -629,6 +643,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   white-space:nowrap; flex-shrink:0;
   animation: tk-badge-pulse 2s ease infinite;
 }
+@keyframes tk-bar-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @keyframes tk-badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
 
 /* ═══ FILTER BAR ═══ */
@@ -682,7 +697,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   flex-shrink:0;
 }
 .tk-col-icon {
-  width:28px; height:28px; border-radius:8px;
+  width:32px; height:32px; border-radius:10px;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .tk-col-title { font-size:0.8125rem; font-weight:600; color:var(--text-secondary, #cbd5e1); }
@@ -691,12 +706,15 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   background:var(--bg-overlay, rgba(255,255,255,0.08)); color:var(--text-muted, #64748b);
 }
 
-.tk-col-cards { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.tk-col-cards {
+  flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%);
+}
 
 .tk-empty {
   display:flex; align-items:center; justify-content:center;
   height:80px; font-size:0.8125rem; color:var(--text-muted);
-  border:1px dashed var(--border-subtle, rgba(255,255,255,0.08));
+  border:2px dashed var(--border-subtle, rgba(255,255,255,0.1));
   border-radius:var(--radius-md, 12px);
   transition:all 0.25s ease;
 }
@@ -709,7 +727,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-dragging { opacity:0.3; }
 
 .tk-drop-line {
-  height:3px; background:rgba(99,102,241,0.7); border-radius:99px;
+  height:4px; background:linear-gradient(90deg,rgba(99,102,241,0.4),rgba(99,102,241,0.9),rgba(99,102,241,0.4)); border-radius:99px;
   margin:2px 0; box-shadow:0 0 10px rgba(99,102,241,0.4);
   animation: tk-pulse-line 1s ease infinite;
 }
@@ -727,8 +745,8 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 }
 .tk-card:active { cursor:grabbing; }
 .tk-card:hover {
-  border-color:rgba(99,102,241,0.2);
-  transform:translateY(-3px);
+  border-color:rgba(99,102,241,0.25);
+  transform:translateY(-4px) scale(1.01);
   box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 0 24px rgba(99,102,241,0.1);
   background:var(--glass-bg, rgba(255,255,255,0.09));
 }
