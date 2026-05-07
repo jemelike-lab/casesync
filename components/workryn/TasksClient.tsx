@@ -485,7 +485,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-hero-glow { position:absolute; top:-40px; left:20px; width:250px; height:250px; background:radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 65%); pointer-events:none; filter:blur(40px); z-index:0; }
 .tk-hero-content { display:flex; align-items:center; justify-content:space-between; gap:24px; position:relative; flex-wrap:wrap; }
 .tk-hero-left { flex:1; min-width:200px; overflow:visible; }
-.tk-hero-title { font-size:2.25rem; font-weight:800; letter-spacing:-0.04em; background:linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:4px; line-height:1.15; }
+.tk-hero-title { font-size:2.25rem; font-weight:800; letter-spacing:-0.04em; background:linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%) !important; -webkit-background-clip:text !important; -webkit-text-fill-color:transparent !important; background-clip:text !important; color:transparent !important; margin-bottom:4px; line-height:1.15; display:inline-block; }
 .tk-hero-sub { font-size:0.9rem; color:var(--text-muted, #64748b); margin-bottom:16px; }
 .tk-new-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:12px; font-size:0.875rem; font-weight:600; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none; cursor:pointer; transition:all 0.2s ease; box-shadow:0 4px 20px rgba(99,102,241,0.35); animation:tk-btn-pulse 3s ease-in-out infinite; }
 .tk-new-btn:hover { transform:translateY(-2px); box-shadow:0 6px 28px rgba(99,102,241,0.5); }
