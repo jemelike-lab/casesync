@@ -532,3 +532,246 @@
   color: var(--w-text-secondary);
 }
 
+
+/* ═══════════════════════════════════════════
+   TICKETS PAGE — Premium Upgrade
+   ═══════════════════════════════════════════ */
+
+/* Page fills viewport */
+.td-page {
+    min-height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Page header — bigger title */
+.td-page .page-header {
+    padding: 28px 0 20px !important;
+}
+
+.td-page .page-header h1,
+.td-page .page-header .gradient-text {
+    font-size: 2rem !important;
+    font-weight: 700;
+}
+
+.td-page .page-header p {
+    font-size: 1.0625rem !important;
+    color: #94a3b8;
+}
+
+/* Stat cards — bigger, bolder, with hover effects */
+.td-stats {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
+    margin-bottom: 24px;
+}
+
+.td-stat-card {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 16px !important;
+    padding: 24px 20px !important;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+    animation: w-fade-up 0.4s ease both;
+}
+
+.td-stat-card:nth-child(1) { animation-delay: 0.05s; }
+.td-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.td-stat-card:nth-child(3) { animation-delay: 0.15s; }
+.td-stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+.td-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 20px rgba(37,99,235,0.1);
+    border-color: rgba(255,255,255,0.18);
+}
+
+.td-stat-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 14px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.td-stat-value {
+    font-size: 2.25rem !important;
+    font-weight: 700 !important;
+    color: #f1f5f9 !important;
+    line-height: 1;
+}
+
+.td-stat-label {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+/* Filter tabs — bigger pills */
+.td-filter-tabs {
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+    flex-wrap: wrap;
+}
+
+.td-filter-tab {
+    font-size: 1rem !important;
+    padding: 10px 20px !important;
+    border-radius: 99px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.td-filter-tab:hover {
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-1px);
+}
+
+.td-filter-tab.active {
+    background: rgba(37,99,235,0.2) !important;
+    border-color: rgba(37,99,235,0.4) !important;
+    color: #60a5fa !important;
+    box-shadow: 0 0 12px rgba(37,99,235,0.15);
+}
+
+/* Search input — bigger */
+.td-page .input {
+    font-size: 1.0625rem !important;
+    padding: 14px 18px !important;
+}
+
+/* Filter selects — bigger */
+.td-filter-select {
+    font-size: 1rem !important;
+    padding: 12px 16px !important;
+}
+
+/* Ticket list — full width table */
+.td-list {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    flex: 1;
+    animation: w-fade-up 0.4s ease both;
+    animation-delay: 0.25s;
+}
+
+.td-list-header {
+    padding: 16px 24px !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.875rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* Ticket rows */
+.td-row {
+    padding: 18px 24px !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+}
+
+.td-row:hover {
+    background: rgba(255,255,255,0.04);
+    transform: translateX(4px);
+}
+
+.td-row:last-child { border-bottom: none; }
+
+/* Empty state — premium centered */
+.td-page .empty-state,
+.td-page .page-body .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 60px 24px;
+    text-align: center;
+    animation: w-fade-up 0.5s ease both;
+    animation-delay: 0.3s;
+}
+
+.td-page .empty-state svg,
+.td-page .empty-state img {
+    width: 80px;
+    height: 80px;
+    opacity: 0.4;
+    margin-bottom: 20px;
+}
+
+.td-page .empty-state p,
+.td-page .empty-state div {
+    font-size: 1.25rem !important;
+    color: #64748b;
+}
+
+/* Glass card for filter area */
+.td-page .glass-card {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 16px !important;
+    padding: 20px 24px !important;
+    margin-bottom: 20px;
+}
+
+/* Page body stretches */
+.td-page .page-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* New Ticket button — bigger */
+.td-page .btn-brand,
+.td-page [class*="btn-brand"],
+.td-page .wd-btn-primary {
+    font-size: 1.0625rem !important;
+    padding: 12px 24px !important;
+    border-radius: 12px;
+}
+
+/* Progress bar for resolution tracking */
+.td-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.td-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.td-progress-fill.green { background: linear-gradient(90deg, #10b981, #34d399); }
+.td-progress-fill.blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.td-progress-fill.amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+@media (max-width: 800px) {
+    .td-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    .td-stat-value { font-size: 1.75rem !important; }
+}
+
+@media (max-width: 500px) {
+    .td-stats { grid-template-columns: 1fr !important; }
+}
