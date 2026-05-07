@@ -320,87 +320,71 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 
   return (
     <div className="tk-page">
-      {/* ═══ AMBIENT BACKGROUND ═══ */}
       <div className="tk-ambient" aria-hidden="true"/>
       <Particles/>
 
-      {/* ═══ HERO HEADER ═══ */}
-      <div className="page-header" style={{ padding:"24px 32px 20px" }}>
-      <div className="tk-hero">
-        <div className="tk-hero-left">
-          <h1 className="gradient-text tk-hero-title">Tasks</h1>
-          <p className="tk-hero-sub">{tasks.length} total · {totalDone} done · {pct}% complete</p>
+      {/* HERO BANNER */}
+      <div className="page-header tk-hero-banner">
+        <div className="tk-hero-glow" aria-hidden="true"/>
+        <div className="tk-hero-content">
+          <div className="tk-hero-left">
+            <h1 className="tk-hero-title">Tasks</h1>
+            <p className="tk-hero-sub">{tasks.length} tasks across {COLUMNS.length} stages</p>
+            <button className="tk-new-btn" onClick={openCreate} id="btn-create-task">
+              <Plus size={16}/> New Task
+            </button>
+          </div>
+          <div className="tk-hero-right">
+            <div className="tk-hero-ring-wrap">
+              <ProgressRing percent={pct} size={88} stroke={7}/>
+              <div className="tk-hero-ring-label">
+                <span className="tk-hero-ring-value">{animPct}%</span>
+                <span className="tk-hero-ring-sub">done</span>
+              </div>
+            </div>
+            <div className="tk-hero-stats">
+              <div className="tk-hero-stat">
+                <span className="tk-hero-stat-val tk-stat-purple">{animTotal}</span>
+                <span className="tk-hero-stat-lbl">Total</span>
+              </div>
+              <div className="tk-hero-stat">
+                <span className="tk-hero-stat-val tk-stat-indigo">{animActive}</span>
+                <span className="tk-hero-stat-lbl">Active</span>
+              </div>
+              <div className="tk-hero-stat">
+                <span className="tk-hero-stat-val tk-stat-green">{animDone}</span>
+                <span className="tk-hero-stat-lbl">Done</span>
+              </div>
+              {urgentCount > 0 && (
+                <div className="tk-hero-stat">
+                  <span className="tk-hero-stat-val tk-stat-amber">{urgentCount}</span>
+                  <span className="tk-hero-stat-lbl">Urgent</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <button className="btn btn-gradient focus-ring tk-create-btn" onClick={openCreate} id="btn-create-task">
-          <Plus size={18}/> New Task
-        </button>
-      </div>
-
-      {/* ═══ STAT CARDS (3D tilt + count-up) ═══ */}
-      <div className="tk-stats">
-        <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#64748b,#94a3b8)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(100,116,139,0.15)', color:'#94a3b8' }}><ListTodo size={28}/></div>
-          <div className="tk-stat-body">
-            <span className="tk-stat-value">{animTotal}</span>
-            <span className="tk-stat-label">Total Tasks</span>
-          </div>
-        </TiltCard>
-        <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#6366f1,#8b5cf6)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(99,102,241,0.15)', color:'#818cf8' }}><Zap size={28}/></div>
-          <div className="tk-stat-body">
-            <span className="tk-stat-value">{animActive}</span>
-            <span className="tk-stat-label">In Progress</span>
-          </div>
-        </TiltCard>
-        <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#10b981,#34d399)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(16,185,129,0.15)', color:'#34d399' }}><CheckCircle2 size={28}/></div>
-          <div className="tk-stat-body">
-            <span className="tk-stat-value">{animDone}</span>
-            <span className="tk-stat-label">Completed</span>
-          </div>
-        </TiltCard>
-        <TiltCard className="tk-stat-card tk-stat-ring tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#3b82f6,#2563eb)' } as React.CSSProperties}>
-          <ProgressRing percent={pct}/>
-          <div className="tk-stat-body">
-            <span className="tk-stat-value">{animPct}<span className="tk-stat-unit">%</span></span>
-            <span className="tk-stat-label">Done Rate</span>
-          </div>
-        </TiltCard>
-      </div>
-
-      {/* ═══ PROGRESS BAR ═══ */}
-      <div className="tk-progress-wrap">
-        <div className="tk-progress-bar">
-          <div className="tk-progress-fill" style={{ width:`${pct}%` }}/>
+        <div className="tk-hero-progress">
+          <div className="tk-hero-progress-fill" style={{ width:`${Math.max(pct, 2)}%` }}/>
         </div>
-        {urgentCount > 0 && (
-          <div className="tk-urgent-badge">
-            <Flame size={13}/> {urgentCount} high priority
+        <div className="tk-action-bar">
+          <div className="tk-search-wrap">
+            <Search size={15} className="tk-search-icon"/>
+            <input className="input focus-ring tk-search-input" placeholder="Search tasks..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
-        )}
-      </div>
-
-      {/* ═══ FILTER BAR ═══ */}
-      <div className="tk-filter-bar">
-        <div className="tk-search-wrap">
-          <Search size={15} className="tk-search-icon"/>
-          <input className="input focus-ring tk-search-input" placeholder="Search tasks..." value={search} onChange={e=>setSearch(e.target.value)}/>
-        </div>
-        <div className="tk-filter-group">
-          <Filter size={14} style={{ color:'var(--text-muted)', flexShrink:0 }}/>
-          <select className="input focus-ring tk-select" value={filterPriority} onChange={e=>setFilterPriority(e.target.value)}>
-            <option value="">All priorities</option>
-            {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
-          </select>
-          <select className="input focus-ring tk-select" value={filterAssignee} onChange={e=>setFilterAssignee(e.target.value)}>
-            <option value="">All assignees</option>
-            {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
+          <div className="tk-filter-group">
+            <select className="input focus-ring tk-select" value={filterPriority} onChange={e=>setFilterPriority(e.target.value)}>
+              <option value="">All priorities</option>
+              {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+            <select className="input focus-ring tk-select" value={filterAssignee} onChange={e=>setFilterAssignee(e.target.value)}>
+              <option value="">All assignees</option>
+              {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+          </div>
         </div>
       </div>
-      </div>
 
-      {/* ═══ FLOATING MENU ═══ */}
       {menuState && (
         <FloatingMenu anchor={menuState.anchor} columns={COLUMNS}
           onMoveTo={s=>handleStatusChange(menuState.taskId,s)}
@@ -409,62 +393,59 @@ export default function TasksClient({ initialTasks, users, departments, currentU
           onClose={() => setMenuState(null)}/>
       )}
 
-      {/* ═══ KANBAN BOARD ═══ */}
-      <div className="page-body" style={{ paddingTop:16 }}>
-      <div className="tk-board">
-        {COLUMNS.map((col, colIdx) => {
-          const colTasks = byStatus(col.id)
-          const isDragTarget = dragOverCol === col.id
-          const ColIcon = col.icon
-          return (
-            <div key={col.id}
-              className={`tk-col tk-stagger${isDragTarget?' tk-col-drop':''}`}
-              style={{ '--tk-stagger': colIdx } as React.CSSProperties}
-              onDragOver={e => handleDragOver(e, col.id, colTasks.length)}
-              onDragLeave={handleDragLeave}
-              onDrop={e => handleDrop(e, col.id)}
-            >
-              {/* Gradient top accent */}
-              <div className="tk-col-accent" style={{ background:col.gradient }}/>
-
-              <div className="tk-col-header">
-                <div className="flex items-center gap-2">
-                  <div className="tk-col-icon" style={{ background:`${col.color}20`, color:col.color }}>
-                    <ColIcon size={14}/>
+      {/* KANBAN BOARD */}
+      <div className="page-body" style={{ paddingTop:12 }}>
+        <div className="tk-board">
+          {COLUMNS.map((col, colIdx) => {
+            const colTasks = byStatus(col.id)
+            const isDragTarget = dragOverCol === col.id
+            const ColIcon = col.icon
+            return (
+              <div key={col.id}
+                className={`tk-col tk-stagger${isDragTarget?' tk-col-drop':''}`}
+                style={{ '--tk-stagger': colIdx } as React.CSSProperties}
+                onDragOver={e => handleDragOver(e, col.id, colTasks.length)}
+                onDragLeave={handleDragLeave}
+                onDrop={e => handleDrop(e, col.id)}
+              >
+                <div className="tk-col-accent" style={{ background:col.gradient }}/>
+                <div className="tk-col-header">
+                  <div className="flex items-center gap-2">
+                    <div className="tk-col-icon" style={{ background:`${col.color}20`, color:col.color }}>
+                      <ColIcon size={14}/>
+                    </div>
+                    <span className="tk-col-title">{col.label}</span>
+                    <span className="tk-col-count">{colTasks.length}</span>
                   </div>
-                  <span className="tk-col-title">{col.label}</span>
-                  <span className="tk-col-count">{colTasks.length}</span>
+                  <button className="btn btn-icon btn-ghost focus-ring" style={{ width:28, height:28 }} onClick={openCreate}><Plus size={14}/></button>
                 </div>
-                <button className="btn btn-icon btn-ghost focus-ring" style={{ width:28, height:28 }} onClick={openCreate}><Plus size={14}/></button>
+                <div className="tk-col-cards">
+                  {colTasks.length === 0 && (
+                    <div className={`tk-empty${isDragTarget?' tk-empty-active':''}`}>
+                      {isDragTarget ? 'Drop here' : 'No tasks'}
+                    </div>
+                  )}
+                  {colTasks.map((task, i) => (
+                    <div key={task.id} className={`tk-card-wrap${draggingId===task.id?' tk-dragging':''}`}
+                      onDragOver={e => { e.preventDefault(); setDragOverCol(col.id); setDragOverIndex(i) }}
+                    >
+                      {isDragTarget && dragOverIndex === i && draggingId !== task.id && <div className="tk-drop-line"/>}
+                      <TaskCard task={task} onTaskClick={() => openEdit(task)}
+                        onMenuOpen={anchor => setMenuState(menuState?.taskId===task.id ? null : { taskId:task.id, anchor })}
+                        onDragStart={id => setDraggingId(id)}
+                        onDragEnd={() => { setDraggingId(null); setDragOverCol(null); setDragOverIndex(null) }}
+                      />
+                    </div>
+                  ))}
+                  {isDragTarget && colTasks.length > 0 && dragOverIndex === colTasks.length && <div className="tk-drop-line"/>}
+                </div>
               </div>
-
-              <div className="tk-col-cards">
-                {colTasks.length === 0 && (
-                  <div className={`tk-empty${isDragTarget?' tk-empty-active':''}`}>
-                    {isDragTarget ? 'Drop here' : 'No tasks'}
-                  </div>
-                )}
-                {colTasks.map((task, i) => (
-                  <div key={task.id} className={`tk-card-wrap${draggingId===task.id?' tk-dragging':''}`}
-                    onDragOver={e => { e.preventDefault(); setDragOverCol(col.id); setDragOverIndex(i) }}
-                  >
-                    {isDragTarget && dragOverIndex === i && draggingId !== task.id && <div className="tk-drop-line"/>}
-                    <TaskCard task={task} onTaskClick={() => openEdit(task)}
-                      onMenuOpen={anchor => setMenuState(menuState?.taskId===task.id ? null : { taskId:task.id, anchor })}
-                      onDragStart={id => setDraggingId(id)}
-                      onDragEnd={() => { setDraggingId(null); setDragOverCol(null); setDragOverIndex(null) }}
-                    />
-                  </div>
-                ))}
-                {isDragTarget && colTasks.length > 0 && dragOverIndex === colTasks.length && <div className="tk-drop-line"/>}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* ═══ CREATE/EDIT MODAL ═══ */}
+      {/* MODAL - keep existing */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal tk-modal" onClick={e=>e.stopPropagation()} style={{ maxWidth:560 }}>
@@ -474,363 +455,114 @@ export default function TasksClient({ initialTasks, users, departments, currentU
               <button className="btn btn-icon btn-ghost focus-ring" onClick={()=>setShowModal(false)}><X size={18}/></button>
             </div>
             <div className="modal-body" style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:16 }}>
-              <div className="form-group">
-                <label className="label">Title *</label>
-                <input className="input focus-ring" placeholder="What needs to be done?" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} autoFocus/>
-              </div>
-              <div className="form-group">
-                <label className="label">Description</label>
-                <textarea className="input focus-ring" style={{ minHeight:80, resize:'vertical' }} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))}/>
+              <div className="form-group"><label className="label">Title *</label><input className="input focus-ring" placeholder="What needs to be done?" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} autoFocus/></div>
+              <div className="form-group"><label className="label">Description</label><textarea className="input focus-ring" style={{ minHeight:80, resize:'vertical' }} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))}/></div>
+              <div className="flex gap-3">
+                <div className="form-group flex-1"><label className="label">Priority</label><select className="input focus-ring" value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))}>{PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                <div className="form-group flex-1"><label className="label">Due Date</label><input type="date" className="input focus-ring" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))}/></div>
               </div>
               <div className="flex gap-3">
-                <div className="form-group flex-1">
-                  <label className="label">Priority</label>
-                  <select className="input focus-ring" value={form.priority} onChange={e=>setForm(f=>({...f,priority:e.target.value}))}>
-                    {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div className="form-group flex-1">
-                  <label className="label">Due Date</label>
-                  <input type="date" className="input focus-ring" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))}/>
-                </div>
+                <div className="form-group flex-1"><label className="label">Assign to</label><select className="input focus-ring" value={form.assignedToId} onChange={e=>setForm(f=>({...f,assignedToId:e.target.value}))}><option value="">Unassigned</option>{users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
+                <div className="form-group flex-1"><label className="label">Department</label><select className="input focus-ring" value={form.departmentId} onChange={e=>setForm(f=>({...f,departmentId:e.target.value}))}><option value="">None</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
               </div>
-              <div className="flex gap-3">
-                <div className="form-group flex-1">
-                  <label className="label">Assign to</label>
-                  <select className="input focus-ring" value={form.assignedToId} onChange={e=>setForm(f=>({...f,assignedToId:e.target.value}))}>
-                    <option value="">Unassigned</option>
-                    {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group flex-1">
-                  <label className="label">Department</label>
-                  <select className="input focus-ring" value={form.departmentId} onChange={e=>setForm(f=>({...f,departmentId:e.target.value}))}>
-                    <option value="">None</option>
-                    {departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="label">Tags (comma separated)</label>
-                <input className="input focus-ring" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}/>
-              </div>
+              <div className="form-group"><label className="label">Tags (comma separated)</label><input className="input focus-ring" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}/></div>
             </div>
             <div className="modal-footer" style={{ padding:'16px 24px 20px', borderTop:'1px solid var(--border-subtle)' }}>
               <button className="btn btn-ghost focus-ring" onClick={()=>setShowModal(false)}>Cancel</button>
-              <button className="btn btn-gradient focus-ring" onClick={handleSave} disabled={saving||!form.title.trim()} id="btn-save-task">
-                {saving?<Loader2 size={16} className="spin"/>:editTask?'Save Changes':'Create Task'}
-              </button>
+              <button className="btn btn-gradient focus-ring" onClick={handleSave} disabled={saving||!form.title.trim()} id="btn-save-task">{saving?<Loader2 size={16} className="spin"/>:editTask?'Save Changes':'Create Task'}</button>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-/* ═══ AMBIENT + PARTICLES ═══ */
-.tk-ambient {
-  position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0;
-  background:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(99,102,241,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(16,185,129,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 10%, rgba(139,92,246,0.08) 0%, transparent 50%);
-}
-.tk-particles { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:0; overflow:hidden; }
-.tk-particle {
-  position:absolute; border-radius:50%; background:rgba(99,102,241,0.7);
-  animation: tk-float linear infinite;
-}
-@keyframes tk-float {
-  0% { transform:translate(0,0) scale(1); opacity:0; }
-  10% { opacity:1; }
-  90% { opacity:1; }
-  100% { transform:translate(${Math.random()>0.5?'':'-'}60px, -120px) scale(0.5); opacity:0; }
-}
-
-/* ═══ HERO ═══ */
 .tk-page { position:relative; }
-.tk-hero {
-  display:flex; align-items:center; justify-content:space-between; gap:16px;
-   position:relative; z-index:1; flex-wrap:wrap;
-}
-.tk-hero::before {
-  content:''; position:absolute; top:-20px; left:-20px; width:220px; height:220px;
-  background:radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
-  pointer-events:none; z-index:-1;
-}
-.tk-hero-title { font-size:2rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:2px; }
-.tk-hero-sub { font-size:0.9rem; color:var(--text-muted); }
-.tk-create-btn {
-  display:inline-flex; align-items:center; gap:8px; font-weight:600;
-  box-shadow:0 2px 16px rgba(99,102,241,0.25);
-}
-.tk-create-btn { animation:tk-btn-glow 3s ease-in-out infinite; }
-.tk-create-btn:hover { box-shadow:0 4px 24px rgba(99,102,241,0.4); transform:translateY(-2px); }
-@keyframes tk-btn-glow { 0%,100%{box-shadow:0 2px 16px rgba(99,102,241,0.25)} 50%{box-shadow:0 4px 28px rgba(99,102,241,0.4)} }
-
-/* ═══ STAT CARDS ═══ */
-.tk-stats {
-  display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
-  margin-top:16px; position:relative; z-index:1;
-}
-@media(max-width:900px){ .tk-stats { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px){ .tk-stats { grid-template-columns:1fr; } }
-
-.tk-stat-card {
-  position:relative; overflow:hidden;
-  background:var(--bg-surface, rgba(255,255,255,0.07));
-  border:1px solid var(--border-subtle, rgba(255,255,255,0.08));
-  border-radius:var(--radius-lg, 16px);
-  padding:18px 20px;
-  display:flex; align-items:center; gap:14px;
-  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
-  cursor:default;
-}
-.tk-stat-card::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:3.5px;
-  background:var(--tk-accent); opacity:1; transition:opacity 0.3s ease;
-}
-.tk-stat-card::after {
-  content:''; position:absolute; top:0; left:0; right:0; height:60%;
-  background:var(--tk-accent); opacity:0.03; filter:blur(30px);
-  pointer-events:none; border-radius:inherit;
-}
-.tk-stat-card { box-shadow:0 2px 12px rgba(0,0,0,0.12), 0 0 20px rgba(99,102,241,0.04); }
-.tk-stat-card:hover { border-color:rgba(99,102,241,0.3); box-shadow:0 8px 32px rgba(0,0,0,0.2), 0 0 40px rgba(99,102,241,0.1); transform:translateY(-2px); }
-.tk-stat-card:hover::before { opacity:1; }
-
-.tk-stat-icon {
-  width:54px; height:54px; border-radius:14px;
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.tk-stat-body { display:flex; flex-direction:column; }
-.tk-stat-value { font-size:2.5rem; font-weight:800; color:var(--text-primary, #f1f5f9); letter-spacing:-0.03em; line-height:1.1; font-variant-numeric:tabular-nums; }
-.tk-stat-unit { font-size:1.25rem; font-weight:600; opacity:0.6; }
-.tk-stat-label { font-size:0.8125rem; color:var(--text-muted, #64748b); margin-top:2px; }
-.tk-stat-ring { gap:12px; }
-
-/* Shimmer sweep */
-.tk-shimmer { position:relative; overflow:hidden; }
-.tk-shimmer::after {
-  content:''; position:absolute; top:0; left:-100%; width:60%; height:100%;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
-  animation: tk-shimmer-sweep 4s ease-in-out infinite;
-}
-@keyframes tk-shimmer-sweep { 0%{left:-100%} 100%{left:200%} }
-
-/* ═══ PROGRESS BAR ═══ */
-.tk-progress-wrap {
-  display:flex; align-items:center; gap:12px;
-  margin-top:16px; position:relative; z-index:1;
-}
-.tk-progress-bar {
-  flex:1; background:var(--bg-overlay, rgba(255,255,255,0.06));
-  border-radius:99px; height:8px; overflow:hidden;
-}
-.tk-progress-fill {
-  height:100%; border-radius:99px;
-  background:var(--brand-gradient, linear-gradient(90deg,#6366f1,#3b82f6));
-  transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
-  box-shadow:0 0 14px rgba(99,102,241,0.35);
-  background-size:200% 100%;
-  background-image:linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #6366f1 100%);
-  animation:tk-bar-shimmer 2s ease infinite;
-}
-.tk-urgent-badge {
-  display:flex; align-items:center; gap:5px;
-  font-size:0.8125rem; font-weight:700; color:#f59e0b;
-  padding:4px 10px; border-radius:99px;
-  background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);
-  white-space:nowrap; flex-shrink:0;
-  animation: tk-badge-pulse 2s ease infinite;
-}
+.tk-ambient { position:fixed; inset:0; pointer-events:none; z-index:0; background: radial-gradient(ellipse 70% 60% at 15% 15%, rgba(99,102,241,0.15) 0%, transparent 60%), radial-gradient(ellipse 50% 45% at 85% 80%, rgba(16,185,129,0.08) 0%, transparent 55%), radial-gradient(ellipse 45% 35% at 50% 5%, rgba(139,92,246,0.1) 0%, transparent 50%); }
+.tk-particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.tk-particle { position:absolute; border-radius:50%; background:rgba(139,92,246,0.6); animation: tk-float linear infinite; }
+@keyframes tk-float { 0% { transform:translate(0,0) scale(1); opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { transform:translate(40px, -140px) scale(0.4); opacity:0; } }
+.tk-hero-banner { position:relative; overflow:hidden; z-index:1; padding:28px 32px 20px !important; background:linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,20,40,0.4) 50%, rgba(16,185,129,0.05) 100%); border-bottom:1px solid rgba(255,255,255,0.06); }
+.tk-hero-glow { position:absolute; top:-60px; left:-40px; width:300px; height:300px; background:radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 65%); pointer-events:none; filter:blur(40px); }
+.tk-hero-content { display:flex; align-items:center; justify-content:space-between; gap:24px; position:relative; flex-wrap:wrap; }
+.tk-hero-left { flex:1; min-width:200px; }
+.tk-hero-title { font-size:2.25rem; font-weight:800; letter-spacing:-0.04em; background:linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:4px; line-height:1.15; }
+.tk-hero-sub { font-size:0.9rem; color:var(--text-muted, #64748b); margin-bottom:16px; }
+.tk-new-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:12px; font-size:0.875rem; font-weight:600; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none; cursor:pointer; transition:all 0.2s ease; box-shadow:0 4px 20px rgba(99,102,241,0.35); animation:tk-btn-pulse 3s ease-in-out infinite; }
+.tk-new-btn:hover { transform:translateY(-2px); box-shadow:0 6px 28px rgba(99,102,241,0.5); }
+@keyframes tk-btn-pulse { 0%,100%{box-shadow:0 4px 20px rgba(99,102,241,0.35)} 50%{box-shadow:0 6px 32px rgba(99,102,241,0.5)} }
+.tk-hero-right { display:flex; align-items:center; gap:28px; flex-shrink:0; }
+.tk-hero-ring-wrap { position:relative; width:88px; height:88px; flex-shrink:0; }
+.tk-hero-ring-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.tk-hero-ring-value { font-size:1.5rem; font-weight:800; color:#e2e8f0; line-height:1; letter-spacing:-0.02em; }
+.tk-hero-ring-sub { font-size:0.625rem; color:var(--text-muted, #64748b); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; }
+.tk-ring { display:block; }
+.tk-hero-stats { display:flex; gap:20px; }
+.tk-hero-stat { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.tk-hero-stat-val { font-size:1.75rem; font-weight:800; line-height:1; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+.tk-hero-stat-lbl { font-size:0.6875rem; color:var(--text-muted, #64748b); font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
+.tk-stat-purple { color:#a78bfa; }
+.tk-stat-indigo { color:#818cf8; }
+.tk-stat-green { color:#34d399; }
+.tk-stat-amber { color:#fbbf24; }
+.tk-hero-progress { margin-top:20px; height:5px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,0.06); }
+.tk-hero-progress-fill { height:100%; border-radius:99px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1); background:linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1); background-size:200% 100%; animation:tk-bar-shimmer 2.5s ease infinite; box-shadow:0 0 12px rgba(99,102,241,0.4); }
 @keyframes tk-bar-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-@keyframes tk-badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
-
-/* ═══ FILTER BAR ═══ */
-.tk-filter-bar {
-  display:flex; align-items:center; gap:12px;
-  background:var(--bg-surface, rgba(255,255,255,0.04)); border:1px solid var(--border-subtle, rgba(255,255,255,0.06));
-  border-radius:var(--radius-md, 12px); padding:10px 14px !important;
-  margin-top:16px; position:relative; z-index:1; flex-wrap:wrap;
-}
-.tk-search-wrap { position:relative; flex:1; min-width:200px; max-width:360px; }
-.tk-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
-.tk-search-input { padding-left:36px !important; height:38px; font-size:0.875rem; }
+.tk-action-bar { display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
+.tk-search-wrap { position:relative; flex:1; min-width:180px; max-width:320px; }
+.tk-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
+.tk-search-input { padding-left:34px !important; height:36px; font-size:0.8125rem; background:rgba(255,255,255,0.05) !important; border-color:rgba(255,255,255,0.08) !important; }
 .tk-filter-group { display:flex; align-items:center; gap:8px; }
-.tk-select { width:auto; height:38px; font-size:0.8125rem; min-width:130px; }
-
-/* ═══ KANBAN BOARD ═══ */
-.tk-board {
-  display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
-   position:relative; z-index:1;
-  height:calc(100vh - 380px); min-height:420px;
-}
+.tk-select { width:auto; height:36px; font-size:0.8125rem; min-width:120px; background:rgba(255,255,255,0.05) !important; border-color:rgba(255,255,255,0.08) !important; }
+@media(max-width:768px){ .tk-hero-content { flex-direction:column; align-items:flex-start; } .tk-hero-right { width:100%; justify-content:space-between; } }
+.tk-board { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; position:relative; z-index:1; height:calc(100vh - 320px); min-height:400px; }
 @media(max-width:1200px){ .tk-board { grid-template-columns:repeat(2,1fr); height:auto; } }
-@media(max-width:640px){ .tk-board { grid-template-columns:1fr;  } }
-
-/* Column stagger entrance */
-.tk-stagger {
-  animation: tk-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both;
-  animation-delay: calc(var(--tk-stagger, 0) * 80ms);
-}
-@keyframes tk-slide-up { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
-
-.tk-col {
-  background:var(--bg-surface, rgba(255,255,255,0.05));
-  border:1px solid var(--border-subtle, rgba(255,255,255,0.07));
-  border-radius:var(--radius-lg, 16px);
-  display:flex; flex-direction:column; overflow:hidden;
-  transition:border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.tk-col:hover { border-color:var(--border-default, rgba(255,255,255,0.15)); box-shadow:0 4px 20px rgba(0,0,0,0.15), 0 0 30px rgba(99,102,241,0.06); }
-.tk-col-drop {
-  border-color:rgba(99,102,241,0.45) !important;
-  box-shadow:0 0 0 2px rgba(99,102,241,0.15), 0 0 30px rgba(99,102,241,0.08) !important;
-  background:rgba(99,102,241,0.02) !important;
-}
-
-.tk-col-accent { height:4px; flex-shrink:0; }
-
-.tk-col-header {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 14px 10px; border-bottom:1px solid var(--border-subtle, rgba(255,255,255,0.06));
-  flex-shrink:0;
-}
-.tk-col-icon {
-  width:32px; height:32px; border-radius:10px;
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.tk-col-title { font-size:0.8125rem; font-weight:600; color:var(--text-secondary, #cbd5e1); }
-.tk-col-count {
-  font-size:0.6875rem; font-weight:700; padding:2px 8px; border-radius:99px;
-  background:var(--bg-overlay, rgba(255,255,255,0.08)); color:var(--text-muted, #64748b);
-}
-
-.tk-col-cards {
-  flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%);
-}
-
-.tk-empty {
-  display:flex; align-items:center; justify-content:center;
-  height:80px; font-size:0.8125rem; color:var(--text-muted);
-  border:2px dashed var(--border-subtle, rgba(255,255,255,0.1));
-  border-radius:var(--radius-md, 12px);
-  transition:all 0.25s ease;
-}
-.tk-empty-active {
-  border-color:rgba(99,102,241,0.5); background:rgba(99,102,241,0.04);
-  color:rgba(99,102,241,0.7);
-}
-
+@media(max-width:640px){ .tk-board { grid-template-columns:1fr; } }
+.tk-stagger { animation: tk-slide-up 0.45s cubic-bezier(0.16,1,0.3,1) both; animation-delay: calc(var(--tk-stagger, 0) * 70ms); }
+@keyframes tk-slide-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+.tk-col { background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.06); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; transition:border-color 0.25s ease, box-shadow 0.25s ease; }
+.tk-col:hover { border-color:rgba(255,255,255,0.12); box-shadow:0 4px 20px rgba(0,0,0,0.12); }
+.tk-col-drop { border-color:rgba(99,102,241,0.45) !important; box-shadow:0 0 0 2px rgba(99,102,241,0.15), 0 0 30px rgba(99,102,241,0.08) !important; }
+.tk-col-accent { height:3px; flex-shrink:0; }
+.tk-col-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px 10px; border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; }
+.tk-col-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.tk-col-title { font-size:0.8125rem; font-weight:600; color:#cbd5e1; }
+.tk-col-count { font-size:0.6875rem; font-weight:700; padding:2px 8px; border-radius:99px; background:rgba(255,255,255,0.07); color:#64748b; }
+.tk-col-cards { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.tk-empty { display:flex; align-items:center; justify-content:center; height:70px; font-size:0.8125rem; color:var(--text-muted); border:2px dashed rgba(255,255,255,0.08); border-radius:12px; transition:all 0.2s ease; }
+.tk-empty-active { border-color:rgba(99,102,241,0.5); background:rgba(99,102,241,0.04); color:rgba(99,102,241,0.7); }
 .tk-card-wrap { position:relative; }
 .tk-dragging { opacity:0.3; }
-
-.tk-drop-line {
-  height:4px; background:linear-gradient(90deg,rgba(99,102,241,0.4),rgba(99,102,241,0.9),rgba(99,102,241,0.4)); border-radius:99px;
-  margin:2px 0; box-shadow:0 0 10px rgba(99,102,241,0.4);
-  animation: tk-pulse-line 1s ease infinite;
-}
-@keyframes tk-pulse-line { 0%,100%{opacity:0.6} 50%{opacity:1} }
-
-/* ═══ TASK CARD ═══ */
-.tk-card {
-  position:relative; overflow:hidden;
-  background:var(--bg-elevated, rgba(255,255,255,0.07));
-  border:1px solid var(--border-subtle, rgba(255,255,255,0.07));
-  border-radius:var(--radius-md, 12px);
-  padding:12px 12px 12px 16px;
-  cursor:grab; user-select:none;
-  transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
-}
+.tk-drop-line { height:3px; background:linear-gradient(90deg,rgba(99,102,241,0.3),rgba(99,102,241,0.8),rgba(99,102,241,0.3)); border-radius:99px; margin:2px 0; box-shadow:0 0 8px rgba(99,102,241,0.3); }
+.tk-card { position:relative; overflow:hidden; background:rgba(255,255,255,0.055); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:11px 11px 11px 15px; cursor:grab; user-select:none; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); }
 .tk-card:active { cursor:grabbing; }
-.tk-card:hover {
-  border-color:rgba(99,102,241,0.25);
-  transform:translateY(-4px) scale(1.01);
-  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 0 24px rgba(99,102,241,0.1);
-  background:var(--glass-bg, rgba(255,255,255,0.09));
-}
-
-.tk-card-accent {
-  position:absolute; top:0; left:0; width:3px; height:100%;
-  border-radius:10px 0 0 10px; opacity:0.75;
-}
-.tk-card-prio-glow {
-  position:absolute; top:50%; left:-4px; width:8px; height:40%;
-  border-radius:50%; filter:blur(10px); opacity:0.2; transform:translateY(-50%);
-  transition:opacity 0.25s ease;
-}
-.tk-card:hover .tk-card-prio-glow { opacity:0.35; }
-
-.tk-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px; }
-.tk-prio-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-.tk-card-title { font-size:0.875rem; font-weight:500; color:var(--text-primary, #f1f5f9); line-height:1.4; flex:1; min-width:0; }
-.tk-menu-btn {
-  width:26px; height:26px; padding:4px; flex-shrink:0; opacity:0.5;
-  background:none; border:none; cursor:pointer; border-radius:6px; color:inherit;
-  transition:all 0.15s ease; display:flex; align-items:center; justify-content:center;
-}
-.tk-menu-btn:hover { opacity:1; background:var(--bg-overlay, rgba(255,255,255,0.08)); }
-
-.tk-card-desc {
-  font-size:0.8125rem; color:var(--text-muted, #64748b); margin-bottom:8px;
-  line-height:1.4; display:-webkit-box; -webkit-line-clamp:2;
-  -webkit-box-orient:vertical; overflow:hidden;
-}
-.tk-tags { display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
-.tk-tag {
-  font-size:0.6875rem; padding:2px 8px; border-radius:99px;
-  background:var(--bg-overlay, rgba(255,255,255,0.06));
-  border:1px solid var(--border-subtle, rgba(255,255,255,0.06));
-  color:var(--text-muted, #64748b);
-}
-.tk-dept {
-  display:inline-block; font-size:0.6875rem; padding:2px 8px;
-  border-radius:6px; font-weight:500; border:1px solid;
-}
-.tk-card-footer {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-top:8px; padding-top:8px; border-top:1px solid var(--border-subtle, rgba(255,255,255,0.05));
-}
-.tk-avatar {
-  width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-size:0.625rem; font-weight:600; color:#fff; box-shadow:0 0 0 2px var(--bg-elevated, #1a1a2e);
-}
-.tk-comment-count { display:flex; align-items:center; gap:3px; font-size:0.75rem; color:var(--text-muted, #64748b); }
-.tk-due { display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted, #64748b); }
-.tk-due-overdue { color:var(--danger, #ef4444); font-weight:600; }
-
-/* ═══ FLOATING MENU ═══ */
-.tk-float-menu {
-  background:var(--glass-bg, rgba(15,20,35,0.92));
-  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  border:1px solid var(--glass-border, rgba(255,255,255,0.1));
-  border-radius:var(--radius-md, 12px);
-  box-shadow:0 16px 48px rgba(0,0,0,0.5), 0 0 30px rgba(99,102,241,0.12);
-  min-width:180px; overflow:hidden; animation:tk-scale-in 0.15s ease both;
-}
-@keyframes tk-scale-in { from{opacity:0;transform:scale(0.95) translateY(-4px)} to{opacity:1;transform:none} }
-.tk-float-section-label {
-  font-weight:700; font-size:0.6875rem; color:var(--text-muted, #64748b);
-  padding:10px 14px 6px; text-transform:uppercase; letter-spacing:0.06em;
-}
-.tk-float-item {
-  display:flex; align-items:center; gap:8px; padding:8px 14px;
-  font-size:0.8125rem; color:var(--text-secondary, #cbd5e1);
-  cursor:pointer; transition:background 0.15s ease;
-}
+.tk-card:hover { border-color:rgba(99,102,241,0.2); transform:translateY(-3px); box-shadow:0 10px 28px rgba(0,0,0,0.2), 0 0 20px rgba(99,102,241,0.08); background:rgba(255,255,255,0.08); }
+.tk-card-accent { position:absolute; top:0; left:0; width:3px; height:100%; border-radius:10px 0 0 10px; opacity:0.7; }
+.tk-card-prio-glow { position:absolute; top:50%; left:-4px; width:8px; height:35%; border-radius:50%; filter:blur(10px); opacity:0.2; transform:translateY(-50%); }
+.tk-card:hover .tk-card-prio-glow { opacity:0.4; }
+.tk-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-bottom:5px; }
+.tk-prio-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.tk-card-title { font-size:0.8125rem; font-weight:500; color:#f1f5f9; line-height:1.35; flex:1; min-width:0; }
+.tk-menu-btn { width:24px; height:24px; padding:3px; flex-shrink:0; opacity:0.4; background:none; border:none; cursor:pointer; border-radius:6px; color:inherit; transition:all 0.15s ease; display:flex; align-items:center; justify-content:center; }
+.tk-menu-btn:hover { opacity:1; background:rgba(255,255,255,0.08); }
+.tk-card-desc { font-size:0.75rem; color:#64748b; margin-bottom:6px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.tk-tags { display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap; }
+.tk-tag { font-size:0.625rem; padding:2px 7px; border-radius:99px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.05); color:#64748b; }
+.tk-dept { display:inline-block; font-size:0.625rem; padding:2px 7px; border-radius:6px; font-weight:500; border:1px solid; }
+.tk-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.04); }
+.tk-avatar { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.5625rem; font-weight:600; color:#fff; box-shadow:0 0 0 2px rgba(15,20,35,0.8); }
+.tk-comment-count { display:flex; align-items:center; gap:3px; font-size:0.6875rem; color:#64748b; }
+.tk-due { display:flex; align-items:center; gap:3px; font-size:0.6875rem; color:#64748b; }
+.tk-due-overdue { color:#ef4444; font-weight:600; }
+.tk-float-menu { background:rgba(15,20,35,0.95); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.1); border-radius:12px; box-shadow:0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(99,102,241,0.1); min-width:180px; overflow:hidden; animation:tk-pop 0.15s ease both; }
+@keyframes tk-pop { from{opacity:0;transform:scale(0.95) translateY(-4px)} to{opacity:1;transform:none} }
+.tk-float-section-label { font-weight:700; font-size:0.625rem; color:#64748b; padding:10px 14px 6px; text-transform:uppercase; letter-spacing:0.06em; }
+.tk-float-item { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:0.8125rem; color:#cbd5e1; cursor:pointer; transition:background 0.15s ease; }
 .tk-float-item:hover { background:rgba(255,255,255,0.06); }
-.tk-float-danger { color:var(--danger, #ef4444); }
-.tk-float-divider { height:1px; background:var(--border-subtle, rgba(255,255,255,0.06)); margin:4px 0; }
-
-/* ═══ MODAL ═══ */
-.tk-modal { animation:tk-scale-in 0.2s ease both; }
-.tk-modal-accent { height:3px; background:var(--brand-gradient, linear-gradient(90deg,#6366f1,#3b82f6)); border-radius:24px 24px 0 0; }
-
-/* ═══ PROGRESS RING ═══ */
-.tk-progress-ring { display:block; flex-shrink:0; }
-
-/* ═══ UTILITY ═══ */
+.tk-float-danger { color:#ef4444; }
+.tk-float-divider { height:1px; background:rgba(255,255,255,0.06); margin:4px 0; }
+.tk-modal { animation:tk-pop 0.2s ease both; }
+.tk-modal-accent { height:3px; background:linear-gradient(90deg,#6366f1,#8b5cf6); border-radius:24px 24px 0 0; }
+.tk-ring { display:block; flex-shrink:0; }
 .spin { animation:spin 0.7s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
       `}</style>
