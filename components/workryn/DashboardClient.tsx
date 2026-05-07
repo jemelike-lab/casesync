@@ -399,22 +399,22 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
                 </Link>
               </div>
               <div className="wd-cs-alerts-grid">
-                <Link href="/dashboard?filter=overdue" className="wd-cs-alert-item wd-cs-alert-danger">
+                <Link href="/team?full=1&filter=overdue" className="wd-cs-alert-item wd-cs-alert-danger">
                   <AlertTriangle size={18} />
                   <span className="wd-cs-alert-count">{animOverdue}</span>
                   <span className="wd-cs-alert-label">Overdue</span>
                 </Link>
-                <Link href="/dashboard?filter=due-this-week" className="wd-cs-alert-item wd-cs-alert-warning">
+                <Link href="/team?full=1&filter=due_this_week" className="wd-cs-alert-item wd-cs-alert-warning">
                   <CalendarClock size={18} />
                   <span className="wd-cs-alert-count">{animDueWeek}</span>
                   <span className="wd-cs-alert-label">Due This Week</span>
                 </Link>
-                <Link href="/dashboard?filter=eligibility" className="wd-cs-alert-item wd-cs-alert-info">
+                <Link href="/team?full=1&filter=eligibility_ending_soon" className="wd-cs-alert-item wd-cs-alert-info">
                   <CalendarDays size={18} />
                   <span className="wd-cs-alert-count">{animEligibility}</span>
                   <span className="wd-cs-alert-label">Eligibility Ending</span>
                 </Link>
-                <Link href="/dashboard?filter=no-contact" className="wd-cs-alert-item wd-cs-alert-muted">
+                <Link href="/team?full=1&filter=no_contact_7" className="wd-cs-alert-item wd-cs-alert-muted">
                   <Users size={18} />
                   <span className="wd-cs-alert-count">{animNoContact}</span>
                   <span className="wd-cs-alert-label">No Contact 7d</span>
