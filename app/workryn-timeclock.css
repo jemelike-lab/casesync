@@ -322,7 +322,7 @@
 .tc-top-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 24px;
     flex: 1;
 }
 
@@ -337,7 +337,7 @@
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 16px;
-    padding: 24px;
+    padding: 32px;
     animation: w-fade-up 0.4s ease both;
 }
 
@@ -354,7 +354,7 @@
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 12px;
-    padding: 18px 16px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -375,7 +375,7 @@
 }
 
 .tc-stat-value {
-    font-size: 1.75rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: #f1f5f9;
     letter-spacing: -0.02em;
@@ -383,7 +383,7 @@
 }
 
 .tc-stat-label {
-    font-size: 0.6875rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
@@ -395,7 +395,7 @@
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
-    padding: 20px;
+    padding: 28px;
     animation: w-fade-up 0.4s ease both;
 }
 
@@ -405,7 +405,7 @@
 
 /* Section labels */
 .tc-section-label {
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #94a3b8;
     text-transform: uppercase;
@@ -417,14 +417,14 @@
 .tc-clock-page .tc-week-chart {
     margin: 0;
     flex: 1;
-    min-height: 200px;
+    min-height: 300px;
 }
 
 .tc-bars {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 160px;
+    height: 220px;
 }
 
 .tc-bar-col {
@@ -460,7 +460,7 @@
 }
 
 .tc-bar-label {
-    font-size: 0.6875rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: #64748b;
 }
@@ -471,7 +471,7 @@
 }
 
 .tc-bar-value {
-    font-size: 0.625rem;
+    font-size: 0.8125rem;
     color: #94a3b8;
     white-space: nowrap;
 }
@@ -491,10 +491,10 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 14px 16px;
     background: rgba(255,255,255,0.03);
     border-radius: 8px;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     color: #94a3b8;
     border: 1px solid rgba(255,255,255,0.05);
 }
@@ -520,7 +520,7 @@
     margin: 0;
     font-weight: 600;
     color: #64748b;
-    font-size: 0.875rem;
+    font-size: 1.125rem;
 }
 
 .tc-activity-empty span {
@@ -537,9 +537,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 14px 0;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 0.8125rem;
+    font-size: 1.0625rem;
 }
 
 .tc-summary-row:last-child { border-bottom: none; }
@@ -557,7 +557,7 @@
 }
 
 .tc-digital-date {
-    font-size: 0.8125rem;
+    font-size: 1rem;
     color: #475569;
     font-weight: 500;
 }
@@ -579,4 +579,25 @@
     }
     .tc-stat-value { font-size: 1.25rem; }
     .tc-bars { height: 80px; }
+}
+
+/* Tab bar size boost */
+.tc-tabs {
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom-width: 2px;
+    padding-bottom: 4px;
+}
+
+.tc-tab {
+    font-size: 1.125rem !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+    border-bottom-width: 3px !important;
+}
+
+.tc-tab-active {
+    border-bottom-color: #3b82f6 !important;
+    color: #f1f5f9 !important;
 }
