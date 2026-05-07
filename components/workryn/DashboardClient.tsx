@@ -1,5 +1,5 @@
 'use client'
-import '@app/workryn.css'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
