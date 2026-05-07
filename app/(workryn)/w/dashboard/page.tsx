@@ -113,18 +113,18 @@ export default async function DashboardPage() {
       csRole = profile?.role ?? null
 
       if (profile?.role === 'supervisor' || profile?.role === 'it') {
-        // Supervisors/IT: aggregate from per-assignee view (matches CaseSync Supervisor Overview)
-        // This excludes unassigned clients, matching what the CaseSync dashboard shows
-        const { data: allPlanners } = await supabase
+        // Supervisors/IT: aggregate clients assigned to support planners only
+        // This matches how CaseSync Supervisor Overview computes its stats
+        const { data: spPlanners } = await supabase
           .from('profiles')
           .select('id')
-          .in('role', ['supports_planner', 'team_manager', 'supervisor', 'it'])
-        const allIds = (allPlanners ?? []).map(p => p.id)
-        if (allIds.length > 0) {
+          .eq('role', 'supports_planner')
+        const plannerIds = (spPlanners ?? []).map(p => p.id)
+        if (plannerIds.length > 0) {
           const { data: rows } = await supabase
             .from('client_status_summary_by_assignee')
             .select('*')
-            .in('assigned_to', allIds)
+            .in('assigned_to', plannerIds)
           if (rows) {
             csAlerts = rows.reduce((acc, row) => ({
               totalClients: acc.totalClients + (row.total_clients ?? 0),
