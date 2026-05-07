@@ -476,12 +476,12 @@ export default function TasksClient({ initialTasks, users, departments, currentU
       )}
 
       <style>{`
-.tk-page { position:relative; }
+.tk-page { position:relative; display:flex; flex-direction:column; }
 .tk-ambient { position:fixed; inset:0; pointer-events:none; z-index:0; background: radial-gradient(ellipse 70% 60% at 15% 15%, rgba(99,102,241,0.15) 0%, transparent 60%), radial-gradient(ellipse 50% 45% at 85% 80%, rgba(16,185,129,0.08) 0%, transparent 55%), radial-gradient(ellipse 45% 35% at 50% 5%, rgba(139,92,246,0.1) 0%, transparent 50%); }
 .tk-particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
 .tk-particle { position:absolute; border-radius:50%; background:rgba(139,92,246,0.6); animation: tk-float linear infinite; }
 @keyframes tk-float { 0% { transform:translate(0,0) scale(1); opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { transform:translate(40px, -140px) scale(0.4); opacity:0; } }
-.tk-hero-banner { position:relative; overflow:visible; z-index:1; padding:28px 32px 20px !important; box-sizing:border-box; background:linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,20,40,0.4) 50%, rgba(16,185,129,0.05) 100%); border-bottom:1px solid rgba(255,255,255,0.06); }
+.tk-hero-banner { position:relative; overflow:visible; flex-direction:column !important; z-index:1; padding:28px 32px 20px !important; box-sizing:border-box; background:linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,20,40,0.4) 50%, rgba(16,185,129,0.05) 100%); border-bottom:1px solid rgba(255,255,255,0.06); }
 .tk-hero-glow { position:absolute; top:-40px; left:20px; width:250px; height:250px; background:radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 65%); pointer-events:none; filter:blur(40px); z-index:0; }
 .tk-hero-content { display:flex; align-items:center; justify-content:space-between; gap:24px; position:relative; flex-wrap:wrap; }
 .tk-hero-left { flex:1; min-width:200px; overflow:visible; }
