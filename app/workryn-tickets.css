@@ -937,3 +937,95 @@
         grid-template-columns: 1fr !important;
     }
 }
+
+/* ═══════════════════════════════════════════
+   TICKETS — Round 3: Fix inline style overrides
+   ═══════════════════════════════════════════ */
+
+/* Force glass-card search/filter area to grid */
+.td-page .glass-card > .flex {
+    display: grid !important;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    width: 100%;
+}
+
+/* Make the search container full width in its grid cell */
+.td-page .glass-card > .flex > div[style*="minWidth"] {
+    min-width: unset !important;
+    max-width: unset !important;
+    flex: unset !important;
+    width: 100%;
+}
+
+/* Empty state — CENTER it properly */
+.page-body > .empty-state,
+div.empty-state {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 350px;
+    padding: 48px 24px !important;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 20px;
+    margin-top: 12px;
+    animation: w-fade-up 0.5s ease both;
+}
+
+.empty-state svg {
+    opacity: 0.3;
+    margin-bottom: 16px;
+    width: 64px !important;
+    height: 64px !important;
+}
+
+.empty-state p {
+    font-size: 1.25rem !important;
+    color: #64748b !important;
+    margin: 0;
+}
+
+/* Glass-card itself — bigger padding override inline */
+.td-page .glass-card {
+    padding: 20px 24px !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    margin-bottom: 16px;
+}
+
+/* page-body should grow to fill */
+.page-body {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-top: 12px !important;
+}
+
+/* Stat card number even bolder */
+.td-stat-card .td-stat-value {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+}
+
+/* Stat card label readable */
+.td-stat-card .td-stat-label {
+    font-size: 0.9375rem !important;
+    letter-spacing: 0.08em !important;
+}
+
+@media (max-width: 900px) {
+    .td-page .glass-card > .flex {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .td-page .glass-card > .flex {
+        grid-template-columns: 1fr !important;
+    }
+}
