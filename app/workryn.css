@@ -16,15 +16,15 @@
 :root {
   /* Base surfaces — dark mode */
   --w-bg-base: #080c14;
-  --w-bg-surface: rgba(255,255,255,0.035);
-  --w-bg-elevated: rgba(255,255,255,0.055);
-  --w-bg-overlay: rgba(255,255,255,0.07);
-  --w-bg-hover: rgba(255,255,255,0.09);
+  --w-bg-surface: rgba(255,255,255,0.07);
+  --w-bg-elevated: rgba(255,255,255,0.09);
+  --w-bg-overlay: rgba(255,255,255,0.11);
+  --w-bg-hover: rgba(255,255,255,0.13);
 
   /* Borders */
-  --w-border-subtle: rgba(255,255,255,0.06);
-  --w-border-default: rgba(255,255,255,0.10);
-  --w-border-strong: rgba(255,255,255,0.18);
+  --w-border-subtle: rgba(255,255,255,0.10);
+  --w-border-default: rgba(255,255,255,0.16);
+  --w-border-strong: rgba(255,255,255,0.25);
 
   /* Brand — blue with glow highlights */
   --w-brand: #2563eb;
@@ -84,14 +84,14 @@
    without the --w- prefix. Map them here.
    ═══════════════════════════════════════════ */
 .w-app-shell {
-  --glass-bg: rgba(255,255,255,0.04);
-  --glass-border: rgba(255,255,255,0.08);
+  --glass-bg: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.14);
   --glass-blur: blur(20px);
   --bg-base: var(--w-bg-base);
-  --bg-surface: rgba(255,255,255,0.04);
-  --bg-elevated: rgba(255,255,255,0.06);
-  --bg-overlay: rgba(255,255,255,0.08);
-  --bg-hover: rgba(255,255,255,0.10);
+  --bg-surface: rgba(255,255,255,0.07);
+  --bg-elevated: rgba(255,255,255,0.10);
+  --bg-overlay: rgba(255,255,255,0.12);
+  --bg-hover: rgba(255,255,255,0.15);
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
@@ -134,13 +134,15 @@
 /* Ambient gradient glow behind content */
 .w-app-shell .w-page-content {
   flex: 1;
+    display: flex;
+    flex-direction: column;
   min-width: 0;
   margin-left: var(--w-sidebar-width);
   padding: 32px 40px;
   position: relative;
   background:
-    radial-gradient(ellipse 80% 60% at 70% 10%, rgba(37,99,235,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(59,130,246,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 70% 10%, rgba(37,99,235,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(59,130,246,0.09) 0%, transparent 50%),
     var(--w-bg-base);
 }
 
@@ -478,7 +480,7 @@
 .w-app-shell .input {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.07);
   border: 1px solid var(--w-border-default);
   border-radius: var(--w-radius-md);
   color: var(--w-text-primary);
@@ -552,7 +554,7 @@
   background: rgba(255,255,255,0.035);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--w-radius-lg);
   padding: 22px;
   position: relative;
@@ -716,7 +718,7 @@
   background: rgba(255,255,255,0.035);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--w-radius-lg);
   padding: 20px;
   display: flex;
@@ -801,7 +803,7 @@
   background: rgba(255,255,255,0.035);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--w-radius-lg);
   overflow: hidden;
   transition: box-shadow var(--w-transition-smooth), border-color var(--w-transition-smooth);
@@ -975,10 +977,10 @@
    TABLES — dark glass
    ═══════════════════════════════════════════ */
 .w-app-shell .w-table-wrap {
-  background: rgba(255,255,255,0.035);
+  background: rgba(255,255,255,0.07);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--w-radius-lg);
   overflow: hidden;
   box-shadow: var(--w-shadow-sm);
@@ -1025,7 +1027,7 @@
   background: rgba(255,255,255,0.035);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--w-radius-lg);
   padding: 24px;
   transition: box-shadow var(--w-transition-smooth), border-color var(--w-transition-smooth), transform var(--w-transition-smooth);
@@ -1355,4 +1357,156 @@
 }
 @media (max-width: 768px) {
   .w-mobile-cs-toggle { display: flex; }
+}
+
+/* ═══════════════════════════════════════════
+   PHASE 1 UPGRADE — Contrast, Layout, Polish
+   ═══════════════════════════════════════════ */
+
+/* Entrance animation for cards and panels */
+@keyframes w-fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.w-app-shell .stat-card,
+.w-app-shell .wd-stat-card,
+.w-app-shell .wd-panel,
+.w-app-shell .w-table-wrap,
+.w-app-shell .page-header {
+    animation: w-fade-up 0.4s ease both;
+}
+
+.w-app-shell .stat-card:nth-child(1),
+.w-app-shell .wd-stat-card:nth-child(1) { animation-delay: 0s; }
+.w-app-shell .stat-card:nth-child(2),
+.w-app-shell .wd-stat-card:nth-child(2) { animation-delay: 0.06s; }
+.w-app-shell .stat-card:nth-child(3),
+.w-app-shell .wd-stat-card:nth-child(3) { animation-delay: 0.12s; }
+.w-app-shell .stat-card:nth-child(4),
+.w-app-shell .wd-stat-card:nth-child(4) { animation-delay: 0.18s; }
+
+/* Stat card hover lift */
+.w-app-shell .stat-card:hover,
+.w-app-shell .wd-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--w-shadow-md), 0 0 20px rgba(37,99,235,0.08);
+}
+
+/* Panel glass boost */
+.w-app-shell .wd-panel {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: var(--w-shadow-sm);
+}
+
+/* Quick action buttons glow on hover */
+.w-app-shell .wd-qa-btn:hover {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Sidebar active item left accent bar */
+.w-sidebar-item.active {
+    background: rgba(37,99,235,0.15);
+    border-left: 3px solid var(--w-brand);
+}
+
+/* Page content stretches to fill - children grow */
+.w-app-shell .w-page-content > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes w-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.w-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0.04) 25%, 
+        rgba(255,255,255,0.08) 50%, 
+        rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: w-shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--w-radius-md);
+}
+
+/* Empty state styling */
+.w-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    text-align: center;
+    flex: 1;
+    min-height: 300px;
+}
+
+.w-empty-state-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(37,99,235,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: var(--w-brand-light);
+}
+
+.w-empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--w-text-primary);
+    margin: 0 0 8px;
+}
+
+.w-empty-state p {
+    font-size: 0.875rem;
+    color: var(--w-text-muted);
+    margin: 0;
+    max-width: 360px;
+}
+
+/* Table row hover enhancement */
+.w-app-shell tbody tr:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+/* Gradient text boost - make it pop more */
+.w-app-shell .gradient-text {
+    background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 40%, #dbeafe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Scrollbar styling for main content */
+.w-app-shell .w-page-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+.w-app-shell .w-page-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.w-app-shell .w-page-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.w-app-shell .w-page-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+}
+
+.w-app-shell .w-page-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.14);
 }
