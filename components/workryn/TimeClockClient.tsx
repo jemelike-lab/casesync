@@ -316,152 +316,178 @@ export default function TimeClockClient({ initialCurrentEntry, initialWeekEntrie
 
       {/*  CLOCK TAB  */}
       {tab === 'clock' && (
-        <div className="tc-clock-panel">
-          <div className="tc-clock-hero">
-            <div className="tc-clock-wrap">
-              <ClockFace elapsed={elapsed} isOnBreak={isOnBreak} isClockedIn={isClockedIn} />
-            </div>
-            <div className="tc-clock-meta">
-              <div className="tc-clock-status">
-                {!isClockedIn && <span className="tc-badge tc-badge-off">Clocked Out</span>}
-                {isClockedIn && !isOnBreak && <span className="tc-badge tc-badge-in">Clocked In</span>}
-                {isOnBreak && <span className="tc-badge tc-badge-break">On Break</span>}
-              </div>
-              {isClockedIn && currentEntry && (
-                <div className="tc-clock-intime">
-                  Since {formatTime(currentEntry.clockInAt)}
-                </div>
-              )}
-              <div className="tc-clock-elapsed">
-                {isClockedIn && !isOnBreak ? formatHMS(elapsed) : ''}
-              </div>
-              {status?.todayTotal && (
-                <div className="tc-today-total">
-                  Today: {formatDuration(status.todayTotal.workedMinutes)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="tc-actions">
-            {!isClockedIn && (
-              <button className="tc-btn tc-btn-clockin" onClick={handleClockIn} disabled={loading}>
-                <LogIn size={16} /> Clock In
-              </button>
-            )}
-            {isClockedIn && !isOnBreak && !showClockOutConfirm && (
-              <>
-                <div className="tc-break-row">
-                  <span className="tc-break-label">Break:</span>
-                  <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(30,'SHORT')} disabled={loading}>
-                    <Coffee size={14} /> 30m
-                  </button>
-                  <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(45,'LUNCH')} disabled={loading}>
-                    <Coffee size={14} /> 45m
-                  </button>
-                  <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(60,'LUNCH')} disabled={loading}>
-                    <Coffee size={14} /> 1h
-                  </button>
-                </div>
-                <button className="tc-btn tc-btn-clockout" onClick={() => setShowClockOutConfirm(true)} disabled={loading}>
-                  <LogOut size={16} /> Clock Out
-                </button>
-              </>
-            )}
-            {showClockOutConfirm && (
-              <div className="tc-confirm">
-                <p>Clock out now?</p>
-                <div className="tc-confirm-btns">
-                  <button className="tc-btn tc-btn-clockout" onClick={handleClockOut} disabled={loading}>
-                    Confirm
-                  </button>
-                  <button className="tc-btn tc-btn-ghost" onClick={() => setShowClockOutConfirm(false)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-            {isOnBreak && (
-              <button className="tc-btn tc-btn-endbreak" onClick={handleEndBreak} disabled={loading}>
-                End Break
-              </button>
-            )}
-          </div>
-
-          {/* Today's entries mini-list */}
-          {todayEntries.length > 0 && (
-            <div className="tc-today-list">
-              <div className="tc-section-label">Today's Entries</div>
-              {todayEntries.map(e => (
-                <div key={e.id} className="tc-today-entry">
-                  <Clock size={12} />
-                  <span>{formatTime(e.clockInAt)}  {e.clockOutAt ? formatTime(e.clockOutAt) : 'now'}</span>
-                  <span className="tc-today-dur">{formatDuration(e.workedMinutes)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-
-      {/* WEEKLY STATS — below clock on Clock tab */}
-      {tab === 'clock' && status && (
-        <div className="tc-week-stats">
-          <div className="tc-stat-card">
-            <span className="tc-stat-value">{status.todayTotal.workedMinutes > 0 ? formatDuration(status.todayTotal.workedMinutes) : '0m'}</span>
-            <span className="tc-stat-label">Today</span>
-          </div>
-          <div className="tc-stat-card">
-            <span className="tc-stat-value">{formatDuration(status.weekTotal.workedMinutes)}</span>
-            <span className="tc-stat-label">This Week</span>
-          </div>
-          <div className="tc-stat-card">
-            <span className="tc-stat-value">{status.weekTotal.days}</span>
-            <span className="tc-stat-label">Days Worked</span>
-          </div>
-          <div className="tc-stat-card">
-            <span className="tc-stat-value">{formatDuration(status.weekTotal.breakMinutes)}</span>
-            <span className="tc-stat-label">Breaks</span>
-          </div>
-        </div>
-      )}
-
-      {/* WEEKLY HOURS BAR CHART */}
-      {tab === 'clock' && (
-        <div className="tc-week-chart">
-          <div className="tc-section-label">This Week</div>
-          <div className="tc-bars">
-            {(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const).map((day, i) => {
-              const dayEntry = initialWeekEntries.find(e => {
-                const d = new Date(e.clockInAt)
-                return d.getDay() === (i === 6 ? 0 : i + 1)
-              })
-              const mins = dayEntry ? dayEntry.workedMinutes : 0
-              const pct = Math.min((mins / 480) * 100, 100)
-              const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1)
-              return (
-                <div key={day} className={`tc-bar-col${isToday ? ' tc-bar-today' : ''}`}>
-                  <div className="tc-bar-track">
-                    <div className="tc-bar-fill" style={{ height: `${pct}%` }} />
+        <div className="tc-clock-page">
+          {/* TOP ROW: 2-column layout */}
+          <div className="tc-top-row">
+            {/* LEFT COLUMN: Clock + Actions */}
+            <div className="tc-left-col">
+              <div className="tc-clock-panel">
+                <div className="tc-clock-hero">
+                  <div className="tc-clock-wrap">
+                    <ClockFace elapsed={elapsed} isOnBreak={isOnBreak} isClockedIn={isClockedIn} />
                   </div>
-                  <span className="tc-bar-label">{day}</span>
-                  {mins > 0 && <span className="tc-bar-value">{formatDuration(mins)}</span>}
+                  <div className="tc-clock-meta">
+                    <div className="tc-clock-status">
+                      {!isClockedIn && <span className="tc-badge tc-badge-off">Clocked Out</span>}
+                      {isClockedIn && !isOnBreak && <span className="tc-badge tc-badge-in">Clocked In</span>}
+                      {isOnBreak && <span className="tc-badge tc-badge-break">On Break</span>}
+                    </div>
+                    {isClockedIn && currentEntry && (
+                      <div className="tc-clock-elapsed">
+                        <span className="tc-clock-since">Since: {formatTime(currentEntry.clockInAt)}</span>
+                        <span className="tc-clock-timer">{formatHMS(elapsed)}</span>
+                        <span className="tc-clock-today-total">Today: {formatDuration(status?.todayTotal.workedMinutes ?? 0)}</span>
+                      </div>
+                    )}
+                    {!isClockedIn && <span className="tc-clock-today-total">Today: {formatDuration(status?.todayTotal.workedMinutes ?? 0)}</span>}
+                  </div>
                 </div>
-              )
-            })}
+
+                {/* Action buttons */}
+                <div className="tc-actions">
+                  {!isClockedIn && (
+                    <button className="tc-btn tc-btn-clockin" onClick={handleClockIn} disabled={loading}>
+                      <LogIn size={16} /> Clock In
+                    </button>
+                  )}
+                  {isClockedIn && !isOnBreak && !showClockOutConfirm && (
+                    <>
+                      <div className="tc-break-row">
+                        <span className="tc-break-label">Break:</span>
+                        <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(30,'SHORT')} disabled={loading}>
+                          <Coffee size={14} /> 30m
+                        </button>
+                        <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(45,'LUNCH')} disabled={loading}>
+                          <Coffee size={14} /> 45m
+                        </button>
+                        <button className="tc-btn tc-btn-break" onClick={() => handleStartBreak(60,'LUNCH')} disabled={loading}>
+                          <Coffee size={14} /> 1h
+                        </button>
+                      </div>
+                      <button className="tc-btn tc-btn-clockout" onClick={() => setShowClockOutConfirm(true)} disabled={loading}>
+                        <LogOut size={16} /> Clock Out
+                      </button>
+                    </>
+                  )}
+                  {showClockOutConfirm && (
+                    <div className="tc-confirm">
+                      <p>Clock out now?</p>
+                      <div className="tc-confirm-btns">
+                        <button className="tc-btn tc-btn-clockout" onClick={handleClockOut} disabled={loading}>
+                          Confirm
+                        </button>
+                        <button className="tc-btn tc-btn-ghost" onClick={() => setShowClockOutConfirm(false)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* STATS ROW */}
+              {status && (
+                <div className="tc-week-stats">
+                  <div className="tc-stat-card">
+                    <span className="tc-stat-value">{status.todayTotal.workedMinutes > 0 ? formatDuration(status.todayTotal.workedMinutes) : '0m'}</span>
+                    <span className="tc-stat-label">Today</span>
+                  </div>
+                  <div className="tc-stat-card">
+                    <span className="tc-stat-value">{formatDuration(status.weekTotal.workedMinutes)}</span>
+                    <span className="tc-stat-label">This Week</span>
+                  </div>
+                  <div className="tc-stat-card">
+                    <span className="tc-stat-value">{status.weekTotal.days}</span>
+                    <span className="tc-stat-label">Days Worked</span>
+                  </div>
+                  <div className="tc-stat-card">
+                    <span className="tc-stat-value">{formatDuration(status.weekTotal.breakMinutes)}</span>
+                    <span className="tc-stat-label">Breaks</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: Activity Feed + Week Chart */}
+            <div className="tc-right-col">
+              {/* Weekly Hours Chart — tall version */}
+              <div className="tc-week-chart">
+                <div className="tc-section-label">Weekly Hours</div>
+                <div className="tc-bars">
+                  {(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const).map((day, i) => {
+                    const dayEntries = initialWeekEntries.filter(e => {
+                      const d = new Date(e.clockInAt)
+                      return d.getDay() === (i === 6 ? 0 : i + 1)
+                    })
+                    const mins = dayEntries.reduce((sum, e) => sum + e.workedMinutes, 0)
+                    const pct = Math.min((mins / 480) * 100, 100)
+                    const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1)
+                    return (
+                      <div key={day} className={`tc-bar-col${isToday ? ' tc-bar-today' : ''}`}>
+                        <div className="tc-bar-track">
+                          <div className="tc-bar-fill" style={{ height: `${pct}%` }} />
+                        </div>
+                        <span className="tc-bar-label">{day}</span>
+                        {mins > 0 && <span className="tc-bar-value">{formatDuration(mins)}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Today Activity Timeline */}
+              <div className="tc-activity-panel">
+                <div className="tc-section-label">Today&#39;s Activity</div>
+                {todayEntries.length > 0 ? (
+                  <div className="tc-today-list">
+                    {todayEntries.map(e => (
+                      <div key={e.id} className="tc-today-entry">
+                        <Clock size={12} />
+                        <span>{formatTime(e.clockInAt)}  {e.clockOutAt ? formatTime(e.clockOutAt) : 'now'}</span>
+                        <span className="tc-today-dur">{formatDuration(e.workedMinutes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="tc-activity-empty">
+                    <Clock size={24} />
+                    <p>No activity yet today</p>
+                    <span>Clock in to start tracking</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Week Summary Card */}
+              {status && (
+                <div className="tc-week-summary">
+                  <div className="tc-section-label">Week at a Glance</div>
+                  <div className="tc-summary-row">
+                    <span>Total Hours</span>
+                    <strong>{formatDuration(status.weekTotal.workedMinutes)}</strong>
+                  </div>
+                  <div className="tc-summary-row">
+                    <span>Break Time</span>
+                    <strong>{formatDuration(status.weekTotal.breakMinutes)}</strong>
+                  </div>
+                  <div className="tc-summary-row">
+                    <span>Days Active</span>
+                    <strong>{status.weekTotal.days} / 5</strong>
+                  </div>
+                  <div className="tc-summary-row">
+                    <span>Avg Per Day</span>
+                    <strong>{status.weekTotal.days > 0 ? formatDuration(Math.round(status.weekTotal.workedMinutes / status.weekTotal.days)) : '0m'}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* BOTTOM: Date */}
+          <div className="tc-digital-time">
+            <span className="tc-digital-date">{formatDate(new Date())}</span>
           </div>
         </div>
       )}
-
-      {/* DIGITAL DATE DISPLAY */}
-      {tab === 'clock' && (
-        <div className="tc-digital-time">
-          <span className="tc-digital-date">{formatDate(new Date())}</span>
-        </div>
-      )}
-
 
       {/*  TIMESHEET TAB  */}
       {tab === 'timesheet' && (

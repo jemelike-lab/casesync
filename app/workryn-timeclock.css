@@ -304,83 +304,127 @@
 }
 
 
+
 /* ═══════════════════════════════════════════
-   PHASE 2 — Time Clock Page Fill
+   PHASE 2 — Time Clock Full-Width 2-Column Layout
    ═══════════════════════════════════════════ */
 
-/* Weekly Stats Row */
-.tc-week-stats {
+/* Page wrapper — fills viewport */
+.tc-clock-page {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+    gap: 20px;
+    animation: w-fade-up 0.3s ease both;
+}
+
+/* 2-column top row */
+.tc-top-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin: 24px 0;
-    padding: 0 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    flex: 1;
+}
+
+.tc-left-col, .tc-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Clock panel in left column */
+.tc-clock-page .tc-clock-panel {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 24px;
+    animation: w-fade-up 0.4s ease both;
+}
+
+/* Stats row — 2x2 grid in left column */
+.tc-clock-page .tc-week-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
 }
 
 .tc-stat-card {
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 12px;
-    padding: 16px;
+    padding: 18px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     animation: w-fade-up 0.4s ease both;
 }
 
-.tc-stat-card:nth-child(1) { animation-delay: 0.1s; }
-.tc-stat-card:nth-child(2) { animation-delay: 0.15s; }
-.tc-stat-card:nth-child(3) { animation-delay: 0.2s; }
-.tc-stat-card:nth-child(4) { animation-delay: 0.25s; }
+.tc-stat-card:nth-child(1) { animation-delay: 0.08s; }
+.tc-stat-card:nth-child(2) { animation-delay: 0.12s; }
+.tc-stat-card:nth-child(3) { animation-delay: 0.16s; }
+.tc-stat-card:nth-child(4) { animation-delay: 0.20s; }
 
 .tc-stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(37,99,235,0.12);
-    border-color: rgba(255,255,255,0.16);
+    box-shadow: 0 4px 20px rgba(37,99,235,0.15);
+    border-color: rgba(59,130,246,0.3);
 }
 
 .tc-stat-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: #f1f5f9;
     letter-spacing: -0.02em;
+    line-height: 1;
 }
 
 .tc-stat-label {
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.6875rem;
+    font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 
-/* Weekly Bar Chart */
-.tc-week-chart {
-    margin: 8px 0 24px;
-    padding: 20px;
+/* RIGHT COLUMN PANELS */
+.tc-right-col > div {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
+    border-radius: 14px;
+    padding: 20px;
     animation: w-fade-up 0.4s ease both;
-    animation-delay: 0.3s;
 }
 
+.tc-right-col > div:nth-child(1) { animation-delay: 0.1s; }
+.tc-right-col > div:nth-child(2) { animation-delay: 0.18s; }
+.tc-right-col > div:nth-child(3) { animation-delay: 0.26s; }
+
+/* Section labels */
 .tc-section-label {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 16px;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+}
+
+/* Weekly Bar Chart — tall */
+.tc-clock-page .tc-week-chart {
+    margin: 0;
+    flex: 1;
+    min-height: 200px;
 }
 
 .tc-bars {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 120px;
+    height: 160px;
 }
 
 .tc-bar-col {
@@ -395,9 +439,8 @@
 .tc-bar-track {
     flex: 1;
     width: 100%;
-    max-width: 40px;
     background: rgba(255,255,255,0.04);
-    border-radius: 6px;
+    border-radius: 8px;
     display: flex;
     align-items: flex-end;
     overflow: hidden;
@@ -405,15 +448,15 @@
 
 .tc-bar-fill {
     width: 100%;
-    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-    border-radius: 6px;
-    min-height: 2px;
-    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 8px;
+    min-height: 3px;
+    transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tc-bar-today .tc-bar-fill {
     background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
-    box-shadow: 0 0 12px rgba(59,130,246,0.4);
+    box-shadow: 0 0 16px rgba(59,130,246,0.5);
 }
 
 .tc-bar-label {
@@ -424,7 +467,7 @@
 
 .tc-bar-today .tc-bar-label {
     color: #93c5fd;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .tc-bar-value {
@@ -433,26 +476,107 @@
     white-space: nowrap;
 }
 
-/* Digital Time Display */
+/* Activity Panel */
+.tc-activity-panel {
+    flex: 1;
+}
+
+.tc-today-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tc-today-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.tc-today-dur {
+    margin-left: auto;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.tc-activity-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+    color: #475569;
+    gap: 8px;
+}
+
+.tc-activity-empty p {
+    margin: 0;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.tc-activity-empty span {
+    font-size: 0.75rem;
+    color: #475569;
+}
+
+/* Week Summary Card */
+.tc-week-summary {
+    flex-shrink: 0;
+}
+
+.tc-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.8125rem;
+}
+
+.tc-summary-row:last-child { border-bottom: none; }
+
+.tc-summary-row span { color: #64748b; }
+.tc-summary-row strong {
+    color: #f1f5f9;
+    font-weight: 600;
+}
+
+/* Date footer */
 .tc-digital-time {
     text-align: center;
-    padding: 16px 20px 24px;
-    animation: w-fade-up 0.4s ease both;
-    animation-delay: 0.35s;
+    padding: 12px 0 8px;
 }
 
 .tc-digital-date {
-    font-size: 0.875rem;
-    color: #64748b;
+    font-size: 0.8125rem;
+    color: #475569;
     font-weight: 500;
 }
 
-/* Mobile responsive */
-@media (max-width: 600px) {
-    .tc-week-stats {
+/* Mobile: stack to single column */
+@media (max-width: 900px) {
+    .tc-top-row {
+        grid-template-columns: 1fr;
+    }
+    .tc-clock-page .tc-week-stats {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .tc-bars { height: 100px; }
+}
+
+@media (max-width: 500px) {
+    .tc-clock-page .tc-week-stats {
         grid-template-columns: repeat(2, 1fr);
-        padding: 0 12px;
     }
     .tc-stat-value { font-size: 1.25rem; }
-    .tc-bars { height: 90px; }
+    .tc-bars { height: 80px; }
 }
