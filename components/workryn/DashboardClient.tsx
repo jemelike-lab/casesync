@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { 
   ArrowUpRight, Clock, Zap, MessageCircle, CalendarDays, 
@@ -52,6 +52,29 @@ function greet(name: string): string {
   return `${prefix}, ${name}`
 }
 
+/* ── Animated Count-Up Hook ── */
+function useCountUp(target: number, duration = 1200, delay = 300): number {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (target === 0) { setVal(0); return }
+    const timeout = setTimeout(() => {
+      const start = performance.now()
+      const step = (now: number) => {
+        const elapsed = now - start
+        const progress = Math.min(elapsed / duration, 1)
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setVal(Math.round(eased * target))
+        if (progress < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    }, delay)
+    return () => clearTimeout(timeout)
+  }, [target, duration, delay])
+  return val
+}
+
+/* ── Live Clock with pulse ── */
 function LiveClock() {
   const [time, setTime] = useState(new Date())
   useEffect(() => {
@@ -60,6 +83,7 @@ function LiveClock() {
   }, [])
   return (
     <div className="wd-live-clock">
+      <div className="wd-clock-pulse" />
       <span className="wd-clock-time">
         {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
@@ -80,7 +104,36 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-/* ── Mini SVG Progress Ring ── */
+/* ── Floating Particles ── */
+function Particles() {
+  const particles = useMemo(() => 
+    Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      size: 2 + Math.random() * 3,
+      duration: 15 + Math.random() * 25,
+      delay: Math.random() * 10,
+      opacity: 0.15 + Math.random() * 0.25,
+    }))
+  , [])
+
+  return (
+    <div className="wd-particles" aria-hidden="true">
+      {particles.map(p => (
+        <div key={p.id} className="wd-particle" style={{
+          left: p.left, top: p.top,
+          width: p.size, height: p.size,
+          opacity: p.opacity,
+          animationDuration: `${p.duration}s`,
+          animationDelay: `${p.delay}s`,
+        }} />
+      ))}
+    </div>
+  )
+}
+
+/* ── SVG Progress Ring ── */
 function ProgressRing({ percent, size = 52, stroke = 5 }: { percent: number; size?: number; stroke?: number }) {
   const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
@@ -90,7 +143,7 @@ function ProgressRing({ percent, size = 52, stroke = 5 }: { percent: number; siz
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="url(#ring-grad)" strokeWidth={stroke}
         strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-        style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }} />
+        style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.34,1.56,0.64,1) 0.5s', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }} />
       <defs>
         <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#2563eb" />
@@ -101,7 +154,34 @@ function ProgressRing({ percent, size = 52, stroke = 5 }: { percent: number; siz
   )
 }
 
-/* ── Stat card accent colors ── */
+/* ── 3D Tilt Card Wrapper ── */
+function TiltCard({ children, className, style, href }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; href?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const handleMove = useCallback((e: React.MouseEvent) => {
+    const el = ref.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    el.style.transform = `perspective(600px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg) translateY(-4px)`
+  }, [])
+  const handleLeave = useCallback(() => {
+    const el = ref.current
+    if (el) el.style.transform = ''
+  }, [])
+
+  const inner = (
+    <div ref={ref} className={className} style={style} onMouseMove={handleMove} onMouseLeave={handleLeave}>
+      {children}
+    </div>
+  )
+
+  if (href) {
+    return <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>{inner}</Link>
+  }
+  return inner
+}
+
 const STAT_ACCENTS = [
   'linear-gradient(90deg, #a78bfa, #7c3aed)',
   'linear-gradient(90deg, #fbbf24, #f59e0b)',
@@ -113,6 +193,12 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
   const productivity = totalTaskCount > 0 ? Math.round((completedCount / totalTaskCount) * 100) : 0
   const tip = TIPS[new Date().getDay() % TIPS.length]
   const streak = Math.min(completedCount, 30)
+
+  // Animated count-ups
+  const animTasks = useCountUp(stats.taskCount, 800, 400)
+  const animTickets = useCountUp(stats.openTickets, 800, 500)
+  const animHours = useCountUp(stats.weeklyHours, 1000, 600)
+  const animProductivity = useCountUp(productivity, 1200, 700)
 
   const formattedShifts = todayShifts.map((shift) => ({
     id: shift.id,
@@ -129,8 +215,9 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
 
   return (
     <div className="wd">
-      {/* Ambient background glow */}
+      {/* Ambient background + floating particles */}
       <div className="wd-ambient" aria-hidden="true" />
+      <Particles />
 
       {/* ═══ HERO SECTION ═══ */}
       <div className="wd-hero">
@@ -141,57 +228,57 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
         <LiveClock />
       </div>
 
-      {/* ═══ STAT CARDS ═══ */}
+      {/* ═══ STAT CARDS with 3D tilt ═══ */}
       <div className="wd-stats">
-        <Link href="/w/tasks" className="wd-stat-card" style={{ '--accent': STAT_ACCENTS[0] } as React.CSSProperties}>
+        <TiltCard href="/w/tasks" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[0] } as React.CSSProperties}>
           <div className="wd-stat-icon" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
             <ListTodo size={28} />
           </div>
           <div className="wd-stat-body">
-            <span className="wd-stat-value">{stats.taskCount}</span>
+            <span className="wd-stat-value">{animTasks}</span>
             <span className="wd-stat-label">My Tasks</span>
           </div>
           <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </Link>
+        </TiltCard>
 
-        <Link href="/w/tickets" className="wd-stat-card" style={{ '--accent': STAT_ACCENTS[1] } as React.CSSProperties}>
+        <TiltCard href="/w/tickets" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[1] } as React.CSSProperties}>
           <div className="wd-stat-icon" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
             <MessageCircle size={28} />
           </div>
           <div className="wd-stat-body">
-            <span className="wd-stat-value">{stats.openTickets}</span>
+            <span className="wd-stat-value">{animTickets}</span>
             <span className="wd-stat-label">Open Tickets</span>
           </div>
           <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </Link>
+        </TiltCard>
 
-        <Link href="/w/time-clock" className="wd-stat-card" style={{ '--accent': STAT_ACCENTS[2] } as React.CSSProperties}>
+        <TiltCard href="/w/time-clock" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[2] } as React.CSSProperties}>
           <div className="wd-stat-icon" style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}>
             <Timer size={28} />
           </div>
           <div className="wd-stat-body">
-            <span className="wd-stat-value">{stats.weeklyHours}<span className="wd-stat-unit">h</span></span>
+            <span className="wd-stat-value">{animHours}<span className="wd-stat-unit">h</span></span>
             <span className="wd-stat-label">Hours This Week</span>
           </div>
           <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </Link>
+        </TiltCard>
 
-        <div className="wd-stat-card wd-stat-productivity" style={{ '--accent': STAT_ACCENTS[3] } as React.CSSProperties}>
+        <TiltCard className="wd-stat-card wd-stat-productivity wd-shimmer" style={{ '--accent': STAT_ACCENTS[3] } as React.CSSProperties}>
           <div className="wd-stat-icon-ring">
             <ProgressRing percent={productivity} />
           </div>
           <div className="wd-stat-body">
-            <span className="wd-stat-value">{productivity}<span className="wd-stat-unit">%</span></span>
+            <span className="wd-stat-value">{animProductivity}<span className="wd-stat-unit">%</span></span>
             <span className="wd-stat-label">Productivity</span>
           </div>
-        </div>
+        </TiltCard>
       </div>
 
-      {/* ═══ MAIN GRID: 2 columns ═══ */}
+      {/* ═══ MAIN GRID ═══ */}
       <div className="wd-grid">
         {/* LEFT COLUMN */}
         <div className="wd-col">
-          <div className="wd-panel">
+          <div className="wd-panel wd-panel-stagger" style={{ '--stagger': '0' } as React.CSSProperties}>
             <div className="wd-panel-header">
               <h2 className="wd-panel-title">
                 <CalendarDays size={18} className="wd-panel-title-icon" />
@@ -221,7 +308,7 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
             </div>
           </div>
 
-          <div className="wd-panel">
+          <div className="wd-panel wd-panel-stagger" style={{ '--stagger': '1' } as React.CSSProperties}>
             <div className="wd-panel-header">
               <h2 className="wd-panel-title">
                 <ListTodo size={18} className="wd-panel-title-icon" />
@@ -249,7 +336,7 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
             </div>
           </div>
 
-          <div className="wd-panel wd-actions-panel">
+          <div className="wd-panel wd-actions-panel wd-panel-stagger" style={{ '--stagger': '2' } as React.CSSProperties}>
             <div className="wd-panel-header">
               <h2 className="wd-panel-title">
                 <Zap size={18} className="wd-panel-title-icon" />
@@ -258,7 +345,7 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
             </div>
             <div className="wd-panel-body">
               <div className="wd-qa-grid">
-                <Link href="/w/tasks?new=true" className="wd-qa-btn wd-qa-purple">
+                <Link href="/w/tasks?new=true" className="wd-qa-btn wd-qa-purple wd-qa-pulse">
                   <Zap size={24} />
                   <span>New Task</span>
                 </Link>
@@ -281,9 +368,9 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
 
         {/* RIGHT COLUMN */}
         <div className="wd-col">
-          <div className="wd-panel wd-streak-panel">
+          <div className="wd-panel wd-streak-panel wd-panel-stagger" style={{ '--stagger': '0' } as React.CSSProperties}>
             <div className="wd-streak-row">
-              <div className="wd-streak-badge">
+              <div className="wd-streak-badge wd-flame-flicker">
                 <Flame size={28} />
                 <span className="wd-streak-count">{streak}</span>
               </div>
@@ -298,7 +385,7 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
             </div>
           </div>
 
-          <div className="wd-panel wd-week-panel">
+          <div className="wd-panel wd-week-panel wd-panel-stagger" style={{ '--stagger': '1' } as React.CSSProperties}>
             <div className="wd-panel-header">
               <h2 className="wd-panel-title">
                 <Timer size={18} className="wd-panel-title-icon" />
@@ -320,13 +407,13 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
                 })}
               </div>
               <div className="wd-week-summary">
-                <span className="wd-week-total">{stats.weeklyHours}h</span>
+                <span className="wd-week-total">{animHours}h</span>
                 <span className="wd-week-total-label">total this week</span>
               </div>
             </div>
           </div>
 
-          <div className="wd-panel wd-activity-panel">
+          <div className="wd-panel wd-activity-panel wd-panel-stagger" style={{ '--stagger': '2' } as React.CSSProperties}>
             <div className="wd-panel-header">
               <h2 className="wd-panel-title">
                 <Clock size={18} className="wd-panel-title-icon" />
@@ -341,11 +428,11 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
                 </div>
               ) : (
                 <div className="wd-activity-list">
-                  {auditLogs.slice(0, 8).map(log => {
+                  {auditLogs.slice(0, 8).map((log, idx) => {
                     const meta = getActionMeta(log.action)
                     const Icon = meta.icon
                     return (
-                      <div key={log.id} className="wd-act-row">
+                      <div key={log.id} className="wd-act-row wd-act-slide" style={{ '--act-i': idx } as React.CSSProperties}>
                         <div className="wd-act-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
                           <Icon size={14} />
                         </div>
