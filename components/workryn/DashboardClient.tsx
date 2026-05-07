@@ -6,7 +6,8 @@ import {
   ArrowUpRight, Clock, Zap, MessageCircle, CalendarDays, 
   CheckCircle2, Flame, Sun,
   ChevronRight, ListTodo, Timer, 
-  Briefcase, LogIn, LogOut, FileEdit, Bell
+  Briefcase, LogIn, LogOut, FileEdit, Bell,
+  AlertTriangle, ExternalLink, Users, ShieldAlert, CalendarClock
 } from 'lucide-react'
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
   completedCount: number
   totalTaskCount: number
   todayShifts: { id: string; title?: string; startTime: string }[]
+  csAlerts?: { totalClients: number; overdueClients: number; dueThisWeek: number; eligibilityEndingSoon: number; noContact7Days: number }
+  csRole?: string | null
 }
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -189,7 +192,7 @@ const STAT_ACCENTS = [
   'linear-gradient(90deg, #3b82f6, #2563eb)',
 ]
 
-export default function DashboardClient({ user, stats, auditLogs, recentTasks, completedCount, totalTaskCount, todayShifts }: Props) {
+export default function DashboardClient({ user, stats, auditLogs, recentTasks, completedCount, totalTaskCount, todayShifts, csAlerts, csRole }: Props) {
   const productivity = totalTaskCount > 0 ? Math.round((completedCount / totalTaskCount) * 100) : 0
   const tip = TIPS[new Date().getDay() % TIPS.length]
   const streak = Math.min(completedCount, 30)
@@ -364,6 +367,55 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
               </div>
             </div>
           </div>
+
+          {/* CaseSync Client Alerts */}
+          {csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it') && (
+            <div className="wd-panel wd-cs-alerts wd-panel-stagger" style={{ '--stagger': '3' } as React.CSSProperties}>
+              <div className="wd-cs-alerts-header">
+                <div className="wd-cs-alerts-title-row">
+                  <div className="wd-cs-alerts-badge">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div>
+                    <h2 className="wd-panel-title" style={{ margin: 0, gap: '0' }}>CaseSync Alerts</h2>
+                    <span className="wd-cs-alerts-scope">
+                      {csRole === 'supervisor' || csRole === 'it' ? 'All clients' : csRole === 'team_manager' ? 'Your team' : 'Your caseload'}
+                    </span>
+                  </div>
+                </div>
+                <Link href="/dashboard" className="wd-cs-switch-btn">
+                  <span>Open CaseSync</span>
+                  <ExternalLink size={14} />
+                </Link>
+              </div>
+              <div className="wd-cs-alerts-grid">
+                <Link href="/dashboard?filter=overdue" className="wd-cs-alert-item wd-cs-alert-danger">
+                  <AlertTriangle size={18} />
+                  <span className="wd-cs-alert-count">{csAlerts.overdueClients}</span>
+                  <span className="wd-cs-alert-label">Overdue</span>
+                </Link>
+                <Link href="/dashboard?filter=due-this-week" className="wd-cs-alert-item wd-cs-alert-warning">
+                  <CalendarClock size={18} />
+                  <span className="wd-cs-alert-count">{csAlerts.dueThisWeek}</span>
+                  <span className="wd-cs-alert-label">Due This Week</span>
+                </Link>
+                <Link href="/dashboard?filter=eligibility" className="wd-cs-alert-item wd-cs-alert-info">
+                  <CalendarDays size={18} />
+                  <span className="wd-cs-alert-count">{csAlerts.eligibilityEndingSoon}</span>
+                  <span className="wd-cs-alert-label">Eligibility Ending</span>
+                </Link>
+                <Link href="/dashboard?filter=no-contact" className="wd-cs-alert-item wd-cs-alert-muted">
+                  <Users size={18} />
+                  <span className="wd-cs-alert-count">{csAlerts.noContact7Days}</span>
+                  <span className="wd-cs-alert-label">No Contact 7d</span>
+                </Link>
+              </div>
+              <div className="wd-cs-alerts-footer">
+                <Users size={14} />
+                <span>{csAlerts.totalClients} total client{csAlerts.totalClients !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN */}

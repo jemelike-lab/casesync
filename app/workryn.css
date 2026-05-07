@@ -1942,3 +1942,158 @@
         transition: none !important;
     }
 }
+
+/* ═══════════════════════════════════════════
+   CASESYNC CLIENT ALERTS CARD
+   ═══════════════════════════════════════════ */
+
+.wd-cs-alerts {
+    background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(255,255,255,0.04) 100%);
+    border: 1px solid rgba(37,99,235,0.15);
+}
+
+.wd-cs-alerts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: 16px;
+}
+
+.wd-cs-alerts-title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.wd-cs-alerts-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(96,165,250,0.15));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(59,130,246,0.15);
+}
+
+.wd-cs-alerts-scope {
+    font-size: 0.8125rem;
+    color: #64748b;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Switch to CaseSync button */
+.wd-cs-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+}
+
+.wd-cs-switch-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+    filter: brightness(1.1);
+}
+
+/* Alert stats grid */
+.wd-cs-alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 18px 24px;
+}
+
+.wd-cs-alert-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.wd-cs-alert-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.wd-cs-alert-count {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.wd-cs-alert-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Color variants */
+.wd-cs-alert-danger { color: #f87171; }
+.wd-cs-alert-danger:hover { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
+
+.wd-cs-alert-warning { color: #fbbf24; }
+.wd-cs-alert-warning:hover { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
+
+.wd-cs-alert-info { color: #60a5fa; }
+.wd-cs-alert-info:hover { background: rgba(96,165,250,0.08); border-color: rgba(96,165,250,0.2); }
+
+.wd-cs-alert-muted { color: #94a3b8; }
+.wd-cs-alert-muted:hover { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2); }
+
+/* Overdue pulsing highlight if > 0 */
+.wd-cs-alert-danger .wd-cs-alert-count {
+    animation: wd-alert-pulse 2s ease-in-out infinite;
+}
+
+@keyframes wd-alert-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Footer */
+.wd-cs-alerts-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .wd-cs-alerts-grid { grid-template-columns: repeat(2, 1fr); }
+    .wd-cs-alerts-header { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 500px) {
+    .wd-cs-alert-count { font-size: 1.25rem; }
+    .wd-cs-alerts-grid { gap: 8px; }
+}

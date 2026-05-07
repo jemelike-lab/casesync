@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
+import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/workryn/DashboardClient'
 import type { Metadata } from 'next'
 
@@ -41,6 +42,10 @@ export default async function DashboardPage() {
   let completedCount = 0
   let totalTaskCount = 0
   let todayShifts: any[] = []
+
+  // CaseSync client alerts — role-scoped
+  let csAlerts = { totalClients: 0, overdueClients: 0, dueThisWeek: 0, eligibilityEndingSoon: 0, noContact7Days: 0 }
+  let csRole: string | null = null
 
   try {
     const [tc, ot, weekEntries, al, rt, done, total, shifts] = await Promise.all([
@@ -93,6 +98,82 @@ export default async function DashboardPage() {
     // Render with empty data rather than crashing
   }
 
+  // ── CaseSync Client Alerts (role-scoped) ──
+  try {
+    const supabase = await createClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser) {
+      // Get CaseSync profile for role check
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role, team_manager_id')
+        .eq('id', authUser.id)
+        .single()
+
+      csRole = profile?.role ?? null
+
+      if (profile?.role === 'supervisor' || profile?.role === 'it') {
+        // Supervisors/IT see global summary
+        const { data: global } = await supabase
+          .from('client_status_summary_global')
+          .select('*')
+          .single()
+        if (global) {
+          csAlerts = {
+            totalClients: global.total_clients ?? 0,
+            overdueClients: global.overdue_clients ?? 0,
+            dueThisWeek: global.due_this_week_clients ?? 0,
+            eligibilityEndingSoon: global.eligibility_ending_soon_clients ?? 0,
+            noContact7Days: global.no_contact_7_days_clients ?? 0,
+          }
+        }
+      } else if (profile?.role === 'team_manager') {
+        // Team Managers see aggregate for planners they manage
+        const { data: managedPlanners } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('team_manager_id', authUser.id)
+        const plannerIds = (managedPlanners ?? []).map(p => p.id)
+        // Include own clients too
+        plannerIds.push(authUser.id)
+        if (plannerIds.length > 0) {
+          const { data: rows } = await supabase
+            .from('client_status_summary_by_assignee')
+            .select('*')
+            .in('assigned_to', plannerIds)
+          if (rows) {
+            csAlerts = rows.reduce((acc, row) => ({
+              totalClients: acc.totalClients + (row.total_clients ?? 0),
+              overdueClients: acc.overdueClients + (row.overdue_clients ?? 0),
+              dueThisWeek: acc.dueThisWeek + (row.due_this_week_clients ?? 0),
+              eligibilityEndingSoon: acc.eligibilityEndingSoon + (row.eligibility_ending_soon_clients ?? 0),
+              noContact7Days: acc.noContact7Days + (row.no_contact_7_days_clients ?? 0),
+            }), csAlerts)
+          }
+        }
+      } else {
+        // Support Planners see only their own clients
+        const { data: row } = await supabase
+          .from('client_status_summary_by_assignee')
+          .select('*')
+          .eq('assigned_to', authUser.id)
+          .single()
+        if (row) {
+          csAlerts = {
+            totalClients: row.total_clients ?? 0,
+            overdueClients: row.overdue_clients ?? 0,
+            dueThisWeek: row.due_this_week_clients ?? 0,
+            eligibilityEndingSoon: row.eligibility_ending_soon_clients ?? 0,
+            noContact7Days: row.no_contact_7_days_clients ?? 0,
+          }
+        }
+      }
+    }
+  } catch (csError) {
+    console.error('[Workryn Dashboard] CaseSync alert query failed:', csError)
+    // Non-fatal — renders with zero alerts
+  }
+
   return (
     <DashboardClient
       user={session.user}
@@ -102,6 +183,8 @@ export default async function DashboardPage() {
       completedCount={completedCount}
       totalTaskCount={totalTaskCount}
       todayShifts={todayShifts}
+      csAlerts={csAlerts}
+      csRole={csRole}
     />
   )
 }
