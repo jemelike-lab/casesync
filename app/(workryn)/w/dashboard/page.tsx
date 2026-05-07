@@ -113,18 +113,26 @@ export default async function DashboardPage() {
       csRole = profile?.role ?? null
 
       if (profile?.role === 'supervisor' || profile?.role === 'it') {
-        // Supervisors/IT see global summary
-        const { data: global } = await supabase
-          .from('client_status_summary_global')
-          .select('*')
-          .single()
-        if (global) {
-          csAlerts = {
-            totalClients: global.total_clients ?? 0,
-            overdueClients: global.overdue_clients ?? 0,
-            dueThisWeek: global.due_this_week_clients ?? 0,
-            eligibilityEndingSoon: global.eligibility_ending_soon_clients ?? 0,
-            noContact7Days: global.no_contact_7_days_clients ?? 0,
+        // Supervisors/IT: aggregate from per-assignee view (matches CaseSync Supervisor Overview)
+        // This excludes unassigned clients, matching what the CaseSync dashboard shows
+        const { data: allPlanners } = await supabase
+          .from('profiles')
+          .select('id')
+          .in('role', ['supports_planner', 'team_manager', 'supervisor', 'it'])
+        const allIds = (allPlanners ?? []).map(p => p.id)
+        if (allIds.length > 0) {
+          const { data: rows } = await supabase
+            .from('client_status_summary_by_assignee')
+            .select('*')
+            .in('assigned_to', allIds)
+          if (rows) {
+            csAlerts = rows.reduce((acc, row) => ({
+              totalClients: acc.totalClients + (row.total_clients ?? 0),
+              overdueClients: acc.overdueClients + (row.overdue_clients ?? 0),
+              dueThisWeek: acc.dueThisWeek + (row.due_this_week_clients ?? 0),
+              eligibilityEndingSoon: acc.eligibilityEndingSoon + (row.eligibility_ending_soon_clients ?? 0),
+              noContact7Days: acc.noContact7Days + (row.no_contact_7_days_clients ?? 0),
+            }), csAlerts)
           }
         }
       } else if (profile?.role === 'team_manager') {
