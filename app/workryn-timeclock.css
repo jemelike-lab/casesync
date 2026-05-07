@@ -121,7 +121,7 @@
   padding: 14px 36px;
   border-radius: 99px;
   font-size: 1rem;
-  max-width: 280px;
+  max-width: 400px;
   width: auto;
   font-weight: 700;
   border: none;
@@ -196,7 +196,7 @@
 .w-app-shell .tc-stats {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .w-app-shell .tc-stat-card {
@@ -322,14 +322,14 @@
 .tc-top-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 28px;
     flex: 1;
 }
 
 .tc-left-col, .tc-right-col {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
 }
 
 /* Clock panel in left column */
@@ -337,7 +337,7 @@
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 16px;
-    padding: 32px;
+    padding: 36px;
     animation: w-fade-up 0.4s ease both;
 }
 
@@ -354,7 +354,7 @@
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 12px;
-    padding: 24px 20px;
+    padding: 28px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -375,7 +375,7 @@
 }
 
 .tc-stat-value {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 700;
     color: #f1f5f9;
     letter-spacing: -0.02em;
@@ -383,9 +383,9 @@
 }
 
 .tc-stat-label {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #64748b;
+    color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -395,7 +395,7 @@
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
-    padding: 28px;
+    padding: 36px;
     animation: w-fade-up 0.4s ease both;
 }
 
@@ -405,26 +405,26 @@
 
 /* Section labels */
 .tc-section-label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #94a3b8;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #cbd5e1;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin-bottom: 14px;
+    margin-bottom: 20px;
 }
 
 /* Weekly Bar Chart — tall */
 .tc-clock-page .tc-week-chart {
     margin: 0;
     flex: 1;
-    min-height: 300px;
+    min-height: 340px;
 }
 
 .tc-bars {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 220px;
+    height: 280px;
 }
 
 .tc-bar-col {
@@ -460,9 +460,9 @@
 }
 
 .tc-bar-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #64748b;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #94a3b8;
 }
 
 .tc-bar-today .tc-bar-label {
@@ -494,15 +494,16 @@
     padding: 14px 16px;
     background: rgba(255,255,255,0.03);
     border-radius: 8px;
-    font-size: 1rem;
-    color: #94a3b8;
-    border: 1px solid rgba(255,255,255,0.05);
+    font-size: 1.125rem;
+    color: #cbd5e1;
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 .tc-today-dur {
     margin-left: auto;
-    font-weight: 600;
+    font-weight: 700;
     color: #f1f5f9;
+    font-size: 1.25rem;
 }
 
 .tc-activity-empty {
@@ -539,7 +540,7 @@
     align-items: center;
     padding: 14px 0;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
 }
 
 .tc-summary-row:last-child { border-bottom: none; }
@@ -547,7 +548,8 @@
 .tc-summary-row span { color: #64748b; }
 .tc-summary-row strong {
     color: #f1f5f9;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1.375rem;
 }
 
 /* Date footer */
@@ -557,8 +559,8 @@
 }
 
 .tc-digital-date {
-    font-size: 1rem;
-    color: #475569;
+    font-size: 1.125rem;
+    color: #64748b;
     font-weight: 500;
 }
 
@@ -590,8 +592,8 @@
 }
 
 .tc-tab {
-    font-size: 1.125rem !important;
-    padding: 10px 24px !important;
+    font-size: 1.375rem !important;
+    padding: 12px 32px !important;
     font-weight: 600 !important;
     letter-spacing: 0.01em;
     border-bottom-width: 3px !important;
