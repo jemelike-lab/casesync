@@ -394,7 +394,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
       )}
 
       {/* KANBAN BOARD */}
-      <div className="page-body" style={{ paddingTop:12 }}>
+      <div className="tk-board-wrap">
         <div className="tk-board">
           {COLUMNS.map((col, colIdx) => {
             const colTasks = byStatus(col.id)
@@ -515,6 +515,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-select { width:auto; height:36px; font-size:0.8125rem; min-width:120px; background:rgba(255,255,255,0.05) !important; border-color:rgba(255,255,255,0.08) !important; color:#e2e8f0 !important; }
 .tk-select option { background:#1a1f2e; color:#e2e8f0; }
 @media(max-width:768px){ .tk-hero-content { flex-direction:column; align-items:flex-start; } .tk-hero-right { width:100%; justify-content:space-between; } }
+.tk-board-wrap { padding-top:12px; }
 .tk-board { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; position:relative; z-index:1; height:calc(100vh - 320px); min-height:400px; }
 @media(max-width:1200px){ .tk-board { grid-template-columns:repeat(2,1fr); height:auto; } }
 @media(max-width:640px){ .tk-board { grid-template-columns:1fr; } }
