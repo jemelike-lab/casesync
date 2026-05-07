@@ -1,6 +1,7 @@
 'use client'
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { scrollToElement } from '@/lib/scroll'
 import { useState, useMemo, useEffect, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -1292,15 +1293,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }
 
   function scrollToResults() {
-    window.setTimeout(() => {
-      const el = document.getElementById('client-results')
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      // Offset for fixed header (~70px) + some breathing room
-      const y = rect.top + scrollTop - 80
-      window.scrollTo({ top: y, behavior: 'smooth' })
-    }, 200)
+    scrollToElement('client-results')
   }
 
   function handleAlertClick(f: FilterType | null) {

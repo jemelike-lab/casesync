@@ -1,6 +1,7 @@
 'use client'
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { scrollToElement } from '@/lib/scroll'
 import { useState, useEffect } from 'react'
 import { Profile } from '@/lib/types'
 
@@ -308,7 +309,7 @@ export default function HelpPageClient({ profile }: Props) {
       const id = href.slice(1)
       const el = document.getElementById(id)
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        scrollToElement(el, 80, 50)
       }
     }
 

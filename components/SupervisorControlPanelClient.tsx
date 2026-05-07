@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Profile, Client } from '@/lib/types'
+import { scrollToElement } from '@/lib/scroll'
 import ClientQuickSearch from '@/components/ClientQuickSearch'
 import PremiumStatGrid from '@/components/PremiumStatGrid'
 import TeamHealthPanel from '@/components/TeamHealthPanel'
@@ -263,12 +264,12 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
   function openClientFilter(next: ClientFilter) {
     setClientFilter(next)
     setClientPage(0)
-    window.setTimeout(() => clientResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30)
+    scrollToElement(clientResultsRef.current, 80, 100)
   }
 
   function openRosterFilter(next: RosterFilter) {
     setRosterFilter(next)
-    window.setTimeout(() => rosterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30)
+    scrollToElement(rosterRef.current, 80, 100)
   }
 
   const fullResultsHref = teamLink(clientFilter)
