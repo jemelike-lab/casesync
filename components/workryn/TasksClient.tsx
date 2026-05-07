@@ -339,21 +339,21 @@ export default function TasksClient({ initialTasks, users, departments, currentU
       {/* ═══ STAT CARDS (3D tilt + count-up) ═══ */}
       <div className="tk-stats">
         <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#64748b,#94a3b8)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(100,116,139,0.15)', color:'#94a3b8' }}><ListTodo size={24}/></div>
+          <div className="tk-stat-icon" style={{ background:'rgba(100,116,139,0.15)', color:'#94a3b8' }}><ListTodo size={28}/></div>
           <div className="tk-stat-body">
             <span className="tk-stat-value">{animTotal}</span>
             <span className="tk-stat-label">Total Tasks</span>
           </div>
         </TiltCard>
         <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#6366f1,#8b5cf6)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(99,102,241,0.15)', color:'#818cf8' }}><Zap size={24}/></div>
+          <div className="tk-stat-icon" style={{ background:'rgba(99,102,241,0.15)', color:'#818cf8' }}><Zap size={28}/></div>
           <div className="tk-stat-body">
             <span className="tk-stat-value">{animActive}</span>
             <span className="tk-stat-label">In Progress</span>
           </div>
         </TiltCard>
         <TiltCard className="tk-stat-card tk-shimmer" style={{ '--tk-accent':'linear-gradient(90deg,#10b981,#34d399)' } as React.CSSProperties}>
-          <div className="tk-stat-icon" style={{ background:'rgba(16,185,129,0.15)', color:'#34d399' }}><CheckCircle2 size={24}/></div>
+          <div className="tk-stat-icon" style={{ background:'rgba(16,185,129,0.15)', color:'#34d399' }}><CheckCircle2 size={28}/></div>
           <div className="tk-stat-body">
             <span className="tk-stat-value">{animDone}</span>
             <span className="tk-stat-label">Completed</span>
@@ -551,13 +551,15 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   display:flex; align-items:center; justify-content:space-between; gap:16px;
    position:relative; z-index:1; flex-wrap:wrap;
 }
-.tk-hero-title { font-size:1.75rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:2px; }
+.tk-hero-title { font-size:2rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:2px; }
 .tk-hero-sub { font-size:0.9rem; color:var(--text-muted); }
 .tk-create-btn {
   display:inline-flex; align-items:center; gap:8px; font-weight:600;
   box-shadow:0 2px 16px rgba(99,102,241,0.25);
 }
-.tk-create-btn:hover { box-shadow:0 4px 24px rgba(99,102,241,0.35); transform:translateY(-1px); }
+.tk-create-btn { animation:tk-btn-glow 3s ease-in-out infinite; }
+.tk-create-btn:hover { box-shadow:0 4px 24px rgba(99,102,241,0.4); transform:translateY(-2px); }
+@keyframes tk-btn-glow { 0%,100%{box-shadow:0 2px 16px rgba(99,102,241,0.25)} 50%{box-shadow:0 4px 28px rgba(99,102,241,0.4)} }
 
 /* ═══ STAT CARDS ═══ */
 .tk-stats {
@@ -578,18 +580,19 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   cursor:default;
 }
 .tk-stat-card::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
+  content:''; position:absolute; top:0; left:0; right:0; height:3.5px;
   background:var(--tk-accent); opacity:0.7; transition:opacity 0.3s ease;
 }
-.tk-stat-card:hover { border-color:rgba(99,102,241,0.25); box-shadow:0 4px 24px rgba(0,0,0,0.15), 0 0 30px rgba(99,102,241,0.06); }
+.tk-stat-card { box-shadow:0 2px 12px rgba(0,0,0,0.12), 0 0 20px rgba(99,102,241,0.04); }
+.tk-stat-card:hover { border-color:rgba(99,102,241,0.3); box-shadow:0 8px 32px rgba(0,0,0,0.2), 0 0 40px rgba(99,102,241,0.1); transform:translateY(-2px); }
 .tk-stat-card:hover::before { opacity:1; }
 
 .tk-stat-icon {
-  width:48px; height:48px; border-radius:14px;
+  width:54px; height:54px; border-radius:14px;
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .tk-stat-body { display:flex; flex-direction:column; }
-.tk-stat-value { font-size:2rem; font-weight:800; color:var(--text-primary, #f1f5f9); letter-spacing:-0.03em; line-height:1.1; font-variant-numeric:tabular-nums; }
+.tk-stat-value { font-size:2.5rem; font-weight:800; color:var(--text-primary, #f1f5f9); letter-spacing:-0.03em; line-height:1.1; font-variant-numeric:tabular-nums; }
 .tk-stat-unit { font-size:1.25rem; font-weight:600; opacity:0.6; }
 .tk-stat-label { font-size:0.8125rem; color:var(--text-muted, #64748b); margin-top:2px; }
 .tk-stat-ring { gap:12px; }
@@ -610,7 +613,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 }
 .tk-progress-bar {
   flex:1; background:var(--bg-overlay, rgba(255,255,255,0.06));
-  border-radius:99px; height:6px; overflow:hidden;
+  border-radius:99px; height:8px; overflow:hidden;
 }
 .tk-progress-fill {
   height:100%; border-radius:99px;
@@ -620,7 +623,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 }
 .tk-urgent-badge {
   display:flex; align-items:center; gap:5px;
-  font-size:0.75rem; font-weight:600; color:#f59e0b;
+  font-size:0.8125rem; font-weight:700; color:#f59e0b;
   padding:4px 10px; border-radius:99px;
   background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);
   white-space:nowrap; flex-shrink:0;
@@ -631,6 +634,8 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 /* ═══ FILTER BAR ═══ */
 .tk-filter-bar {
   display:flex; align-items:center; gap:12px;
+  background:var(--bg-surface, rgba(255,255,255,0.04)); border:1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  border-radius:var(--radius-md, 12px); padding:10px 14px !important;
   margin-top:16px; position:relative; z-index:1; flex-wrap:wrap;
 }
 .tk-search-wrap { position:relative; flex:1; min-width:200px; max-width:360px; }
@@ -662,14 +667,14 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   display:flex; flex-direction:column; overflow:hidden;
   transition:border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.tk-col:hover { border-color:var(--border-default, rgba(255,255,255,0.12)); box-shadow:0 0 30px rgba(99,102,241,0.04); }
+.tk-col:hover { border-color:var(--border-default, rgba(255,255,255,0.15)); box-shadow:0 4px 20px rgba(0,0,0,0.15), 0 0 30px rgba(99,102,241,0.06); }
 .tk-col-drop {
   border-color:rgba(99,102,241,0.45) !important;
   box-shadow:0 0 0 2px rgba(99,102,241,0.15), 0 0 30px rgba(99,102,241,0.08) !important;
   background:rgba(99,102,241,0.02) !important;
 }
 
-.tk-col-accent { height:3px; flex-shrink:0; }
+.tk-col-accent { height:4px; flex-shrink:0; }
 
 .tk-col-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -724,7 +729,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .tk-card:hover {
   border-color:rgba(99,102,241,0.2);
   transform:translateY(-3px);
-  box-shadow:0 8px 24px rgba(0,0,0,0.2), 0 0 20px rgba(99,102,241,0.06);
+  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 0 24px rgba(99,102,241,0.1);
   background:var(--glass-bg, rgba(255,255,255,0.09));
 }
 
@@ -783,7 +788,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
   border:1px solid var(--glass-border, rgba(255,255,255,0.1));
   border-radius:var(--radius-md, 12px);
-  box-shadow:0 12px 40px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.08);
+  box-shadow:0 16px 48px rgba(0,0,0,0.5), 0 0 30px rgba(99,102,241,0.12);
   min-width:180px; overflow:hidden; animation:tk-scale-in 0.15s ease both;
 }
 @keyframes tk-scale-in { from{opacity:0;transform:scale(0.95) translateY(-4px)} to{opacity:1;transform:none} }
