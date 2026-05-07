@@ -603,3 +603,246 @@
     border-bottom-color: #3b82f6 !important;
     color: #f1f5f9 !important;
 }
+
+/* ═══════════════════════════════════════════
+   TIMESHEET + HISTORY TAB — Full Width Redesign
+   ═══════════════════════════════════════════ */
+
+/* Timesheet Panel */
+.tc-timesheet-panel {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Week navigation */
+.tc-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.tc-week-nav .tc-week-label {
+    font-size: 1.375rem !important;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+/* Timesheet totals — big stat cards */
+.tc-ts-totals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 8px;
+}
+
+.tc-ts-stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: w-fade-up 0.4s ease both;
+}
+
+.tc-ts-stat:nth-child(1) { animation-delay: 0.05s; }
+.tc-ts-stat:nth-child(2) { animation-delay: 0.1s; }
+.tc-ts-stat:nth-child(3) { animation-delay: 0.15s; }
+
+.tc-ts-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(37,99,235,0.15);
+}
+
+.tc-ts-stat-val {
+    display: block;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #60a5fa;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.tc-ts-stat-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Timesheet entries — full-width table */
+.tc-ts-entries {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.tc-ts-row {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    align-items: center;
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.15s ease;
+    animation: w-fade-up 0.3s ease both;
+}
+
+.tc-ts-row:last-child { border-bottom: none; }
+.tc-ts-row:hover { background: rgba(255,255,255,0.04); }
+
+.tc-ts-row-date {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.tc-ts-row-time {
+    font-size: 1.0625rem;
+    color: #94a3b8;
+}
+
+.tc-ts-row-dur {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    text-align: right;
+}
+
+.tc-ts-empty {
+    padding: 60px 28px;
+    text-align: center;
+    font-size: 1.125rem;
+    color: #475569;
+}
+
+/* ═══════════════════════════════════════════ */
+/* HISTORY TAB */
+/* ═══════════════════════════════════════════ */
+
+.tc-history-panel {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tc-hist-entries {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.tc-hist-row {
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    animation: w-fade-up 0.3s ease both;
+}
+
+.tc-hist-row:hover { background: rgba(255,255,255,0.04); }
+.tc-hist-row:last-child { border-bottom: none; }
+
+.tc-hist-row-main {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.tc-hist-date {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.tc-hist-time {
+    font-size: 1.0625rem;
+    color: #94a3b8;
+}
+
+.tc-hist-dur {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    text-align: right;
+}
+
+.tc-hist-detail {
+    margin-top: 14px;
+    padding: 14px 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 1rem;
+    color: #94a3b8;
+}
+
+.tc-hist-detail .tc-badge-sm {
+    font-size: 0.8125rem;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-weight: 600;
+}
+
+/* Pagination */
+.tc-hist-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.tc-hist-count {
+    font-size: 1rem;
+    color: #64748b;
+}
+
+.tc-hist-pg-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.tc-hist-pg-btns .tc-btn {
+    font-size: 1rem;
+    padding: 8px 20px;
+}
+
+/* Empty/Loading states */
+.tc-empty, .tc-loading {
+    padding: 80px 28px;
+    text-align: center;
+    font-size: 1.25rem;
+    color: #475569;
+}
+
+.tc-loading {
+    color: #64748b;
+}
+
+/* Timesheet loading skeleton */
+.tc-ts-loading {
+    padding: 60px 28px;
+    text-align: center;
+    font-size: 1.125rem;
+    color: #64748b;
+}
+
+@media (max-width: 700px) {
+    .tc-ts-totals { grid-template-columns: 1fr; }
+    .tc-ts-stat-val { font-size: 2.25rem; }
+    .tc-ts-row, .tc-hist-row-main { grid-template-columns: 1fr; gap: 4px; }
+    .tc-ts-row-dur, .tc-hist-dur { text-align: left; }
+}
