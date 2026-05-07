@@ -57,15 +57,19 @@ function greet(name: string): string {
 
 /* ── Animated Count-Up Hook ── */
 function useCountUp(target: number, duration = 1200, delay = 300): number {
-  const [val, setVal] = useState(0)
+  const [val, setVal] = useState(target) // SSR-safe: start at target
+  const mounted = useRef(false)
   useEffect(() => {
+    if (mounted.current) return // only run once on initial mount
+    mounted.current = true
     if (target === 0) { setVal(0); return }
+    // Reset to 0 then animate up
+    setVal(0)
     const timeout = setTimeout(() => {
       const start = performance.now()
       const step = (now: number) => {
         const elapsed = now - start
         const progress = Math.min(elapsed / duration, 1)
-        // Ease out cubic
         const eased = 1 - Math.pow(1 - progress, 3)
         setVal(Math.round(eased * target))
         if (progress < 1) requestAnimationFrame(step)
@@ -73,7 +77,7 @@ function useCountUp(target: number, duration = 1200, delay = 300): number {
       requestAnimationFrame(step)
     }, delay)
     return () => clearTimeout(timeout)
-  }, [target, duration, delay])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return val
 }
 
@@ -202,6 +206,12 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
   const animTickets = useCountUp(stats.openTickets, 800, 500)
   const animHours = useCountUp(stats.weeklyHours, 1000, 600)
   const animProductivity = useCountUp(productivity, 1200, 700)
+
+  // CaseSync alert count-ups
+  const animOverdue = useCountUp(csAlerts?.overdueClients ?? 0, 800, 800)
+  const animDueWeek = useCountUp(csAlerts?.dueThisWeek ?? 0, 800, 900)
+  const animEligibility = useCountUp(csAlerts?.eligibilityEndingSoon ?? 0, 800, 1000)
+  const animNoContact = useCountUp(csAlerts?.noContact7Days ?? 0, 800, 1100)
 
   const formattedShifts = todayShifts.map((shift) => ({
     id: shift.id,
@@ -391,22 +401,22 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
               <div className="wd-cs-alerts-grid">
                 <Link href="/dashboard?filter=overdue" className="wd-cs-alert-item wd-cs-alert-danger">
                   <AlertTriangle size={18} />
-                  <span className="wd-cs-alert-count">{csAlerts.overdueClients}</span>
+                  <span className="wd-cs-alert-count">{animOverdue}</span>
                   <span className="wd-cs-alert-label">Overdue</span>
                 </Link>
                 <Link href="/dashboard?filter=due-this-week" className="wd-cs-alert-item wd-cs-alert-warning">
                   <CalendarClock size={18} />
-                  <span className="wd-cs-alert-count">{csAlerts.dueThisWeek}</span>
+                  <span className="wd-cs-alert-count">{animDueWeek}</span>
                   <span className="wd-cs-alert-label">Due This Week</span>
                 </Link>
                 <Link href="/dashboard?filter=eligibility" className="wd-cs-alert-item wd-cs-alert-info">
                   <CalendarDays size={18} />
-                  <span className="wd-cs-alert-count">{csAlerts.eligibilityEndingSoon}</span>
+                  <span className="wd-cs-alert-count">{animEligibility}</span>
                   <span className="wd-cs-alert-label">Eligibility Ending</span>
                 </Link>
                 <Link href="/dashboard?filter=no-contact" className="wd-cs-alert-item wd-cs-alert-muted">
                   <Users size={18} />
-                  <span className="wd-cs-alert-count">{csAlerts.noContact7Days}</span>
+                  <span className="wd-cs-alert-count">{animNoContact}</span>
                   <span className="wd-cs-alert-label">No Contact 7d</span>
                 </Link>
               </div>
