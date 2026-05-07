@@ -1029,3 +1029,63 @@ div.empty-state {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* ═══════════════════════════════════════════
+   TICKETS — Round 4: Nuclear option on filters
+   ═══════════════════════════════════════════ */
+
+/* Target the glass-card direct children with flex-wrap override */
+.glass-card > div[style*="flex"] {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr 1fr 1fr !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+}
+
+/* Also target items-center class pattern */
+.glass-card > .items-center,
+.glass-card > [class*="items-center"] {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr 1fr 1fr !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+}
+
+/* Every select inside glass-card */
+.glass-card select {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+    font-size: 1.0625rem !important;
+    color: #e2e8f0 !important;
+    width: 100% !important;
+}
+
+/* Search wrapper inside glass-card */
+.glass-card input[type="text"],
+.glass-card input[class*="input"] {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+    font-size: 1.0625rem !important;
+    color: #f1f5f9 !important;
+    width: 100% !important;
+}
+
+@media (max-width: 900px) {
+    .glass-card > div[style*="flex"],
+    .glass-card > .items-center,
+    .glass-card > [class*="items-center"] {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 550px) {
+    .glass-card > div[style*="flex"],
+    .glass-card > .items-center,
+    .glass-card > [class*="items-center"] {
+        grid-template-columns: 1fr !important;
+    }
+}
