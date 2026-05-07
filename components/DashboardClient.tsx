@@ -1291,6 +1291,18 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setActiveSavedViewId(null)
   }
 
+  function scrollToResults() {
+    window.setTimeout(() => {
+      const el = document.getElementById('client-results')
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      // Offset for fixed header (~70px) + some breathing room
+      const y = rect.top + scrollTop - 80
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }, 200)
+  }
+
   function handleAlertClick(f: FilterType | null) {
     clearSavedViewSelection()
     const nextFilter = f ?? 'all'
@@ -1298,13 +1310,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setFilter(nextFilter)
     setActiveDayFilter(null)
     pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
-    // Scroll to results after state updates
-    if (f) {
-      window.setTimeout(() => {
-        const el = document.getElementById('client-results')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 120)
-    }
+    if (f) scrollToResults()
   }
 
   function handleGreetingFilter(f: FilterType | null) {
@@ -1314,12 +1320,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setFilter(nextFilter)
     setActiveDayFilter(null)
     pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
-    if (f) {
-      window.setTimeout(() => {
-        const el = document.getElementById('client-results')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 120)
-    }
+    if (f) scrollToResults()
   }
 
   function handleDayFilter(dateStr: string | null) {
@@ -1328,12 +1329,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setAlertFilter(null)
     setFilter('all')
     pushResultsState({ filter: 'all', deadlineDate: dateStr, viewId: null, plannerId: activePlannerId })
-    if (dateStr) {
-      window.setTimeout(() => {
-        const el = document.getElementById('client-results')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 120)
-    }
+    if (dateStr) scrollToResults()
   }
 
   function handleSavedViewSelect(view: DashboardSavedView) {
