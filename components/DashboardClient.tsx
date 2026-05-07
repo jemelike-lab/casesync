@@ -1298,6 +1298,13 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setFilter(nextFilter)
     setActiveDayFilter(null)
     pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
+    // Scroll to results after state updates
+    if (f) {
+      window.setTimeout(() => {
+        const el = document.getElementById('client-results')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 120)
+    }
   }
 
   function handleGreetingFilter(f: FilterType | null) {
@@ -1307,6 +1314,12 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setFilter(nextFilter)
     setActiveDayFilter(null)
     pushResultsState({ filter: nextFilter, deadlineDate: null, viewId: null, plannerId: activePlannerId })
+    if (f) {
+      window.setTimeout(() => {
+        const el = document.getElementById('client-results')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 120)
+    }
   }
 
   function handleDayFilter(dateStr: string | null) {
@@ -1315,6 +1328,12 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     setAlertFilter(null)
     setFilter('all')
     pushResultsState({ filter: 'all', deadlineDate: dateStr, viewId: null, plannerId: activePlannerId })
+    if (dateStr) {
+      window.setTimeout(() => {
+        const el = document.getElementById('client-results')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 120)
+    }
   }
 
   function handleSavedViewSelect(view: DashboardSavedView) {
@@ -1793,6 +1812,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Compact client list for the active stat filter */}
       {alertFilter && alertFilter !== 'all' && filtered.length > 0 && (
+        <div id="client-results">
         <StatClientList
           clients={filtered}
           label={
@@ -1810,6 +1830,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
           }
           onClose={() => handleAlertClick(null)}
         />
+        </div>
       )}
 
       {fullMode && (
