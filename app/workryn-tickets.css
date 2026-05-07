@@ -1126,3 +1126,54 @@ select option {
     color: #f1f5f9 !important;
     -webkit-text-fill-color: #f1f5f9 !important;
 }
+
+/* ═══════════════════════════════════════════
+   TICKETS — Round 6: Even spacing + equal widths
+   ═══════════════════════════════════════════ */
+
+/* Make all 4 filter items equal width */
+.glass-card > div[style] > div,
+.glass-card > [class*="items-center"] > div,
+.glass-card > [class*="items-center"] > select {
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: unset !important;
+    width: 100% !important;
+}
+
+/* The search wrapper div needs to stretch */
+.glass-card > div[style] > div[style*="relative"] {
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: unset !important;
+    width: 100% !important;
+}
+
+/* Equal grid: all 4 columns same size */
+.glass-card > div[style*="flex"],
+.glass-card > [class*="items-center"] {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    gap: 16px !important;
+    align-items: stretch !important;
+}
+
+/* Make search input fill its container */
+.glass-card input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* All form controls same height */
+.glass-card select,
+.glass-card input {
+    height: 52px !important;
+    padding: 0 18px !important;
+    font-size: 1rem !important;
+    line-height: 52px !important;
+}
+
+/* Search needs left padding for icon */
+.glass-card input[type="text"],
+.glass-card input[class*="input"] {
+    padding-left: 44px !important;
+}
