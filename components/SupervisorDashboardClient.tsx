@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
 import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact, getOverdueCount, formatDate } from '@/lib/types'
+import { scrollToElement } from '@/lib/scroll'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
 import PremiumStatGrid from './PremiumStatGrid'
@@ -308,12 +309,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
               Working queue: <strong style={{ color: 'var(--text)' }}>{activeFilter === 'all' ? 'Active Clients' : activeFilter === 'overdue' ? 'Overdue' : activeFilter === 'due_today' ? 'Due Today' : activeFilter === 'due_this_week' ? 'Due This Week' : activeFilter === 'due_next_14_days' ? 'Next 14 Days' : activeFilter === 'no_contact_7' ? 'No Contact 7+ Days' : 'Filtered'}</strong>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <QueueSwitchButton label="Active Clients" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('all') }} active={activeFilter === 'all'} />
-              <QueueSwitchButton label="🔴 Overdue" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('overdue') }} active={activeFilter === 'overdue'} />
-              <QueueSwitchButton label="📍 Due Today" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_today') }} active={activeFilter === 'due_today'} />
-              <QueueSwitchButton label="🟠 Due This Week" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_this_week') }} active={activeFilter === 'due_this_week'} />
-              <QueueSwitchButton label="🗓️ Next 14 Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_next_14_days') }} active={activeFilter === 'due_next_14_days'} />
-              <QueueSwitchButton label="📵 No Contact 7+ Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('no_contact_7') }} active={activeFilter === 'no_contact_7'} />
+              <QueueSwitchButton label="Active Clients" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('all'); scrollToElement('tm-client-results') }} active={activeFilter === 'all'} />
+              <QueueSwitchButton label="🔴 Overdue" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('overdue'); scrollToElement('tm-client-results') }} active={activeFilter === 'overdue'} />
+              <QueueSwitchButton label="📍 Due Today" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_today'); scrollToElement('tm-client-results') }} active={activeFilter === 'due_today'} />
+              <QueueSwitchButton label="🟠 Due This Week" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_this_week'); scrollToElement('tm-client-results') }} active={activeFilter === 'due_this_week'} />
+              <QueueSwitchButton label="🗓️ Next 14 Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('due_next_14_days'); scrollToElement('tm-client-results') }} active={activeFilter === 'due_next_14_days'} />
+              <QueueSwitchButton label="📵 No Contact 7+ Days" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('no_contact_7'); scrollToElement('tm-client-results') }} active={activeFilter === 'no_contact_7'} />
             </div>
           </div>
         </>
@@ -328,12 +329,15 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         tmCount={0}
         unassignedPlanners={0}
         activeFilter={activeFilter === 'all' ? 'all' : activeFilter === 'overdue' ? 'overdue' : activeFilter === 'due_this_week' ? 'due_this_week' : activeFilter === 'no_contact_7' ? 'no_contact_7' : undefined}
-        onFilterClick={(f) => setActiveFilter(activeFilter === f ? null : f as typeof activeFilter)}
+        onFilterClick={(f) => {
+          setActiveFilter(activeFilter === f ? null : f as typeof activeFilter)
+          if (activeFilter !== f) scrollToElement('tm-client-results')
+        }}
       />
 
       {/* Compact client list — appears inline when a stat card filter is active */}
       {activeFilter && activeFilter !== 'planners' && filteredClients.length > 0 && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: `3px solid ${activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : activeFilter === 'due_next_14_days' ? 'var(--accent)' : activeFilter === 'no_contact_7' ? 'var(--yellow)' : 'var(--border)'}` }}>
+        <div id="tm-client-results" className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: `3px solid ${activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : activeFilter === 'due_next_14_days' ? 'var(--accent)' : activeFilter === 'no_contact_7' ? 'var(--yellow)' : 'var(--border)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: activeFilter === 'overdue' ? 'var(--red)' : activeFilter === 'due_today' ? '#ff7a00' : activeFilter === 'due_this_week' ? 'var(--orange)' : 'var(--text)' }}>
