@@ -1510,3 +1510,397 @@
 .w-app-shell .w-page-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.14);
 }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD COMMAND CENTER
+   ═══════════════════════════════════════════ */
+
+/* Hero Section */
+.wd-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0 28px;
+    gap: 24px;
+    animation: w-fade-up 0.3s ease both;
+}
+
+.wd-hero-greeting {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 6px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #93c5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.wd-hero-sub {
+    font-size: 1.125rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Live Clock */
+.wd-live-clock {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.wd-clock-time {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.wd-clock-date {
+    display: block;
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Stat Cards */
+.wd-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.wd-stat-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    animation: w-fade-up 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+}
+
+.wd-stat-card:nth-child(1) { animation-delay: 0.05s; }
+.wd-stat-card:nth-child(2) { animation-delay: 0.1s; }
+.wd-stat-card:nth-child(3) { animation-delay: 0.15s; }
+.wd-stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+.wd-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 20px rgba(37,99,235,0.08);
+    border-color: rgba(255,255,255,0.18);
+}
+
+.wd-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wd-stat-body { flex: 1; }
+
+.wd-stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1;
+}
+
+.wd-stat-unit {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+.wd-stat-label {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-top: 4px;
+    display: block;
+}
+
+.wd-stat-arrow {
+    color: #475569;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.wd-stat-card:hover .wd-stat-arrow { color: #93c5fd; }
+
+/* Productivity progress bar */
+.wd-stat-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.04);
+}
+
+.wd-stat-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #60a5fa);
+    border-radius: 0 2px 0 0;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Main 2-column Grid */
+.wd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.wd-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Panels */
+.wd-panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: w-fade-up 0.4s ease both;
+}
+
+.wd-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.wd-panel-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+.wd-panel-link {
+    font-size: 0.875rem;
+    color: #3b82f6;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s ease;
+}
+
+.wd-panel-link:hover { color: #60a5fa; }
+
+.wd-panel-body { padding: 20px 24px; }
+
+/* Empty mini state */
+.wd-empty-mini {
+    text-align: center;
+    padding: 28px 16px;
+    color: #475569;
+}
+
+.wd-empty-mini p {
+    font-size: 1rem;
+    margin: 10px 0 0;
+    color: #64748b;
+}
+
+/* Timeline (schedule) */
+.wd-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.wd-timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.wd-timeline-item:last-child { border-bottom: none; }
+
+.wd-timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #3b82f6;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(59,130,246,0.4);
+}
+
+.wd-timeline-content { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+.wd-timeline-title { font-size: 1rem; font-weight: 500; color: #e2e8f0; }
+.wd-timeline-time { font-size: 0.875rem; color: #64748b; font-variant-numeric: tabular-nums; }
+
+/* Task List */
+.wd-task-list { display: flex; flex-direction: column; }
+
+.wd-task-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+}
+
+.wd-task-row:last-child { border-bottom: none; }
+.wd-task-row:hover { background: rgba(255,255,255,0.02); margin: 0 -24px; padding: 12px 24px; }
+
+.wd-task-priority { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.wd-task-title { flex: 1; font-size: 1rem; color: #e2e8f0; font-weight: 500; }
+.wd-task-status { font-size: 0.8125rem; padding: 3px 10px; border-radius: 99px; font-weight: 500; background: rgba(255,255,255,0.06); color: #94a3b8; }
+.wd-task-status-done { background: rgba(16,185,129,0.15); color: #34d399; }
+.wd-task-status-in_progress { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+/* Streak Panel */
+.wd-streak-panel .wd-panel-body { padding: 0; }
+
+.wd-streak-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+}
+
+.wd-streak-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.2) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+.wd-streak-count {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    background: #ef4444;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(8,12,20,0.8);
+}
+
+.wd-streak-info { flex: 1; }
+.wd-streak-title { display: block; font-size: 1.0625rem; font-weight: 600; color: #e2e8f0; }
+.wd-streak-sub { display: block; font-size: 0.875rem; color: #64748b; margin-top: 2px; }
+
+/* Tip */
+.wd-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 24px;
+    background: rgba(245,158,11,0.06);
+    border-top: 1px solid rgba(245,158,11,0.1);
+    font-size: 0.9375rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.wd-tip svg { color: #f59e0b; flex-shrink: 0; margin-top: 2px; }
+
+/* Activity Feed */
+.wd-activity-list { display: flex; flex-direction: column; }
+
+.wd-act-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.wd-act-row:last-child { border-bottom: none; }
+
+.wd-act-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #475569;
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+
+.wd-act-content { flex: 1; }
+.wd-act-action { display: block; font-size: 0.9375rem; color: #cbd5e1; }
+.wd-act-time { font-size: 0.8125rem; color: #475569; }
+
+/* Quick Actions */
+.wd-qa-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.wd-qa-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.wd-qa-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.16);
+    color: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .wd-stats { grid-template-columns: repeat(2, 1fr); }
+    .wd-grid { grid-template-columns: 1fr; }
+    .wd-hero { flex-direction: column; }
+    .wd-live-clock { text-align: left; }
+    .wd-hero-greeting { font-size: 1.75rem; }
+}
+
+@media (max-width: 500px) {
+    .wd-stats { grid-template-columns: 1fr; }
+    .wd-stat-value { font-size: 1.5rem; }
+    .wd-hero-greeting { font-size: 1.5rem; }
+}
