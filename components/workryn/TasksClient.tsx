@@ -319,12 +319,13 @@ export default function TasksClient({ initialTasks, users, departments, currentU
   }
 
   return (
-    <>
+    <div className="tk-page">
       {/* ═══ AMBIENT BACKGROUND ═══ */}
       <div className="tk-ambient" aria-hidden="true"/>
       <Particles/>
 
       {/* ═══ HERO HEADER ═══ */}
+      <div className="page-header" style={{ padding:"24px 32px 20px" }}>
       <div className="tk-hero">
         <div className="tk-hero-left">
           <h1 className="gradient-text tk-hero-title">Tasks</h1>
@@ -397,6 +398,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
           </select>
         </div>
       </div>
+      </div>
 
       {/* ═══ FLOATING MENU ═══ */}
       {menuState && (
@@ -408,6 +410,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
       )}
 
       {/* ═══ KANBAN BOARD ═══ */}
+      <div className="page-body" style={{ paddingTop:16 }}>
       <div className="tk-board">
         {COLUMNS.map((col, colIdx) => {
           const colTasks = byStatus(col.id)
@@ -458,6 +461,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
             </div>
           )
         })}
+      </div>
       </div>
 
       {/* ═══ CREATE/EDIT MODAL ═══ */}
@@ -542,9 +546,10 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 }
 
 /* ═══ HERO ═══ */
+.tk-page { position:relative; }
 .tk-hero {
   display:flex; align-items:center; justify-content:space-between; gap:16px;
-  padding:28px 32px 0; position:relative; z-index:1; flex-wrap:wrap;
+   position:relative; z-index:1; flex-wrap:wrap;
 }
 .tk-hero-title { font-size:1.75rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:2px; }
 .tk-hero-sub { font-size:0.9rem; color:var(--text-muted); }
@@ -557,7 +562,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 /* ═══ STAT CARDS ═══ */
 .tk-stats {
   display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
-  padding:20px 32px 0; position:relative; z-index:1;
+  margin-top:16px; position:relative; z-index:1;
 }
 @media(max-width:900px){ .tk-stats { grid-template-columns:repeat(2,1fr); } }
 @media(max-width:500px){ .tk-stats { grid-template-columns:1fr; } }
@@ -601,7 +606,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 /* ═══ PROGRESS BAR ═══ */
 .tk-progress-wrap {
   display:flex; align-items:center; gap:12px;
-  padding:16px 32px 0; position:relative; z-index:1;
+  margin-top:16px; position:relative; z-index:1;
 }
 .tk-progress-bar {
   flex:1; background:var(--bg-overlay, rgba(255,255,255,0.06));
@@ -626,7 +631,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 /* ═══ FILTER BAR ═══ */
 .tk-filter-bar {
   display:flex; align-items:center; gap:12px;
-  padding:16px 32px 0; position:relative; z-index:1; flex-wrap:wrap;
+  margin-top:16px; position:relative; z-index:1; flex-wrap:wrap;
 }
 .tk-search-wrap { position:relative; flex:1; min-width:200px; max-width:360px; }
 .tk-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
@@ -637,11 +642,11 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 /* ═══ KANBAN BOARD ═══ */
 .tk-board {
   display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
-  padding:20px 32px 32px; position:relative; z-index:1;
+   position:relative; z-index:1;
   height:calc(100vh - 380px); min-height:420px;
 }
 @media(max-width:1200px){ .tk-board { grid-template-columns:repeat(2,1fr); height:auto; } }
-@media(max-width:640px){ .tk-board { grid-template-columns:1fr; padding:16px; } }
+@media(max-width:640px){ .tk-board { grid-template-columns:1fr;  } }
 
 /* Column stagger entrance */
 .tk-stagger {
@@ -806,6 +811,6 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 .spin { animation:spin 0.7s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
       `}</style>
-    </>
+    </div>
   )
 }
