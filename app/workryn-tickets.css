@@ -775,3 +775,165 @@
 @media (max-width: 500px) {
     .td-stats { grid-template-columns: 1fr !important; }
 }
+
+/* ═══════════════════════════════════════════
+   TICKETS PAGE — Visual Polish Round 2
+   ═══════════════════════════════════════════ */
+
+/* Fix dropdown selects — visible borders, bigger text */
+.td-page select,
+.td-page .td-filter-select,
+.td-page select.input {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+    font-size: 1.0625rem !important;
+    color: #cbd5e1 !important;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    width: 100%;
+}
+
+.td-page select:hover,
+.td-page select:focus {
+    border-color: rgba(59,130,246,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+    background: rgba(255,255,255,0.08) !important;
+    outline: none;
+}
+
+/* Search input fix */
+.td-page input[type="text"],
+.td-page input[type="search"],
+.td-page input.input {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 12px !important;
+    padding: 14px 18px 14px 44px !important;
+    font-size: 1.0625rem !important;
+    color: #f1f5f9 !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+}
+
+.td-page input:focus {
+    border-color: rgba(59,130,246,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+    outline: none;
+}
+
+/* Filters in a 3-column grid instead of stacked */
+.td-page .glass-card {
+    display: grid !important;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr !important;
+    gap: 12px !important;
+    align-items: center;
+    padding: 20px 24px !important;
+}
+
+/* Stat cards — add subtle gradient left border accent */
+.td-stat-card {
+    border-left: 3px solid transparent !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.td-stat-card:nth-child(1) { border-left-color: #3b82f6 !important; }
+.td-stat-card:nth-child(2) { border-left-color: #f59e0b !important; }
+.td-stat-card:nth-child(3) { border-left-color: #10b981 !important; }
+.td-stat-card:nth-child(4) { border-left-color: #8b5cf6 !important; }
+
+/* Subtle animated shine on stat cards */
+.td-stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.td-stat-card:hover::after {
+    left: 120%;
+}
+
+/* Empty state — truly centered with illustration vibe */
+.td-page .empty-state {
+    background: rgba(255,255,255,0.02) !important;
+    border: 1px dashed rgba(255,255,255,0.10) !important;
+    border-radius: 20px !important;
+    min-height: 360px !important;
+    margin-top: 8px;
+}
+
+.td-page .empty-state p,
+.td-page .empty-state > div {
+    font-size: 1.375rem !important;
+    color: #64748b !important;
+    line-height: 1.5;
+}
+
+/* Filter tabs — tighter row with gap */
+.td-filter-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 4px 0 !important;
+}
+
+/* Active filter tab stronger */
+.td-filter-tab.active,
+.td-page button.active {
+    background: rgba(37,99,235,0.25) !important;
+    color: #93c5fd !important;
+    font-weight: 600 !important;
+    box-shadow: 0 0 16px rgba(37,99,235,0.2), inset 0 0 0 1px rgba(59,130,246,0.3) !important;
+}
+
+/* New Ticket button — more prominent */
+.td-page .btn-brand,
+.td-page button[class*="brand"] {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%) !important;
+    color: #fff !important;
+    font-size: 1.0625rem !important;
+    padding: 14px 28px !important;
+    border-radius: 14px !important;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none;
+}
+
+.td-page .btn-brand:hover,
+.td-page button[class*="brand"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(37,99,235,0.45);
+}
+
+/* Page header layout */
+.td-page .page-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .td-page .glass-card {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .td-page .glass-card {
+        grid-template-columns: 1fr !important;
+    }
+}
