@@ -1089,3 +1089,40 @@ div.empty-state {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* ═══════════════════════════════════════════
+   TICKETS — Round 5: Force white text on selects
+   ═══════════════════════════════════════════ */
+
+/* Nuclear: every select everywhere */
+select, 
+select.input,
+.glass-card select,
+.td-page select,
+select.td-filter-select,
+select.focus-ring {
+    color: #f1f5f9 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
+    background-color: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.18) !important;
+    font-size: 1rem !important;
+    opacity: 1 !important;
+}
+
+select option {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+}
+
+/* Search placeholder */
+.glass-card input::placeholder {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+    opacity: 1 !important;
+}
+
+/* Search text when typing */
+.glass-card input {
+    color: #f1f5f9 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
+}
