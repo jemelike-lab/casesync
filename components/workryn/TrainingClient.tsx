@@ -648,11 +648,15 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
 
         /* ── Welcome Banner ── */
         .tr-welcome-banner {
-          position:relative; z-index:1; margin:0 32px 28px; border-radius:var(--radius-xl);
-          overflow:hidden; min-height:200px;
+          position:relative; z-index:1; margin:0 0 0; 
+          overflow:hidden;
         }
-        .tr-banner-bg { position:absolute; inset:0; }
-        .tr-banner-img { width:100%; height:100%; object-fit:cover; }
+        .tr-banner-bg { position:relative; }
+        .tr-banner-img {
+          width:100%; display:block; object-fit:cover;
+          mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
+          -webkit-mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
+        }
         .tr-banner-gradient-bg {
           width:100%; height:100%;
           background:linear-gradient(135deg, #0c1629 0%, #1a2744 20%, #1e3a5f 45%, #0c4a6e 70%, #164e63 100%);
