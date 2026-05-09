@@ -22,6 +22,19 @@ type Enrollment = { id: string; courseId: string; status: string; enrolledAt: st
 interface Props { initialCourses: Course[]; initialEnrollments: Enrollment[]; currentUser: { id: string; role: string } }
 type FilterTab = 'ALL' | 'MINE' | 'REQUIRED' | 'COMPLETED'
 
+// ═══════════════════════════════════════════
+// TRAINING CENTER CONFIG — easy to update
+// ═══════════════════════════════════════════
+const WELCOME_CONFIG = {
+  // YouTube video ID (the part after v= in the URL). Set to null to hide.
+  youtubeVideoId: null as string | null,  // e.g. 'dQw4w9WgXcQ'
+  // Banner image URL. Set to null for gradient-only banner.
+  bannerImage: null as string | null,     // e.g. '/images/training-banner.jpg'
+  // Banner text
+  bannerTitle: 'Welcome to BLH Training',
+  bannerSubtitle: 'Your hub for professional development, compliance training, and team growth.',
+}
+
 function useCountUp(target: number, duration = 1000, delay = 200): number {
   const [val, setVal] = useState(target)
   const mounted = useRef(false)
@@ -56,6 +69,63 @@ function ProgressRing({ progress, size = 80, stroke = 6, color = '#3b82f6' }: {
         strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
         style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }} />
     </svg>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   WELCOME BANNER — full-width hero image
+   ═══════════════════════════════════════════ */
+
+function WelcomeBanner({ config }: { config: typeof WELCOME_CONFIG }) {
+  return (
+    <div className="tr-welcome-banner animate-slide-up">
+      <div className="tr-banner-bg">
+        {config.bannerImage ? (
+          <img src={config.bannerImage} alt="" className="tr-banner-img" />
+        ) : (
+          <div className="tr-banner-gradient-bg" />
+        )}
+        <div className="tr-banner-overlay" />
+      </div>
+      <div className="tr-banner-content">
+        <div className="tr-banner-icon-ring">
+          <GraduationCap size={32} />
+        </div>
+        <h2 className="tr-banner-title">{config.bannerTitle}</h2>
+        <p className="tr-banner-subtitle">{config.bannerSubtitle}</p>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   YOUTUBE WELCOME VIDEO — autoplay muted
+   ═══════════════════════════════════════════ */
+
+function YouTubeWelcome({ videoId }: { videoId: string }) {
+  return (
+    <div className="tr-youtube-section animate-slide-up" style={{ animationDelay: '150ms' }}>
+      <div className="tr-section-header" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.15)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Video size={18} />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.0625rem' }}>Welcome Video</h3>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Watch our introduction to get started</p>
+          </div>
+        </div>
+      </div>
+      <div className="tr-youtube-wrapper">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&showinfo=0`}
+          title="Welcome to BLH Training"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="tr-youtube-iframe"
+        />
+      </div>
+    </div>
   )
 }
 
@@ -435,6 +505,16 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
       <div className="tr-page" style={{ position:'relative' }}>
         <Particles/>
 
+        {/* Welcome Banner */}
+        <WelcomeBanner config={WELCOME_CONFIG} />
+
+        {/* YouTube Welcome Video */}
+        {WELCOME_CONFIG.youtubeVideoId && (
+          <div style={{ padding: '0 32px 28px', position: 'relative', zIndex: 1 }}>
+            <YouTubeWelcome videoId={WELCOME_CONFIG.youtubeVideoId} />
+          </div>
+        )}
+
         {/* Header */}
         <div className="tr-header">
           <div className="tr-header-top">
@@ -470,19 +550,6 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
 
         {/* Learning Path */}
         <LearningPath courses={courses} enrollments={enrollmentByCourse}/>
-
-        {/* Video preview below learning path if courses exist */}
-        {courses.length > 0 && (
-          <div style={{ padding:'0 32px 28px', position:'relative', zIndex:1 }}>
-            <div className="tr-section-header" style={{ marginBottom:16 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <Video size={20} color="#a78bfa"/>
-                <h3 style={{ margin:0 }}>Video Preview</h3>
-              </div>
-            </div>
-            <VideoPlayerPreview/>
-          </div>
-        )}
 
         {/* Tabs + Search */}
         <div className="tr-filter-bar">
@@ -575,6 +642,55 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
 
       <style>{`
         .tr-page { position:relative; overflow:hidden; }
+
+        /* ── Welcome Banner ── */
+        .tr-welcome-banner {
+          position:relative; z-index:1; margin:0 32px 28px; border-radius:var(--radius-xl);
+          overflow:hidden; min-height:200px;
+        }
+        .tr-banner-bg { position:absolute; inset:0; }
+        .tr-banner-img { width:100%; height:100%; object-fit:cover; }
+        .tr-banner-gradient-bg {
+          width:100%; height:100%;
+          background:linear-gradient(135deg, #0c1629 0%, #1a2744 20%, #1e3a5f 45%, #0c4a6e 70%, #164e63 100%);
+        }
+        .tr-banner-overlay {
+          position:absolute; inset:0;
+          background:linear-gradient(180deg, rgba(8,12,20,0.5) 0%, rgba(8,12,20,0.75) 100%);
+        }
+        .tr-banner-content {
+          position:relative; z-index:1; padding:48px 40px; display:flex;
+          flex-direction:column; align-items:center; text-align:center; gap:14px;
+        }
+        .tr-banner-icon-ring {
+          width:68px; height:68px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          background:rgba(37,99,235,0.2); color:var(--brand-light);
+          border:2px solid rgba(37,99,235,0.3); backdrop-filter:blur(8px);
+          animation:tr-pulse 2.5s ease-in-out infinite;
+        }
+        .tr-banner-title {
+          font-size:1.75rem; font-weight:800; color:#fff; margin:0;
+          text-shadow:0 2px 12px rgba(0,0,0,0.4);
+        }
+        .tr-banner-subtitle {
+          font-size:1rem; color:rgba(255,255,255,0.7); margin:0; max-width:500px; line-height:1.5;
+        }
+
+        /* ── YouTube Section ── */
+        .tr-youtube-section {
+          background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+          border:1px solid var(--border-subtle); border-radius:var(--radius-xl);
+          padding:20px 20px 4px; overflow:hidden;
+        }
+        .tr-youtube-wrapper {
+          position:relative; width:100%; padding-top:56.25%; /* 16:9 */
+          border-radius:var(--radius-lg); overflow:hidden;
+          box-shadow:0 4px 20px rgba(0,0,0,0.3);
+        }
+        .tr-youtube-iframe {
+          position:absolute; top:0; left:0; width:100%; height:100%;
+          border:none; border-radius:var(--radius-lg);
+        }
 
         /* ── Particles ── */
         .tr-particles { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
