@@ -654,8 +654,9 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         .tr-banner-bg { position:relative; }
         .tr-banner-img {
           width:100%; display:block; object-fit:cover;
-          mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
-          -webkit-mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
+          mask-image:linear-gradient(to bottom, transparent 0%, #000 15%, #000 65%, transparent 100%);
+          -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 15%, #000 65%, transparent 100%);
+          opacity:0.85;
         }
         .tr-banner-gradient-bg {
           width:100%; height:100%;
