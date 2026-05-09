@@ -37,7 +37,7 @@ type FilterTab = 'ALL' | 'MINE' | 'REQUIRED' | 'COMPLETED'
 // ═══════════════════════════════════════════
 const WELCOME_CONFIG = {
   // YouTube video ID (the part after v= in the URL). Set to null to hide.
-  youtubeVideoId: null as string | null,  // e.g. 'dQw4w9WgXcQ'
+  youtubeVideoId: 'yIeolU5ew28' as string | null,
   // Banner image URL. Set to null for gradient-only banner.
   bannerImage: '/images/training-banner.jpg' as string | null,
   // Banner text — not shown when bannerImage contains its own text
