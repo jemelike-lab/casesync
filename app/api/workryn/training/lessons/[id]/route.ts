@@ -26,6 +26,12 @@ export async function PATCH(
   if (body.durationSeconds !== undefined) {
     data.durationSeconds = Number.isFinite(body.durationSeconds) ? Number(body.durationSeconds) : null
   }
+  if (body.unlockDay !== undefined) {
+    data.unlockDay = Number.isFinite(body.unlockDay) ? Number(body.unlockDay) : null
+  }
+  if (body.isLocked !== undefined) {
+    data.isLocked = Boolean(body.isLocked)
+  }
 
   const lesson = await db.trainingLesson.update({ where: { id }, data })
 

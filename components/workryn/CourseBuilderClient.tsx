@@ -15,6 +15,8 @@ type Lesson = {
   videoFileName: string | null
   durationSeconds: number | null
   order: number
+  unlockDay: number | null
+  isLocked: boolean
 }
 
 type Option = {
@@ -38,6 +40,8 @@ type Quiz = {
   title: string
   description: string | null
   passThreshold: number
+  unlockDay?: number | null
+  isLocked?: boolean
   questions: Question[]
 }
 
@@ -396,6 +400,8 @@ export default function CourseBuilderClient({ currentUser: _currentUser }: Props
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: 10 }}>
                       {l.videoUrl && <span>Video: {l.videoFileName ?? 'attached'}</span>}
                       {l.content && <span>{l.content.length} chars</span>}
+                      {l.isLocked && <span style={{ color: '#f59e0b' }}>🔒 Locked</span>}
+                      {l.unlockDay != null && <span style={{ color: 'var(--brand-light)' }}>Day {l.unlockDay}</span>}
                     </div>
                   </div>
                   <button
@@ -528,6 +534,8 @@ function LessonEditor({
   const [videoUrl, setVideoUrl] = useState(lesson?.videoUrl ?? '')
   const [videoFileName, setVideoFileName] = useState(lesson?.videoFileName ?? '')
   const [order, setOrder] = useState<number>(lesson?.order ?? nextOrder)
+  const [unlockDay, setUnlockDay] = useState<number | null>(lesson?.unlockDay ?? null)
+  const [isLocked, setIsLocked] = useState(lesson?.isLocked ?? false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -561,6 +569,8 @@ function LessonEditor({
         videoUrl: videoUrl || null,
         videoFileName: videoFileName || null,
         order,
+        unlockDay: unlockDay,
+        isLocked,
       }
       const url = lesson
         ? `/api/training/lessons/${lesson.id}`
@@ -649,6 +659,22 @@ function LessonEditor({
               style={{ maxWidth: 120 }}
             />
           </div>
+          <div style={{ padding: '14px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              Access Controls
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: 140 }}>
+                <label className="label">Unlock on day</label>
+                <input className="input focus-ring" type="number" min={0} placeholder="e.g. 3" value={unlockDay ?? ''} onChange={e => setUnlockDay(e.target.value ? Number(e.target.value) : null)} />
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>Days after enrollment. Leave blank for immediate access.</div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: 'var(--text-secondary)', cursor: 'pointer', paddingBottom: 8 }}>
+                <input type="checkbox" checked={isLocked} onChange={e => setIsLocked(e.target.checked)} />
+                Manually locked
+              </label>
+            </div>
+          </div>
         </div>
         <div className="modal-footer" style={{ padding: '16px 24px 20px', borderTop: '1px solid var(--border-subtle)' }}>
           <button className="btn btn-ghost focus-ring" onClick={onClose}>Cancel</button>
@@ -675,6 +701,8 @@ function QuizEditor({
   const [title, setTitle] = useState(quiz?.title ?? '')
   const [description, setDescription] = useState(quiz?.description ?? '')
   const [passThreshold, setPassThreshold] = useState<number>(quiz?.passThreshold ?? 70)
+  const [unlockDay, setUnlockDay] = useState<number | null>(quiz?.unlockDay ?? null)
+  const [isLocked, setIsLocked] = useState(quiz?.isLocked ?? false)
   const [quizId, setQuizId] = useState<string>(quiz?.id ?? '')
   const [questions, setQuestions] = useState<Question[]>(quiz?.questions ?? [])
   const [saving, setSaving] = useState(false)
@@ -687,7 +715,7 @@ function QuizEditor({
       const res = await fetch(`/api/workryn/training/quizzes/${quizId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), description, passThreshold }),
+        body: JSON.stringify({ title: title.trim(), description, passThreshold, unlockDay, isLocked }),
       })
       if (!res.ok) { alert('Failed to save quiz'); return null }
       return quizId
@@ -696,7 +724,7 @@ function QuizEditor({
     const res = await fetch(`/api/workryn/training/courses/${courseId}/quizzes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), description, passThreshold }),
+      body: JSON.stringify({ title: title.trim(), description, passThreshold, unlockDay, isLocked }),
     })
     if (!res.ok) { alert('Failed to create quiz'); return null }
     const data = await res.json()
@@ -767,6 +795,20 @@ function QuizEditor({
               value={passThreshold}
               onChange={e => setPassThreshold(Number(e.target.value))}
             />
+          </div>
+          <div style={{ padding: '14px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)' }}>Access Controls</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: 140 }}>
+                <label className="label">Unlock on day</label>
+                <input className="input focus-ring" type="number" min={0} placeholder="e.g. 5" value={unlockDay ?? ''} onChange={e => setUnlockDay(e.target.value ? Number(e.target.value) : null)} />
+                <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 4 }}>Days after enrollment. Leave blank for immediate.</div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: 'var(--text-secondary)', cursor: 'pointer', paddingBottom: 8 }}>
+                <input type="checkbox" checked={isLocked} onChange={e => setIsLocked(e.target.checked)} />
+                Manually locked
+              </label>
+            </div>
           </div>
 
           <div>

@@ -75,6 +75,12 @@ export async function PATCH(
     if (pt > 100) pt = 100
     data.passThreshold = pt
   }
+  if (body.unlockDay !== undefined) {
+    data.unlockDay = Number.isFinite(body.unlockDay) ? Number(body.unlockDay) : null
+  }
+  if (body.isLocked !== undefined) {
+    data.isLocked = Boolean(body.isLocked)
+  }
 
   const quiz = await db.trainingQuiz.update({ where: { id }, data })
 

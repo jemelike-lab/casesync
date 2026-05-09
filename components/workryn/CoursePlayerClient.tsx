@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ChevronLeft, CheckCircle2, Circle, Pencil, Plus, Trash2, X, Loader2,
-  PlayCircle, HelpCircle, Star, Clock, Award, Settings, Upload,
+  PlayCircle, HelpCircle, Star, Clock, Award, Settings, Upload, Lock,
 } from 'lucide-react'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
 
@@ -15,6 +15,8 @@ type Lesson = {
   videoFileName: string | null
   durationSeconds: number | null
   order: number
+  unlockDay: number | null
+  isLocked: boolean
   progress: { id: string; completed: boolean; watchedSeconds: number }[]
 }
 
@@ -23,6 +25,8 @@ type QuizSummary = {
   title: string
   description: string | null
   passThreshold: number
+  unlockDay: number | null
+  isLocked: boolean
   _count: { questions: number }
 }
 
@@ -34,6 +38,8 @@ type Course = {
   isRequired: boolean
   isPublished: boolean
   passThreshold: number
+  channel: string | null
+  scoresVisibility: string
   lessons: Lesson[]
   quizzes: QuizSummary[]
   createdBy: { id: string; name: string | null; avatarColor: string }
@@ -52,6 +58,7 @@ type Enrollment = {
   id: string
   status: string
   completedAt: string | null
+  enrolledAt?: string
 } | null
 
 interface Props {
@@ -85,6 +92,25 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
   const lastSentAtRef = useRef<number>(0)
 
   const isManager = isManagerOrAbove(currentUser.role)
+  const canSeeScores = isManager || course.scoresVisibility !== 'TRAINERS_ONLY'
+
+  // Lock logic: check if a lesson/quiz is accessible
+  function isContentLocked(item: { unlockDay: number | null; isLocked: boolean }): boolean {
+    if (isManager) return false // managers always have access
+    if (item.isLocked) return true // manually locked by trainer
+    if (item.unlockDay != null && enrollment) {
+      const enrolledDate = new Date(enrollment.enrolledAt ?? Date.now())
+      const daysSinceEnroll = Math.floor((Date.now() - enrolledDate.getTime()) / (1000 * 60 * 60 * 24))
+      return daysSinceEnroll < item.unlockDay
+    }
+    return false
+  }
+
+  function getUnlockLabel(item: { unlockDay: number | null; isLocked: boolean }): string {
+    if (item.isLocked) return 'Locked by trainer'
+    if (item.unlockDay != null) return `Unlocks on day ${item.unlockDay}`
+    return ''
+  }
 
   const activeLesson = useMemo(
     () => course.lessons.find(l => l.id === activeLessonId) ?? null,
@@ -402,18 +428,22 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
               course.lessons.map((l, i) => {
                 const isCompleted = completedSet.has(l.id)
                 const isActive = l.id === activeLessonId
+                const locked = isContentLocked(l)
                 return (
                   <div
                     key={l.id}
-                    className={`lesson-item ${isActive ? 'active' : ''}`}
-                    onClick={() => setActiveLessonId(l.id)}
+                    className={`lesson-item ${isActive ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                    onClick={() => !locked && setActiveLessonId(l.id)}
+                    style={locked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    title={locked ? getUnlockLabel(l) : undefined}
                   >
-                    <span style={{ flexShrink: 0, color: isCompleted ? '#10b981' : 'var(--text-muted)' }}>
-                      {isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                    <span style={{ flexShrink: 0, color: locked ? '#f59e0b' : isCompleted ? '#10b981' : 'var(--text-muted)' }}>
+                      {locked ? <Lock size={16} /> : isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                     </span>
                     <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {i + 1}. {l.title}
                     </span>
+                    {locked && <span style={{ fontSize: '0.6rem', color: '#f59e0b', flexShrink: 0 }}>🔒</span>}
                     {isManager && (
                       <>
                         <button
@@ -455,12 +485,22 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
           {/* Main content */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
             {activeLesson ? (
-              <LessonView
-                lesson={activeLesson}
-                videoRef={videoRef}
-                onMarkComplete={(s) => handleMarkComplete(activeLesson.id, s)}
-                completed={completedSet.has(activeLesson.id)}
-              />
+              isContentLocked(activeLesson) ? (
+                <div className="glass-card" style={{ padding: '48px 32px', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                  <Lock size={48} color="#f59e0b" style={{ marginBottom: 16 }} />
+                  <h3 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Lesson Locked</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', maxWidth: 400, margin: '0 auto' }}>
+                    {getUnlockLabel(activeLesson)}. Complete earlier lessons or check back later.
+                  </p>
+                </div>
+              ) : (
+                <LessonView
+                  lesson={activeLesson}
+                  videoRef={videoRef}
+                  onMarkComplete={(s) => handleMarkComplete(activeLesson.id, s)}
+                  completed={completedSet.has(activeLesson.id)}
+                />
+              )
             ) : (
               <div className="empty-state">
                 <PlayCircle size={40} />
@@ -492,6 +532,7 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {course.quizzes.map(q => {
                     const last = lastAttemptByQuiz.get(q.id)
+                    const qLocked = isContentLocked(q)
                     return (
                       <div
                         key={q.id}
@@ -503,10 +544,12 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
                           alignItems: 'center',
                           gap: 14,
                           flexWrap: 'wrap',
+                          opacity: qLocked ? 0.5 : 1,
                         }}
                       >
                         <div style={{ flex: 1, minWidth: 200 }}>
-                          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {qLocked && <Lock size={14} color="#f59e0b" />}
                             {q.title}
                           </div>
                           {q.description && (
@@ -514,9 +557,10 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
                           )}
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
                             {q._count.questions} questions · Pass {q.passThreshold}%
+                            {qLocked && <span style={{ color: '#f59e0b', marginLeft: 8 }}> · {getUnlockLabel(q)}</span>}
                           </div>
                         </div>
-                        {last && (
+                        {last && canSeeScores && (
                           <span
                             style={{
                               padding: '4px 10px',
@@ -530,13 +574,19 @@ export default function CoursePlayerClient({ course: initialCourse, attempts: in
                             {last.passed ? 'Passed' : 'Failed'} · {last.score}%
                           </span>
                         )}
+                        {last && !canSeeScores && (
+                          <span style={{ padding: '4px 10px', borderRadius: 99, fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                            Submitted
+                          </span>
+                        )}
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button
                             className="btn btn-gradient focus-ring"
                             onClick={() => setTakingQuiz(q.id)}
-                            disabled={q._count.questions === 0}
+                            disabled={q._count.questions === 0 || qLocked}
+                            title={qLocked ? getUnlockLabel(q) : undefined}
                           >
-                            {last ? 'Retake' : 'Start Quiz'}
+                            {qLocked ? 'Locked' : last ? 'Retake' : 'Start Quiz'}
                           </button>
                           {isManager && (
                             <button

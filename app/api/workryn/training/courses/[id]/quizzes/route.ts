@@ -35,6 +35,8 @@ export async function POST(
       description,
       passThreshold,
       courseId,
+      unlockDay: Number.isFinite(body.unlockDay) ? Number(body.unlockDay) : null,
+      isLocked: Boolean(body.isLocked),
     },
     include: { _count: { select: { questions: true } } },
   })

@@ -68,7 +68,7 @@ export default async function CoursePage({
 
   const enrollment = await db.trainingEnrollment.findUnique({
     where: { courseId_userId: { courseId: id, userId: session.user.id } },
-    select: { id: true, status: true, completedAt: true },
+    select: { id: true, status: true, completedAt: true, enrolledAt: true },
   })
 
   return (

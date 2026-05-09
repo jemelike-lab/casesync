@@ -83,6 +83,8 @@ export async function POST(
       durationSeconds,
       order,
       courseId,
+      unlockDay: Number.isFinite(body.unlockDay) ? Number(body.unlockDay) : null,
+      isLocked: Boolean(body.isLocked),
     },
   })
 
