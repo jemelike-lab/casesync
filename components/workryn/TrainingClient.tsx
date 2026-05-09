@@ -1066,10 +1066,10 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         .tr-youtube-section {
           background:var(--glass-bg); backdrop-filter:var(--glass-blur);
           border:1px solid var(--border-subtle); border-radius:var(--radius-xl);
-          padding:20px 20px 4px; overflow:hidden;
+          padding:16px 16px 16px; overflow:hidden; max-width:720px; margin:0 auto;
         }
         .tr-youtube-wrapper {
-          position:relative; width:100%; height:0; padding-bottom:min(56.25%, 380px);
+          position:relative; width:100%; padding-top:56.25%;
           border-radius:var(--radius-lg); overflow:hidden;
           box-shadow:0 4px 20px rgba(0,0,0,0.3);
         }

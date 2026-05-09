@@ -31,7 +31,8 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.resend.com https://graph.microsoft.com https://*.ingest.us.sentry.io",
-      "frame-ancestors 'none'",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+            "frame-ancestors 'none'",
       // Block mixed content
       "upgrade-insecure-requests",
     ].join('; '),
