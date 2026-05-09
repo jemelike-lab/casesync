@@ -835,13 +835,6 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         {/* Welcome Banner */}
         <WelcomeBanner config={WELCOME_CONFIG} />
 
-        {/* YouTube Welcome Video */}
-        {WELCOME_CONFIG.youtubeVideoId && (
-          <div style={{ padding: '0 32px 28px', position: 'relative', zIndex: 1 }}>
-            <YouTubeWelcome videoId={WELCOME_CONFIG.youtubeVideoId} />
-          </div>
-        )}
-
         {/* Header */}
         <div className="tr-header">
           <div className="tr-header-top">
@@ -884,7 +877,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         {/* Showcase: hero + quiz side-by-side */}
         <div className="tr-showcase">
           <div className="tr-showcase-main">
-            {courses.length > 0 ? <FeaturedHero courses={courses} enrollments={enrollmentByCourse}/> : <VideoPlayerPreview/>}
+            {WELCOME_CONFIG.youtubeVideoId ? <YouTubeWelcome videoId={WELCOME_CONFIG.youtubeVideoId} /> : courses.length > 0 ? <FeaturedHero courses={courses} enrollments={enrollmentByCourse}/> : <VideoPlayerPreview/>}
           </div>
           <div className="tr-showcase-side">
             <QuizPreviewWidget/>
@@ -1066,7 +1059,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         .tr-youtube-section {
           background:var(--glass-bg); backdrop-filter:var(--glass-blur);
           border:1px solid var(--border-subtle); border-radius:var(--radius-xl);
-          padding:16px 16px 16px; overflow:hidden; max-width:720px; margin:0 auto;
+          padding:16px 16px 16px; overflow:hidden; 
         }
         .tr-youtube-wrapper {
           position:relative; width:100%; padding-top:56.25%;
