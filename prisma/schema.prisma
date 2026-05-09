@@ -285,8 +285,8 @@ model TrainingCourse {
   isRequired    Boolean  @default(false)
   isPublished   Boolean  @default(false)
   passThreshold Int      @default(70)
-  channel       String?
-  scoresVisibility String @default("ALL")
+  channel       String?          @map("channel")
+  scoresVisibility String @default("ALL") @map("scores_visibility")
 
   createdById   String
   createdBy     User     @relation("CreatedCourses", fields: [createdById], references: [id])
@@ -310,8 +310,8 @@ model TrainingLesson {
   videoFileName String?
   durationSeconds Int?
   order         Int      @default(0)
-  unlockDay     Int?
-  isLocked      Boolean  @default(false)
+  unlockDay     Int?     @map("unlock_day")
+  isLocked      Boolean  @default(false) @map("is_locked")
 
   courseId      String
   course        TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -349,8 +349,8 @@ model TrainingQuiz {
   title         String
   description   String?
   passThreshold Int      @default(70)
-  unlockDay     Int?
-  isLocked      Boolean  @default(false)
+  unlockDay     Int?     @map("unlock_day")
+  isLocked      Boolean  @default(false) @map("is_locked")
 
   courseId      String
   course        TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
