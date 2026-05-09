@@ -744,6 +744,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
   const router = useRouter()
   const [courses, setCourses] = useState<Course[]>(initialCourses)
   const [enrollments] = useState<Enrollment[]>(initialEnrollments)
+  const [channel, setChannel] = useState<'ALL'|'NEW_HIRE'|'REFRESHER'>('ALL')
   const [tab, setTab] = useState<FilterTab>('ALL')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -752,6 +753,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     title:'', description:'', category:'', isRequired:false, passThreshold:70, isPublished:false,
+    channel: null as string | null, scoresVisibility: 'ALL',
   })
   const canCreate = isManagerOrAbove(currentUser.role)
 
@@ -761,16 +763,24 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
     return map
   }, [enrollments])
 
+  // Channel-filtered courses
+  const channelCourses = useMemo(() => {
+    if (channel === 'ALL') return courses
+    return courses.filter(c => (c as any).channel === channel)
+  }, [courses, channel])
+
   const stats = useMemo(() => {
-    const total = courses.filter(c => c.isPublished).length
-    const required = courses.filter(c => c.isRequired).length
-    const inProgress = enrollments.filter(e => e.status === 'IN_PROGRESS').length
-    const completed = enrollments.filter(e => e.status === 'COMPLETED').length
+    const src = channelCourses
+    const total = src.filter(c => c.isPublished).length
+    const required = src.filter(c => c.isRequired).length
+    const enrolled = enrollments.filter(e => channelCourses.some(c => c.id === e.courseId))
+    const inProgress = enrolled.filter(e => e.status === 'IN_PROGRESS').length
+    const completed = enrolled.filter(e => e.status === 'COMPLETED').length
     return { total, required, inProgress, completed }
-  }, [courses, enrollments])
+  }, [channelCourses, enrollments])
 
   const filtered = useMemo(() => {
-    return courses.filter(c => {
+    return channelCourses.filter(c => {
       if (search) {
         const q = search.toLowerCase()
         if (!c.title.toLowerCase().includes(q) && !(c.description??'').toLowerCase().includes(q) && !(c.category??'').toLowerCase().includes(q)) return false
@@ -783,27 +793,36 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         default: return true
       }
     })
-  }, [courses, tab, search, enrollmentByCourse])
+  }, [channelCourses, tab, search, enrollmentByCourse])
 
   async function handleCreate() {
     if (!form.title.trim()) return
     setSaving(true)
     try {
+      const payload = {
+        ...form,
+        channel: form.channel || null,
+        scoresVisibility: form.scoresVisibility,
+      }
       const res = await fetch('/api/workryn/training/courses', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form),
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
       })
       if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.error || 'Failed'); return }
       const created = await res.json()
       setCourses(prev => [created, ...prev])
       setShowCreate(false)
-      setForm({ title:'', description:'', category:'', isRequired:false, passThreshold:70, isPublished:false })
+      setForm({ title:'', description:'', category:'', isRequired:false, passThreshold:70, isPublished:false, channel:null, scoresVisibility:'ALL' })
       router.push(`/w/training/builder?courseId=${created.id}`)
     } finally { setSaving(false) }
   }
 
+  // Channel counts
+  const newHireCount = courses.filter(c => (c as any).channel === 'NEW_HIRE').length
+  const refresherCount = courses.filter(c => (c as any).channel === 'REFRESHER').length
+
   const tabConfig: { id: FilterTab; label: string; icon: typeof BookOpen; count: number }[] = [
-    { id:'ALL', label:'All Courses', icon:BookOpen, count:courses.length },
-    { id:'MINE', label:'My Courses', icon:BookMarked, count:enrollments.length },
+    { id:'ALL', label:'All Courses', icon:BookOpen, count:channelCourses.length },
+    { id:'MINE', label:'My Courses', icon:BookMarked, count:enrollments.filter(e => channelCourses.some(c => c.id === e.courseId)).length },
     { id:'REQUIRED', label:'Required', icon:Shield, count:stats.required },
     { id:'COMPLETED', label:'Completed', icon:Trophy, count:stats.completed },
   ]
@@ -832,6 +851,25 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
                 <Plus size={18}/> Create Course
               </button>
             )}
+          </div>
+
+          {/* Channel Selector */}
+          <div className="tr-channel-bar">
+            <button className={`tr-channel-btn focus-ring ${channel === 'ALL' ? 'active all' : ''}`}
+              onClick={() => setChannel('ALL')} type="button">
+              <BookOpen size={18}/> All Training
+              <span className="tr-channel-count">{courses.length}</span>
+            </button>
+            <button className={`tr-channel-btn focus-ring ${channel === 'NEW_HIRE' ? 'active new-hire' : ''}`}
+              onClick={() => setChannel('NEW_HIRE')} type="button">
+              <GraduationCap size={18}/> New Hire Training
+              <span className="tr-channel-count">{newHireCount}</span>
+            </button>
+            <button className={`tr-channel-btn focus-ring ${channel === 'REFRESHER' ? 'active refresher' : ''}`}
+              onClick={() => setChannel('REFRESHER')} type="button">
+              <TrendingUp size={18}/> Refresher Training
+              <span className="tr-channel-count">{refresherCount}</span>
+            </button>
           </div>
 
           {/* Stats */}
@@ -923,6 +961,23 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
                 <div className="form-group" style={{ flex:1, minWidth:160 }}>
                   <label className="label">Pass threshold (%)</label>
                   <input className="input focus-ring" type="number" min={0} max={100} value={form.passThreshold} onChange={e => setForm(f => ({...f, passThreshold:Number(e.target.value)||70}))}/>
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                <div className="form-group" style={{ flex:1, minWidth:160 }}>
+                  <label className="label">Channel</label>
+                  <select className="input focus-ring" value={form.channel ?? ''} onChange={e => setForm(f => ({...f, channel:e.target.value || null}))}>
+                    <option value="">General (no channel)</option>
+                    <option value="NEW_HIRE">New Hire Training</option>
+                    <option value="REFRESHER">Refresher Training</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ flex:1, minWidth:160 }}>
+                  <label className="label">Score Visibility</label>
+                  <select className="input focus-ring" value={form.scoresVisibility} onChange={e => setForm(f => ({...f, scoresVisibility:e.target.value}))}>
+                    <option value="ALL">Everyone sees their scores</option>
+                    <option value="TRAINERS_ONLY">Trainers only</option>
+                  </select>
                 </div>
               </div>
               <div style={{ display:'flex', gap:20 }}>
@@ -1376,6 +1431,38 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
           padding-top:10px;
         }
         .tr-course-admin-bar .btn { font-size:0.75rem; padding:5px 10px; }
+
+        /* ── Channel Bar ── */
+        .tr-channel-bar {
+          display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap;
+        }
+        .tr-channel-btn {
+          display:flex; align-items:center; gap:9px; padding:14px 24px;
+          border-radius:var(--radius-lg); font-size:0.9375rem; font-weight:600;
+          color:var(--text-muted); background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+          border:1px solid var(--border-subtle); cursor:pointer;
+          transition:all var(--transition-smooth); flex:1; min-width:180px;
+          justify-content:center;
+        }
+        .tr-channel-btn:hover { border-color:var(--border-default); color:var(--text-primary); background:var(--bg-hover); }
+        .tr-channel-btn.active.all {
+          border-color:var(--brand); color:var(--text-primary);
+          background:rgba(37,99,235,0.1); box-shadow:0 0 20px rgba(37,99,235,0.12);
+        }
+        .tr-channel-btn.active.new-hire {
+          border-color:#0d9488; color:#5eead4;
+          background:rgba(13,148,136,0.12); box-shadow:0 0 20px rgba(13,148,136,0.15);
+        }
+        .tr-channel-btn.active.refresher {
+          border-color:#d97706; color:#fbbf24;
+          background:rgba(217,119,6,0.12); box-shadow:0 0 20px rgba(217,119,6,0.15);
+        }
+        .tr-channel-count {
+          min-width:24px; height:24px; padding:0 8px; border-radius:99px;
+          background:rgba(255,255,255,0.08); font-size:0.75rem; font-weight:800;
+          display:inline-flex; align-items:center; justify-content:center;
+        }
+        .tr-channel-btn.active .tr-channel-count { background:rgba(255,255,255,0.15); }
       `}</style>
     </>
   )

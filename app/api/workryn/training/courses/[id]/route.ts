@@ -77,6 +77,12 @@ export async function PATCH(
     if (pt > 100) pt = 100
     data.passThreshold = pt
   }
+  if (body.channel !== undefined) {
+    data.channel = ['NEW_HIRE', 'REFRESHER'].includes(body.channel) ? body.channel : null
+  }
+  if (body.scoresVisibility !== undefined) {
+    data.scoresVisibility = body.scoresVisibility === 'TRAINERS_ONLY' ? 'TRAINERS_ONLY' : 'ALL'
+  }
 
   const course = await db.trainingCourse.update({
     where: { id },

@@ -60,6 +60,8 @@ export async function POST(req: NextRequest) {
   const category = body.category ? String(body.category).trim() : null
   const isRequired = Boolean(body.isRequired)
   const isPublished = Boolean(body.isPublished)
+  const channel = ['NEW_HIRE', 'REFRESHER'].includes(body.channel) ? body.channel : null
+  const scoresVisibility = body.scoresVisibility === 'TRAINERS_ONLY' ? 'TRAINERS_ONLY' : 'ALL'
   let passThreshold = Number.isFinite(body.passThreshold) ? Number(body.passThreshold) : 70
   if (passThreshold < 0) passThreshold = 0
   if (passThreshold > 100) passThreshold = 100
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
       isRequired,
       isPublished,
       passThreshold,
+      channel,
+      scoresVisibility,
       createdById: session.user.id,
     },
     include: {
