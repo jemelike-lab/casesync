@@ -246,7 +246,7 @@ function StatCard({ icon: Icon, label, value, color, delay = 0 }: {
   return (
     <div className="eval-stat-card animate-slide-up" style={{ animationDelay: `${delay}ms` }}>
       <div className="eval-stat-icon" style={{ background: `${color}18`, color }}>
-        <Icon size={20} />
+        <Icon size={22} />
       </div>
       <div>
         <div className="eval-stat-value">{numVal}</div>
@@ -503,56 +503,67 @@ export default function EvaluationsClient({
         /* ── Stats Row ── */
         .eval-stats-row {
           display: grid; grid-template-columns: repeat(4, 1fr);
-          gap: 14px; margin-bottom: 24px;
+          gap: 16px; margin-bottom: 28px;
         }
-        @media (max-width: 900px) { .eval-stats-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1000px) { .eval-stats-row { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 540px) { .eval-stats-row { grid-template-columns: 1fr; } }
         .eval-stat-card {
-          display: flex; align-items: center; gap: 14px;
-          padding: 16px 18px;
+          display: flex; flex-direction: column; gap: 16px;
+          padding: 24px 24px 22px;
           background: var(--glass-bg);
           backdrop-filter: var(--glass-blur);
           border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-lg);
           transition: all var(--transition-smooth);
+          min-height: 130px;
         }
         .eval-stat-card:hover {
           border-color: var(--border-default);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 28px rgba(0,0,0,0.25);
         }
         .eval-stat-icon {
-          width: 42px; height: 42px; border-radius: var(--radius-md);
+          width: 48px; height: 48px; border-radius: var(--radius-md);
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .eval-stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
-        .eval-stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        .eval-stat-value {
+          font-size: 2rem; font-weight: 800; color: var(--text-primary);
+          line-height: 1; letter-spacing: -0.02em;
+        }
+        .eval-stat-label {
+          font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; margin-top: 4px;
+        }
 
         /* ── Tab Bar ── */
         .eval-tab-bar {
-          display: flex; gap: 6px; flex-wrap: wrap;
-          padding-bottom: 20px; border-bottom: 1px solid var(--border-subtle);
+          display: flex; gap: 8px; flex-wrap: wrap;
+          padding-bottom: 22px; border-bottom: 1px solid var(--border-subtle);
         }
         .eval-tab {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 8px 16px; border-radius: 99px;
-          font-size: 0.8125rem; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 10px 20px; border-radius: 99px;
+          font-size: 0.9375rem; font-weight: 500;
           color: var(--text-muted); background: var(--bg-elevated);
           border: 1px solid var(--border-subtle);
           cursor: pointer; transition: all var(--transition-smooth);
         }
-        .eval-tab:hover { color: var(--text-primary); border-color: var(--border-default); background: var(--bg-hover); }
+        .eval-tab:hover {
+          color: var(--text-primary); border-color: var(--border-default);
+          background: var(--bg-hover);
+        }
         .eval-tab.active {
           color: var(--text-primary); border-color: var(--brand);
           background: rgba(37,99,235,0.12);
           box-shadow: 0 0 16px rgba(37,99,235,0.15);
         }
         .eval-tab-count {
-          min-width: 20px; height: 20px; padding: 0 7px; border-radius: 99px;
-          background: var(--bg-overlay); font-size: 0.6875rem; font-weight: 700;
+          min-width: 22px; height: 22px; padding: 0 8px; border-radius: 99px;
+          background: var(--bg-overlay); font-size: 0.75rem; font-weight: 700;
           display: inline-flex; align-items: center; justify-content: center;
         }
-        .eval-tab.active .eval-tab-count { background: rgba(37,99,235,0.22); color: var(--brand-light); }
+        .eval-tab.active .eval-tab-count {
+          background: rgba(37,99,235,0.22); color: var(--brand-light);
+        }
 
         /* ── Card Grid ── */
         .eval-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
