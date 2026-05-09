@@ -134,7 +134,7 @@ function YouTubeWelcome({ videoId }: { videoId: string }) {
       </div>
       <div className="tr-youtube-wrapper">
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0autoplay=1&mute=1&rel=0&modestbranding=1modestbranding=1`}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
           title="Welcome to BLH Training"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
