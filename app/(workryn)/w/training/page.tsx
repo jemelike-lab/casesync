@@ -16,7 +16,7 @@ export default async function TrainingPage() {
 
   const where = isManager ? {} : { isPublished: true }
 
-  const [courses, enrollments] = await Promise.all([
+  const [courses, enrollments, users, departments] = await Promise.all([
     db.trainingCourse.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -35,6 +35,21 @@ export default async function TrainingPage() {
         completedAt: true,
       },
     }),
+    // Only fetch users for managers (for assign modal)
+    isManager
+      ? db.user.findMany({
+          where: { role: 'STAFF' },
+          select: { id: true, name: true, email: true, avatarColor: true, departmentId: true, jobTitle: true },
+          orderBy: { name: 'asc' },
+        })
+      : [],
+    // Departments for bulk assign
+    isManager
+      ? db.department.findMany({
+          select: { id: true, name: true, color: true, _count: { select: { users: true } } },
+          orderBy: { name: 'asc' },
+        })
+      : [],
   ])
 
   return (
@@ -42,6 +57,8 @@ export default async function TrainingPage() {
       initialCourses={JSON.parse(JSON.stringify(courses))}
       initialEnrollments={JSON.parse(JSON.stringify(enrollments))}
       currentUser={{ id: session.user.id, role }}
+      users={JSON.parse(JSON.stringify(users))}
+      departments={JSON.parse(JSON.stringify(departments))}
     />
   )
 }

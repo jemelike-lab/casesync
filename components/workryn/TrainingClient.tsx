@@ -7,7 +7,7 @@ import {
   PlayCircle, HelpCircle, Users, ChevronRight, Sparkles, Award, TrendingUp,
   BarChart3, GraduationCap, Video, FileText, Zap, Target, Play, Pause,
   Volume2, VolumeX, Maximize, SkipForward, Trophy, Brain, Shield, Heart,
-  ArrowRight, Eye, Lock, Flame, BookMarked, Monitor,
+  ArrowRight, Eye, Lock, Flame, BookMarked, Monitor, Bell,
 } from 'lucide-react'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
 import { getInitials } from '@/lib/workryn/utils'
@@ -19,7 +19,17 @@ type Course = {
   _count: { lessons: number; quizzes: number; enrollments: number }
 }
 type Enrollment = { id: string; courseId: string; status: string; enrolledAt: string; completedAt: string | null }
-interface Props { initialCourses: Course[]; initialEnrollments: Enrollment[]; currentUser: { id: string; role: string } }
+type StaffUser = { id: string; name: string | null; email: string | null; avatarColor: string; departmentId: string | null; jobTitle: string | null }
+type Dept = { id: string; name: string; color: string; _count: { users: number } }
+type ReportEntry = {
+  enrollmentId: string; status: string; enrolledAt: string; completedAt: string | null
+  user: { id: string; name: string | null; email: string | null; avatarColor: string; role: string; jobTitle: string | null; department: { name: string } | null }
+  lessonsCompleted: number; totalLessons: number
+}
+interface Props {
+  initialCourses: Course[]; initialEnrollments: Enrollment[]; currentUser: { id: string; role: string }
+  users?: StaffUser[]; departments?: Dept[]
+}
 type FilterTab = 'ALL' | 'MINE' | 'REQUIRED' | 'COMPLETED'
 
 // ═══════════════════════════════════════════
@@ -397,14 +407,15 @@ function LearningPath({ courses, enrollments }: { courses: Course[]; enrollments
    COURSE CARD — rich thumbnail + progress
    ═══════════════════════════════════════════ */
 
-function CourseCard({ course, enrollment, index }: {
+function CourseCard({ course, enrollment, index, isManager, onAssign, onTrack }: {
   course: Course; enrollment: Enrollment | undefined; index: number
+  isManager?: boolean; onAssign?: () => void; onTrack?: () => void
 }) {
   const isCompleted = enrollment?.status === 'COMPLETED'
   const isInProgress = enrollment?.status === 'IN_PROGRESS'
   return (
-    <Link href={`/w/training/courses/${course.id}`} style={{ textDecoration:'none' }}>
-      <div className={`tr-course-card animate-slide-up`} style={{ animationDelay:`${index*60}ms` }}>
+    <div className={`tr-course-card animate-slide-up`} style={{ animationDelay:`${index*60}ms` }}>
+      <Link href={`/w/training/courses/${course.id}`} style={{ textDecoration:'none', display:'contents' }}>
         <div className="tr-course-thumb">
           {course.thumbnail
             ? <img src={course.thumbnail} alt="" style={{ width:'100%',height:'100%',objectFit:'cover' }}/>
@@ -431,8 +442,18 @@ function CourseCard({ course, enrollment, index }: {
             <span className="tr-course-arrow"><ArrowRight size={14}/></span>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      {isManager && (
+        <div className="tr-course-admin-bar">
+          <button className="btn btn-ghost btn-sm focus-ring" onClick={e => { e.preventDefault(); onAssign?.() }} type="button">
+            <Users size={13}/> Assign
+          </button>
+          <button className="btn btn-ghost btn-sm focus-ring" onClick={e => { e.preventDefault(); onTrack?.() }} type="button">
+            <BarChart3 size={13}/> Track
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -440,13 +461,294 @@ function CourseCard({ course, enrollment, index }: {
    MAIN COMPONENT
    ═══════════════════════════════════════════ */
 
-export default function TrainingClient({ initialCourses, initialEnrollments, currentUser }: Props) {
+/* ═══════════════════════════════════════════
+   ASSIGN TRAINING MODAL
+   ═══════════════════════════════════════════ */
+
+function AssignModal({ course, users, departments, onClose, onAssigned }: {
+  course: Course; users: StaffUser[]; departments: Dept[]; onClose: () => void; onAssigned: () => void
+}) {
+  const [mode, setMode] = useState<'users'|'departments'>('users')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [selectedDepts, setSelectedDepts] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [result, setResult] = useState<{ assigned: number; alreadyEnrolled: number } | null>(null)
+
+  const filteredUsers = useMemo(() => {
+    if (!search) return users
+    const q = search.toLowerCase()
+    return users.filter(u => (u.name ?? '').toLowerCase().includes(q) || (u.email ?? '').toLowerCase().includes(q))
+  }, [users, search])
+
+  function toggleUser(id: string) {
+    setSelectedUsers(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  }
+  function toggleDept(id: string) {
+    setSelectedDepts(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  }
+  function selectAll() {
+    setSelectedUsers(new Set(filteredUsers.map(u => u.id)))
+  }
+
+  async function handleAssign() {
+    const payload: { userIds?: string[]; departmentIds?: string[] } = {}
+    if (mode === 'users' && selectedUsers.size > 0) payload.userIds = [...selectedUsers]
+    if (mode === 'departments' && selectedDepts.size > 0) payload.departmentIds = [...selectedDepts]
+    if (!payload.userIds?.length && !payload.departmentIds?.length) return
+
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/workryn/training/courses/${course.id}/assign`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      })
+      if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.error || 'Failed'); return }
+      const data = await res.json()
+      setResult(data)
+      onAssigned()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
+        <div style={{ height: 3, background: 'var(--brand-gradient)', borderRadius: '24px 24px 0 0' }} />
+        <div className="modal-header" style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Users size={18} color="var(--brand-light)" /> Assign Training</h3>
+          <button className="btn btn-icon btn-ghost focus-ring" onClick={onClose} type="button"><X size={18} /></button>
+        </div>
+        <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ padding: '12px 16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Assigning to</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>{course.title}</div>
+          </div>
+
+          {result ? (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <CheckCircle2 size={40} color="#10b981" style={{ marginBottom: 12 }} />
+              <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
+                {result.assigned} user{result.assigned !== 1 ? 's' : ''} assigned
+              </div>
+              {result.alreadyEnrolled > 0 && (
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  {result.alreadyEnrolled} already enrolled (skipped)
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Mode toggle */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className={`tr-tab focus-ring ${mode === 'users' ? 'active' : ''}`} onClick={() => setMode('users')} type="button" style={{ flex: 1 }}>
+                  <Users size={14} /> Individual Users
+                </button>
+                <button className={`tr-tab focus-ring ${mode === 'departments' ? 'active' : ''}`} onClick={() => setMode('departments')} type="button" style={{ flex: 1 }}>
+                  <Target size={14} /> By Department
+                </button>
+              </div>
+
+              {mode === 'users' ? (
+                <>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div className="tr-search-wrap" style={{ flex: 1 }}>
+                      <Search size={14} className="tr-search-icon" />
+                      <input className="tr-search-input focus-ring" placeholder="Search staff..." value={search} onChange={e => setSearch(e.target.value)} style={{ height: 38 }} />
+                    </div>
+                    <button className="btn btn-ghost btn-sm focus-ring" onClick={selectAll} type="button">Select all</button>
+                  </div>
+                  <div className="tr-assign-list">
+                    {filteredUsers.map(u => (
+                      <label key={u.id} className={`tr-assign-item ${selectedUsers.has(u.id) ? 'selected' : ''}`}>
+                        <input type="checkbox" checked={selectedUsers.has(u.id)} onChange={() => toggleUser(u.id)} />
+                        <div className="avatar" style={{ width: 32, height: 32, background: u.avatarColor, fontSize: '0.6875rem' }}>
+                          {getInitials(u.name || '?')}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{u.name || 'Unnamed'}</div>
+                          {u.jobTitle && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.jobTitle}</div>}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{selectedUsers.size} selected</div>
+                </>
+              ) : (
+                <div className="tr-assign-list">
+                  {departments.map(d => (
+                    <label key={d.id} className={`tr-assign-item ${selectedDepts.has(d.id) ? 'selected' : ''}`}>
+                      <input type="checkbox" checked={selectedDepts.has(d.id)} onChange={() => toggleDept(d.id)} />
+                      <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)', background: `${d.color}22`, color: d.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={16} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{d._count.users} member{d._count.users !== 1 ? 's' : ''}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <div className="modal-footer" style={{ padding: '16px 24px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+          <button className="btn btn-ghost focus-ring" onClick={onClose} type="button">{result ? 'Close' : 'Cancel'}</button>
+          {!result && (
+            <button className="btn btn-gradient focus-ring" onClick={handleAssign}
+              disabled={saving || (mode === 'users' ? selectedUsers.size === 0 : selectedDepts.size === 0)} type="button">
+              {saving ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
+              Assign {mode === 'users' ? `${selectedUsers.size} User${selectedUsers.size !== 1 ? 's' : ''}` : `${selectedDepts.size} Dept${selectedDepts.size !== 1 ? 's' : ''}`}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   COMPLETION TRACKER MODAL
+   ═══════════════════════════════════════════ */
+
+function CompletionTracker({ course, onClose }: { course: Course; onClose: () => void }) {
+  const [report, setReport] = useState<{ course: { totalLessons: number }; enrollments: ReportEntry[] } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [reminding, setReminding] = useState(false)
+  const [reminded, setReminded] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/workryn/training/courses/${course.id}/report`)
+      .then(r => r.json())
+      .then(data => { setReport(data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [course.id])
+
+  async function handleRemindAll() {
+    setReminding(true)
+    try {
+      await fetch(`/api/workryn/training/courses/${course.id}/remind`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      })
+      setReminded(true)
+      setTimeout(() => setReminded(false), 3000)
+    } finally { setReminding(false) }
+  }
+
+  async function handleRemindOne(userId: string) {
+    await fetch(`/api/workryn/training/courses/${course.id}/remind`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userIds: [userId] }),
+    })
+  }
+
+  const completed = report?.enrollments.filter(e => e.status === 'COMPLETED').length ?? 0
+  const total = report?.enrollments.length ?? 0
+  const incomplete = total - completed
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
+        <div style={{ height: 3, background: 'var(--brand-gradient)', borderRadius: '24px 24px 0 0' }} />
+        <div className="modal-header" style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={18} color="var(--brand-light)" /> Completion Tracker</h3>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{course.title}</div>
+          </div>
+          <button className="btn btn-icon btn-ghost focus-ring" onClick={onClose} type="button"><X size={18} /></button>
+        </div>
+        <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}><Loader2 size={24} className="spin" /></div>
+          ) : !report || total === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>No enrollments yet</div>
+          ) : (
+            <>
+              {/* Summary stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                <div className="tr-tracker-stat">
+                  <div className="tr-tracker-stat-val">{total}</div>
+                  <div className="tr-tracker-stat-label">Enrolled</div>
+                </div>
+                <div className="tr-tracker-stat">
+                  <div className="tr-tracker-stat-val" style={{ color: '#10b981' }}>{completed}</div>
+                  <div className="tr-tracker-stat-label">Completed</div>
+                </div>
+                <div className="tr-tracker-stat">
+                  <div className="tr-tracker-stat-val" style={{ color: incomplete > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{incomplete}</div>
+                  <div className="tr-tracker-stat-label">Incomplete</div>
+                </div>
+              </div>
+
+              {/* Completion bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                  <div style={{ width: `${total > 0 ? (completed/total)*100 : 0}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg, #10b981, #34d399)', transition: 'width 800ms ease' }} />
+                </div>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#10b981' }}>{total > 0 ? Math.round((completed/total)*100) : 0}%</span>
+              </div>
+
+              {/* Remind all button */}
+              {incomplete > 0 && (
+                <button className="btn btn-ghost focus-ring" onClick={handleRemindAll} disabled={reminding || reminded} type="button" style={{ alignSelf: 'flex-start' }}>
+                  {reminded ? <><CheckCircle2 size={14} /> Reminders Sent</> : reminding ? <><Loader2 size={14} className="spin" /> Sending...</> : <><Bell size={14} /> Remind All Incomplete ({incomplete})</>}
+                </button>
+              )}
+
+              {/* User list */}
+              <div className="tr-tracker-list">
+                {report.enrollments.map(e => {
+                  const pct = e.totalLessons > 0 ? Math.round((e.lessonsCompleted / e.totalLessons) * 100) : 0
+                  const isDone = e.status === 'COMPLETED'
+                  return (
+                    <div key={e.enrollmentId} className={`tr-tracker-row ${isDone ? 'done' : ''}`}>
+                      <div className="avatar" style={{ width: 34, height: 34, background: e.user.avatarColor, fontSize: '0.6875rem', flexShrink: 0 }}>
+                        {getInitials(e.user.name || '?')}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{e.user.name || e.user.email}</span>
+                          {isDone && <CheckCircle2 size={14} color="#10b981" />}
+                        </div>
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          {e.user.department?.name ?? 'No dept'} · {e.lessonsCompleted}/{e.totalLessons} lessons · Enrolled {new Date(e.enrolledAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <div style={{ width: 60 }}>
+                          <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: isDone ? '#10b981' : '#3b82f6' }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: isDone ? '#10b981' : 'var(--text-muted)', minWidth: 32 }}>{pct}%</span>
+                        {!isDone && (
+                          <button className="btn btn-icon btn-ghost btn-sm focus-ring" onClick={() => handleRemindOne(e.user.id)} title="Send reminder" type="button">
+                            <Bell size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="modal-footer" style={{ padding: '16px 24px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+          <button className="btn btn-ghost focus-ring" onClick={onClose} type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function TrainingClient({ initialCourses, initialEnrollments, currentUser, users = [], departments = [] }: Props) {
   const router = useRouter()
   const [courses, setCourses] = useState<Course[]>(initialCourses)
   const [enrollments] = useState<Enrollment[]>(initialEnrollments)
   const [tab, setTab] = useState<FilterTab>('ALL')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [assignCourse, setAssignCourse] = useState<Course | null>(null)
+  const [trackerCourse, setTrackerCourse] = useState<Course | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     title:'', description:'', category:'', isRequired:false, passThreshold:70, isPublished:false,
@@ -587,7 +889,8 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
           ) : (
             <div className="tr-grid">
               {filtered.map((course, i) => (
-                <CourseCard key={course.id} course={course} enrollment={enrollmentByCourse.get(course.id)} index={i}/>
+                <CourseCard key={course.id} course={course} enrollment={enrollmentByCourse.get(course.id)} index={i}
+                  isManager={canCreate} onAssign={() => setAssignCourse(course)} onTrack={() => setTrackerCourse(course)} />
               ))}
             </div>
           )}
@@ -641,6 +944,26 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
             </div>
           </div>
         </div>
+      )}
+
+      {/* Assign Training Modal */}
+      {assignCourse && canCreate && (
+        <AssignModal
+          course={assignCourse}
+          users={users}
+          departments={departments}
+          onClose={() => setAssignCourse(null)}
+          onAssigned={async () => {
+            // Refresh courses to update enrollment counts
+            const res = await fetch('/api/workryn/training/courses')
+            if (res.ok) setCourses(await res.json())
+          }}
+        />
+      )}
+
+      {/* Completion Tracker Modal */}
+      {trackerCourse && canCreate && (
+        <CompletionTracker course={trackerCourse} onClose={() => setTrackerCourse(null)} />
       )}
 
       <style>{`
@@ -1012,6 +1335,47 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         .tr-empty p { font-size:0.9375rem; color:var(--text-muted); max-width:420px; line-height:1.5; margin-bottom:20px; }
 
         .spin { animation:spin 0.7s linear infinite; }
+
+        /* ── Assign Modal List ── */
+        .tr-assign-list {
+          max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;
+          scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent;
+        }
+        .tr-assign-item {
+          display:flex; align-items:center; gap:12px; padding:10px 14px;
+          background:var(--bg-surface); border:1px solid var(--border-subtle);
+          border-radius:var(--radius-md); cursor:pointer; transition:all var(--transition-smooth);
+        }
+        .tr-assign-item:hover { border-color:var(--border-default); background:var(--bg-hover); }
+        .tr-assign-item.selected { border-color:var(--brand); background:rgba(37,99,235,0.08); }
+        .tr-assign-item input[type="checkbox"] { accent-color:var(--brand); }
+
+        /* ── Completion Tracker ── */
+        .tr-tracker-stat {
+          padding:14px 16px; background:var(--bg-surface); border:1px solid var(--border-subtle);
+          border-radius:var(--radius-md); text-align:center;
+        }
+        .tr-tracker-stat-val { font-size:1.5rem; font-weight:800; color:var(--text-primary); }
+        .tr-tracker-stat-label { font-size:0.75rem; color:var(--text-muted); font-weight:500; margin-top:2px; }
+        .tr-tracker-list {
+          max-height:350px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;
+          scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent;
+        }
+        .tr-tracker-row {
+          display:flex; align-items:center; gap:12px; padding:10px 14px;
+          background:var(--bg-surface); border:1px solid var(--border-subtle);
+          border-radius:var(--radius-md); transition:all var(--transition-smooth);
+        }
+        .tr-tracker-row:hover { border-color:var(--border-default); }
+        .tr-tracker-row.done { border-left:3px solid #10b981; }
+
+        /* ── Course Card Admin Bar ── */
+        .tr-course-admin-bar {
+          display:flex; gap:6px; padding:0 16px 14px;
+          border-top:1px solid var(--border-subtle);
+          padding-top:10px;
+        }
+        .tr-course-admin-bar .btn { font-size:0.75rem; padding:5px 10px; }
       `}</style>
     </>
   )
