@@ -134,7 +134,7 @@ function YouTubeWelcome({ videoId }: { videoId: string }) {
       </div>
       <div className="tr-youtube-wrapper">
         <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&showinfo=0`}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
           title="Welcome to BLH Training"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -1069,7 +1069,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
           padding:20px 20px 4px; overflow:hidden;
         }
         .tr-youtube-wrapper {
-          position:relative; width:100%; padding-top:56.25%; /* 16:9 */
+          position:relative; width:100%; height:0; padding-bottom:min(56.25%, 380px);
           border-radius:var(--radius-lg); overflow:hidden;
           box-shadow:0 4px 20px rgba(0,0,0,0.3);
         }
