@@ -524,10 +524,7 @@ export default function TrainingClient({ initialCourses, initialEnrollments, cur
         {/* Header */}
         <div className="tr-header">
           <div className="tr-header-top">
-            <div>
-              <h1 className="gradient-text tr-title"><GraduationCap size={32} style={{ opacity:0.7 }}/> Training Center</h1>
-              <p className="tr-subtitle">Learn, grow, and stay compliant with courses, quizzes, and video modules.</p>
-            </div>
+            <div />
             {canCreate && (
               <button className="btn btn-gradient focus-ring" onClick={() => setShowCreate(true)} type="button">
                 <Plus size={18}/> Create Course
