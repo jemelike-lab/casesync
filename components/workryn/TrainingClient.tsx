@@ -29,8 +29,8 @@ const WELCOME_CONFIG = {
   // YouTube video ID (the part after v= in the URL). Set to null to hide.
   youtubeVideoId: null as string | null,  // e.g. 'dQw4w9WgXcQ'
   // Banner image URL. Set to null for gradient-only banner.
-  bannerImage: null as string | null,     // e.g. '/images/training-banner.jpg'
-  // Banner text
+  bannerImage: '/images/training-banner.jpg' as string | null,
+  // Banner text — not shown when bannerImage contains its own text
   bannerTitle: 'Welcome to BLH Training',
   bannerSubtitle: 'Your hub for professional development, compliance training, and team growth.',
 }
@@ -77,23 +77,29 @@ function ProgressRing({ progress, size = 80, stroke = 6, color = '#3b82f6' }: {
    ═══════════════════════════════════════════ */
 
 function WelcomeBanner({ config }: { config: typeof WELCOME_CONFIG }) {
+  const hasImage = Boolean(config.bannerImage)
   return (
     <div className="tr-welcome-banner animate-slide-up">
       <div className="tr-banner-bg">
-        {config.bannerImage ? (
-          <img src={config.bannerImage} alt="" className="tr-banner-img" />
+        {hasImage ? (
+          <img src={config.bannerImage!} alt="Training Center Banner" className="tr-banner-img" />
         ) : (
-          <div className="tr-banner-gradient-bg" />
+          <>
+            <div className="tr-banner-gradient-bg" />
+            <div className="tr-banner-overlay" />
+          </>
         )}
-        <div className="tr-banner-overlay" />
       </div>
-      <div className="tr-banner-content">
-        <div className="tr-banner-icon-ring">
-          <GraduationCap size={32} />
+      {/* Only show text overlay when there's no custom banner image */}
+      {!hasImage && (
+        <div className="tr-banner-content">
+          <div className="tr-banner-icon-ring">
+            <GraduationCap size={32} />
+          </div>
+          <h2 className="tr-banner-title">{config.bannerTitle}</h2>
+          <p className="tr-banner-subtitle">{config.bannerSubtitle}</p>
         </div>
-        <h2 className="tr-banner-title">{config.bannerTitle}</h2>
-        <p className="tr-banner-subtitle">{config.bannerSubtitle}</p>
-      </div>
+      )}
     </div>
   )
 }
