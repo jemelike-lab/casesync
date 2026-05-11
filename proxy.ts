@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { rateLimit } from '@/lib/rate-limit'
 
-const INACTIVITY_TIMEOUT_S = 30 * 60
+const INACTIVITY_TIMEOUT_S = 15 * 60
 const DATA_RATE_LIMIT = 100
 const DATA_RATE_WINDOW_MS = 60 * 1000
 
@@ -61,12 +61,14 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
 
   if (!user) {
     if (isApiRoute(pathname)) {
       return NextResponse.json(
-        { error: 'Unauthorized — session expired or missing' },
+        { error: 'Unauthorized \u2014 session expired or missing' },
         { status: 401 }
       )
     }
@@ -101,6 +103,7 @@ export async function proxy(request: NextRequest) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('reason', 'session_timeout')
     loginUrl.searchParams.set('redirect', pathname)
+
     const redirectResponse = NextResponse.redirect(loginUrl)
     redirectResponse.cookies.delete('cs_last_activity')
     return redirectResponse
@@ -115,7 +118,7 @@ export async function proxy(request: NextRequest) {
     if (!result.ok) {
       const retryAfterSecs = Math.ceil((result.resetAt - Date.now()) / 1000)
       return NextResponse.json(
-        { error: 'Too many requests — rate limit exceeded', retryAfter: retryAfterSecs },
+        { error: 'Too many requests \u2014 rate limit exceeded', retryAfter: retryAfterSecs },
         {
           status: 429,
           headers: {
