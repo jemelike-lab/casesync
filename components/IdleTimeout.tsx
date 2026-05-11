@@ -16,29 +16,45 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
   const supabase = createClient()
   const [showWarning, setShowWarning] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  // Track whether the component has mounted and set the cookie at least once
+  const hasInitialized = useRef(false)
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut()
     router.push('/login?reason=session_timeout')
   }, [supabase, router])
 
+  /** Write the cs_last_activity cookie from the client side */
+  const touchActivityCookie = useCallback(() => {
+    const now = Math.floor(Date.now() / 1000)
+    // Match the middleware's maxAge so they stay in sync
+    const maxAgeSecs = Math.floor(timeoutMs / 1000)
+    document.cookie = `cs_last_activity=${now}; path=/; max-age=${maxAgeSecs}; samesite=lax${
+      location.protocol === 'https:' ? '; secure' : ''
+    }`
+  }, [timeoutMs])
+
   const reset = useCallback(() => {
     // Clear existing timers
     if (timerRef.current) clearTimeout(timerRef.current)
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
-    
+
     // Hide warning if showing
     setShowWarning(false)
-    
+
+    // Update the activity cookie on every reset so laptop-close checks
+    // have an accurate "last active" timestamp
+    touchActivityCookie()
+
     // Set warning timer
     warningTimerRef.current = setTimeout(() => {
       setShowWarning(true)
       setCountdown(Math.floor(warningMs / 1000))
     }, timeoutMs - warningMs)
-    
+
     // Set logout timer
     timerRef.current = setTimeout(handleLogout, timeoutMs)
-  }, [timeoutMs, warningMs, handleLogout])
+  }, [timeoutMs, warningMs, handleLogout, touchActivityCookie])
 
   // Countdown when warning is showing
   useEffect(() => {
@@ -58,6 +74,7 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
   useEffect(() => {
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart']
     events.forEach(e => window.addEventListener(e, reset))
+    hasInitialized.current = true
     reset()
 
     // Visibility change handler — catches laptop close/reopen.
@@ -71,12 +88,21 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
         .find((c) => c.startsWith('cs_last_activity='))
       const lastActivity = cookie ? parseInt(cookie.split('=')[1], 10) : 0
       const now = Math.floor(Date.now() / 1000)
+
+      // If the cookie is missing (expired) or unset, and we know the
+      // component previously initialized, then the session has definitely
+      // exceeded the timeout while the laptop was asleep.
+      if (!lastActivity && hasInitialized.current) {
+        handleLogout()
+        return
+      }
+
       const elapsed = now - lastActivity
 
-      if (lastActivity && elapsed * 1000 > timeoutMs) {
+      if (elapsed * 1000 > timeoutMs) {
         // Timed out while asleep — sign out immediately
         handleLogout()
-      } else if (lastActivity && elapsed * 1000 > timeoutMs - warningMs) {
+      } else if (elapsed * 1000 > timeoutMs - warningMs) {
         // Within warning window — show warning with correct remaining time
         const remaining = Math.floor((timeoutMs / 1000) - elapsed)
         setShowWarning(true)
@@ -153,7 +179,8 @@ export default function IdleTimeout({ timeoutMs, warningMs = 120000 }: Props) {
             Session Timeout Warning
           </h2>
           <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
-            You've been inactive for a while. For security reasons, your session will expire in:
+            You&apos;ve been inactive for a while. For security reasons, your session
+            will expire in:
           </p>
         </div>
 
