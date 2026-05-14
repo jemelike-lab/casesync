@@ -1596,7 +1596,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       )}
 
       {fullMode && (
-        <div style={{
+        <div className="card" style={{
           marginBottom: 16, padding: '14px 20px', borderRadius: 16,
           background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
           border: '1px solid rgba(255,255,255,0.05)',
@@ -1696,7 +1696,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         onSelect={handleSavedViewSelect}
       />
 
-      <div style={{
+      <div className="card" style={{
         marginBottom: 16, padding: '16px 20px', borderRadius: 16,
         background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
         border: '1px solid rgba(255,255,255,0.05)',

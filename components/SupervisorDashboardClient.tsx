@@ -546,7 +546,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       </div>
 
       {/* Premium planner table */}
-      <div style={{
+      <div className="card" style={{
         borderRadius: 22, overflow: 'hidden',
         border: '1px solid rgba(255,255,255,0.05)',
         background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
