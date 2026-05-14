@@ -438,7 +438,7 @@ input[type="time"] {
 /* Override any inline var(--text-secondary) that might be too light */
 [data-theme="light"] [style*="color: var(--text-secondary)"],
 [data-theme="light"] [style*="color:var(--text-secondary)"] {
-  color: #5c4a35 !important;
+  color: #5c4a35;
 }
 
 /* Status dots text labels */
@@ -450,7 +450,7 @@ input[type="time"] {
 
 /* Nav active state */
 [data-theme="light"] nav a[style*="background: var(--surface-2)"] {
-  color: #1a1108 !important;
+  color: #1a1108;
   background: #e8d5c0 !important;
 }
 
@@ -479,7 +479,7 @@ input[type="time"] {
 
 /* Week strip day cells */
 [data-theme="light"] [style*="background: var(--surface-2)"] {
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* Tab active underline */
@@ -490,7 +490,7 @@ input[type="time"] {
 
 /* Client card field labels */
 [data-theme="light"] [style*="color: var(--text)"] {
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* Ensure all inputs readable */
@@ -570,14 +570,14 @@ input[type="time"] {
 [data-theme="light"] button[style*="background: var(--surface-2)"],
 [data-theme="light"] button[style*="background:var(--surface-2)"] {
   background: #f5ede3 !important;
-  color: #1a1108 !important;
+  color: #1a1108;
   border-color: #c9b89a !important;
 }
 
 /* Stat cards - white background, dark text */
 [data-theme="light"] [style*="background: var(--surface)"] {
   background: #ffffff !important;
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* Week strip TODAY highlight */
@@ -676,7 +676,7 @@ input[type="time"] {
 [data-theme="light"] h2:not(.banner-heading),
 [data-theme="light"] h3:not(.banner-heading),
 [data-theme="light"] h4:not(.banner-heading) {
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* Headings inside dark banners should stay white */
@@ -690,12 +690,12 @@ input[type="time"] {
 [data-theme="light"] [style*="fontSize: 24"]:not(.banner-heading),
 [data-theme="light"] [style*="fontSize: 28"]:not(.banner-heading),
 [data-theme="light"] [style*="fontSize: 32"]:not(.banner-heading) {
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* Icons next to headings */
 [data-theme="light"] main > div > div > span:first-child {
-  color: #1a1108 !important;
+  color: #1a1108;
 }
 
 /* ===== LIGHT MODE: Sign Out button in header ===== */
