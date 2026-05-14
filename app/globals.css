@@ -913,6 +913,58 @@ input[type="time"] {
   fill: #5c4a35 !important;
 }
 
+/* ═══ LIGHT MODE: Global dark-section fixes ═══ */
+
+/* Sections using dark-mode translucent white backgrounds → proper light card */
+[data-theme="light"] [style*="background: linear-gradient(160deg, rgba(255,255,255,0.02)"],
+[data-theme="light"] [style*="background:linear-gradient(160deg, rgba(255,255,255,0.02)"] {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 2px 8px rgba(60,30,0,0.06);
+}
+
+/* Load bars / progress track backgrounds */
+[data-theme="light"] [style*="background: rgba(255,255,255,0.06)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.06)"] {
+  background: rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] [style*="background: rgba(255,255,255,0.04)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.04)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+[data-theme="light"] [style*="background: rgba(255,255,255,0.015)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.015)"] {
+  background: rgba(0,0,0,0.02) !important;
+}
+
+/* Metric chip neon colors → darker readable versions */
+[data-theme="light"] [style*="color: #ff6b6b"] { color: #c0001a !important; }
+[data-theme="light"] [style*="color:#ff6b6b"] { color: #c0001a !important; }
+[data-theme="light"] [style*="color: #ffb340"] { color: #b84000 !important; }
+[data-theme="light"] [style*="color:#ffb340"] { color: #b84000 !important; }
+[data-theme="light"] [style*="color: #ffe066"] { color: #6d4c00 !important; }
+[data-theme="light"] [style*="color:#ffe066"] { color: #6d4c00 !important; }
+[data-theme="light"] [style*="color: #4ade80"] { color: #1a6e2e !important; }
+[data-theme="light"] [style*="color:#4ade80"] { color: #1a6e2e !important; }
+
+/* Avatar circles — boost lightness for light backgrounds */
+[data-theme="light"] [style*="hsl("] {
+  filter: brightness(1.3) saturate(1.2);
+}
+
+/* Borders using rgba(255,255,255,...) — swap to dark borders */
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255"],
+[data-theme="light"] [style*="border:1px solid rgba(255,255,255"] {
+  border-color: var(--border) !important;
+}
+[data-theme="light"] [style*="border-bottom: 1px solid rgba(255,255,255"],
+[data-theme="light"] [style*="borderBottom: 1px solid rgba(255,255,255"] {
+  border-bottom-color: var(--border) !important;
+}
+[data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255"] {
+  border-top-color: var(--border) !important;
+}
+
 /* ═══ Mobile PWA responsive fixes ═══ */
 @media (max-width: 768px) {
   .stat-hero-grid {
