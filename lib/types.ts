@@ -285,6 +285,7 @@ export function isOverdue(client: Client): boolean {
     client.mfp_consent_date,
     client.two57_date,
     client.doc_mdh_date,
+    client.spm_next_due,
   ]
   return datesToCheck.some(d => {
     const s = d ? getDateStatus(d) : 'none'
@@ -306,6 +307,7 @@ export function isDueToday(client: Client): boolean {
     client.mfp_consent_date,
     client.two57_date,
     client.doc_mdh_date,
+    client.spm_next_due,
   ]
 
   const today = new Date().toISOString().split('T')[0]
@@ -326,6 +328,7 @@ export function isDueThisWeek(client: Client): boolean {
     client.mfp_consent_date,
     client.two57_date,
     client.doc_mdh_date,
+    client.spm_next_due,
   ]
   return datesToCheck.some(d => {
     const s = d ? getDateStatus(d) : 'none'
@@ -347,6 +350,7 @@ export function isDueNext14Days(client: Client): boolean {
     client.mfp_consent_date,
     client.two57_date,
     client.doc_mdh_date,
+    client.spm_next_due,
   ]
 
   const now = new Date()

@@ -75,16 +75,16 @@ export async function GET(req: NextRequest) {
     const twoWeeksLater = new Date(todayStart)
     twoWeeksLater.setDate(twoWeeksLater.getDate() + 14)
 
-    // Must match the 12 fields in lib/types.ts isOverdue/isDueThisWeek (excludes spm_next_due)
+    // Must match the 13 fields in lib/types.ts isOverdue/isDueThisWeek (includes spm_next_due)
     const deadlineFields = [
       'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
       'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
       'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
-      'doc_mdh_date',
+      'doc_mdh_date', 'spm_next_due',
     ]
 
-    // deadlineDate filter still includes spm_next_due for calendar day-click
-    const deadlineDateFields = [...deadlineFields, 'spm_next_due']
+    // deadlineDate filter uses the same set for calendar day-click
+    const deadlineDateFields = deadlineFields
 
     if (deadlineDate) {
       query = query.or(deadlineDateFields.map(f => `${f}.eq.${deadlineDate}`).join(','))

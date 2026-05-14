@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { auditLog } from '@/lib/audit'
+import { sanitizeSearchParam } from '@/lib/validation'
 import {
   SAFE_EXPORT_SELECT,
   SAFE_EXPORT_HEADERS,
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
   const { createClient: createServiceClient } = await import('@supabase/supabase-js')
   const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
   const selectString = canSeePhi ? PHI_EXPORT_SELECT : SAFE_EXPORT_SELECT
@@ -77,21 +78,29 @@ export async function GET(req: NextRequest) {
   }
 
   if (search && canSeePhi) {
-    const s = search.toLowerCase()
-    query = query.or(`last_name.ilike.%${s}%,first_name.ilike.%${s}%,client_id.ilike.%${s}%`)
+    const s = sanitizeSearchParam(search)
+    if (s) query = query.or(`last_name.ilike.%${s}%,first_name.ilike.%${s}%,client_id.ilike.%${s}%`)
   } else if (search) {
-    const s = search.toLowerCase()
-    query = query.ilike('category', `%${s}%`)
+    const s = sanitizeSearchParam(search)
+    if (s) query = query.ilike('category', `%${s}%`)
   }
 
   const today = new Date().toISOString().split('T')[0]
   const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
 
+  // Must match the 12 deadline fields in lib/types.ts isOverdue/isDueThisWeek
+  const deadlineFields = [
+    'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
+    'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
+    'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
+    'doc_mdh_date',
+  ]
+
   if (filter === 'overdue') {
-    query = query.or(`co_app_date.lt.${today},loc_date.lt.${today},drop_in_visit_date.lt.${today},co_financial_redet_date.lt.${today},med_tech_redet_date.lt.${today}`)
+    query = query.or(deadlineFields.map(f => `${f}.lt.${today}`).join(','))
   } else if (filter === 'due_this_week') {
-    query = query.or(`co_app_date.gte.${today}.and.co_app_date.lte.${weekFromNow},loc_date.gte.${today}.and.loc_date.lte.${weekFromNow}`)
+    query = query.or(deadlineFields.map(f => `and(${f}.gte.${today},${f}.lte.${weekFromNow})`).join(','))
   } else if (filter === 'no_contact_7') {
     query = query.or(`last_contact_date.is.null,last_contact_date.lt.${sevenDaysAgo}`)
   }

@@ -5,6 +5,13 @@ import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } fr
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Deadline fields — aligned with lib/types.ts isOverdue/isDueThisWeek (12 core fields)
+ * plus spm_next_due and doc_mdh_date for completeness.
+ *
+ * H2 fix: doc_mdh_date was selected but missing from this array.
+ * H3 fix: spm_next_due is now included here AND in the dashboard checks.
+ */
 const DEADLINE_FIELDS = [
   { key: 'eligibility_end_date', label: 'Eligibility End Date' },
   { key: 'three_month_visit_due', label: '3-Month Visit Due' },
@@ -18,12 +25,52 @@ const DEADLINE_FIELDS = [
   { key: 'co_app_date', label: 'CO App Date' },
   { key: 'mfp_consent_date', label: 'MFP Consent Date' },
   { key: 'two57_date', label: '257 Date' },
+  { key: 'doc_mdh_date', label: 'Doc MDH Date' },
 ]
 
-const NOTIFY_DAYS = [1, 3, 7]
+/**
+ * C3 fix: notify on approach AND on overdue milestones.
+ * Approaching: 1, 3, 7 days before due.
+ * Overdue: 0 (due today), then every 7 days overdue (7, 14, 21, 28...).
+ */
+function shouldNotify(diffDays: number): boolean {
+  if ([1, 3, 7].includes(diffDays)) return true
+  if (diffDays === 0) return true
+  if (diffDays < 0 && diffDays % 7 === 0) return true
+  return false
+}
+
+function getNotifLabel(diffDays: number): string {
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'tomorrow'
+  if (diffDays > 1) return `in ${diffDays} days`
+  const abs = Math.abs(diffDays)
+  return `overdue by ${abs} day${abs === 1 ? '' : 's'}`
+}
+
+function getNotifEmoji(diffDays: number): string {
+  if (diffDays < 0) return '🚨'
+  if (diffDays === 0) return '⏰'
+  return '📅'
+}
+
+const SECTION_BY_FIELD: Record<string, string> = {
+  eligibility_end_date: 'section-eligibility',
+  three_month_visit_due: 'section-contact-visits',
+  quarterly_waiver_date: 'section-contact-visits',
+  med_tech_redet_date: 'section-med-tech',
+  pos_deadline: 'section-plans-assessments',
+  assessment_due: 'section-plans-assessments',
+  thirty_day_letter_date: 'section-contact-visits',
+  co_financial_redet_date: 'section-co-details',
+  co_app_date: 'section-co-details',
+  mfp_consent_date: 'section-co-details',
+  two57_date: 'section-co-details',
+  doc_mdh_date: 'section-plans-assessments',
+  spm_next_due: 'section-plans-assessments',
+}
 
 export async function GET(request: Request) {
-  // Security: require cron secret — fail closed if not configured
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -39,40 +86,84 @@ export async function GET(request: Request) {
   today.setHours(0, 0, 0, 0)
   const todayStr = today.toISOString().split('T')[0]
 
-  // Detect if this is an 8am run (for daily digest)
-  const currentHour = new Date().getHours()
+  const currentHour = new Date().getUTCHours()
   const isMorningRun = currentHour >= 7 && currentHour <= 9
 
-  // Fetch all clients with assigned planner
+  // C4 fix: only fetch active, real clients with an assigned planner
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, client_id, first_name, last_name, assigned_to, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
+    .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
+    .eq('is_active', true)
+    .eq('client_classification', 'real')
     .not('assigned_to', 'is', null)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Fetch planner profiles (email + notification prefs + manager linkage)
+  // C2 fix: fetch profiles, emails, and notification prefs from their correct tables
   const assigneeIds = [...new Set((clients ?? []).map(c => c.assigned_to).filter(Boolean))]
+
   const { data: profiles } = assigneeIds.length > 0
     ? await supabase
         .from('profiles')
-        .select('id, email, full_name, team_manager_id, notification_preferences')
+        .select('id, full_name, team_manager_id')
         .in('id', assigneeIds)
     : { data: [] }
 
-  const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
-  const teamManagerIds = [...new Set((profiles ?? []).map(p => p.team_manager_id).filter(Boolean))]
-  const { data: teamManagers } = teamManagerIds.length > 0
-    ? await supabase
-        .from('profiles')
-        .select('id, email, full_name, notification_preferences')
-        .in('id', teamManagerIds)
-    : { data: [] }
-  const managerMap = new Map((teamManagers ?? []).map(m => [m.id, m]))
+  // Emails from auth.users via admin API
+  const { data: authData } = await supabase.auth.admin.listUsers()
+  const emailMap = new Map<string, string>()
+  for (const u of authData?.users ?? []) {
+    if (u.id && u.email) emailMap.set(u.id, u.email)
+  }
 
-  // Check which notifications were already sent today (to avoid duplicates)
+  // Notification preferences from the dedicated table
+  const teamManagerIds = [...new Set((profiles ?? []).map(p => p.team_manager_id).filter(Boolean))]
+  const allUserIds = [...new Set([...assigneeIds, ...teamManagerIds])]
+  const { data: notifPrefs } = allUserIds.length > 0
+    ? await supabase
+        .from('notification_preferences')
+        .select('user_id, deadline_7day, client_assigned, daily_digest')
+        .in('user_id', allUserIds)
+    : { data: [] }
+  const prefsMap = new Map((notifPrefs ?? []).map(p => [p.user_id, p]))
+
+  // Build enriched profile map
+  type EnrichedProfile = {
+    id: string
+    full_name: string | null
+    team_manager_id: string | null
+    email: string | null
+    prefs: { deadline_7day?: boolean | null; daily_digest?: boolean | null }
+  }
+  const profileMap = new Map<string, EnrichedProfile>()
+  for (const p of profiles ?? []) {
+    profileMap.set(p.id, {
+      id: p.id,
+      full_name: p.full_name,
+      team_manager_id: p.team_manager_id,
+      email: emailMap.get(p.id) ?? null,
+      prefs: prefsMap.get(p.id) ?? {},
+    })
+  }
+
+  // Manager profiles
+  const { data: tmProfiles } = teamManagerIds.length > 0
+    ? await supabase.from('profiles').select('id, full_name').in('id', teamManagerIds)
+    : { data: [] }
+  const managerMap = new Map<string, EnrichedProfile>()
+  for (const m of tmProfiles ?? []) {
+    managerMap.set(m.id, {
+      id: m.id,
+      full_name: m.full_name,
+      team_manager_id: null,
+      email: emailMap.get(m.id) ?? null,
+      prefs: prefsMap.get(m.id) ?? {},
+    })
+  }
+
+  // Dedup check
   const { data: todayNotifs } = await supabase
     .from('notifications')
     .select('user_id, body')
@@ -95,46 +186,29 @@ export async function GET(request: Request) {
       date.setHours(0, 0, 0, 0)
       const diffDays = Math.round((date.getTime() - today.getTime()) / 86400000)
 
-      if (NOTIFY_DAYS.includes(diffDays) && client.assigned_to) {
+      if (shouldNotify(diffDays) && client.assigned_to) {
         const clientName = `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`
-        const daysLabel = diffDays === 1 ? 'tomorrow' : `in ${diffDays} days`
-        const notifBody = `${label} is due ${daysLabel} (${dateStr})`
+        const daysLabel = getNotifLabel(diffDays)
+        const emoji = getNotifEmoji(diffDays)
+        const notifBody = `${label} is ${diffDays < 0 ? '' : 'due '}${daysLabel} (${dateStr})`
         const dedupeKey = `${client.assigned_to}:${notifBody}`
-        const sectionByField: Record<string, string> = {
-          eligibility_end_date: 'section-eligibility',
-          three_month_visit_due: 'section-contact-visits',
-          quarterly_waiver_date: 'section-contact-visits',
-          med_tech_redet_date: 'section-med-tech',
-          pos_deadline: 'section-plans-assessments',
-          assessment_due: 'section-plans-assessments',
-          thirty_day_letter_date: 'section-contact-visits',
-          co_financial_redet_date: 'section-co-details',
-          co_app_date: 'section-co-details',
-          mfp_consent_date: 'section-co-details',
-          two57_date: 'section-co-details',
-          doc_mdh_date: 'section-plans-assessments',
-          spm_next_due: 'section-plans-assessments',
-        }
         const fieldKey = String(key)
-        const targetSection = sectionByField[fieldKey] ?? 'section-plans-assessments'
+        const targetSection = SECTION_BY_FIELD[fieldKey] ?? 'section-plans-assessments'
         const deepLink = `/clients/${client.id}?highlight=${encodeURIComponent(fieldKey)}#${targetSection}`
 
-        // Only insert in-app notification if not already sent today
         if (!sentToday.has(dedupeKey)) {
           notifications.push({
             user_id: client.assigned_to,
-            title: `📅 Deadline ${daysLabel}: ${clientName}`,
+            title: `${emoji} Deadline ${daysLabel}: ${clientName}`,
             body: notifBody,
             link: deepLink,
             read: false,
           })
         }
 
-        // Send email notification if planner has it enabled
         const profile = profileMap.get(client.assigned_to)
         if (profile?.email) {
-          const prefs = (profile.notification_preferences as any) ?? {}
-          const emailEnabled = prefs.deadline_7day !== false // default to true unless explicitly disabled
+          const emailEnabled = profile.prefs.deadline_7day !== false
           const emailDedupeKey = `email:${client.assigned_to}:${key}:${todayStr}`
 
           if (emailEnabled && !sentToday.has(emailDedupeKey)) {
@@ -204,20 +278,13 @@ export async function GET(request: Request) {
 
     if (!clientOverdue && !clientDueThisWeek) continue
 
-    const existing: {
-      plannerId: string
-      plannerName: string
-      teamManagerId: string
-      overdueClientCount: number
-      dueSoonClientCount: number
-      topIssues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }>
-    } = plannerEscalations.get(client.assigned_to) ?? {
+    const existing = plannerEscalations.get(client.assigned_to) ?? {
       plannerId: client.assigned_to,
       plannerName: planner.full_name ?? 'Planner',
       teamManagerId,
       overdueClientCount: 0,
       dueSoonClientCount: 0,
-      topIssues: [],
+      topIssues: [] as Array<{ clientName: string; issue: string; dueDate: string; severity: number }>,
     }
 
     if (clientOverdue) existing.overdueClientCount++
@@ -237,8 +304,7 @@ export async function GET(request: Request) {
     const manager = managerMap.get(escalation.teamManagerId)
     if (!manager?.email) continue
 
-    const prefs = (manager.notification_preferences as any) ?? {}
-    const managerEmailEnabled = prefs.team_deadline_alerts !== false
+    const managerEmailEnabled = manager.prefs.deadline_7day !== false
     const alertDedupeKey = `manager-alert:${manager.id}:${escalation.plannerId}:${todayStr}`
     if (!managerEmailEnabled || sentToday.has(alertDedupeKey)) continue
 
@@ -276,7 +342,6 @@ export async function GET(request: Request) {
 
   // ---- DAILY DIGEST (morning run only) ----
   if (isMorningRun) {
-    // Group clients by assigned_to
     const clientsByPlanner: Record<string, typeof clients> = {}
     for (const client of clients ?? []) {
       if (!client.assigned_to) continue
@@ -288,12 +353,8 @@ export async function GET(request: Request) {
       const profile = profileMap.get(plannerId)
       if (!profile?.email) continue
 
-      const prefs = (profile.notification_preferences as any) ?? {}
-
-      // Calculate overdue + due this week
       let overdueCount = 0
       let dueThisWeekCount = 0
-      const now = new Date()
 
       for (const client of plannerClients ?? []) {
         let clientOverdue = false
@@ -311,10 +372,7 @@ export async function GET(request: Request) {
         else if (clientDueThisWeek) dueThisWeekCount++
       }
 
-      // Send digest if:
-      // 1. Planner has daily_digest preference enabled, OR
-      // 2. They have overdue items (always send regardless of preference)
-      const digestEnabled = prefs.daily_digest === true || overdueCount > 0
+      const digestEnabled = profile.prefs.daily_digest === true || overdueCount > 0
       const digestDedupeKey = `digest:${plannerId}:${todayStr}`
 
       if (digestEnabled && !sentToday.has(digestDedupeKey)) {
@@ -331,7 +389,6 @@ export async function GET(request: Request) {
             recentActivity: [],
           })
 
-          // Override subject to include client count
           const finalSubject = `📋 Good morning ${userName} — ${totalNeedAttention > 0 ? `${totalNeedAttention} clients need attention today` : 'All clients current'}`
 
           await sendEmail({ to: profile.email, subject: finalSubject, html })
@@ -344,7 +401,6 @@ export async function GET(request: Request) {
   }
 
   if (notifications.length > 0) {
-    // Batch insert
     const { error: insertError } = await supabase.from('notifications').insert(notifications)
     if (insertError) {
       return NextResponse.json({ error: insertError.message, attempted: notifications.length }, { status: 500 })
