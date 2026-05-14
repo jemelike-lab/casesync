@@ -2371,3 +2371,24 @@
   background: #ffffff !important;
   border: 1.5px solid #c9b89a !important;
 }
+
+/* ── Light Mode: Greeting + Clock ── */
+[data-theme="light"] .wd-hero-greeting {
+  background: linear-gradient(135deg, #3b2a1a 0%, #0071e3 50%, #2563eb 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: none !important;
+}
+[data-theme="light"] .wd-hero-sub {
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .wd-clock-time {
+  color: #1a1108 !important;
+}
+[data-theme="light"] .wd-clock-date {
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .wd-clock-dot {
+  color: #2563eb !important;
+}

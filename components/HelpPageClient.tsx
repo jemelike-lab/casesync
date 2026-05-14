@@ -293,6 +293,7 @@ export default function HelpPageClient({ profile }: Props) {
                     <button onClick={() => toggleChapter(ch.id)} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 14,
                       padding: '16px 24px', border: 'none', cursor: 'pointer',
+                      color: 'var(--text)',
                       background: isAct ? (lt ? 'rgba(0,113,227,0.04)' : 'rgba(0,122,255,0.06)') : 'transparent',
                       borderBottom: lt ? '1px solid #e8dcc8' : '1px solid rgba(255,255,255,0.04)',
                       transition: 'background 0.15s', textAlign: 'left',
@@ -302,14 +303,14 @@ export default function HelpPageClient({ profile }: Props) {
                           width: 32, height: 32, borderRadius: 8,
                           background: isAct ? accent : (lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.06)'),
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 13, fontWeight: 800, color: isAct ? '#fff' : 'var(--text-secondary)',
+                          fontSize: 13, fontWeight: 800, color: isAct ? '#fff' : (lt ? '#5c4a35' : 'var(--text-secondary)'),
                           flexShrink: 0, transition: 'all 0.15s',
                         }}>{ch.number}</div>
                       )}
-                      <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: isAct ? accent : 'var(--text)' }}>
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: isAct ? accent : (lt ? '#1a1108' : 'var(--text)') }}>
                         {ch.title.replace(/^\d+\.\s*/, '')}
                       </span>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+                      <span style={{ fontSize: 12, color: lt ? '#9c8470' : 'var(--text-secondary)', flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
                     </button>
                     {isOpen && (
                       <div className="help-chapter-body" style={{
