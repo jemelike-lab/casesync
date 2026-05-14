@@ -274,7 +274,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
           <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(160,180,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             {mode === 'supervisor' ? 'Supervisor Overview' : 'Team Manager Overview'}
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#fff' }}>{title}</h1>
+          <h1 className="banner-heading" style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#fff' }}>{title}</h1>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           {mode === 'supervisor' && (

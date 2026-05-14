@@ -672,19 +672,24 @@ input[type="time"] {
 }
 
 /* ===== LIGHT MODE: Page headings and titles ===== */
-[data-theme="light"] h1,
-[data-theme="light"] h2,
-[data-theme="light"] h3,
-[data-theme="light"] h4 {
+[data-theme="light"] h1:not(.banner-heading),
+[data-theme="light"] h2:not(.banner-heading),
+[data-theme="light"] h3:not(.banner-heading),
+[data-theme="light"] h4:not(.banner-heading) {
   color: #1a1108 !important;
 }
 
+/* Headings inside dark banners should stay white */
+[data-theme="light"] .banner-heading {
+  color: #ffffff !important;
+}
+
 /* Team Dashboard, Supervisor Dashboard page titles */
-[data-theme="light"] main h1,
-[data-theme="light"] main h2,
-[data-theme="light"] [style*="fontSize: 24"],
-[data-theme="light"] [style*="fontSize: 28"],
-[data-theme="light"] [style*="fontSize: 32"] {
+[data-theme="light"] main h1:not(.banner-heading),
+[data-theme="light"] main h2:not(.banner-heading),
+[data-theme="light"] [style*="fontSize: 24"]:not(.banner-heading),
+[data-theme="light"] [style*="fontSize: 28"]:not(.banner-heading),
+[data-theme="light"] [style*="fontSize: 32"]:not(.banner-heading) {
   color: #1a1108 !important;
 }
 
