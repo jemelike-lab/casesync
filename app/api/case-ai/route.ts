@@ -12,6 +12,25 @@ export const dynamic = 'force-dynamic'
 let activeRequests = 0
 const MAX_CONCURRENT = 10
 
+// ─── Paginated Supabase fetch (bypasses 1,000-row default limit) ─────────────
+const PAGE_SIZE = 1000
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllRows(buildQuery: () => any): Promise<Record<string, unknown>[]> {
+  const allRows: Record<string, unknown>[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    const rows = (data ?? []) as Record<string, unknown>[]
+    allRows.push(...rows)
+    if (rows.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+    if (from > 10000) break // safety cap
+  }
+  return allRows
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getDateStatus(dateStr: string | null): 'critical' | 'red' | 'orange' | 'yellow' | 'green' | 'none' {
@@ -997,27 +1016,34 @@ async function executeCaseloadStats(
   userRole: string,
   userId: string
 ) {
-  let query = supabase.from('clients').select(
-    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active'
-  ).eq('is_active', true).eq('client_classification', 'real');
-
-  // Same role-based scoping (roles stored lowercase in profiles table)
-  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
-    query = query.eq('assigned_to', userId);
-  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+  // Pre-fetch team IDs if needed (can't do async inside query builder fn)
+  let teamIds: string[] | null = null
+  if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
     const { data: teamMembers } = await supabase
       .from('profiles')
       .select('id')
       .eq('team_manager_id', userId);
-    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
-    teamIds.push(userId);
-    query = query.in('assigned_to', teamIds);
+    teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds!.push(userId);
   }
 
-  const { data, error } = await query;
-  if (error) return JSON.stringify({ error: error.message });
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await fetchAllRows(() => {
+      let q = supabase.from('clients').select(
+        'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active'
+      ).eq('is_active', true).eq('client_classification', 'real');
 
-  const rows = data || [];
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        q = q.eq('assigned_to', userId);
+      } else if (teamIds) {
+        q = q.in('assigned_to', teamIds);
+      }
+      return q;
+    });
+  } catch (fetchErr) {
+    return JSON.stringify({ error: (fetchErr as Error).message });
+  }
   const today = new Date().toISOString().split('T')[0];
   const d30 = new Date(); d30.setDate(d30.getDate() + 30);
   const d60 = new Date(); d60.setDate(d60.getDate() + 60);
@@ -1141,13 +1167,15 @@ export async function POST(req: NextRequest) {
       const teamPlannerIds = (teamPlanners ?? []).map((p: Record<string, unknown>) => p.id as string)
 
       if (teamPlannerIds.length > 0) {
-        const { data: teamClients } = await supabase
-          .from('clients')
-          .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
-          .in('assigned_to', teamPlannerIds)
-          .eq('is_active', true)
-          .eq('client_classification', 'real')
-        allClients = (teamClients as Record<string, unknown>[]) ?? []
+        allClients = await fetchAllRows(() =>
+          supabase
+            .from('clients')
+            .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
+            .in('assigned_to', teamPlannerIds)
+            .eq('is_active', true)
+            .eq('client_classification', 'real')
+            .order('last_name')
+        )
       }
 
       const plannerOpsSummary = getPlannerOpsSummary(allClients, (teamPlanners ?? []) as Record<string, unknown>[])
@@ -1166,12 +1194,14 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         .order('full_name')
 
       // Load clients but only the fields needed for ops snapshot (not full records)
-      const { data: summaryClients } = await supabase
-        .from('clients')
-        .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
-        .eq('is_active', true)
-        .eq('client_classification', 'real')
-      allClients = (summaryClients as Record<string, unknown>[]) ?? []
+      allClients = await fetchAllRows(() =>
+        supabase
+          .from('clients')
+          .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
+          .eq('is_active', true)
+          .eq('client_classification', 'real')
+          .order('id')
+      )
 
       const plannerOpsSummary = getPlannerOpsSummary(allClients, (allPlanners ?? []) as Record<string, unknown>[])
       const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
