@@ -153,9 +153,13 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' })
+    } catch {
+      await supabase.auth.signOut()
+    }
+    // Hard navigation ensures cookies are fully cleared
+    window.location.href = '/login?reason=signed_out'
   }
 
   function isActive(href: string) {
