@@ -2476,3 +2476,63 @@
 [data-theme="light"] .w-app-shell [style*="borderColor: rgba(255,255,255"] {
   border-color: #c9b89a !important;
 }
+
+/* ── Light Mode: Evaluations + shared components ── */
+[data-theme="light"] .eval-stat-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  backdrop-filter: none !important;
+}
+[data-theme="light"] .eval-stat-value { color: #1a1108 !important; }
+[data-theme="light"] .eval-stat-label { color: #5c4a35 !important; }
+[data-theme="light"] .eval-tab-bar { border-bottom-color: #c9b89a !important; }
+[data-theme="light"] .eval-tab {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .eval-tab:hover { background: var(--surface-2) !important; }
+[data-theme="light"] .eval-tab.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+[data-theme="light"] .eval-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .eval-card-name { color: #1a1108 !important; }
+[data-theme="light"] .eval-card-role { color: #5c4a35 !important; }
+[data-theme="light"] .eval-empty { color: #5c4a35 !important; }
+[data-theme="light"] .eval-subtitle { color: #5c4a35 !important; }
+
+/* Gradient text used across Workryn pages */
+[data-theme="light"] .w-app-shell .gradient-text {
+  background: linear-gradient(135deg, #3b2a1a, #2563eb) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+/* Page header/body used across pages */
+[data-theme="light"] .w-app-shell .page-header { color: #1a1108; }
+[data-theme="light"] .w-app-shell .page-body { color: #1a1108; }
+
+/* Labels and badges */
+[data-theme="light"] .w-app-shell .label { color: #5c4a35 !important; }
+[data-theme="light"] .w-app-shell .badge {
+  border-color: rgba(0,0,0,0.1) !important;
+}
+
+/* Avatar */
+[data-theme="light"] .w-app-shell .avatar {
+  border-color: #c9b89a !important;
+}
+
+/* Section titles used in forms */
+[data-theme="light"] .td-section-title,
+[data-theme="light"] .w-app-shell [class*="section-title"] {
+  color: #1a1108 !important;
+}

@@ -961,3 +961,40 @@
 }
 
 
+
+/* ═══════════════════════════════════════════
+   LIGHT MODE — Schedule
+   ═══════════════════════════════════════════ */
+[data-theme="light"] .w-app-shell .sched-grid-wrap {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-row {
+  background: var(--surface-2) !important;
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-cell {
+  border-color: #c9b89a !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-date { color: #1a1108 !important; }
+[data-theme="light"] .w-app-shell .sched-staff-row {
+  border-bottom-color: #e8dcc8 !important;
+}
+[data-theme="light"] .w-app-shell .sched-staff-row:hover {
+  background: rgba(0,0,0,0.02) !important;
+}
+[data-theme="light"] .w-app-shell .sched-staff-name { color: #1a1108 !important; }
+[data-theme="light"] .w-app-shell .sched-staff-role { color: #5c4a35 !important; }
+[data-theme="light"] .w-app-shell .sched-staff-cell {
+  border-color: #c9b89a !important;
+}
+[data-theme="light"] .w-app-shell .sched-day-cell {
+  border-color: #e8dcc8 !important;
+}
+[data-theme="light"] .w-app-shell .sched-day-cell:hover {
+  background: rgba(0,0,0,0.02) !important;
+}
+[data-theme="light"] .w-app-shell .sched-shift-time { color: #1a1108 !important; }
+[data-theme="light"] .w-app-shell .sched-shift-role { color: #5c4a35 !important; }

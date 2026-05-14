@@ -1177,3 +1177,149 @@ select option {
 .glass-card input[class*="input"] {
     padding-left: 44px !important;
 }
+
+/* ═══════════════════════════════════════════
+   LIGHT MODE — Tickets / Help Desk
+   ═══════════════════════════════════════════ */
+
+/* Page header */
+[data-theme="light"] .td-page .page-header h1,
+[data-theme="light"] .td-page .gradient-text {
+  background: linear-gradient(135deg, #3b2a1a, #2563eb) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+[data-theme="light"] .td-page .page-header p { color: #5c4a35 !important; }
+
+/* Stat cards */
+[data-theme="light"] .td-stat-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .td-stat-card:hover {
+  box-shadow: 0 4px 20px rgba(60,30,0,0.12) !important;
+  border-color: #b8a080 !important;
+}
+[data-theme="light"] .td-stat-label { color: #5c4a35 !important; }
+[data-theme="light"] .td-stat-count { color: #1a1108 !important; }
+
+/* Filter tabs */
+[data-theme="light"] .td-filter-tab {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .td-filter-tab:hover {
+  background: var(--surface-2) !important;
+}
+[data-theme="light"] .td-filter-tab.active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Filter selects */
+[data-theme="light"] .td-filter-select {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  color: #1a1108 !important;
+}
+
+/* Glass card (search bar container) */
+[data-theme="light"] .td-page .glass-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  backdrop-filter: none !important;
+}
+
+/* Ticket list */
+[data-theme="light"] .td-list {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .td-list-header {
+  border-bottom-color: #c9b89a !important;
+  background: var(--surface-2) !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .td-row {
+  border-bottom-color: #e8dcc8 !important;
+}
+[data-theme="light"] .td-row:hover {
+  background: rgba(0,0,0,0.02) !important;
+}
+
+/* Empty state */
+[data-theme="light"] .td-page .empty-state {
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .td-page .empty-state p,
+[data-theme="light"] .td-page .empty-state div {
+  color: #5c4a35 !important;
+}
+
+/* Bulk bar */
+[data-theme="light"] .td-bulk-bar {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+}
+
+/* Modals */
+[data-theme="light"] .w-app-shell .modal {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .w-app-shell .modal-header {
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] .w-app-shell .modal-header h3 {
+  color: #1a1108 !important;
+}
+[data-theme="light"] .w-app-shell .modal-overlay {
+  background: rgba(0,0,0,0.3) !important;
+}
+
+/* Buttons */
+[data-theme="light"] .w-app-shell .btn {
+  color: #1a1108;
+}
+[data-theme="light"] .w-app-shell .btn-gradient {
+  color: #ffffff !important;
+}
+[data-theme="light"] .w-app-shell .btn-ghost {
+  color: #5c4a35 !important;
+  border-color: #c9b89a !important;
+}
+
+/* Inputs */
+[data-theme="light"] .w-app-shell .input {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .w-app-shell .input::placeholder {
+  color: #9c8470 !important;
+}
+
+/* Toast */
+[data-theme="light"] .w-toast {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+}
+
+/* Ticket detail stat rings */
+[data-theme="light"] .td-stat-ring { opacity: 0.8; }
+
+/* Scrollbar */
+[data-theme="light"] .w-app-shell ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15) !important;
+}
+[data-theme="light"] .w-app-shell ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.25) !important;
+}
