@@ -16,9 +16,13 @@ const MAX_CONCURRENT = 10
 
 function getDateStatus(dateStr: string | null): 'critical' | 'red' | 'orange' | 'yellow' | 'green' | 'none' {
   if (!dateStr) return 'none'
-  const date = new Date(dateStr)
+  // Use date-only comparison to match dashboard logic (lib/types.ts getDateStatus)
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)  // midnight local
   const now = new Date()
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())  // midnight local
+  const diffMs = date.getTime() - today.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
   if (diffDays < -14) return 'critical'
   if (diffDays < 0) return 'red'
   if (diffDays <= 3) return 'orange'
@@ -31,6 +35,7 @@ function getOverdueCount(client: Record<string, unknown>): number {
     'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
     'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
     'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date',
+    'spm_next_due',
   ]
   return fields.filter(f => {
     const s = getDateStatus(client[f] as string | null)
@@ -890,7 +895,7 @@ const BOT_TOOLS = [
         },
         overdue_field: {
           type: "string" as const,
-          description: "Find entries overdue on this field. Valid: pos_deadline, assessment_due, eligibility_end_date, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date"
+          description: "Find entries overdue on this field. Valid: pos_deadline, assessment_due, eligibility_end_date, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date"
         },
         assigned_to_id: {
           type: "string" as const,
@@ -926,8 +931,8 @@ async function executeSearchClients(
 ) {
   const limit = Math.min(Number(input.limit) || 20, 50);
   let query = supabase.from('clients').select(
-    'id, client_id, first_name, last_name, category, is_active, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, goal_pct, pos_status, last_contact_date'
-  ).eq('is_active', true);
+    'id, client_id, first_name, last_name, category, is_active, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, goal_pct, pos_status, last_contact_date'
+  ).eq('is_active', true).eq('client_classification', 'real');
 
   // Role-based scoping (roles stored lowercase in profiles table)
   if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
@@ -964,7 +969,8 @@ async function executeSearchClients(
     const validFields = new Set([
       'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
       'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
-      'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date'
+      'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date',
+      'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date'
     ]);
     const field = String(input.overdue_field);
     if (validFields.has(field)) {
@@ -992,8 +998,8 @@ async function executeCaseloadStats(
   userId: string
 ) {
   let query = supabase.from('clients').select(
-    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, is_active'
-  ).eq('is_active', true);
+    'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active'
+  ).eq('is_active', true).eq('client_classification', 'real');
 
   // Same role-based scoping (roles stored lowercase in profiles table)
   if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
@@ -1020,7 +1026,8 @@ async function executeCaseloadStats(
   const overdueFields = [
     'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
     'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
-    'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date'
+    'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date',
+    'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date'
   ];
 
   const overdueCounts: Record<string, number> = {};
@@ -1119,7 +1126,7 @@ export async function POST(req: NextRequest) {
         .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
         .eq('assigned_to', userId)
         .eq('is_active', true)
-        .order('last_name')
+        .eq('client_classification', 'real')
       allClients = (myClients as Record<string, unknown>[]) ?? []
       plannerContext = `You are assisting a Supports Planner with their own caseload of ${allClients.length} active clients.`
 
@@ -1139,7 +1146,7 @@ export async function POST(req: NextRequest) {
           .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
           .in('assigned_to', teamPlannerIds)
           .eq('is_active', true)
-          .order('last_name')
+          .eq('client_classification', 'real')
         allClients = (teamClients as Record<string, unknown>[]) ?? []
       }
 
@@ -1163,6 +1170,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         .from('clients')
         .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
         .eq('is_active', true)
+        .eq('client_classification', 'real')
       allClients = (summaryClients as Record<string, unknown>[]) ?? []
 
       const plannerOpsSummary = getPlannerOpsSummary(allClients, (allPlanners ?? []) as Record<string, unknown>[])
