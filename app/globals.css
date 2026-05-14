@@ -49,10 +49,9 @@
 }
 
 [data-theme="light"] .card {
-  background: #ffffff;
-  border: 1.5px solid #c9b89a;
-  box-shadow: 0 2px 12px rgba(60,30,0,0.1), 0 0 0 1px rgba(60,30,0,0.04);
-  border-radius: 18px;
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.1), 0 0 0 1px rgba(60,30,0,0.04) !important;
 }
 
 [data-theme="light"] input[type="search"],
@@ -921,10 +920,9 @@ input[type="time"] {
 [data-theme="light"] [style*="background:linear-gradient(160deg, rgba(255,255,255,0.02)"],
 [data-theme="light"] [style*="background: linear-gradient(90deg, rgba(255,255,255,0.02)"],
 [data-theme="light"] [style*="background:linear-gradient(90deg, rgba(255,255,255,0.02)"] {
-  background: var(--surface) !important;
+  background: #ffffff !important;
   border: 1.5px solid #c9b89a !important;
-  box-shadow: 0 2px 12px rgba(60,30,0,0.1), 0 0 0 1px rgba(60,30,0,0.04);
-  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.1), 0 0 0 1px rgba(60,30,0,0.04) !important;
 }
 
 /* Load bars / progress track backgrounds */
@@ -938,7 +936,16 @@ input[type="time"] {
 }
 [data-theme="light"] [style*="background: rgba(255,255,255,0.015)"],
 [data-theme="light"] [style*="background:rgba(255,255,255,0.015)"] {
-  background: rgba(0,0,0,0.02) !important;
+  background: var(--surface-2) !important;
+}
+
+/* Section inner borders */
+[data-theme="light"] [style*="border-bottom: 1px solid rgba(255,255,255,0.05)"],
+[data-theme="light"] [style*="borderBottom: 1px solid rgba(255,255,255,0.05)"] {
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255,0.04)"] {
+  border-top-color: #c9b89a !important;
 }
 
 /* Metric chip neon colors → darker readable versions */
