@@ -5,6 +5,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/check-deadlines",
+      "schedule": "0 16 * * *"
+    },
+    {
       "path": "/api/health",
       "schedule": "0 * * * *"
     }
