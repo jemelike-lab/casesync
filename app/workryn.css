@@ -2536,3 +2536,99 @@
 [data-theme="light"] .w-app-shell [class*="section-title"] {
   color: #1a1108 !important;
 }
+
+/* ── Light Mode: Tasks / Kanban ── */
+[data-theme="light"] .tk-hero-banner {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(0,0,0,0.02) 50%, rgba(16,185,129,0.03) 100%) !important;
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] .tk-hero-glow { opacity: 0.3 !important; }
+[data-theme="light"] .tk-ambient { opacity: 0.15 !important; }
+[data-theme="light"] .tk-particle { opacity: 0.3 !important; }
+[data-theme="light"] .tk-hero-title {
+  background: linear-gradient(135deg, #3b2a1a 0%, #6366f1 50%, #8b5cf6 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+[data-theme="light"] .tk-hero-sub { color: #5c4a35 !important; }
+[data-theme="light"] .tk-hero-ring-value { color: #1a1108 !important; }
+[data-theme="light"] .tk-hero-stat-lbl { color: #5c4a35 !important; }
+[data-theme="light"] .tk-hero-progress { background: rgba(0,0,0,0.06) !important; }
+
+/* Search + filters */
+[data-theme="light"] .tk-search-input {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+  -webkit-text-fill-color: #1a1108 !important;
+}
+[data-theme="light"] .tk-search-input::placeholder {
+  color: #9c8470 !important;
+  -webkit-text-fill-color: #9c8470 !important;
+}
+[data-theme="light"] .tk-select {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+  -webkit-text-fill-color: #1a1108 !important;
+}
+[data-theme="light"] .tk-select option {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+}
+
+/* Kanban columns */
+[data-theme="light"] .tk-col {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+[data-theme="light"] .tk-col:hover {
+  border-color: #b8a080 !important;
+  box-shadow: 0 4px 16px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tk-col-header {
+  border-bottom-color: #e8dcc8 !important;
+}
+[data-theme="light"] .tk-col-title { color: #1a1108 !important; }
+[data-theme="light"] .tk-col-count {
+  background: rgba(0,0,0,0.05) !important;
+  color: #5c4a35 !important;
+}
+
+/* Task cards */
+[data-theme="light"] .tk-card {
+  background: #ffffff !important;
+  border: 1px solid #ddd0bb !important;
+  box-shadow: 0 1px 4px rgba(60,30,0,0.06) !important;
+}
+[data-theme="light"] .tk-card:hover {
+  border-color: rgba(99,102,241,0.3) !important;
+  box-shadow: 0 6px 20px rgba(60,30,0,0.1) !important;
+  background: #ffffff !important;
+}
+[data-theme="light"] .tk-card-title { color: #1a1108 !important; }
+[data-theme="light"] .tk-card-desc { color: #5c4a35 !important; }
+[data-theme="light"] .tk-card-footer { border-top-color: #e8dcc8 !important; }
+[data-theme="light"] .tk-tag {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: #ddd0bb !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .tk-comment-count { color: #5c4a35 !important; }
+[data-theme="light"] .tk-due { color: #5c4a35 !important; }
+[data-theme="light"] .tk-menu-btn { color: #5c4a35 !important; }
+
+/* Empty column state */
+[data-theme="light"] .tk-empty {
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #9c8470 !important;
+}
+
+/* Float menu */
+[data-theme="light"] .tk-float-menu {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 12px 40px rgba(60,30,0,0.15) !important;
+  backdrop-filter: none !important;
+}
+[data-theme="light"] .tk-float-section-label { color: #5c4a35 !important; }
