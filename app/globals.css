@@ -722,6 +722,27 @@ input[type="time"] {
   background: rgba(48,209,88,0.12) !important;
   box-shadow: 0 8px 24px rgba(48,209,88,0.1), inset 0 0 0 1px rgba(48,209,88,0.2);
 }
+
+/* Light mode calendar hover overrides */
+[data-theme="light"] .cal-cell:hover {
+  background: rgba(0,113,227,0.08) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(0,113,227,0.15);
+}
+[data-theme="light"] .cal-cell.cal-has-overdue:hover {
+  background: rgba(192,0,26,0.08) !important;
+  box-shadow: 0 4px 16px rgba(192,0,26,0.1), inset 0 0 0 1px rgba(192,0,26,0.2);
+}
+[data-theme="light"] .cal-cell.cal-has-week:hover {
+  background: rgba(109,76,0,0.08) !important;
+  box-shadow: 0 4px 16px rgba(109,76,0,0.08), inset 0 0 0 1px rgba(109,76,0,0.15);
+}
+[data-theme="light"] .cal-cell.cal-has-future:hover {
+  background: rgba(26,110,46,0.08) !important;
+  box-shadow: 0 4px 16px rgba(26,110,46,0.06), inset 0 0 0 1px rgba(26,110,46,0.15);
+}
+[data-theme="light"] .cal-header-cell::after {
+  background: rgba(60,30,0,0.1);
+}
 .cal-evt-pill {
   transition: all 0.2s ease !important;
 }
@@ -806,6 +827,40 @@ input[type="time"] {
 }
 [data-theme="light"] .premium-stat-card:hover {
   box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+}
+
+/* Light mode: drilldown/urgent row hover */
+[data-theme="light"] .drilldown-row:hover {
+  background: rgba(0,0,0,0.03) !important;
+}
+[data-theme="light"] .urgent-row:hover {
+  background: rgba(0,0,0,0.03) !important;
+}
+
+/* Light mode: table rows and borders */
+[data-theme="light"] table {
+  border-color: var(--border) !important;
+}
+[data-theme="light"] th {
+  color: #5c4a35 !important;
+  border-bottom-color: var(--border) !important;
+}
+[data-theme="light"] td {
+  color: #1a1108 !important;
+  border-bottom-color: var(--border) !important;
+}
+
+/* Light mode: links */
+[data-theme="light"] a[style*="color: var(--accent)"] {
+  color: #0071e3 !important;
+}
+
+/* Light mode: stat chip text readability */
+[data-theme="light"] .recharts-tooltip-cursor {
+  fill: rgba(0,0,0,0.03) !important;
+}
+[data-theme="light"] .recharts-cartesian-axis-tick-value {
+  fill: #5c4a35 !important;
 }
 
 /* ═══ Mobile PWA responsive fixes ═══ */
