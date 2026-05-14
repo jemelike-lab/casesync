@@ -2273,3 +2273,101 @@
 [data-theme="light"] .theme-preview[data-preview-theme="dark"] {
   background: #0f172a !important;
 }
+
+/* ── Light Mode: Dashboard Cards & Panels ── */
+[data-theme="light"] .w-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme="light"] .w-card:hover {
+  box-shadow: 0 4px 20px rgba(60,30,0,0.12) !important;
+  border-color: #b8a080 !important;
+}
+
+[data-theme="light"] .wd-stat-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .wd-stat-card:hover {
+  box-shadow: 0 8px 24px rgba(60,30,0,0.12) !important;
+  border-color: #b8a080 !important;
+}
+[data-theme="light"] .wd-stat-value { color: #1a1108 !important; }
+[data-theme="light"] .wd-stat-label { color: #5c4a35 !important; }
+[data-theme="light"] .wd-stat-unit { color: #5c4a35 !important; }
+[data-theme="light"] .wd-stat-arrow { color: #9c8470 !important; }
+[data-theme="light"] .wd-stat-card:hover .wd-stat-arrow { color: #2563eb !important; }
+
+[data-theme="light"] .wd-panel {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme="light"] .wd-panel:hover {
+  box-shadow: 0 4px 20px rgba(60,30,0,0.12) !important;
+  border-color: #b8a080 !important;
+}
+[data-theme="light"] .wd-panel-header {
+  border-bottom: 1px solid #c9b89a !important;
+}
+[data-theme="light"] .wd-panel-title { color: #1a1108 !important; }
+[data-theme="light"] .wd-panel-link { color: #2563eb !important; }
+[data-theme="light"] .wd-panel-link:hover { color: #1d4ed8 !important; }
+
+/* Quick action cards */
+[data-theme="light"] .wd-quick-action {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  color: #1a1108 !important;
+}
+
+/* Streak panel */
+[data-theme="light"] .wd-streak-row {
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .wd-streak-title { color: #1a1108 !important; }
+[data-theme="light"] .wd-streak-sub { color: #5c4a35 !important; }
+
+/* Activity list */
+[data-theme="light"] .wd-activity-item {
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+
+/* Week at a glance */
+[data-theme="light"] .wd-week-day { color: #5c4a35 !important; }
+
+/* Greeting text */
+[data-theme="light"] .wd-greeting { color: #1a1108 !important; }
+[data-theme="light"] .wd-greeting-sub { color: #5c4a35 !important; }
+
+/* Stat progress bar track */
+[data-theme="light"] .wd-stat-progress {
+  background: rgba(0,0,0,0.06) !important;
+}
+
+/* Task kanban cards */
+[data-theme="light"] .tk-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 8px rgba(60,30,0,0.06) !important;
+}
+[data-theme="light"] .tk-card:hover {
+  border-color: #b8a080 !important;
+}
+[data-theme="light"] .tk-column {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: #c9b89a !important;
+}
+
+/* CaseSync alerts in Workryn dashboard */
+[data-theme="light"] .wd-cs-alert-item {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
