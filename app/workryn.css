@@ -78,6 +78,62 @@
   --w-transition-spring: 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ── Light Mode Overrides ── */
+[data-theme="light"] {
+  --w-bg-base: #fdf8f3;
+  --w-bg-surface: rgba(0,0,0,0.03);
+  --w-bg-elevated: rgba(0,0,0,0.05);
+  --w-bg-overlay: rgba(0,0,0,0.07);
+  --w-bg-hover: rgba(0,0,0,0.08);
+
+  --w-border-subtle: rgba(0,0,0,0.08);
+  --w-border-default: rgba(0,0,0,0.12);
+  --w-border-strong: rgba(0,0,0,0.2);
+
+  --w-brand: #2563eb;
+  --w-brand-dark: #1d4ed8;
+  --w-brand-light: #1d4ed8;
+  --w-brand-glow: rgba(37,99,235,0.12);
+  --w-brand-gradient-subtle: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(59,130,246,0.03) 100%);
+
+  --w-success-light: rgba(16,185,129,0.1);
+  --w-warning-light: rgba(245,158,11,0.1);
+  --w-danger-light: rgba(239,68,68,0.1);
+  --w-info-light: rgba(6,182,212,0.1);
+
+  --w-text-primary: #1a1108;
+  --w-text-secondary: #5c4a35;
+  --w-text-muted: #9c8470;
+  --w-text-inverse: #f1f5f9;
+
+  --w-glass-bg: rgba(255,255,255,0.7);
+  --w-glass-border: rgba(0,0,0,0.1);
+
+  --w-shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --w-shadow-md: 0 4px 14px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+  --w-shadow-lg: 0 8px 30px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --w-shadow-brand: 0 8px 32px rgba(37,99,235,0.12);
+  --w-shadow-glow: 0 0 60px rgba(37,99,235,0.06);
+}
+
+[data-theme="light"] .w-app-shell {
+  --glass-bg: rgba(255,255,255,0.8);
+  --glass-border: rgba(0,0,0,0.1);
+  --bg-base: #fdf8f3;
+  --bg-surface: rgba(0,0,0,0.03);
+  --bg-elevated: rgba(0,0,0,0.05);
+  --bg-overlay: rgba(0,0,0,0.07);
+  --bg-hover: rgba(0,0,0,0.08);
+  --text-primary: #1a1108;
+  --text-secondary: #5c4a35;
+  --text-muted: #9c8470;
+  --text-inverse: #f1f5f9;
+  --brand-light: #1d4ed8;
+  --brand-gradient-subtle: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(59,130,246,0.03) 100%);
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-default: rgba(0,0,0,0.10);
+}
+
 /* ═══════════════════════════════════════════
    BRIDGE VARIABLES — for component inline styles
    Components use --glass-bg, --bg-surface, etc.
@@ -2096,4 +2152,124 @@
 @media (max-width: 500px) {
     .wd-cs-alert-count { font-size: 1.25rem; }
     .wd-cs-alerts-grid { gap: 8px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE — Workryn
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Sidebar */
+[data-theme="light"] .w-sidebar {
+  background: linear-gradient(180deg, #3b2a1a 0%, #2a1e10 100%) !important;
+}
+[data-theme="light"] .w-sidebar .w-sidebar-user-name,
+[data-theme="light"] .w-sidebar a,
+[data-theme="light"] .w-sidebar button,
+[data-theme="light"] .w-sidebar span {
+  color: #f0e6d8;
+}
+[data-theme="light"] .w-sidebar a:hover,
+[data-theme="light"] .w-sidebar button:hover {
+  background: rgba(255,255,255,0.12) !important;
+}
+[data-theme="light"] .w-sidebar a.active,
+[data-theme="light"] .w-sidebar .active {
+  background: rgba(255,255,255,0.18) !important;
+  color: #ffffff !important;
+}
+
+/* Main content area */
+[data-theme="light"] .w-page-content {
+  background: #fdf8f3 !important;
+  color: #1a1108 !important;
+}
+
+/* Glass cards */
+[data-theme="light"] .w-card,
+[data-theme="light"] [class*="w-card"] {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  color: #1a1108 !important;
+}
+
+/* Hardcoded light text → dark */
+[data-theme="light"] .w-mobile-title,
+[data-theme="light"] .w-hamburger {
+  color: #1a1108 !important;
+}
+
+/* Mobile header */
+[data-theme="light"] .w-mobile-header {
+  background: #3b2a1a !important;
+}
+[data-theme="light"] .w-mobile-header .w-mobile-title,
+[data-theme="light"] .w-mobile-header .w-hamburger {
+  color: #f0e6d8 !important;
+}
+
+/* Dashboard text overrides */
+[data-theme="light"] .wd-timeline-title,
+[data-theme="light"] .wd-task-title,
+[data-theme="light"] .wd-streak-title {
+  color: #1a1108 !important;
+}
+
+/* Generic light-text classes used in Workryn components */
+[data-theme="light"] .w-app-shell h1,
+[data-theme="light"] .w-app-shell h2,
+[data-theme="light"] .w-app-shell h3,
+[data-theme="light"] .w-app-shell h4 {
+  color: #1a1108;
+}
+[data-theme="light"] .w-app-shell p,
+[data-theme="light"] .w-app-shell span,
+[data-theme="light"] .w-app-shell div,
+[data-theme="light"] .w-app-shell label {
+  color: inherit;
+}
+
+/* Inputs/selects inside Workryn */
+[data-theme="light"] .w-app-shell input,
+[data-theme="light"] .w-app-shell select,
+[data-theme="light"] .w-app-shell textarea {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+  border-color: #c9b89a !important;
+  color-scheme: light !important;
+}
+
+/* Tables */
+[data-theme="light"] .w-app-shell table {
+  color: #1a1108;
+}
+[data-theme="light"] .w-app-shell th {
+  color: #5c4a35 !important;
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] .w-app-shell td {
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+
+/* Buttons */
+[data-theme="light"] .w-app-shell .w-btn-primary,
+[data-theme="light"] .w-app-shell button[class*="primary"] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Settings page specific */
+[data-theme="light"] .theme-option {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .theme-option.active {
+  border-color: #2563eb !important;
+}
+[data-theme="light"] .theme-preview[data-preview-theme="light"] {
+  background: #fdf8f3 !important;
+}
+[data-theme="light"] .theme-preview[data-preview-theme="dark"] {
+  background: #0f172a !important;
 }

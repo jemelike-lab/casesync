@@ -22,7 +22,9 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
-const STORAGE_KEY = 'workryn-theme'
+const STORAGE_KEY = 'theme'
+// Also sync the legacy workryn-specific key for backwards compatibility
+const LEGACY_KEY = 'workryn-theme'
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'dark'
@@ -41,7 +43,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // On mount, read the stored preference and apply it
   useEffect(() => {
-    const stored = (typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY)) as Theme | null
+    // Prefer the shared 'theme' key; fall back to legacy 'workryn-theme'
+    const stored = (typeof localStorage !== 'undefined' && (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY))) as Theme | null
     const initial: Theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
     setThemeState(initial)
     const eff = initial === 'system' ? getSystemTheme() : initial
@@ -64,7 +67,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next)
-    if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, next)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, next)
+      localStorage.setItem(LEGACY_KEY, next)
+    }
     const eff = next === 'system' ? getSystemTheme() : next
     setResolved(eff)
     applyTheme(eff)

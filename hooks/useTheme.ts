@@ -24,6 +24,7 @@ export function useTheme() {
     setThemeState(t)
     try {
       localStorage.setItem('theme', t)
+      localStorage.setItem('workryn-theme', t)
     } catch {}
     document.documentElement.setAttribute('data-theme', t)
   }
