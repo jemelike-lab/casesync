@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useCountUp } from '@/hooks/useCountUp'
+import { useTheme } from '@/hooks/useTheme'
 import {
   Users, AlertTriangle, Clock, PhoneOff, UserCheck, UserCog, UserX,
 } from 'lucide-react'
@@ -256,6 +257,9 @@ export default function PremiumStatGrid({
   plannerCount, tmCount, unassignedPlanners,
   activeFilter, onFilterClick, onRosterClick, activeRosterFilter,
 }: StatGridProps) {
+  const { theme } = useTheme()
+  const lt = theme === 'light'
+
   return (
     <div style={{ marginBottom: 28 }}>
       {/* Hero row — 4 big cards with staggered entrance */}
@@ -269,8 +273,10 @@ export default function PremiumStatGrid({
           label="Active Clients"
           value={totalClients}
           icon={<Users size={20} strokeWidth={2.5} />}
-          gradient="linear-gradient(135deg, #1a1c2e 0%, #2a2d4a 50%, #1e2040 100%)"
-          glowColor="#4a5080"
+          gradient={lt
+            ? "linear-gradient(135deg, #2c3e6e 0%, #3a5090 50%, #2e4272 100%)"
+            : "linear-gradient(135deg, #1a1c2e 0%, #2a2d4a 50%, #1e2040 100%)"}
+          glowColor={lt ? "#3a5090" : "#4a5080"}
           active={activeFilter === 'all'}
           onClick={() => onFilterClick?.('all')}
           delay={0}
@@ -280,7 +286,9 @@ export default function PremiumStatGrid({
           value={overdue}
           total={totalClients}
           icon={<AlertTriangle size={20} strokeWidth={2.5} />}
-          gradient="linear-gradient(135deg, #3d1219 0%, #6b1d2a 50%, #4a1520 100%)"
+          gradient={lt
+            ? "linear-gradient(135deg, #8b1a2b 0%, #b22840 50%, #921e30 100%)"
+            : "linear-gradient(135deg, #3d1219 0%, #6b1d2a 50%, #4a1520 100%)"}
           glowColor="#ff453a"
           active={activeFilter === 'overdue'}
           onClick={() => onFilterClick?.('overdue')}
@@ -292,8 +300,10 @@ export default function PremiumStatGrid({
           value={dueThisWeek}
           total={totalClients}
           icon={<Clock size={20} strokeWidth={2.5} />}
-          gradient="linear-gradient(135deg, #2d2210 0%, #4a3818 50%, #352a12 100%)"
-          glowColor="#ff9f0a"
+          gradient={lt
+            ? "linear-gradient(135deg, #7a5520 0%, #9e6e2a 50%, #825a22 100%)"
+            : "linear-gradient(135deg, #2d2210 0%, #4a3818 50%, #352a12 100%)"}
+          glowColor={lt ? "#b87800" : "#ff9f0a"}
           active={activeFilter === 'due_this_week'}
           onClick={() => onFilterClick?.('due_this_week')}
           delay={120}
@@ -303,8 +313,10 @@ export default function PremiumStatGrid({
           value={noContact}
           total={totalClients}
           icon={<PhoneOff size={20} strokeWidth={2.5} />}
-          gradient="linear-gradient(135deg, #2a2a10 0%, #484818 50%, #363612 100%)"
-          glowColor="#ffd60a"
+          gradient={lt
+            ? "linear-gradient(135deg, #6a6a20 0%, #8a8a30 50%, #707020 100%)"
+            : "linear-gradient(135deg, #2a2a10 0%, #484818 50%, #363612 100%)"}
+          glowColor={lt ? "#8a8a00" : "#ffd60a"}
           active={activeFilter === 'no_contact_7'}
           onClick={() => onFilterClick?.('no_contact_7')}
           delay={180}
