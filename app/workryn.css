@@ -2392,3 +2392,87 @@
 [data-theme="light"] .wd-clock-dot {
   color: #2563eb !important;
 }
+
+/* ── Light Mode: Content Area Background ── */
+[data-theme="light"] .w-app-shell {
+  background: #fdf8f3 !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .w-app-shell .w-page-content {
+  background: #fdf8f3 !important;
+  color: #1a1108 !important;
+}
+
+/* ── Light Mode: Tabs ── */
+[data-theme="light"] .w-tabs {
+  border-bottom-color: #c9b89a !important;
+}
+[data-theme="light"] .w-tab {
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .w-tab:hover {
+  color: #1a1108 !important;
+  background: rgba(0,0,0,0.03) !important;
+}
+[data-theme="light"] .w-tab.active {
+  color: #2563eb !important;
+  background: rgba(37,99,235,0.06) !important;
+  border-bottom-color: #2563eb !important;
+}
+
+/* ── Light Mode: Time Clock ── */
+[data-theme="light"] .tc-clock-face {
+  background: #ffffff !important;
+  border-color: #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tc-time { color: #1a1108 !important; }
+[data-theme="light"] .tc-date { color: #5c4a35 !important; }
+[data-theme="light"] .tc-status { color: #5c4a35 !important; }
+[data-theme="light"] .tc-user { color: #1a1108 !important; }
+
+/* ── Light Mode: Stat cards in timeclock ── */
+[data-theme="light"] .w-app-shell .stat-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+  color: #1a1108 !important;
+}
+
+/* ── Light Mode: Section labels ── */
+[data-theme="light"] .w-app-shell .section-label,
+[data-theme="light"] .w-app-shell [class*="section-title"],
+[data-theme="light"] .w-app-shell h2,
+[data-theme="light"] .w-app-shell h3 {
+  color: #1a1108 !important;
+}
+
+/* ── Light Mode: Empty states ── */
+[data-theme="light"] .w-empty-state {
+  color: #5c4a35 !important;
+}
+
+/* ── Light Mode: All inline hardcoded colors ── */
+[data-theme="light"] .w-app-shell [style*="color: #f1f5f9"],
+[data-theme="light"] .w-app-shell [style*="color:#f1f5f9"],
+[data-theme="light"] .w-app-shell [style*="color: #e2e8f0"],
+[data-theme="light"] .w-app-shell [style*="color:#e2e8f0"] {
+  color: #1a1108 !important;
+}
+[data-theme="light"] .w-app-shell [style*="color: #94a3b8"],
+[data-theme="light"] .w-app-shell [style*="color:#94a3b8"],
+[data-theme="light"] .w-app-shell [style*="color: #64748b"],
+[data-theme="light"] .w-app-shell [style*="color:#64748b"] {
+  color: #5c4a35 !important;
+}
+
+/* ── Light Mode: Inline dark backgrounds ── */
+[data-theme="light"] .w-app-shell [style*="background: rgba(255,255,255,0.0"],
+[data-theme="light"] .w-app-shell [style*="background:rgba(255,255,255,0.0"] {
+  background: rgba(0,0,0,0.02) !important;
+}
+[data-theme="light"] .w-app-shell [style*="border: 1px solid rgba(255,255,255"],
+[data-theme="light"] .w-app-shell [style*="border:1px solid rgba(255,255,255"],
+[data-theme="light"] .w-app-shell [style*="borderColor: rgba(255,255,255"] {
+  border-color: #c9b89a !important;
+}
