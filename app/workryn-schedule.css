@@ -998,3 +998,28 @@
 }
 [data-theme="light"] .w-app-shell .sched-shift-time { color: #1a1108 !important; }
 [data-theme="light"] .w-app-shell .sched-shift-role { color: #5c4a35 !important; }
+
+/* ── Light Mode: Schedule fixes (round 2) ── */
+[data-theme="light"] .w-app-shell .sched-staff-cell {
+  background: #ffffff !important;
+  border-right-color: #c9b89a !important;
+}
+[data-theme="light"] .w-app-shell .sched-day-cell.today {
+  background: rgba(37,99,235,0.06) !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-cell.today {
+  background: rgba(37,99,235,0.08) !important;
+  color: #2563eb !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-cell.today .sched-header-date {
+  color: #2563eb !important;
+}
+[data-theme="light"] .w-app-shell .sched-day-cell {
+  border-right-color: #e8dcc8 !important;
+}
+[data-theme="light"] .w-app-shell .sched-staff-row {
+  background: #ffffff !important;
+}
+[data-theme="light"] .w-app-shell .sched-header-cell:first-child {
+  background: var(--surface-2) !important;
+}
