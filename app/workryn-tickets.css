@@ -1323,3 +1323,41 @@ select option {
 [data-theme="light"] .w-app-shell ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.25) !important;
 }
+
+/* ── Light Mode: Override nuclear dark-mode rules ── */
+[data-theme="light"] .td-stat-value {
+  color: #1a1108 !important;
+  -webkit-text-fill-color: #1a1108 !important;
+}
+
+[data-theme="light"] select,
+[data-theme="light"] select.input,
+[data-theme="light"] .glass-card select,
+[data-theme="light"] .td-page select,
+[data-theme="light"] select.td-filter-select,
+[data-theme="light"] select.focus-ring {
+  color: #1a1108 !important;
+  -webkit-text-fill-color: #1a1108 !important;
+  background-color: #ffffff !important;
+  border-color: #c9b89a !important;
+}
+
+[data-theme="light"] select option {
+  background: #ffffff !important;
+  color: #1a1108 !important;
+}
+
+[data-theme="light"] .glass-card input {
+  color: #1a1108 !important;
+  -webkit-text-fill-color: #1a1108 !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .glass-card input::placeholder {
+  color: #9c8470 !important;
+  -webkit-text-fill-color: #9c8470 !important;
+}
+
+[data-theme="light"] .td-page .page-header p {
+  color: #5c4a35 !important;
+}
