@@ -192,6 +192,16 @@ input[type="time"] {
   color-scheme: dark;
 }
 
+/* Light mode: force light color-scheme on all form elements */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] input[type="time"] {
+  color-scheme: light !important;
+}
+
 /* Button */
 .btn-primary {
   background: var(--accent);
@@ -488,6 +498,30 @@ input[type="time"] {
 [data-theme="light"] textarea {
   color: #1a1108 !important;
   background: #ffffff !important;
+  border-color: #c9b89a !important;
+}
+
+/* Select option text */
+[data-theme="light"] select option {
+  color: #1a1108 !important;
+  background: #ffffff !important;
+}
+
+/* Admin panel select dropdowns specifically */
+[data-theme="light"] .card select {
+  color: #1a1108 !important;
+  background: #ffffff !important;
+  border: 1px solid #c9b89a !important;
+  -webkit-text-fill-color: #1a1108 !important;
+  opacity: 1 !important;
+}
+
+/* Table cell text in light mode */
+[data-theme="light"] .card td {
+  color: #1a1108 !important;
+}
+[data-theme="light"] .card th {
+  color: #5c4a35 !important;
 }
 
 /* ===== LIGHT MODE TARGETED FIXES ===== */
