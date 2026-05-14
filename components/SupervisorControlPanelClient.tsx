@@ -354,7 +354,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             </div>
 
             {/* Right: Urgent clients list */}
-            <div style={{
+            <div className="card" style={{
               flex: 1,
               borderRadius: 22,
               background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
@@ -666,7 +666,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
 
       {/* ─── Premium Planner Workload ─────────────────────────────────── */}
       <div ref={rosterRef} style={{ marginBottom: 24 }}>
-        <div style={{
+        <div className="card" style={{
           borderRadius: 22, overflow: 'hidden',
           border: '1px solid rgba(255,255,255,0.05)',
           background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
@@ -814,7 +814,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
       </div>
 
       {/* ─── Premium Team Roster ──────────────────────────────────────── */}
-      <div style={{
+      <div className="card" style={{
         marginBottom: 24, borderRadius: 22, overflow: 'hidden',
         border: '1px solid rgba(255,255,255,0.05)',
         background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
@@ -834,7 +834,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             const clientCount = summaryByAssignee?.[planner.id]?.total_clients ?? 0
             return (
               <div key={planner.id} style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
                 borderRadius: 14, background: 'rgba(255,255,255,0.015)',
                 opacity: 0, animation: `slideInRow 0.35s ${idx * 0.05}s ease forwards`,
                 transition: 'background 0.2s',
@@ -850,7 +850,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 }}>
                   {(planner.full_name ?? '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ minWidth: 120 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{planner.full_name ?? 'Unknown'}</div>
                   <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>
                     TM: {tm?.full_name ?? <span style={{ color: '#ff9f0a' }}>Unassigned</span>}
@@ -859,13 +859,13 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
                   background: 'rgba(48,209,88,0.1)', color: '#30d158',
-                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0,
                 }}>
                   Support Planner
                 </span>
                 <Link href={teamLink('all', planner.id)} style={{
                   textDecoration: 'none', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)',
-                  padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
+                  padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', flexShrink: 0,
                 }}>
                   {clientCount} client{clientCount !== 1 ? 's' : ''}
                 </Link>
@@ -874,7 +874,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           })}
           {filteredTeamManagers.map((manager, idx) => (
             <div key={manager.id} style={{
-              display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
               borderRadius: 14, background: 'rgba(255,159,10,0.03)',
               borderLeft: '3px solid rgba(255,159,10,0.3)',
               opacity: 0, animation: `slideInRow 0.35s ${(filteredPlanners.length + idx) * 0.05}s ease forwards`,
@@ -890,17 +890,17 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
               }}>
                 {(manager.full_name ?? '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ minWidth: 120 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{manager.full_name ?? 'Unknown'}</div>
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
                 background: 'rgba(255,159,10,0.12)', color: '#ff9f0a',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
+                textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0,
               }}>
                 Team Manager
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', flexShrink: 0 }}>
                 {planners.filter(p => p.team_manager_id === manager.id).length} planner{planners.filter(p => p.team_manager_id === manager.id).length !== 1 ? 's' : ''}
               </span>
             </div>
