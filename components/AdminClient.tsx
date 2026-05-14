@@ -514,9 +514,9 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                         {!isMe && (
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <select
+                              className="admin-select"
                               value={editRole ?? user.role}
                               onChange={e => setEditingRoles(prev => ({ ...prev, [user.id]: e.target.value as Role }))}
-                              style={{ fontSize: 11, padding: '3px 6px' }}
                             >
                               {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                             </select>
@@ -550,9 +550,9 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                     <td style={{ padding: '10px 12px' }}>
                       {isSP ? (
                         <select
+                          className="admin-select"
                           value={user.team_manager_id ?? ''}
                           onChange={e => handleAssignTM(user.id, e.target.value)}
-                          style={{ fontSize: 12, padding: '3px 8px' }}
                         >
                           <option value="">None</option>
                           {teamManagers.map(t => (

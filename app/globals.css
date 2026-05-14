@@ -518,6 +518,15 @@ input[type="time"] {
   font-size: inherit;
 }
 
+/* Compact selects inside tables */
+.admin-select {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  line-height: 1.4 !important;
+}
+
 /* Table cell text in light mode */
 [data-theme="light"] .card td {
   color: #1a1108 !important;
