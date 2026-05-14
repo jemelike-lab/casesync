@@ -46,6 +46,27 @@ export async function GET(req: NextRequest) {
   const canSeePhi =
     includePhi && ['supervisor', 'it'].includes(profile.role ?? '')
 
+  // M1: PHI exports require MFA to be enabled (HIPAA defense-in-depth)
+  if (canSeePhi) {
+    const { data: mfaProfile } = await supabase
+      .from('profiles')
+      .select('mfa_email_enabled')
+      .eq('id', user.id)
+      .single()
+
+    const { data: factors } = await supabase.auth.mfa.listFactors()
+    const totpFactors = (factors as any)?.totp ?? (factors as any)?.all?.filter((f: any) => f.factor_type === 'totp') ?? []
+    const hasVerifiedTotp = Array.isArray(totpFactors) && totpFactors.some((f: any) => f.status === 'verified')
+    const hasMfa = mfaProfile?.mfa_email_enabled === true || hasVerifiedTotp
+
+    if (!hasMfa) {
+      return NextResponse.json(
+        { error: 'PHI exports require multi-factor authentication. Please enable MFA in Settings → Security before downloading identifiable data.' },
+        { status: 403 }
+      )
+    }
+  }
+
   const { createClient: createServiceClient } = await import('@supabase/supabase-js')
   const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

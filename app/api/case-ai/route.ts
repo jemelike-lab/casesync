@@ -7,6 +7,7 @@ import { validateUUID } from '@/lib/validation'
 import { auditLog } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // Allow up to 60s for multi-tool bot conversations
 
 // ─── Rate limiter ─────────────────────────────────────────────────────────────
 let activeRequests = 0
@@ -32,6 +33,87 @@ async function fetchAllRows(buildQuery: () => any): Promise<Record<string, unkno
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * D4: Stream a final Anthropic response to the client.
+ * Parses SSE events and extracts content_block_delta text chunks.
+ */
+function streamAnthropicResponse(
+  apiHeaders: Record<string, string>,
+  systemPrompt: string,
+  messages: Array<{ role: string; content: unknown }>,
+  tools?: unknown[],
+  toolChoice?: { type: string },
+): Response {
+  const encoder = new TextEncoder()
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const body: Record<string, unknown> = {
+          model: 'claude-haiku-4-5',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages,
+          stream: true,
+        }
+        if (tools) body.tools = tools
+        if (toolChoice) body.tool_choice = toolChoice
+
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify(body),
+        })
+
+        if (!res.ok || !res.body) {
+          controller.enqueue(encoder.encode('AI service error — please try again.'))
+          controller.close()
+          return
+        }
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const json = line.slice(6).trim()
+            if (json === '[DONE]') continue
+            try {
+              const event = JSON.parse(json)
+              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                controller.enqueue(encoder.encode(event.delta.text))
+              }
+            } catch {
+              // skip unparseable events
+            }
+          }
+        }
+      } catch {
+        controller.enqueue(encoder.encode('\n\nSorry, the response was interrupted. Please try again.'))
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Transfer-Encoding': 'chunked',
+      'Cache-Control': 'no-cache',
+    },
+  })
+}
 
 function getDateStatus(dateStr: string | null): 'critical' | 'red' | 'orange' | 'yellow' | 'green' | 'none' {
   if (!dateStr) return 'none'
@@ -1533,43 +1615,9 @@ RULES:
         }
       }
 
-      // If we exhausted all rounds, do one final call with tool_choice:none to force an answer
-      const finalController = new AbortController()
-      const finalTimeout = setTimeout(() => finalController.abort(), 30000)
-      try {
-        const finalRes = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: apiHeaders,
-          signal: finalController.signal,
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 1024,
-            system: systemPrompt,
-            messages: loopMessages,
-            tools: BOT_TOOLS,
-            tool_choice: { type: 'none' },
-          }),
-        })
-        clearTimeout(finalTimeout)
-
-        if (!finalRes.ok) {
-          return new Response('AI service error', { status: 502 })
-        }
-
-        const finalData = await finalRes.json() as typeof pass1Data
-        const finalAnswer = finalData.content
-          .filter((b: { type: string }) => b.type === 'text')
-          .map((b: { text?: string }) => b.text || '')
-          .join('')
-
-        auditLog(req, { userId, action: 'bot_query' })
-        return new Response(finalAnswer, {
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        })
-      } catch (finalErr) {
-        clearTimeout(finalTimeout)
-        throw finalErr
-      }
+      // If we exhausted all rounds, stream one final call with tool_choice:none to force an answer
+      auditLog(req, { userId, action: 'bot_query' }).catch(() => {})
+      return streamAnthropicResponse(apiHeaders, systemPrompt, loopMessages, BOT_TOOLS, { type: 'none' })
     } else {
       // No tool use - extract text from pass1 response directly
       console.log('[BLH Bot] No tool use - returning pass1 text directly')
