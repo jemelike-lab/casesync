@@ -846,3 +846,157 @@
     .tc-ts-row, .tc-hist-row-main { grid-template-columns: 1fr; gap: 4px; }
     .tc-ts-row-dur, .tc-hist-dur { text-align: left; }
 }
+
+/* ═══════════════════════════════════════════
+   LIGHT MODE — Time Clock
+   ═══════════════════════════════════════════ */
+
+/* Clock panel */
+[data-theme="light"] .tc-clock-page .tc-clock-panel {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+
+/* Stat cards */
+[data-theme="light"] .tc-stat-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tc-stat-value { color: #1a1108 !important; }
+[data-theme="light"] .tc-stat-label { color: #5c4a35 !important; }
+
+/* Tabs */
+[data-theme="light"] .tc-tabs { border-bottom-color: #c9b89a !important; }
+[data-theme="light"] .tc-tab { color: #5c4a35 !important; }
+[data-theme="light"] .tc-tab-active {
+  color: #2563eb !important;
+  border-bottom-color: #2563eb !important;
+}
+
+/* Weekly bars panel — the WEEKLY HOURS section */
+[data-theme="light"] .tc-bars-panel,
+[data-theme="light"] .tc-weekly-chart {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tc-bar-label { color: #5c4a35 !important; }
+[data-theme="light"] .tc-bar-value { color: #1a1108 !important; }
+[data-theme="light"] .tc-bar-bg { background: rgba(0,0,0,0.06) !important; }
+
+/* Activity panel */
+[data-theme="light"] .tc-activity-panel {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tc-activity-empty { color: #5c4a35 !important; }
+[data-theme="light"] .tc-activity-empty p { color: #1a1108 !important; }
+[data-theme="light"] .tc-activity-empty span { color: #5c4a35 !important; }
+
+/* Today entries */
+[data-theme="light"] .tc-today-entry {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: #c9b89a !important;
+  color: #1a1108 !important;
+}
+[data-theme="light"] .tc-today-dur { color: #1a1108 !important; }
+
+/* Week summary */
+[data-theme="light"] .tc-week-summary {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+[data-theme="light"] .tc-summary-row { border-bottom-color: #e8dcc8 !important; }
+[data-theme="light"] .tc-summary-row span { color: #5c4a35 !important; }
+[data-theme="light"] .tc-summary-row strong { color: #1a1108 !important; }
+
+/* Weekly progress bar track */
+[data-theme="light"] .tc-weekly-bar { background: rgba(0,0,0,0.06) !important; }
+
+/* Mini cards */
+[data-theme="light"] .tc-mini-card {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: #c9b89a !important;
+}
+[data-theme="light"] .tc-mini-value { color: #1a1108 !important; }
+[data-theme="light"] .tc-mini-label { color: #5c4a35 !important; }
+
+/* Timesheet tab */
+[data-theme="light"] .tc-ts-stat {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+[data-theme="light"] .tc-ts-stat-val { color: #2563eb !important; }
+[data-theme="light"] .tc-ts-stat-label { color: #5c4a35 !important; }
+[data-theme="light"] .tc-ts-entries {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+[data-theme="light"] .tc-ts-row { border-bottom-color: #e8dcc8 !important; }
+[data-theme="light"] .tc-ts-row:hover { background: rgba(0,0,0,0.02) !important; }
+[data-theme="light"] .tc-ts-row-date { color: #1a1108 !important; }
+[data-theme="light"] .tc-ts-row-time { color: #5c4a35 !important; }
+[data-theme="light"] .tc-ts-row-dur { color: #1a1108 !important; }
+[data-theme="light"] .tc-ts-empty { color: #5c4a35 !important; }
+[data-theme="light"] .tc-week-nav .tc-week-label { color: #1a1108 !important; }
+
+/* History tab */
+[data-theme="light"] .tc-hist-entries {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+[data-theme="light"] .tc-hist-row { border-bottom-color: #e8dcc8 !important; }
+[data-theme="light"] .tc-hist-row:hover { background: rgba(0,0,0,0.02) !important; }
+[data-theme="light"] .tc-hist-date { color: #1a1108 !important; }
+[data-theme="light"] .tc-hist-time { color: #5c4a35 !important; }
+[data-theme="light"] .tc-hist-dur { color: #1a1108 !important; }
+[data-theme="light"] .tc-hist-detail {
+  background: rgba(0,0,0,0.02) !important;
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .tc-hist-pagination { border-top-color: #e8dcc8 !important; }
+[data-theme="light"] .tc-hist-count { color: #5c4a35 !important; }
+
+/* Empty/loading states */
+[data-theme="light"] .tc-empty,
+[data-theme="light"] .tc-loading,
+[data-theme="light"] .tc-ts-loading { color: #5c4a35 !important; }
+
+/* Status badge */
+[data-theme="light"] .tc-status-out {
+  background: rgba(0,0,0,0.04) !important;
+  color: #5c4a35 !important;
+  border-color: #c9b89a !important;
+}
+
+/* Section headers */
+[data-theme="light"] .tc-section-label {
+  color: #1a1108 !important;
+}
+
+/* Analog clock face */
+[data-theme="light"] .tc-analog-face {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60,30,0,0.08) !important;
+}
+
+/* Digital time in clock page */
+[data-theme="light"] .tc-digital-date { color: #5c4a35 !important; }
+
+/* Break button */
+[data-theme="light"] .tc-btn-break {
+  border-color: rgba(37,99,235,0.3) !important;
+  background: rgba(37,99,235,0.06) !important;
+  color: #2563eb !important;
+}
+
+/* General wd-panel inside timeclock pages */
+[data-theme="light"] .tc-clock-page .wd-panel {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
