@@ -87,7 +87,8 @@ export async function GET(request: Request) {
   const todayStr = today.toISOString().split('T')[0]
 
   const currentHour = new Date().getUTCHours()
-  const isMorningRun = currentHour >= 7 && currentHour <= 9
+  // Morning cron runs at 12 UTC (8am EDT / 7am EST). Daily digest only on morning run.
+  const isMorningRun = currentHour >= 11 && currentHour <= 13
 
   // C4 fix: only fetch active, real clients with an assigned planner
   const { data: clients, error } = await supabase
