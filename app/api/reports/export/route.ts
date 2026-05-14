@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
     .from('clients')
     .select(selectString)
     .eq('is_active', true)
+    .eq('client_classification', 'real')
     .order('category', { ascending: true })
 
   // Role-based scoping

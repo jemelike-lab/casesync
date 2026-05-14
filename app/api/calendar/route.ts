@@ -75,6 +75,7 @@ export async function GET(req: Request) {
       .from('clients')
       .select('id, client_id, first_name, last_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role), eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, mfp_consent_date, two57_date, doc_mdh_date')
       .eq('is_active', true)
+      .eq('client_classification', 'real')
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)

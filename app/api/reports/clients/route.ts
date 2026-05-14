@@ -62,6 +62,7 @@ export async function GET(req: Request) {
       .from('clients')
       .select(selectString)
       .eq('is_active', true)
+      .eq('client_classification', 'real')
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)

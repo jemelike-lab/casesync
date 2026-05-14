@@ -62,6 +62,7 @@ export async function GET(req: Request) {
       .from('clients')
       .select('id, assigned_to, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due')
       .eq('is_active', true)
+      .eq('client_classification', 'real')
 
     if (role === 'supports_planner') {
       query = query.eq('assigned_to', userId)
