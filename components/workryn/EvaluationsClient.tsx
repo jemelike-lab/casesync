@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useRef, useState, useEffect } from 'react'
+import MilestoneDashboard from './MilestoneDashboard'
 import {
   Star,
   Award,
@@ -416,10 +417,10 @@ export default function EvaluationsClient({
   const totalCriteria = templates.reduce((sum, t) => sum + t.criteria.length, 0)
   const tabs: TabConfig[] = isManager
     ? [
-        { id: 'given', label: 'Given', icon: TrendingUp, count: givenCount },
+        { id: 'given', label: 'Onboarding', icon: TrendingUp, count: staffUsers.length },
         { id: 'received', label: 'My Reviews', icon: Star, count: receivedCount },
         ...(isAdmin ? [
-          { id: 'all' as Tab, label: 'All', icon: Users, count: evaluations.length },
+          { id: 'all' as Tab, label: 'All Staff', icon: Users, count: evaluations.length },
           { id: 'templates' as Tab, label: 'Templates', icon: ClipboardCheck, count: activeTemplateCount },
           { id: 'question-bank' as Tab, label: 'Question Bank', icon: BookOpen, count: totalCriteria },
         ] : []),
@@ -469,11 +470,6 @@ export default function EvaluationsClient({
           <StatCard icon={ClipboardCheck} label="Active Templates" value={activeTemplateCount} color="#8b5cf6" delay={240} />
         </div>
 
-        {/* ── 30-Day Onboarding Workflow Panel (managers only) ── */}
-        {isManager && (
-          <OnboardingWorkflowPanel staffUsers={staffUsers} currentUserName={currentUser.name} />
-        )}
-
         {/* ── Tab Bar ── */}
         {isManager && (
           <div className="eval-tab-bar">
@@ -504,51 +500,19 @@ export default function EvaluationsClient({
             onEdit={(t) => { setTemplateToEdit(t); setShowTemplateBuilder(true) }}
             onDelete={handleDeleteTemplate}
           />
+        ) : isManager && (tab === 'given' || tab === 'all') ? (
+          /* ── Manager view: Milestone Dashboard ── */
+          <MilestoneDashboard />
         ) : (
+          /* ── Staff view: Self-Assessment + Supervisor Reviews ── */
           <>
-            {/* Self-assessments section (staff + managers see their own) */}
             {(() => {
               const selfEvals = evaluations.filter(e => e.agentId === currentUser.id && e.evaluatorId === currentUser.id && e.comments?.startsWith('[SELF-ASSESSMENT]'))
               const supervisorEvals = visible.filter(e => !(e.agentId === currentUser.id && e.evaluatorId === currentUser.id && e.comments?.startsWith('[SELF-ASSESSMENT]')))
 
               return (
                 <>
-                  {selfEvals.length > 0 && (
-                    <div style={{ marginBottom: 28 }}>
-                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Edit2 size={16} style={{ color: '#10b981' }} /> My Self-Assessments
-                      </h2>
-                      <div className="eval-grid">
-                        {selfEvals.map((e, i) => (
-                          <div
-                            key={e.id}
-                            className="gradient-card eval-card animate-slide-up"
-                            onClick={() => setDetailEval(e)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setDetailEval(e) } }}
-                            style={{ animationDelay: `${i * 50}ms` }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                              <div>
-                                <div className="eval-card-template">{e.template.name}</div>
-                                <div className="eval-card-title">Self-Assessment</div>
-                              </div>
-                              <span className="ack-ribbon"><CheckCircle2 size={11} /> Submitted</span>
-                            </div>
-                            <div className="eval-meta-row">
-                              <Clock size={13} />
-                              <span>{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </div>
-                            <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                              {e.scores.length} question{e.scores.length !== 1 ? 's' : ''} answered · Click to review your responses
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
+                  {/* CTA for staff who haven't submitted yet */}
                   {!isManager && selfEvals.length === 0 && getApplicableTemplate(templates, currentUser.hireDate) && (
                     <div className="sa-cta-panel animate-slide-up" style={{ marginBottom: 28 }}>
                       <div className="sa-cta-left">
@@ -568,13 +532,48 @@ export default function EvaluationsClient({
                     </div>
                   )}
 
+                  {/* Submitted self-assessments */}
+                  {selfEvals.length > 0 && (
+                    <div style={{ marginBottom: 28 }}>
+                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Edit2 size={16} style={{ color: '#10b981' }} /> My Self-Assessments
+                      </h2>
+                      <div className="eval-grid">
+                        {selfEvals.map((e, i) => (
+                          <div
+                            key={e.id}
+                            className="gradient-card eval-card animate-slide-up"
+                            onClick={() => setDetailEval(e)}
+                            role="button" tabIndex={0}
+                            onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setDetailEval(e) } }}
+                            style={{ animationDelay: `${i * 50}ms` }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                              <div>
+                                <div className="eval-card-template">{e.template.name}</div>
+                                <div className="eval-card-title">Self-Assessment</div>
+                              </div>
+                              <span className="ack-ribbon"><CheckCircle2 size={11} /> Submitted</span>
+                            </div>
+                            <div className="eval-meta-row">
+                              <Clock size={13} />
+                              <span>{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                              {e.scores.length} question{e.scores.length !== 1 ? 's' : ''} answered
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Supervisor reviews */}
                   {supervisorEvals.length > 0 && (
                     <div>
-                      {selfEvals.length > 0 && (
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Award size={16} style={{ color: '#3b82f6' }} /> Supervisor Reviews
-                        </h2>
-                      )}
+                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Award size={16} style={{ color: '#3b82f6' }} /> Supervisor Reviews
+                      </h2>
                       <div className="eval-grid">
                         {supervisorEvals.map((e, i) => (
                           <EvaluationCard key={e.id} evaluation={e} currentUserId={currentUser.id} index={i} onOpen={() => setDetailEval(e)} />
@@ -583,11 +582,8 @@ export default function EvaluationsClient({
                     </div>
                   )}
 
-                  {selfEvals.length === 0 && supervisorEvals.length === 0 && isManager && (
-                    <EmptyEvalState
-                      isManager={isManager}
-                      tab={tab}
-                    />
+                  {selfEvals.length === 0 && supervisorEvals.length === 0 && !getApplicableTemplate(templates, currentUser.hireDate) && (
+                    <EmptyEvalState isManager={isManager} tab={tab} />
                   )}
                 </>
               )
