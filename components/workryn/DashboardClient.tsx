@@ -7,7 +7,8 @@ import {
   CheckCircle2, Flame, Sun,
   ChevronRight, ListTodo, Timer, 
   Briefcase, LogIn, LogOut, FileEdit, Bell,
-  AlertTriangle, ExternalLink, Users, ShieldAlert, CalendarClock
+  AlertTriangle, ExternalLink, Users, ShieldAlert, CalendarClock,
+  MapPin, ClipboardCheck, Send, Award, Sparkles,
 } from 'lucide-react'
 
 interface Props {
@@ -444,6 +445,70 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
             <div className="wd-tip">
               <Sun size={16} />
               <span>{tip}</span>
+            </div>
+          </div>
+
+          {/* ═══ ONBOARDING GUIDE ═══ */}
+          <div className="wd-panel wd-ob-guide wd-panel-stagger" style={{ '--stagger': '0.5' } as React.CSSProperties}>
+            <div className="wd-ob-guide-header">
+              <div className="wd-ob-guide-icon">
+                <Award size={20} />
+              </div>
+              <div>
+                <h2 className="wd-panel-title" style={{ margin: 0 }}>30-Day Onboarding</h2>
+                <span className="wd-ob-guide-sub">New support planner evaluation flow</span>
+              </div>
+            </div>
+
+            <div className="wd-ob-steps">
+              <div className="wd-ob-step">
+                <div className="wd-ob-step-num" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>1</div>
+                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #3b82f6, #8b5cf6)' }} />
+                <div className="wd-ob-step-body">
+                  <div className="wd-ob-step-title">County Preference</div>
+                  <div className="wd-ob-step-desc">Select your residence county and preferred client regions</div>
+                  <Link href="/w/county-preference" className="wd-ob-step-link">
+                    <MapPin size={12} /> Open Form <ChevronRight size={12} />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="wd-ob-step">
+                <div className="wd-ob-step-num" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>2</div>
+                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #10b981, #06b6d4)' }} />
+                <div className="wd-ob-step-body">
+                  <div className="wd-ob-step-title">Self-Assessment</div>
+                  <div className="wd-ob-step-desc">Complete your 30-day self-evaluation in Workryn</div>
+                  <Link href="/w/evaluations" className="wd-ob-step-link">
+                    <ClipboardCheck size={12} /> Go to Evaluations <ChevronRight size={12} />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="wd-ob-step">
+                <div className="wd-ob-step-num" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>3</div>
+                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #f59e0b, #ef4444)' }} />
+                <div className="wd-ob-step-body">
+                  <div className="wd-ob-step-title">Schedule Meeting</div>
+                  <div className="wd-ob-step-desc">Book your evaluation review with Sarah Abbott</div>
+                  <a href="https://calendly.com/sabbott-9/evaluations" target="_blank" rel="noopener noreferrer" className="wd-ob-step-link">
+                    <CalendarDays size={12} /> Schedule on Calendly <ExternalLink size={10} />
+                  </a>
+                </div>
+              </div>
+
+              <div className="wd-ob-step">
+                <div className="wd-ob-step-num" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc' }}>4</div>
+                <div className="wd-ob-step-body">
+                  <div className="wd-ob-step-title">Supervisor Review</div>
+                  <div className="wd-ob-step-desc">Sarah reviews your self-assessment and completes the formal evaluation</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="wd-ob-guide-footer">
+              <Sparkles size={13} />
+              <span>Complete steps 1–3 at least one week before your 30-day mark</span>
             </div>
           </div>
 

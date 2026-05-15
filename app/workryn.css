@@ -1633,6 +1633,58 @@
 
 .wd-tip svg { color: #f59e0b; flex-shrink: 0; margin-top: 2px; }
 
+/* ── Onboarding Guide ── */
+.wd-ob-guide { overflow: hidden; }
+.wd-ob-guide-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 24px 16px;
+}
+.wd-ob-guide-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(139,92,246,0.15));
+  display: flex; align-items: center; justify-content: center;
+  color: #a78bfa; flex-shrink: 0;
+}
+.wd-ob-guide-sub { display: block; font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+.wd-ob-steps { padding: 0 24px 8px; display: flex; flex-direction: column; }
+.wd-ob-step {
+  display: flex; gap: 14px; position: relative;
+  padding-bottom: 18px;
+}
+.wd-ob-step:last-child { padding-bottom: 8px; }
+.wd-ob-step-num {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 800; flex-shrink: 0;
+  z-index: 1;
+}
+.wd-ob-step-line {
+  position: absolute; left: 13px; top: 30px; bottom: 0;
+  width: 2px; border-radius: 1px; opacity: 0.3;
+}
+.wd-ob-step:last-child .wd-ob-step-line { display: none; }
+.wd-ob-step-body { flex: 1; padding-top: 2px; }
+.wd-ob-step-title { font-size: 0.875rem; font-weight: 600; color: #e2e8f0; }
+.wd-ob-step-desc { font-size: 0.8125rem; color: #64748b; margin-top: 2px; line-height: 1.4; }
+.wd-ob-step-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 6px; padding: 4px 10px; border-radius: 6px;
+  background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2);
+  font-size: 0.75rem; font-weight: 600; color: #60a5fa;
+  text-decoration: none; transition: all 0.15s;
+}
+.wd-ob-step-link:hover {
+  background: rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.4);
+  transform: translateX(2px);
+}
+.wd-ob-guide-footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 24px; margin-top: 4px;
+  background: rgba(139,92,246,0.06); border-top: 1px solid rgba(139,92,246,0.1);
+  font-size: 0.8125rem; color: #94a3b8;
+}
+.wd-ob-guide-footer svg { color: #a78bfa; flex-shrink: 0; }
+
 /* Activity Feed */
 .wd-activity-list { display: flex; flex-direction: column; }
 
