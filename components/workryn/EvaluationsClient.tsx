@@ -23,6 +23,11 @@ import {
   Sparkles,
   Target,
   Zap,
+  BookOpen,
+  MessageSquare,
+  ToggleLeft,
+  Search,
+  PieChart,
 } from 'lucide-react'
 import { formatDateTime, timeAgo, getInitials } from '@/lib/workryn/utils'
 import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
@@ -94,7 +99,7 @@ interface Props {
   currentUser: { id: string; name: string; role: string; avatarColor: string }
 }
 
-type Tab = 'received' | 'given' | 'all' | 'templates'
+type Tab = 'received' | 'given' | 'all' | 'templates' | 'question-bank'
 
 // ── Small primitives ─────────────────────────────────────────
 
@@ -358,6 +363,7 @@ export default function EvaluationsClient({
   const activeTemplateCount = templates.filter((t) => t.isActive).length
 
   type TabConfig = { id: Tab; label: string; icon: typeof Award; count: number }
+  const totalCriteria = templates.reduce((sum, t) => sum + t.criteria.length, 0)
   const tabs: TabConfig[] = isManager
     ? [
         { id: 'given', label: 'Given', icon: TrendingUp, count: givenCount },
@@ -365,6 +371,7 @@ export default function EvaluationsClient({
         ...(isAdmin ? [
           { id: 'all' as Tab, label: 'All', icon: Users, count: evaluations.length },
           { id: 'templates' as Tab, label: 'Templates', icon: ClipboardCheck, count: activeTemplateCount },
+          { id: 'question-bank' as Tab, label: 'Question Bank', icon: BookOpen, count: totalCriteria },
         ] : []),
       ]
     : []
@@ -432,7 +439,9 @@ export default function EvaluationsClient({
 
       {/* ── Content ── */}
       <div className="eval-content">
-        {tab === 'templates' && isAdmin ? (
+        {tab === 'question-bank' && isAdmin ? (
+          <QuestionBankView templates={templates} />
+        ) : tab === 'templates' && isAdmin ? (
           <TemplatesGrid
             templates={templates}
             isAdmin={isAdmin}
@@ -867,6 +876,439 @@ function EvaluationCard({
         ) : null}
         {e.documentUrl && <span className="badge badge-muted"><Paperclip size={10} /> Document</span>}
       </div>
+    </div>
+  )
+}
+
+// ── Question Bank View (PurelyHR-style) ──
+
+const QB_COLORS: Record<string, { bg: string; fg: string; border: string; icon: typeof Star }> = {
+  RATING: { bg: 'rgba(245,158,11,0.12)', fg: '#fbbf24', border: 'rgba(245,158,11,0.3)', icon: Star },
+  TEXT: { bg: 'rgba(59,130,246,0.12)', fg: '#60a5fa', border: 'rgba(59,130,246,0.3)', icon: FileText },
+  YES_NO: { bg: 'rgba(16,185,129,0.12)', fg: '#34d399', border: 'rgba(16,185,129,0.3)', icon: ToggleLeft },
+  COMMENT: { bg: 'rgba(168,85,247,0.12)', fg: '#c084fc', border: 'rgba(168,85,247,0.3)', icon: MessageSquare },
+}
+const QB_TYPE_LABELS: Record<string, string> = { RATING: 'Rating', TEXT: 'Text', YES_NO: 'Yes/No', COMMENT: 'Comment' }
+const DONUT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#a855f7', '#6366f1', '#84cc16', '#e11d48', '#0ea5e9', '#d946ef', '#22c55e', '#eab308']
+
+function DonutChart({ data, size = 180 }: { data: { label: string; value: number; color: string }[]; size?: number }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return null
+  const r = size / 2
+  const ir = r * 0.62
+  const cx = r
+  const cy = r
+  let cumAngle = -Math.PI / 2
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.3))' }}>
+      {data.map((d, i) => {
+        const pct = d.value / total
+        const angle = pct * 2 * Math.PI
+        const startAngle = cumAngle
+        const endAngle = cumAngle + angle
+        cumAngle = endAngle
+
+        const x1 = cx + r * Math.cos(startAngle)
+        const y1 = cy + r * Math.sin(startAngle)
+        const x2 = cx + r * Math.cos(endAngle)
+        const y2 = cy + r * Math.sin(endAngle)
+        const ix1 = cx + ir * Math.cos(endAngle)
+        const iy1 = cy + ir * Math.sin(endAngle)
+        const ix2 = cx + ir * Math.cos(startAngle)
+        const iy2 = cy + ir * Math.sin(startAngle)
+        const largeArc = angle > Math.PI ? 1 : 0
+
+        const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${ir} ${ir} 0 ${largeArc} 0 ${ix2} ${iy2} Z`
+
+        return (
+          <path
+            key={i}
+            d={path}
+            fill={d.color}
+            stroke="rgba(0,0,0,0.3)"
+            strokeWidth="1"
+            style={{ transition: 'opacity 0.2s' }}
+          >
+            <title>{d.label}: {d.value} ({(pct * 100).toFixed(0)}%)</title>
+          </path>
+        )
+      })}
+      <circle cx={cx} cy={cy} r={ir - 1} fill="var(--glass-bg, rgba(18,18,26,0.9))" />
+      <text x={cx} y={cy - 8} textAnchor="middle" fill="var(--text-primary, #f5f5f7)" fontSize="28" fontWeight="800">{total}</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill="var(--text-muted, rgba(255,255,255,0.45))" fontSize="11" fontWeight="600" letterSpacing="0.06em">QUESTIONS</text>
+    </svg>
+  )
+}
+
+function BarGraph({ items, maxValue }: { items: { label: string; value: number; color: string }[]; maxValue: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.map((item, i) => {
+        const pct = maxValue > 0 ? (item.value / maxValue) * 100 : 0
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', minWidth: 90, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.label}
+            </span>
+            <div style={{ flex: 1, height: 28, background: 'rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
+              <div style={{
+                width: `${pct}%`, height: '100%', borderRadius: 6,
+                background: `linear-gradient(90deg, ${item.color}, ${item.color}99)`,
+                boxShadow: `0 0 16px ${item.color}33`,
+                transition: 'width 800ms cubic-bezier(0.4,0,0.2,1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8,
+              }}>
+                {pct > 12 && (
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
+                    {item.value}
+                  </span>
+                )}
+              </div>
+              {pct <= 12 && (
+                <span style={{ position: 'absolute', left: `${pct + 1}%`, top: '50%', transform: 'translateY(-50%)', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {item.value}
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function QuestionBankView({ templates }: { templates: Template[] }) {
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string>('ALL')
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null)
+
+  const activeTemplates = templates.filter(t => t.isActive)
+
+  // Build stats
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { RATING: 0, TEXT: 0, YES_NO: 0, COMMENT: 0 }
+    activeTemplates.forEach(t => t.criteria.forEach(c => { counts[(c as any).type ?? 'RATING'] = (counts[(c as any).type ?? 'RATING'] || 0) + 1 }))
+    return counts
+  }, [activeTemplates])
+
+  const totalQuestions = Object.values(typeCounts).reduce((s, v) => s + v, 0)
+
+  // Filter
+  const filtered = useMemo(() => {
+    const s = search.toLowerCase()
+    return activeTemplates.map(t => ({
+      ...t,
+      criteria: t.criteria.filter(c => {
+        const type = (c as any).type ?? 'RATING'
+        const matchSearch = !s || c.label.toLowerCase().includes(s)
+        const matchType = typeFilter === 'ALL' || type === typeFilter
+        return matchSearch && matchType
+      }),
+    })).filter(t => t.criteria.length > 0)
+  }, [activeTemplates, search, typeFilter])
+
+  const filteredTotal = filtered.reduce((s, t) => s + t.criteria.length, 0)
+
+  // Donut data for templates
+  const donutData = activeTemplates.map((t, i) => ({
+    label: t.name,
+    value: t.criteria.length,
+    color: DONUT_COLORS[i % DONUT_COLORS.length],
+  })).filter(d => d.value > 0)
+
+  // Donut data for types
+  const typeDonut = Object.entries(typeCounts).filter(([, v]) => v > 0).map(([type, value]) => ({
+    label: QB_TYPE_LABELS[type] ?? type,
+    value,
+    color: QB_COLORS[type]?.fg ?? '#888',
+  }))
+
+  // Bar graph data
+  const barData = activeTemplates.map((t, i) => ({
+    label: t.name.length > 18 ? t.name.slice(0, 16) + '…' : t.name,
+    value: t.criteria.length,
+    color: DONUT_COLORS[i % DONUT_COLORS.length],
+  })).filter(d => d.value > 0).sort((a, b) => b.value - a.value)
+
+  const maxBar = Math.max(...barData.map(d => d.value), 1)
+
+  return (
+    <div className="qb-container">
+      {/* ── Visual Stats Row ── */}
+      <div className="qb-charts-row">
+        {/* Donut: By Template */}
+        <div className="qb-chart-card animate-slide-up" style={{ animationDelay: '0ms' }}>
+          <div className="qb-chart-header">
+            <PieChart size={16} style={{ color: '#3b82f6' }} />
+            <span>Questions by Template</span>
+          </div>
+          <div className="qb-donut-wrap">
+            <DonutChart data={donutData} size={170} />
+          </div>
+          <div className="qb-donut-legend">
+            {donutData.slice(0, 8).map((d, i) => (
+              <div key={i} className="qb-legend-item">
+                <span className="qb-legend-dot" style={{ background: d.color }} />
+                <span className="qb-legend-label">{d.label}</span>
+                <span className="qb-legend-value">{d.value}</span>
+              </div>
+            ))}
+            {donutData.length > 8 && <div className="qb-legend-item" style={{ color: 'var(--text-muted)' }}>+{donutData.length - 8} more</div>}
+          </div>
+        </div>
+
+        {/* Donut: By Type */}
+        <div className="qb-chart-card animate-slide-up" style={{ animationDelay: '80ms' }}>
+          <div className="qb-chart-header">
+            <BarChart3 size={16} style={{ color: '#f59e0b' }} />
+            <span>Questions by Type</span>
+          </div>
+          <div className="qb-donut-wrap">
+            <DonutChart data={typeDonut} size={170} />
+          </div>
+          <div className="qb-type-chips">
+            {Object.entries(typeCounts).filter(([, v]) => v > 0).map(([type, count]) => {
+              const c = QB_COLORS[type] ?? QB_COLORS.RATING
+              const Icon = c.icon
+              return (
+                <div key={type} className="qb-type-chip" style={{ background: c.bg, borderColor: c.border }}>
+                  <Icon size={13} style={{ color: c.fg }} />
+                  <span style={{ color: c.fg, fontWeight: 700 }}>{QB_TYPE_LABELS[type]}</span>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8125rem' }}>{count}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Bar Graph */}
+        <div className="qb-chart-card qb-bar-card animate-slide-up" style={{ animationDelay: '160ms' }}>
+          <div className="qb-chart-header">
+            <Target size={16} style={{ color: '#10b981' }} />
+            <span>Template Distribution</span>
+          </div>
+          <BarGraph items={barData} maxValue={maxBar} />
+        </div>
+      </div>
+
+      {/* ── Search + Filter Bar ── */}
+      <div className="qb-filter-bar animate-slide-up" style={{ animationDelay: '200ms' }}>
+        <div className="qb-search-wrap">
+          <Search size={15} style={{ color: 'var(--text-muted)', position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            type="text" placeholder="Search all questions…" value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input focus-ring qb-search-input"
+          />
+        </div>
+        <div className="qb-filter-chips">
+          {[{ key: 'ALL', label: 'All Types' }, ...Object.entries(QB_TYPE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(f => {
+            const isActive = typeFilter === f.key
+            const color = f.key === 'ALL' ? '#3b82f6' : QB_COLORS[f.key]?.fg ?? '#888'
+            return (
+              <button
+                key={f.key} type="button"
+                className={`qb-filter-chip focus-ring ${isActive ? 'active' : ''}`}
+                onClick={() => setTypeFilter(f.key)}
+                style={isActive ? { borderColor: color, background: `${color}18`, color } : {}}
+              >
+                {f.label}
+                {f.key !== 'ALL' && <span style={{ opacity: 0.6 }}>{typeCounts[f.key] ?? 0}</span>}
+              </button>
+            )
+          })}
+        </div>
+        <div className="qb-result-count">
+          {filteredTotal} result{filteredTotal !== 1 ? 's' : ''}
+          {(search || typeFilter !== 'ALL') && <span style={{ color: 'var(--text-muted)' }}> / {totalQuestions}</span>}
+        </div>
+      </div>
+
+      {/* ── Template Sidebar + Question List ── */}
+      <div className="qb-body">
+        <aside className="qb-sidebar">
+          <button
+            type="button"
+            className={`qb-sidebar-btn focus-ring ${activeTemplate === null ? 'active' : ''}`}
+            onClick={() => setActiveTemplate(null)}
+          >
+            <span>All Templates</span>
+            <span className="qb-sidebar-count">{totalQuestions}</span>
+          </button>
+          {activeTemplates.map((t, i) => (
+            <button
+              key={t.id} type="button"
+              className={`qb-sidebar-btn focus-ring ${activeTemplate === t.id ? 'active' : ''}`}
+              onClick={() => setActiveTemplate(activeTemplate === t.id ? null : t.id)}
+            >
+              <span className="qb-sidebar-dot" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+              <span className="qb-sidebar-label">{t.name}</span>
+              <span className="qb-sidebar-count">{t.criteria.length}</span>
+            </button>
+          ))}
+        </aside>
+
+        <div className="qb-questions">
+          {filtered.length === 0 ? (
+            <div className="eval-empty" style={{ padding: '40px 20px' }}>
+              <div className="eval-empty-icon"><Search size={32} color="var(--brand-light)" /></div>
+              <h3>No questions match</h3>
+              <p>Try a different search term or filter.</p>
+            </div>
+          ) : (
+            filtered
+              .filter(t => !activeTemplate || t.id === activeTemplate)
+              .map((t, ti) => (
+                <div key={t.id} className="qb-template-section animate-slide-up" style={{ animationDelay: `${ti * 40}ms` }}>
+                  <div className="qb-section-header">
+                    <span className="qb-section-dot" style={{ background: DONUT_COLORS[activeTemplates.findIndex(at => at.id === t.id) % DONUT_COLORS.length] }} />
+                    <h3 className="qb-section-title">{t.name}</h3>
+                    <span className="qb-section-count">{t.criteria.length} question{t.criteria.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  {t.description && <p className="qb-section-desc">{t.description}</p>}
+                  <div className="qb-question-list">
+                    {t.criteria.map((c, ci) => {
+                      const type = (c as any).type ?? 'RATING'
+                      const tc = QB_COLORS[type] ?? QB_COLORS.RATING
+                      const Icon = tc.icon
+                      return (
+                        <div key={c.id} className="qb-question-row">
+                          <span className="qb-q-num">{ci + 1}</span>
+                          <span className="qb-q-text">{c.label}</span>
+                          <span className="qb-q-badge" style={{ background: tc.bg, color: tc.fg, borderColor: tc.border }}>
+                            <Icon size={11} />
+                            {QB_TYPE_LABELS[type]}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        .qb-container { display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Charts Row ── */
+        .qb-charts-row { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 16px; }
+        @media (max-width: 1100px) { .qb-charts-row { grid-template-columns: 1fr 1fr; } .qb-bar-card { grid-column: 1 / -1; } }
+        @media (max-width: 700px) { .qb-charts-row { grid-template-columns: 1fr; } }
+        .qb-chart-card {
+          padding: 20px; background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+          display: flex; flex-direction: column; gap: 16px;
+          transition: all var(--transition-smooth);
+        }
+        .qb-chart-card:hover { border-color: var(--border-default); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+        .qb-chart-header {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary);
+          text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .qb-donut-wrap { display: flex; justify-content: center; padding: 4px 0; }
+        .qb-donut-legend { display: flex; flex-direction: column; gap: 4px; }
+        .qb-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .qb-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        .qb-legend-label { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .qb-legend-value { font-weight: 700; color: var(--text-primary); min-width: 20px; text-align: right; }
+        .qb-type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .qb-type-chip {
+          display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+          border-radius: 8px; border: 1px solid; font-size: 0.8125rem;
+        }
+
+        /* ── Filter Bar ── */
+        .qb-filter-bar {
+          display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+          padding: 14px 18px; background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+        }
+        .qb-search-wrap { position: relative; flex: 1; min-width: 200px; }
+        .qb-search-input { padding-left: 36px !important; }
+        .qb-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .qb-filter-chip {
+          padding: 6px 14px; border-radius: 99px; font-size: 0.8125rem; font-weight: 500;
+          border: 1px solid var(--border-subtle); background: var(--bg-elevated);
+          color: var(--text-muted); cursor: pointer; transition: all var(--transition);
+          display: inline-flex; align-items: center; gap: 6px;
+        }
+        .qb-filter-chip:hover { color: var(--text-primary); border-color: var(--border-default); }
+        .qb-filter-chip.active { font-weight: 700; }
+        .qb-result-count { font-size: 0.8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; margin-left: auto; }
+
+        /* ── Body (sidebar + questions) ── */
+        .qb-body { display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+        @media (max-width: 800px) { .qb-body { grid-template-columns: 1fr; } .qb-sidebar { display: flex; flex-wrap: wrap; gap: 6px; } }
+        .qb-sidebar {
+          display: flex; flex-direction: column; gap: 3px;
+          position: sticky; top: 80px; align-self: start;
+          max-height: calc(100vh - 120px); overflow-y: auto;
+          padding: 12px; background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+        }
+        .qb-sidebar-btn {
+          display: flex; align-items: center; gap: 8px; width: 100%;
+          padding: 8px 10px; border-radius: 8px; border: none;
+          background: transparent; color: var(--text-muted); cursor: pointer;
+          font-size: 0.8125rem; text-align: left; transition: all 0.15s;
+        }
+        .qb-sidebar-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .qb-sidebar-btn.active { color: var(--text-primary); background: rgba(37,99,235,0.15); font-weight: 600; }
+        .qb-sidebar-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        .qb-sidebar-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .qb-sidebar-count {
+          font-size: 0.6875rem; font-weight: 700; color: var(--text-muted);
+          min-width: 20px; text-align: right;
+        }
+
+        /* ── Question sections ── */
+        .qb-questions { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        .qb-template-section {
+          background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+          overflow: hidden;
+        }
+        .qb-section-header {
+          display: flex; align-items: center; gap: 10px;
+          padding: 14px 18px; border-bottom: 1px solid var(--border-subtle);
+          background: rgba(255,255,255,0.015);
+        }
+        .qb-section-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .qb-section-title { font-size: 0.9375rem; font-weight: 700; color: var(--text-primary); flex: 1; margin: 0; }
+        .qb-section-count {
+          font-size: 0.75rem; color: var(--text-muted);
+          background: rgba(255,255,255,0.05); padding: 2px 10px;
+          border-radius: 99px; font-weight: 600;
+        }
+        .qb-section-desc {
+          padding: 8px 18px; margin: 0; font-size: 0.8125rem;
+          color: var(--text-muted); line-height: 1.5; border-bottom: 1px solid var(--border-subtle);
+        }
+        .qb-question-list { display: flex; flex-direction: column; }
+        .qb-question-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 18px; transition: background 0.1s;
+          border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .qb-question-row:last-child { border-bottom: none; }
+        .qb-question-row:hover { background: rgba(37,99,235,0.04); }
+        .qb-q-num {
+          font-size: 0.6875rem; font-weight: 600; color: var(--text-muted);
+          min-width: 24px; text-align: center;
+          font-variant-numeric: tabular-nums;
+        }
+        .qb-q-text { flex: 1; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+        .qb-q-badge {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 3px 10px; border-radius: 6px; border: 1px solid;
+          font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.04em; white-space: nowrap;
+        }
+      `}</style>
     </div>
   )
 }
