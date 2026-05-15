@@ -107,6 +107,7 @@ export default async function EvaluationsPage() {
         name: session.user.name ?? '',
         role,
         avatarColor: session.user.avatarColor,
+        hireDate: session.user.createdAt ?? new Date().toISOString(),
       }}
     />
   )

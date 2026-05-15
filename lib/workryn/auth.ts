@@ -21,6 +21,7 @@ export interface WorkrynUser {
   jobTitle?: string
   avatarColor: string
   image: string | null
+  createdAt?: string // hire date
 }
 
 export interface WorkrynSession {
@@ -55,6 +56,7 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
       jobTitle: wUser.jobTitle ?? undefined,
       avatarColor: wUser.avatarColor,
       image: wUser.image ?? null,
+      createdAt: wUser.createdAt?.toISOString(),
     },
   }
 }

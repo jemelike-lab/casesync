@@ -99,10 +99,56 @@ interface Props {
   initialEvaluations: Evaluation[]
   initialTemplates: Template[]
   users: UserLite[]
-  currentUser: { id: string; name: string; role: string; avatarColor: string }
+  currentUser: { id: string; name: string; role: string; avatarColor: string; hireDate?: string }
 }
 
 type Tab = 'received' | 'given' | 'all' | 'templates' | 'question-bank'
+
+// ── Employment milestone → template matcher ─────────────────
+// Returns the single self-assessment template appropriate for this user's tenure.
+
+function getApplicableTemplate(templates: Template[], hireDate?: string): Template | null {
+  if (!hireDate) return null
+  const daysSinceHire = Math.floor((Date.now() - new Date(hireDate).getTime()) / (1000 * 60 * 60 * 24))
+  const active = templates.filter(t => t.isActive)
+
+  // Determine which milestone they're at or approaching
+  // Show the template for the current or next upcoming milestone
+  type Milestone = { maxDays: number; keywords: string[] }
+  const milestones: Milestone[] = [
+    { maxDays: 45, keywords: ['30-Day', '30 Day', '30 Days'] },
+    { maxDays: 120, keywords: ['90-Day', '90 Day', '90 Days'] },
+    { maxDays: 210, keywords: ['6-Month', '6 Month'] },
+    { maxDays: 395, keywords: ['1-Year', '1 Year', 'Annual Self'] },
+    { maxDays: Infinity, keywords: ['Annual Self', 'Annual Competency'] },
+  ]
+
+  for (const milestone of milestones) {
+    if (daysSinceHire <= milestone.maxDays) {
+      // Find a matching template
+      const match = active.find(t =>
+        milestone.keywords.some(kw => t.name.includes(kw)) &&
+        (t.name.toLowerCase().includes('self') || t.name.toLowerCase().includes('check'))
+      )
+      if (match) return match
+    }
+  }
+
+  return null
+}
+
+function getDaysSinceHire(hireDate?: string): number {
+  if (!hireDate) return 0
+  return Math.floor((Date.now() - new Date(hireDate).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function getMilestoneLabel(days: number): string {
+  if (days <= 45) return '30-Day'
+  if (days <= 120) return '90-Day'
+  if (days <= 210) return '6-Month'
+  if (days <= 395) return '1-Year'
+  return 'Annual'
+}
 
 // ── Small primitives ─────────────────────────────────────────
 
@@ -398,9 +444,9 @@ export default function EvaluationsClient({
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {/* Staff: self-assessment button */}
-            {!isManager && templates.some(t => t.isActive && (t.name.includes('Self-Assessment') || t.name.includes('Self Eval') || t.name.includes('Check-In'))) && (
+            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
               <button className="btn btn-gradient focus-ring" onClick={() => setShowSelfAssessment(true)} type="button">
-                <Edit2 size={18} /> Start Self-Assessment
+                <Edit2 size={18} /> Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
               </button>
             )}
             {isManager && staffUsers.length > 0 && templates.some((t) => t.isActive) && (
@@ -508,14 +554,15 @@ export default function EvaluationsClient({
                     </div>
                   )}
 
-                  {!isManager && selfEvals.length === 0 && (
+                  {!isManager && selfEvals.length === 0 && getApplicableTemplate(templates, currentUser.hireDate) && (
                     <div className="sa-cta-panel animate-slide-up" style={{ marginBottom: 28 }}>
                       <div className="sa-cta-left">
                         <div className="sa-cta-icon"><Edit2 size={24} /></div>
                         <div>
-                          <h3 className="sa-cta-title">Complete Your Self-Assessment</h3>
+                          <h3 className="sa-cta-title">Complete Your {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</h3>
                           <p className="sa-cta-desc">
-                            As part of your onboarding, complete your self-assessment questionnaire and submit it
+                            You are <strong>Day {getDaysSinceHire(currentUser.hireDate)}</strong> of your employment.
+                            Complete and submit your self-assessment questionnaire
                             <strong> at least one week before</strong> your scheduled meeting with Sarah Abbott.
                           </p>
                         </div>
@@ -590,11 +637,11 @@ export default function EvaluationsClient({
       {/* ── Self-Assessment Modal ── */}
       {showSelfAssessment && (
         <SelfAssessmentModal
-          templates={templates.filter(t => t.isActive && (
-            t.name.includes('Self-Assessment') || t.name.includes('Self Eval') ||
-            t.name.includes('Check-In') || t.name.includes('Self-Evaluation')
-          ))}
-          allTemplates={templates.filter(t => t.isActive)}
+          templates={(() => {
+            const applicable = getApplicableTemplate(templates, currentUser.hireDate)
+            return applicable ? [applicable] : []
+          })()}
+          allTemplates={[]}
           currentUser={currentUser}
           onClose={() => setShowSelfAssessment(false)}
           onSubmitted={async () => { setShowSelfAssessment(false); await refreshEvaluations() }}
@@ -1034,19 +1081,27 @@ function SelfAssessmentModal({
         </div>
 
         <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Template picker */}
-          <div className="form-group">
-            <label className="label">Assessment Type *</label>
-            <select
-              className="input focus-ring"
-              value={selectedTemplateId}
-              onChange={e => { setSelectedTemplateId(e.target.value); setResponses({}) }}
-            >
-              {available.map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.criteria.length} questions)</option>
-              ))}
-            </select>
-          </div>
+          {/* Template info */}
+          {available.length === 1 ? (
+            <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06))', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{template?.name}</div>
+              {template?.description && <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{template.description}</div>}
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>{criteria.length} question{criteria.length !== 1 ? 's' : ''} to complete</div>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label className="label">Assessment Type *</label>
+              <select
+                className="input focus-ring"
+                value={selectedTemplateId}
+                onChange={e => { setSelectedTemplateId(e.target.value); setResponses({}) }}
+              >
+                {available.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.criteria.length} questions)</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {template?.description && (
             <div style={{ padding: '10px 14px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
