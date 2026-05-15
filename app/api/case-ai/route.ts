@@ -1307,7 +1307,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
       const { data: client } = await clientQuery.single()
 
       if (client) {
-        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\n${formatClientSummary(client as Record<string, unknown>)}\n=== END CLIENT CONTEXT ===`
+        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\n${formatClientSummary(client as Record<string, unknown>)}\n=== END CLIENT CONTEXT ===`
       }
     } else if (allClients && allClients.length > 0 && (isPlannerRole || isManagerRole)) {
       // Only send full client list rows for planner/manager — supervisor uses ops snapshot above
@@ -1423,7 +1423,8 @@ RULES:
 
 === RESPONSE GUIDELINES ===
 1. Be concise and actionable. Use bullet points for lists.
-2. When walking through the POS workflow, ask clarifying questions to find where the planner is in the process.
+2. CRITICAL: When a CURRENT CLIENT CONTEXT section is present, the user is on that client detail page. Scope ALL answers to that specific client unless the user explicitly asks about other clients or the full caseload. Do NOT list other clients data when the user asks about this client or uses general terms like overdue items.
+3. When walking through the POS workflow, ask clarifying questions to find where the planner is in the process.
 3. For "Is my POS ready to submit?" — walk through the POS submission checklist step by step.
 4. For ATP questions — confirm the program type, then apply the correct rules.
 5. For SPM — always remind: next due = 15th of the FOLLOWING month (never +30 days).
