@@ -418,6 +418,11 @@ export default function EvaluationsClient({
           <StatCard icon={ClipboardCheck} label="Active Templates" value={activeTemplateCount} color="#8b5cf6" delay={240} />
         </div>
 
+        {/* ── 30-Day Onboarding Workflow Panel (managers only) ── */}
+        {isManager && (
+          <OnboardingWorkflowPanel staffUsers={staffUsers} currentUserName={currentUser.name} />
+        )}
+
         {/* ── Tab Bar ── */}
         {isManager && (
           <div className="eval-tab-bar">
@@ -881,6 +886,343 @@ function EvaluationCard({
 }
 
 // ── Question Bank View (PurelyHR-style) ──
+
+// ── Onboarding Workflow Panel ──
+
+type OnboardingStatus = {
+  id: string; name: string | null; email: string | null
+  jobTitle: string | null; avatarColor: string
+  hireDate: string; daysSinceHire: number
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED'
+  remindersTotal: number; remindersPending: number
+  has30DayEval: boolean; evalCompleted: string | null
+}
+
+const OB_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  NOT_STARTED: { label: 'Not Started', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
+  IN_PROGRESS: { label: 'In Progress', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  OVERDUE: { label: 'Overdue', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+  COMPLETED: { label: 'Completed', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+}
+
+function OnboardingWorkflowPanel({ staffUsers, currentUserName }: { staffUsers: UserLite[]; currentUserName: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const [newHires, setNewHires] = useState<OnboardingStatus[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<string>('')
+  const [sending, setSending] = useState<string | null>(null)
+  const [sent, setSent] = useState<Set<string>>(new Set())
+  const [error, setError] = useState<string | null>(null)
+
+  async function loadNewHires() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/workryn/evaluations/onboarding')
+      if (res.ok) {
+        const data = await res.json()
+        setNewHires(data.newHires ?? [])
+      }
+    } catch {}
+    setLoading(false)
+  }
+
+  useEffect(() => { if (expanded) loadNewHires() }, [expanded])
+
+  async function triggerWorkflow(userId: string, action: 'start' | 'remind' | 'nudge') {
+    setSending(userId + action); setError(null)
+    try {
+      const res = await fetch('/api/workryn/evaluations/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d?.error || 'Failed')
+      }
+      setSent(prev => new Set(prev).add(userId + action))
+      await loadNewHires()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Failed to send') }
+    setSending(null)
+  }
+
+  const CALENDLY = 'https://calendly.com/sabbott-9/evaluations'
+  const COUNTY_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSey8jldz9vSIbqZuHc5Z9TE4JB9j8awyk_1zLDKruto6-gkuw/viewform'
+
+  return (
+    <div className="ob-panel animate-slide-up" style={{ animationDelay: '280ms' }}>
+      <button
+        type="button"
+        className="ob-panel-toggle focus-ring"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="ob-toggle-left">
+          <div className="ob-toggle-icon">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <div className="ob-toggle-title">30-Day Onboarding Workflow</div>
+            <div className="ob-toggle-sub">
+              Send assessment links, schedule meetings, and track new hire progress
+            </div>
+          </div>
+        </div>
+        <div className="ob-toggle-arrow" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          ▾
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="ob-panel-body">
+          {/* Quick links row */}
+          <div className="ob-links-row">
+            <a href={CALENDLY} target="_blank" rel="noopener noreferrer" className="ob-link-card focus-ring" style={{ '--ob-accent': '#3b82f6' } as React.CSSProperties}>
+              <div className="ob-link-icon" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>📅</div>
+              <div className="ob-link-info">
+                <div className="ob-link-label">Calendly — Sarah Abbott</div>
+                <div className="ob-link-desc">Evaluation meeting scheduling</div>
+              </div>
+              <span style={{ fontSize: '0.6875rem', color: 'var(--brand-light)' }}>Open →</span>
+            </a>
+            <a href={COUNTY_FORM} target="_blank" rel="noopener noreferrer" className="ob-link-card focus-ring" style={{ '--ob-accent': '#10b981' } as React.CSSProperties}>
+              <div className="ob-link-icon" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>📝</div>
+              <div className="ob-link-info">
+                <div className="ob-link-label">County Preference Form</div>
+                <div className="ob-link-desc">Client assignment region selection</div>
+              </div>
+              <span style={{ fontSize: '0.6875rem', color: '#34d399' }}>Open →</span>
+            </a>
+          </div>
+
+          {/* Send to specific user */}
+          <div className="ob-send-row">
+            <div className="ob-send-label">
+              <Zap size={14} /> Launch workflow for a new support planner:
+            </div>
+            <div className="ob-send-controls">
+              <select
+                className="input focus-ring ob-select"
+                value={selectedUser}
+                onChange={e => setSelectedUser(e.target.value)}
+              >
+                <option value="">Select team member…</option>
+                {staffUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-gradient focus-ring"
+                disabled={!selectedUser || sending === selectedUser + 'start'}
+                onClick={() => selectedUser && triggerWorkflow(selectedUser, 'start')}
+              >
+                {sending === selectedUser + 'start' ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />}
+                Start Workflow
+              </button>
+            </div>
+            {sent.has(selectedUser + 'start') && (
+              <div style={{ fontSize: '0.8125rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <CheckCircle2 size={14} /> Workflow launched — reminders scheduled, links sent
+              </div>
+            )}
+            {error && (
+              <div style={{ fontSize: '0.8125rem', color: '#ef4444', marginTop: 4 }}>{error}</div>
+            )}
+          </div>
+
+          {/* New hires tracker */}
+          <div className="ob-tracker">
+            <div className="ob-tracker-header">
+              <Users size={14} />
+              <span>New Hire Tracker (last 45 days)</span>
+              <button type="button" className="btn btn-ghost btn-sm focus-ring" onClick={loadNewHires} disabled={loading}>
+                {loading ? <Loader2 size={12} className="spin" /> : '↻'} Refresh
+              </button>
+            </div>
+
+            {loading && newHires.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                <Loader2 size={18} className="spin" style={{ marginBottom: 8 }} /> Loading…
+              </div>
+            ) : newHires.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                No new hires in the last 45 days.
+              </div>
+            ) : (
+              <div className="ob-tracker-list">
+                {newHires.map(u => {
+                  const sc = OB_STATUS_CONFIG[u.status]
+                  const progressPct = u.status === 'COMPLETED' ? 100 :
+                    Math.min(100, Math.round((u.daysSinceHire / 30) * 100))
+
+                  return (
+                    <div key={u.id} className="ob-hire-row">
+                      <Avatar user={{ name: u.name, avatarColor: u.avatarColor }} size={32} />
+                      <div className="ob-hire-info">
+                        <div className="ob-hire-name">{u.name || u.email}</div>
+                        <div className="ob-hire-meta">
+                          Day {u.daysSinceHire} of 30 · {u.remindersTotal} reminder{u.remindersTotal !== 1 ? 's' : ''} sent
+                        </div>
+                      </div>
+                      <div className="ob-hire-progress">
+                        <div className="ob-progress-bar">
+                          <div
+                            className="ob-progress-fill"
+                            style={{
+                              width: `${progressPct}%`,
+                              background: `linear-gradient(90deg, ${sc.color}, ${sc.color}aa)`,
+                              boxShadow: `0 0 10px ${sc.color}44`,
+                            }}
+                          />
+                        </div>
+                        <span className="ob-hire-badge" style={{ background: sc.bg, color: sc.color }}>
+                          {sc.label}
+                        </span>
+                      </div>
+                      <div className="ob-hire-actions">
+                        {u.status !== 'COMPLETED' && (
+                          <>
+                            <button
+                              type="button" className="btn btn-ghost btn-sm focus-ring"
+                              onClick={() => triggerWorkflow(u.id, 'remind')}
+                              disabled={sending === u.id + 'remind'}
+                              title="Send friendly reminder"
+                            >
+                              {sending === u.id + 'remind' ? <Loader2 size={12} className="spin" /> : <Clock size={12} />}
+                              Remind
+                            </button>
+                            {u.status === 'OVERDUE' && (
+                              <button
+                                type="button" className="btn btn-sm focus-ring"
+                                style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                                onClick={() => triggerWorkflow(u.id, 'nudge')}
+                                disabled={sending === u.id + 'nudge'}
+                                title="Send urgent nudge"
+                              >
+                                {sending === u.id + 'nudge' ? <Loader2 size={12} className="spin" /> : <Zap size={12} />}
+                                Nudge
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {u.status === 'COMPLETED' && (
+                          <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle2 size={12} /> Done
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .ob-panel {
+          margin-bottom: 20px; background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+          overflow: hidden; transition: all var(--transition-smooth);
+        }
+        .ob-panel:hover { border-color: var(--border-default); }
+        .ob-panel-toggle {
+          width: 100%; display: flex; align-items: center; justify-content: space-between;
+          gap: 16px; padding: 16px 20px; background: transparent; border: none;
+          cursor: pointer; color: inherit; text-align: left;
+        }
+        .ob-toggle-left { display: flex; align-items: center; gap: 14px; }
+        .ob-toggle-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(139,92,246,0.15));
+          display: flex; align-items: center; justify-content: center;
+          color: var(--brand-light); flex-shrink: 0;
+        }
+        .ob-toggle-title { font-size: 0.9375rem; font-weight: 700; color: var(--text-primary); }
+        .ob-toggle-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .ob-toggle-arrow {
+          font-size: 1.2rem; color: var(--text-muted);
+          transition: transform 0.2s ease;
+        }
+        .ob-panel-body { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+
+        /* Links row */
+        .ob-links-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 700px) { .ob-links-row { grid-template-columns: 1fr; } }
+        .ob-link-card {
+          display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+          background: var(--bg-surface); border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-md); text-decoration: none; color: inherit;
+          transition: all var(--transition-smooth);
+        }
+        .ob-link-card:hover {
+          border-color: var(--border-default); transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .ob-link-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.125rem; flex-shrink: 0;
+        }
+        .ob-link-info { flex: 1; min-width: 0; }
+        .ob-link-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .ob-link-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* Send controls */
+        .ob-send-row {
+          padding: 14px 16px; background: var(--bg-surface);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+        }
+        .ob-send-label {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          margin-bottom: 10px;
+        }
+        .ob-send-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        .ob-select { flex: 1; min-width: 200px; }
+
+        /* Tracker */
+        .ob-tracker {
+          background: var(--bg-surface); border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-md); overflow: hidden;
+        }
+        .ob-tracker-header {
+          display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+          font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary);
+          text-transform: uppercase; letter-spacing: 0.04em;
+          border-bottom: 1px solid var(--border-subtle);
+          background: rgba(255,255,255,0.015);
+        }
+        .ob-tracker-header .btn { margin-left: auto; }
+        .ob-tracker-list { display: flex; flex-direction: column; }
+        .ob-hire-row {
+          display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.03);
+          transition: background 0.1s;
+        }
+        .ob-hire-row:last-child { border-bottom: none; }
+        .ob-hire-row:hover { background: rgba(37,99,235,0.03); }
+        .ob-hire-info { flex: 1; min-width: 0; }
+        .ob-hire-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .ob-hire-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .ob-hire-progress { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+        .ob-progress-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .ob-progress-fill { height: 100%; border-radius: 3px; transition: width 600ms ease; }
+        .ob-hire-badge {
+          font-size: 0.6875rem; font-weight: 700; padding: 3px 10px;
+          border-radius: 99px; text-transform: uppercase; letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+        .ob-hire-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        @media (max-width: 800px) {
+          .ob-hire-row { flex-wrap: wrap; }
+          .ob-hire-progress { width: 100%; order: 10; }
+        }
+      `}</style>
+    </div>
+  )
+}
 
 const QB_COLORS: Record<string, { bg: string; fg: string; border: string; icon: typeof Star }> = {
   RATING: { bg: 'rgba(245,158,11,0.12)', fg: '#fbbf24', border: 'rgba(245,158,11,0.3)', icon: Star },
