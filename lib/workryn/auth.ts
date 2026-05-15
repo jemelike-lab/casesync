@@ -30,7 +30,7 @@ export interface WorkrynSession {
 
 /**
  * Server-side: get the current Workryn session.
- * Returns null if not authenticated or no Workryn user record exists.
+ * Auto-provisions a w_user record if the CaseSync user doesn't have one yet.
  */
 export async function getWorkrynSession(): Promise<WorkrynSession | null> {
   const supabase = await createClient()
@@ -38,10 +38,55 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
   if (!user) return null
 
   // Look up the Workryn user record linked to this Supabase user
-  const wUser = await db.user.findUnique({
+  let wUser = await db.user.findUnique({
     where: { supabaseId: user.id },
     include: { department: true },
   })
+
+  // ── Auto-provision: create w_user from CaseSync profile if missing ──
+  if (!wUser) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, job_title, created_at')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        // Map CaseSync role → Workryn role
+        const roleMap: Record<string, string> = {
+          supervisor: 'ADMIN',
+          team_manager: 'MANAGER',
+          supports_planner: 'STAFF',
+          it: 'ADMIN',
+        }
+        const wRole = roleMap[profile.role] ?? 'STAFF'
+
+        // Generate a random avatar color
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#14b8a6']
+        const avatarColor = colors[Math.floor(Math.random() * colors.length)]
+
+        wUser = await db.user.create({
+          data: {
+            supabaseId: user.id,
+            name: profile.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'Unnamed',
+            email: user.email ?? null,
+            role: wRole,
+            jobTitle: profile.job_title ?? (profile.role === 'supports_planner' ? 'Support Planner' : undefined),
+            avatarColor,
+            isActive: true,
+            // Use CaseSync profile creation date as hire date
+            createdAt: profile.created_at ? new Date(profile.created_at) : new Date(),
+          },
+          include: { department: true },
+        })
+
+        console.log(`[Workryn] Auto-provisioned user: ${wUser.name} (${wUser.email}) role=${wUser.role} from CaseSync profile ${profile.id}`)
+      }
+    } catch (err) {
+      console.error('[Workryn] Auto-provision failed:', err)
+    }
+  }
 
   if (!wUser || !wUser.isActive) return null
 

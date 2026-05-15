@@ -117,6 +117,7 @@ function getApplicableTemplate(templates: Template[], hireDate?: string): Templa
   // Show the template for the current or next upcoming milestone
   type Milestone = { maxDays: number; keywords: string[] }
   const milestones: Milestone[] = [
+    { maxDays: 15, keywords: ['10-Day', '10 Day', '10 Days'] },
     { maxDays: 45, keywords: ['30-Day', '30 Day', '30 Days'] },
     { maxDays: 120, keywords: ['90-Day', '90 Day', '90 Days'] },
     { maxDays: 210, keywords: ['6-Month', '6 Month'] },
@@ -126,10 +127,9 @@ function getApplicableTemplate(templates: Template[], hireDate?: string): Templa
 
   for (const milestone of milestones) {
     if (daysSinceHire <= milestone.maxDays) {
-      // Find a matching template
       const match = active.find(t =>
         milestone.keywords.some(kw => t.name.includes(kw)) &&
-        (t.name.toLowerCase().includes('self') || t.name.toLowerCase().includes('check'))
+        (t.name.toLowerCase().includes('self') || t.name.toLowerCase().includes('check') || t.name.toLowerCase().includes('call') || t.name.toLowerCase().includes('inquiry'))
       )
       if (match) return match
     }
@@ -144,6 +144,7 @@ function getDaysSinceHire(hireDate?: string): number {
 }
 
 function getMilestoneLabel(days: number): string {
+  if (days <= 15) return '10-Day'
   if (days <= 45) return '30-Day'
   if (days <= 120) return '90-Day'
   if (days <= 210) return '6-Month'

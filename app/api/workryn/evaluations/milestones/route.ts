@@ -58,7 +58,8 @@ export async function GET(req: NextRequest) {
 
     // Determine which milestone bracket
     let milestone: string
-    if (daysEmployed <= 45) milestone = '30-day'
+    if (daysEmployed <= 15) milestone = '10-day'
+    else if (daysEmployed <= 45) milestone = '30-day'
     else if (daysEmployed <= 120) milestone = '90-day'
     else if (daysEmployed <= 210) milestone = '6-month'
     else if (daysEmployed <= 395) milestone = '1-year'
@@ -85,10 +86,11 @@ export async function GET(req: NextRequest) {
     const stepsComplete = (countyDone ? 1 : 0) + (selfAssessmentDone ? 1 : 0) + (supervisorReviewDone ? 1 : 0)
 
     // Status
+    const dueDays: Record<string, number> = { '10-day': 10, '30-day': 30, '90-day': 90, '6-month': 180, '1-year': 365, annual: 730 }
     let status: string
     if (stepsComplete === stepsTotal) status = 'COMPLETED'
-    else if (daysEmployed > (milestone === '30-day' ? 30 : milestone === '90-day' ? 90 : milestone === '6-month' ? 180 : 365)) {
-      status = stepsComplete > 0 ? 'OVERDUE' : 'OVERDUE'
+    else if (daysEmployed > (dueDays[milestone] ?? 365)) {
+      status = 'OVERDUE'
     } else if (stepsComplete > 0) status = 'IN_PROGRESS'
     else status = 'NOT_STARTED'
 
@@ -131,6 +133,7 @@ export async function GET(req: NextRequest) {
 
   // Group by milestone
   const milestones = [
+    { key: '10-day', label: '10-Day Check-In', dueBy: 10, color: '#06b6d4' },
     { key: '30-day', label: '30-Day Evaluation', dueBy: 30, color: '#3b82f6' },
     { key: '90-day', label: '90-Day Evaluation', dueBy: 90, color: '#10b981' },
     { key: '6-month', label: '6-Month Evaluation', dueBy: 180, color: '#f59e0b' },
