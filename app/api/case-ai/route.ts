@@ -172,6 +172,7 @@ function formatClientSummary(client: Record<string, unknown>): string {
 
   return `Client: ${name} (ID: ${client.client_id})
 Category: ${String(client.category ?? '').toUpperCase()}
+Eligibility Code: ${client.eligibility_code ?? 'not set'}
 POS Status: ${client.pos_status ?? 'unknown'}
 Goal Progress: ${client.goal_pct ?? 0}%
 Last Contact: ${lastContact}
@@ -1298,7 +1299,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
 
     if (clientId) {
       // Always fetch the specific client when one is provided — but verify access
-      let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
+      let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
       // For planners, enforce they can only ask about their own clients
       if (isPlannerRole) {
         clientQuery = clientQuery.eq('assigned_to', userId)
