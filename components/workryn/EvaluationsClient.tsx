@@ -28,6 +28,8 @@ import {
   ToggleLeft,
   Search,
   PieChart,
+  Info,
+  Send,
 } from 'lucide-react'
 import { formatDateTime, timeAgo, getInitials } from '@/lib/workryn/utils'
 import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
@@ -50,6 +52,7 @@ type Criterion = {
   description: string | null
   order: number
   maxScore: number
+  type?: string // RATING | TEXT | YES_NO | COMMENT
 }
 
 type Template = {
@@ -279,6 +282,7 @@ export default function EvaluationsClient({
   const [showCreate, setShowCreate] = useState(false)
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false)
   const [templateToEdit, setTemplateToEdit] = useState<Template | null>(null)
+  const [showSelfAssessment, setShowSelfAssessment] = useState(false)
 
   // ── Filters per tab ──
   const visible = useMemo(() => {
@@ -389,10 +393,16 @@ export default function EvaluationsClient({
             <p className="eval-subtitle">
               {isManager
                 ? 'Review and author performance evaluations for your team.'
-                : 'View performance reviews from your supervisor.'}
+                : 'Complete self-assessments and view evaluations from your supervisor.'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
+            {/* Staff: self-assessment button */}
+            {!isManager && templates.some(t => t.isActive && (t.name.includes('Self-Assessment') || t.name.includes('Self Eval') || t.name.includes('Check-In'))) && (
+              <button className="btn btn-gradient focus-ring" onClick={() => setShowSelfAssessment(true)} type="button">
+                <Edit2 size={18} /> Start Self-Assessment
+              </button>
+            )}
             {isManager && staffUsers.length > 0 && templates.some((t) => t.isActive) && (
               <button className="btn btn-gradient focus-ring" onClick={() => setShowCreate(true)} type="button">
                 <Plus size={18} /> New Evaluation
@@ -453,19 +463,96 @@ export default function EvaluationsClient({
             onEdit={(t) => { setTemplateToEdit(t); setShowTemplateBuilder(true) }}
             onDelete={handleDeleteTemplate}
           />
-        ) : visible.length === 0 ? (
-          <EmptyEvalState
-            isManager={isManager}
-            tab={tab}
-            onCreateClick={() => setShowCreate(true)}
-            canCreate={isManager && staffUsers.length > 0 && templates.some(t => t.isActive)}
-          />
         ) : (
-          <div className="eval-grid">
-            {visible.map((e, i) => (
-              <EvaluationCard key={e.id} evaluation={e} currentUserId={currentUser.id} index={i} onOpen={() => setDetailEval(e)} />
-            ))}
-          </div>
+          <>
+            {/* Self-assessments section (staff + managers see their own) */}
+            {(() => {
+              const selfEvals = evaluations.filter(e => e.agentId === currentUser.id && e.evaluatorId === currentUser.id && e.comments?.startsWith('[SELF-ASSESSMENT]'))
+              const supervisorEvals = visible.filter(e => !(e.agentId === currentUser.id && e.evaluatorId === currentUser.id && e.comments?.startsWith('[SELF-ASSESSMENT]')))
+
+              return (
+                <>
+                  {selfEvals.length > 0 && (
+                    <div style={{ marginBottom: 28 }}>
+                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Edit2 size={16} style={{ color: '#10b981' }} /> My Self-Assessments
+                      </h2>
+                      <div className="eval-grid">
+                        {selfEvals.map((e, i) => (
+                          <div
+                            key={e.id}
+                            className="gradient-card eval-card animate-slide-up"
+                            onClick={() => setDetailEval(e)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setDetailEval(e) } }}
+                            style={{ animationDelay: `${i * 50}ms` }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                              <div>
+                                <div className="eval-card-template">{e.template.name}</div>
+                                <div className="eval-card-title">Self-Assessment</div>
+                              </div>
+                              <span className="ack-ribbon"><CheckCircle2 size={11} /> Submitted</span>
+                            </div>
+                            <div className="eval-meta-row">
+                              <Clock size={13} />
+                              <span>{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                              {e.scores.length} question{e.scores.length !== 1 ? 's' : ''} answered · Click to review your responses
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!isManager && selfEvals.length === 0 && (
+                    <div className="sa-cta-panel animate-slide-up" style={{ marginBottom: 28 }}>
+                      <div className="sa-cta-left">
+                        <div className="sa-cta-icon"><Edit2 size={24} /></div>
+                        <div>
+                          <h3 className="sa-cta-title">Complete Your Self-Assessment</h3>
+                          <p className="sa-cta-desc">
+                            As part of your onboarding, complete your self-assessment questionnaire and submit it
+                            <strong> at least one week before</strong> your scheduled meeting with Sarah Abbott.
+                          </p>
+                        </div>
+                      </div>
+                      <button className="btn btn-gradient focus-ring" onClick={() => setShowSelfAssessment(true)} type="button" style={{ whiteSpace: 'nowrap' }}>
+                        <Edit2 size={16} /> Begin Self-Assessment
+                      </button>
+                    </div>
+                  )}
+
+                  {supervisorEvals.length > 0 && (
+                    <div>
+                      {selfEvals.length > 0 && (
+                        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Award size={16} style={{ color: '#3b82f6' }} /> Supervisor Reviews
+                        </h2>
+                      )}
+                      <div className="eval-grid">
+                        {supervisorEvals.map((e, i) => (
+                          <EvaluationCard key={e.id} evaluation={e} currentUserId={currentUser.id} index={i} onOpen={() => setDetailEval(e)} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selfEvals.length === 0 && supervisorEvals.length === 0 && isManager && (
+                    <EmptyEvalState
+                      isManager={isManager}
+                      tab={tab}
+                      onCreateClick={() => setShowCreate(true)}
+                      canCreate={isManager && staffUsers.length > 0 && templates.some(t => t.isActive)}
+                    />
+                  )}
+                </>
+              )
+            })()}
+          </>
         )}
       </div>
 
@@ -497,6 +584,20 @@ export default function EvaluationsClient({
           template={templateToEdit}
           onClose={() => { setShowTemplateBuilder(false); setTemplateToEdit(null) }}
           onSaved={async () => { setShowTemplateBuilder(false); setTemplateToEdit(null); await refreshTemplates() }}
+        />
+      )}
+
+      {/* ── Self-Assessment Modal ── */}
+      {showSelfAssessment && (
+        <SelfAssessmentModal
+          templates={templates.filter(t => t.isActive && (
+            t.name.includes('Self-Assessment') || t.name.includes('Self Eval') ||
+            t.name.includes('Check-In') || t.name.includes('Self-Evaluation')
+          ))}
+          allTemplates={templates.filter(t => t.isActive)}
+          currentUser={currentUser}
+          onClose={() => setShowSelfAssessment(false)}
+          onSubmitted={async () => { setShowSelfAssessment(false); await refreshEvaluations() }}
         />
       )}
 
@@ -758,8 +859,335 @@ export default function EvaluationsClient({
         .template-doc-link:hover { border-color: rgba(37,99,235,0.4); }
         .template-doc-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
         .spin { animation: spin 0.7s linear infinite; }
+
+        /* ── Self-Assessment CTA Panel ── */
+        .sa-cta-panel {
+          display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+          padding: 24px; background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(37,99,235,0.06));
+          border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg);
+        }
+        .sa-cta-left { display: flex; align-items: flex-start; gap: 16px; flex: 1; min-width: 280px; }
+        .sa-cta-icon {
+          width: 48px; height: 48px; border-radius: 12px;
+          background: rgba(16,185,129,0.15); color: #34d399;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .sa-cta-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
+        .sa-cta-desc { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
+        .sa-cta-desc strong { color: var(--text-secondary); }
+
+        /* ── Self-Assessment Form ── */
+        .sa-form-section {
+          display: flex; flex-direction: column; gap: 14px;
+          padding: 16px; background: var(--bg-surface);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+        }
+        .sa-question {
+          padding: 14px 16px; background: var(--bg-overlay);
+          border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+          transition: border-color var(--transition);
+        }
+        .sa-question:hover { border-color: var(--border-default); }
+        .sa-question-header {
+          display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;
+        }
+        .sa-question-num {
+          width: 24px; height: 24px; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.6875rem; font-weight: 800; flex-shrink: 0;
+        }
+        .sa-question-label { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); line-height: 1.45; }
+        .sa-question-type {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 2px 8px; border-radius: 4px; font-size: 0.6875rem;
+          font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+          margin-left: auto; white-space: nowrap; flex-shrink: 0;
+        }
+        .sa-textarea {
+          width: 100%; min-height: 70px; resize: vertical;
+          padding: 10px 14px; background: var(--bg-surface);
+          border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+          color: var(--text-primary); font-size: 0.875rem; outline: none;
+          transition: border-color var(--transition);
+          line-height: 1.55;
+        }
+        .sa-textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); }
+        .sa-textarea::placeholder { color: var(--text-muted); }
+        .sa-yn-btns { display: flex; gap: 8px; }
+        .sa-yn-btn {
+          padding: 8px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+          border: 1px solid var(--border-default); background: var(--bg-surface);
+          color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+        }
+        .sa-yn-btn:hover { border-color: var(--border-default); background: var(--bg-hover); }
+        .sa-yn-btn.active-yes { background: rgba(16,185,129,0.15); border-color: #10b981; color: #34d399; }
+        .sa-yn-btn.active-no { background: rgba(239,68,68,0.15); border-color: #ef4444; color: #f87171; }
+        .sa-progress { margin-bottom: 12px; }
+        .sa-progress-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .sa-progress-fill { height: 100%; border-radius: 3px; transition: width 300ms ease; }
+        .sa-progress-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: right; }
       `}</style>
     </>
+  )
+}
+
+// ── Question Type Config (shared) ──
+
+const QB_COLORS: Record<string, { bg: string; fg: string; border: string; icon: typeof Star }> = {
+  RATING: { bg: 'rgba(245,158,11,0.12)', fg: '#fbbf24', border: 'rgba(245,158,11,0.3)', icon: Star },
+  TEXT: { bg: 'rgba(59,130,246,0.12)', fg: '#60a5fa', border: 'rgba(59,130,246,0.3)', icon: FileText },
+  YES_NO: { bg: 'rgba(16,185,129,0.12)', fg: '#34d399', border: 'rgba(16,185,129,0.3)', icon: ToggleLeft },
+  COMMENT: { bg: 'rgba(168,85,247,0.12)', fg: '#c084fc', border: 'rgba(168,85,247,0.3)', icon: MessageSquare },
+}
+const QB_TYPE_LABELS: Record<string, string> = { RATING: 'Rating', TEXT: 'Text', YES_NO: 'Yes/No', COMMENT: 'Comment' }
+
+// ── Self-Assessment Modal ──
+
+function SelfAssessmentModal({
+  templates, allTemplates, currentUser, onClose, onSubmitted,
+}: {
+  templates: Template[]; allTemplates: Template[]; currentUser: { id: string; name: string; role: string }
+  onClose: () => void; onSubmitted: () => void
+}) {
+  const available = templates.length > 0 ? templates : allTemplates.slice(0, 6)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(available[0]?.id ?? '')
+  const [responses, setResponses] = useState<Record<string, { text: string; yesNo: number }>>({})
+  const [additionalComments, setAdditionalComments] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const template = available.find(t => t.id === selectedTemplateId)
+  const criteria = template?.criteria ?? []
+
+  function setResponse(criterionId: string, field: 'text' | 'yesNo', value: string | number) {
+    setResponses(prev => ({
+      ...prev,
+      [criterionId]: { ...prev[criterionId], [field]: value },
+    }))
+  }
+
+  const answeredCount = criteria.filter(c => {
+    const r = responses[c.id]
+    const type = c.type ?? 'RATING'
+    if (type === 'TEXT' || type === 'COMMENT') return !!r?.text?.trim()
+    if (type === 'YES_NO') return r?.yesNo === 1 || r?.yesNo === 2
+    if (type === 'RATING') return (r?.yesNo ?? 0) >= 1
+    return false
+  }).length
+
+  const progressPct = criteria.length > 0 ? Math.round((answeredCount / criteria.length) * 100) : 0
+  const allAnswered = answeredCount === criteria.length && criteria.length > 0
+
+  async function handleSubmit() {
+    if (!allAnswered || !template) return
+    setSaving(true); setError(null)
+    try {
+      const scores: Record<string, { score: number; comment: string | null }> = {}
+      for (const c of criteria) {
+        const r = responses[c.id]
+        const type = c.type ?? 'RATING'
+        if (type === 'TEXT' || type === 'COMMENT') {
+          scores[c.id] = { score: 0, comment: r?.text?.trim() || null }
+        } else if (type === 'YES_NO') {
+          scores[c.id] = { score: r?.yesNo ?? 0, comment: r?.text?.trim() || null }
+        } else {
+          scores[c.id] = { score: r?.yesNo ?? 0, comment: r?.text?.trim() || null }
+        }
+      }
+
+      const res = await fetch('/api/workryn/evaluations/self-assessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: template.id,
+          scores,
+          comments: additionalComments.trim(),
+        }),
+      })
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d?.error || 'Failed to submit')
+      }
+
+      onSubmitted()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to submit')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-scale-in eval-wide-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 780 }}>
+        <div style={{ height: 3, background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '24px 24px 0 0' }} />
+        <div className="modal-header" style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Edit2 size={18} color="#34d399" /> Self-Assessment
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+              Complete all questions below and submit before your supervisor meeting.
+            </p>
+          </div>
+          <button className="btn btn-icon btn-ghost focus-ring" onClick={onClose} type="button" aria-label="Close"><X size={18} /></button>
+        </div>
+
+        <div className="modal-body" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Template picker */}
+          <div className="form-group">
+            <label className="label">Assessment Type *</label>
+            <select
+              className="input focus-ring"
+              value={selectedTemplateId}
+              onChange={e => { setSelectedTemplateId(e.target.value); setResponses({}) }}
+            >
+              {available.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.criteria.length} questions)</option>
+              ))}
+            </select>
+          </div>
+
+          {template?.description && (
+            <div style={{ padding: '10px 14px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              <Info size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6, color: '#60a5fa' }} />
+              {template.description}
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div className="sa-progress">
+            <div className="sa-progress-bar">
+              <div className="sa-progress-fill" style={{
+                width: `${progressPct}%`,
+                background: progressPct === 100 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                boxShadow: progressPct === 100 ? '0 0 12px rgba(16,185,129,0.4)' : '0 0 12px rgba(59,130,246,0.3)',
+              }} />
+            </div>
+            <div className="sa-progress-text">
+              {answeredCount} of {criteria.length} questions answered ({progressPct}%)
+            </div>
+          </div>
+
+          {/* Questions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {criteria.map((c, i) => {
+              const type = c.type ?? 'RATING'
+              const r = responses[c.id]
+              const typeConfig = QB_COLORS[type] ?? QB_COLORS.RATING
+              const TypeIcon = typeConfig.icon
+
+              return (
+                <div key={c.id} className="sa-question">
+                  <div className="sa-question-header">
+                    <span className="sa-question-num" style={{ background: typeConfig.bg, color: typeConfig.fg }}>{i + 1}</span>
+                    <span className="sa-question-label">{c.label}</span>
+                    <span className="sa-question-type" style={{ background: typeConfig.bg, color: typeConfig.fg }}>
+                      <TypeIcon size={10} /> {QB_TYPE_LABELS[type] ?? type}
+                    </span>
+                  </div>
+
+                  {(type === 'TEXT' || type === 'COMMENT') && (
+                    <textarea
+                      className="sa-textarea"
+                      placeholder="Type your response here…"
+                      value={r?.text ?? ''}
+                      onChange={e => setResponse(c.id, 'text', e.target.value)}
+                    />
+                  )}
+
+                  {type === 'YES_NO' && (
+                    <>
+                      <div className="sa-yn-btns">
+                        <button
+                          type="button"
+                          className={`sa-yn-btn ${r?.yesNo === 1 ? 'active-yes' : ''}`}
+                          onClick={() => setResponse(c.id, 'yesNo', 1)}
+                        >
+                          <CheckCircle2 size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} /> Yes
+                        </button>
+                        <button
+                          type="button"
+                          className={`sa-yn-btn ${r?.yesNo === 2 ? 'active-no' : ''}`}
+                          onClick={() => setResponse(c.id, 'yesNo', 2)}
+                        >
+                          <X size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} /> No
+                        </button>
+                      </div>
+                      <textarea
+                        className="sa-textarea"
+                        style={{ marginTop: 8, minHeight: 50 }}
+                        placeholder="Please elaborate (optional)…"
+                        value={r?.text ?? ''}
+                        onChange={e => setResponse(c.id, 'text', e.target.value)}
+                      />
+                    </>
+                  )}
+
+                  {type === 'RATING' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <StarRow value={r?.yesNo ?? 0} max={c.maxScore} onChange={v => setResponse(c.id, 'yesNo', v)} size={20} />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 4 }}>
+                          {r?.yesNo ? `${r.yesNo} / ${c.maxScore}` : `Select 1–${c.maxScore}`}
+                        </span>
+                      </div>
+                      <textarea
+                        className="sa-textarea"
+                        style={{ minHeight: 50 }}
+                        placeholder="Comments (optional)…"
+                        value={r?.text ?? ''}
+                        onChange={e => setResponse(c.id, 'text', e.target.value)}
+                      />
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Additional comments */}
+          <div className="form-group">
+            <label className="label">Additional Comments (Optional)</label>
+            <textarea
+              className="input focus-ring"
+              style={{ minHeight: 80, resize: 'vertical' }}
+              placeholder="Any additional thoughts, concerns, or topics you'd like to discuss during your meeting…"
+              value={additionalComments}
+              onChange={e => setAdditionalComments(e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem' }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer" style={{ padding: '16px 24px 20px', borderTop: '1px solid var(--border-subtle)', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+            {allAnswered ? (
+              <span style={{ color: '#10b981', fontWeight: 600 }}>✓ All questions answered — ready to submit</span>
+            ) : (
+              <span>{criteria.length - answeredCount} question{criteria.length - answeredCount !== 1 ? 's' : ''} remaining</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-ghost focus-ring" onClick={onClose} type="button">Cancel</button>
+            <button
+              className="btn btn-gradient focus-ring"
+              onClick={handleSubmit}
+              disabled={!allAnswered || saving}
+              type="button"
+            >
+              {saving ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
+              Submit Self-Assessment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1224,13 +1652,6 @@ function OnboardingWorkflowPanel({ staffUsers, currentUserName }: { staffUsers: 
   )
 }
 
-const QB_COLORS: Record<string, { bg: string; fg: string; border: string; icon: typeof Star }> = {
-  RATING: { bg: 'rgba(245,158,11,0.12)', fg: '#fbbf24', border: 'rgba(245,158,11,0.3)', icon: Star },
-  TEXT: { bg: 'rgba(59,130,246,0.12)', fg: '#60a5fa', border: 'rgba(59,130,246,0.3)', icon: FileText },
-  YES_NO: { bg: 'rgba(16,185,129,0.12)', fg: '#34d399', border: 'rgba(16,185,129,0.3)', icon: ToggleLeft },
-  COMMENT: { bg: 'rgba(168,85,247,0.12)', fg: '#c084fc', border: 'rgba(168,85,247,0.3)', icon: MessageSquare },
-}
-const QB_TYPE_LABELS: Record<string, string> = { RATING: 'Rating', TEXT: 'Text', YES_NO: 'Yes/No', COMMENT: 'Comment' }
 const DONUT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#a855f7', '#6366f1', '#84cc16', '#e11d48', '#0ea5e9', '#d946ef', '#22c55e', '#eab308']
 
 function DonutChart({ data, size = 180 }: { data: { label: string; value: number; color: string }[]; size?: number }) {
