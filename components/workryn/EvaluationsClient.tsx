@@ -449,11 +449,6 @@ export default function EvaluationsClient({
                 <Edit2 size={18} /> Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
               </button>
             )}
-            {isManager && staffUsers.length > 0 && templates.some((t) => t.isActive) && (
-              <button className="btn btn-gradient focus-ring" onClick={() => setShowCreate(true)} type="button">
-                <Plus size={18} /> New Evaluation
-              </button>
-            )}
             {isAdmin && tab === 'templates' && (
               <button
                 className="btn btn-gradient focus-ring"
@@ -592,8 +587,6 @@ export default function EvaluationsClient({
                     <EmptyEvalState
                       isManager={isManager}
                       tab={tab}
-                      onCreateClick={() => setShowCreate(true)}
-                      canCreate={isManager && staffUsers.length > 0 && templates.some(t => t.isActive)}
                     />
                   )}
                 </>
@@ -1248,13 +1241,13 @@ function SelfAssessmentModal({
 
 // ── Empty State ──
 
-function EmptyEvalState({ isManager, tab, onCreateClick, canCreate }: {
-  isManager: boolean; tab: Tab; onCreateClick: () => void; canCreate: boolean
+function EmptyEvalState({ isManager, tab }: {
+  isManager: boolean; tab: Tab
 }) {
   const messages: Record<string, { title: string; desc: string }> = {
     given: {
-      title: 'No evaluations authored yet',
-      desc: 'Start reviewing your team members to track performance, identify growth areas, and celebrate achievements.',
+      title: 'No submitted self-assessments to review',
+      desc: 'When support planners complete their self-assessments, they will appear here for your review. Use the onboarding workflow above to send reminders.',
     },
     received: {
       title: 'No evaluations received',
@@ -1262,7 +1255,7 @@ function EmptyEvalState({ isManager, tab, onCreateClick, canCreate }: {
     },
     all: {
       title: 'No evaluations found',
-      desc: 'No evaluations exist in the system yet. Managers can create evaluations for their team members.',
+      desc: 'No evaluations or self-assessments have been submitted yet.',
     },
   }
   const m = messages[tab] ?? messages.all
@@ -1277,11 +1270,6 @@ function EmptyEvalState({ isManager, tab, onCreateClick, canCreate }: {
       </div>
       <h3>{msg.title}</h3>
       <p>{msg.desc}</p>
-      {canCreate && tab === 'given' && (
-        <button className="btn btn-gradient focus-ring" onClick={onCreateClick} type="button">
-          <Sparkles size={16} /> Create First Evaluation
-        </button>
-      )}
     </div>
   )
 }
