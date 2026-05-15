@@ -463,6 +463,7 @@ model EvaluationCriterion {
   description String?
   order       Int      @default(0)
   maxScore    Int      @default(5)
+  type        String   @default("RATING") // RATING | TEXT | YES_NO | COMMENT
 
   templateId  String
   template    EvaluationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
