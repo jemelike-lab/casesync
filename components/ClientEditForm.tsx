@@ -27,9 +27,9 @@ interface ClientEditFormProps {
   planners?: Profile[]
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    STYLES
-   ═══════════════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
@@ -42,9 +42,9 @@ const glassCard: React.CSSProperties = {
   background: 'linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.008) 100%)',
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   HOVER POPOVER — appears on mouse-over for date tiles
-   ═══════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   HOVER POPOVER â appears on mouse-over for date tiles
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Popover({ children, content, visible }: { children: React.ReactNode; content: React.ReactNode; visible: boolean }) {
   return (
@@ -73,9 +73,9 @@ function Popover({ children, content, visible }: { children: React.ReactNode; co
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   DATE TILE — Interactive card with hover popup
-   ═══════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   DATE TILE â Interactive card with hover popup
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function DateTile({ label, field, date, editing, onChange, highlighted, icon }: {
   label: string; field: string; date: string | null | undefined;
@@ -121,7 +121,7 @@ function DateTile({ label, field, date, editing, onChange, highlighted, icon }: 
         cursor: editing ? 'default' : 'default',
       }}
     >
-      {/* Popover on hover — below tile */}
+      {/* Popover on hover â below tile */}
       {hovered && !editing && date && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
@@ -142,11 +142,11 @@ function DateTile({ label, field, date, editing, onChange, highlighted, icon }: 
             {daysText}
           </div>
           <div style={{ fontSize: 11, color: 'rgba(200,210,230,0.5)', marginTop: 4 }}>
-            {label} · {formatDate(String(date).split('T')[0])}
+            {label} Â· {formatDate(String(date).split('T')[0])}
           </div>
           {isOverdue && (
             <div style={{ fontSize: 11, color: '#ff453a', marginTop: 8, fontWeight: 600 }}>
-              ⚡ Action needed — update this date
+              â¡ Action needed â update this date
             </div>
           )}
         </div>
@@ -181,9 +181,9 @@ function DateTile({ label, field, date, editing, onChange, highlighted, icon }: 
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   INLINE FIELD — For non-date fields in sidebar cards
-   ═══════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   INLINE FIELD â For non-date fields in sidebar cards
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 type SelectOption = { value: string; label: string }
 
@@ -195,8 +195,8 @@ function InlineField({ label, field, value, type, editing, onChange, selectOptio
 }) {
   if (!editing && (value === null || value === undefined || value === '')) return null
   let displayValue: string
-  if (typeof value === 'boolean') displayValue = value ? '✓ Yes' : '✗ No'
-  else if (value === null || value === undefined) displayValue = '—'
+  if (typeof value === 'boolean') displayValue = value ? 'â Yes' : 'â No'
+  else if (value === null || value === undefined) displayValue = 'â'
   else if (type === 'date') displayValue = formatDate(String(value).split('T')[0])
   else displayValue = String(value)
 
@@ -217,7 +217,7 @@ function InlineField({ label, field, value, type, editing, onChange, selectOptio
           )}
           {type === 'select' && selectOptions && (
             <select value={(value as string) ?? ''} onChange={e => onChange(field, e.target.value || null)} style={{ ...selectStyle, fontSize: 12 }}>
-              <option value="">—</option>
+              <option value="">â</option>
               {selectOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           )}
@@ -229,9 +229,9 @@ function InlineField({ label, field, value, type, editing, onChange, selectOptio
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    SELECT OPTIONS
-   ═══════════════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const POS_STATUS_OPTIONS: SelectOption[] = [{ value: 'Pending', label: 'Pending' }, { value: 'In-Progress', label: 'In-Progress' }, { value: 'Completed', label: 'Completed' }]
 const MED_TECH_STATUS_OPTIONS: SelectOption[] = [{ value: 'Active', label: 'Active' }, { value: 'Pending', label: 'Pending' }, { value: 'Expired', label: 'Expired' }, { value: 'Not Applicable', label: 'N/A' }]
@@ -240,9 +240,9 @@ const AUDIT_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Start
 const QA_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Started' }, { value: 'Pending', label: 'Pending' }, { value: 'Passed', label: 'Passed' }, { value: 'Failed', label: 'Failed' }]
 const CONTACT_TYPE_OPTIONS: SelectOption[] = [{ value: 'Phone', label: 'Phone' }, { value: 'Home Visit', label: 'Home Visit' }, { value: 'Email', label: 'Email' }, { value: 'Office Visit', label: 'Office Visit' }]
 
-/* ═══════════════════════════════════════════════════════════════════
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    COLLAPSIBLE SECTION (for secondary areas)
-   ═══════════════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function CollapsibleSection({ title, icon, children, defaultOpen = false, accentColor }: {
   title: string; icon: React.ReactNode; children: React.ReactNode;
@@ -268,9 +268,9 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false, accent
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    AI SECTION
-   ═══════════════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AIAskClient({ clientId }: { clientId: string }) {
   const [question, setQuestion] = useState('')
@@ -279,7 +279,7 @@ function AIAskClient({ clientId }: { clientId: string }) {
   const [error, setError] = useState<string | null>(null)
   const ask = async () => {
     if (!question.trim()) return
-    setLoading(true); setError(null)
+    setLoading(true); setError(null); setAnswer(null)
     try {
       let res = await fetch('/api/blhbot/ask', {
         method: 'POST',
@@ -307,6 +307,10 @@ function AIAskClient({ clientId }: { clientId: string }) {
         throw new Error('Session expired \u2014 please refresh the page and sign in again')
       }
 
+      if (res.status === 429) {
+        throw new Error('BLH Bot is busy \u2014 please wait a moment and try again')
+      }
+
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setAnswer(data.answer)
@@ -316,14 +320,14 @@ function AIAskClient({ clientId }: { clientId: string }) {
     <div>
       <div style={{ display: 'flex', gap: 6 }}>
         <input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask() }}
-          placeholder="Ask about this client…" style={{ ...inputStyle, flex: 1, fontSize: 12, borderColor: 'rgba(191,90,242,0.2)' }} />
+          placeholder="Ask about this clientâ¦" style={{ ...inputStyle, flex: 1, fontSize: 12, borderColor: 'rgba(191,90,242,0.2)' }} />
         <button onClick={ask} disabled={loading || !question.trim()} style={{
           background: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.2)', borderRadius: 10,
           color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1, whiteSpace: 'nowrap',
-        }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> …</> : <><Brain size={12} /> Ask</>}</button>
+        }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> â¦</> : <><Brain size={12} /> Ask</>}</button>
       </div>
-      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
+      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>â ï¸ {error}</div>}
       {answer && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{answer}</div>}
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -335,7 +339,7 @@ function AISummary({ clientId }: { clientId: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const generate = async () => {
-    setLoading(true); setError(null)
+    setLoading(true); setError(null); setSummary(null)
     try {
       let res = await fetch('/api/client-summary', {
         method: 'POST',
@@ -374,16 +378,16 @@ function AISummary({ clientId }: { clientId: string }) {
         background: 'rgba(191,90,242,0.08)', border: '1px solid rgba(191,90,242,0.15)', borderRadius: 8,
         color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
         display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1,
-      }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> …</> : <><Zap size={12} /> AI Summary</>}</button>
-      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
+      }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> â¦</> : <><Zap size={12} /> AI Summary</>}</button>
+      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>â ï¸ {error}</div>}
       {summary && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, lineHeight: 1.6, color: 'var(--text)' }}>{summary}</div>}
     </div>
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   NOTES — Chat-bubble style
-   ═══════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   NOTES â Chat-bubble style
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function NotesSection({ clientId, currentUserId }: { clientId: string; currentUserId: string }) {
   const [notes, setNotes] = useState<ClientNote[]>([])
@@ -411,7 +415,7 @@ function NotesSection({ clientId, currentUserId }: { clientId: string; currentUs
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Notes</span>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…"
+        <textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a noteâ¦"
           style={{ ...inputStyle, flex: 1, minHeight: 50, resize: 'vertical', borderRadius: 12, fontSize: 12 }} />
         <button onClick={addNote} disabled={saving || !newNote.trim()} style={{
           background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 10,
@@ -439,9 +443,9 @@ function NotesSection({ clientId, currentUserId }: { clientId: string; currentUs
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   ACTIVITY LOG — Timeline
-   ═══════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   ACTIVITY LOG â Timeline
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function ActivitySection({ clientId }: { clientId: string }) {
   const [logs, setLogs] = useState<ActivityLog[]>([])
@@ -487,9 +491,9 @@ function ActivitySection({ clientId }: { clientId: string }) {
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════════════ */
+   âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [] }: ClientEditFormProps) {
   const searchParams = useSearchParams()
@@ -622,7 +626,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           border: `1px solid ${toast.type === 'success' ? 'rgba(48,209,88,0.3)' : 'rgba(255,69,58,0.3)'}`,
           borderRadius: 14, padding: '10px 16px', color: toast.type === 'success' ? '#30d158' : '#ff453a',
           fontSize: 13, fontWeight: 600, backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        }}>{toast.type === 'success' ? '✓' : '✗'} {toast.message}</div>
+        }}>{toast.type === 'success' ? 'â' : 'â'} {toast.message}</div>
       )}
 
       {/* Popover animation */}
@@ -630,11 +634,11 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
       {/* Back */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
-        <Link href="/dashboard" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>← Dashboard</Link>
+        <Link href="/dashboard" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>â Dashboard</Link>
         <Link href={`/clients/${client.id}/print`} target="_blank" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 12, padding: '4px 10px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}><Printer size={12} style={{ marginRight: 4 }} />Print</Link>
       </div>
 
-      {/* ═══ HERO HEADER ═══ */}
+      {/* âââ HERO HEADER âââ */}
       <div style={{
         borderRadius: 22, overflow: 'hidden', marginBottom: 16,
         background: 'linear-gradient(135deg, #0d1520 0%, #152238 50%, #0f1b2e 100%)',
@@ -650,14 +654,14 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
               <span style={{ fontSize: 12, color: 'rgba(200,210,230,0.6)', fontWeight: 600 }}>ID: <strong style={{ color: 'rgba(200,210,230,0.9)' }}>{client.client_id}</strong></span>
               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(200,210,230,0.7)' }}>{client.category}</span>
               {f.eligibility_code && <span style={{ fontSize: 12, color: 'rgba(200,210,230,0.5)' }}>{f.eligibility_code as string}</span>}
-              {client.profiles?.full_name && <span style={{ fontSize: 12, color: 'rgba(200,210,230,0.4)' }}>👤 {client.profiles.full_name}</span>}
+              {client.profiles?.full_name && <span style={{ fontSize: 12, color: 'rgba(200,210,230,0.4)' }}>ð¤ {client.profiles.full_name}</span>}
             </div>
             {/* Status chips */}
             <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-              {totalOverdue > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', color: '#ff453a' }}>🔴 {totalOverdue} overdue</span>}
-              {urgencyCounts.dueSoon > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.25)', color: '#ff9f0a' }}>🟠 {urgencyCounts.dueSoon} due soon</span>}
+              {totalOverdue > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', color: '#ff453a' }}>ð´ {totalOverdue} overdue</span>}
+              {urgencyCounts.dueSoon > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.25)', color: '#ff9f0a' }}>ð  {urgencyCounts.dueSoon} due soon</span>}
               <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: noContact ? 'rgba(255,159,10,0.1)' : 'rgba(255,255,255,0.03)', border: noContact ? '1px solid rgba(255,159,10,0.2)' : '1px solid rgba(255,255,255,0.05)', color: noContact ? '#ff9f0a' : 'rgba(200,210,230,0.5)' }}>
-                {daysSince !== null ? `📞 ${daysSince}d ago` : 'No contact'}{f.last_contact_type ? ` · ${f.last_contact_type}` : ''}
+                {daysSince !== null ? `ð ${daysSince}d ago` : 'No contact'}{f.last_contact_type ? ` Â· ${f.last_contact_type}` : ''}
               </span>
             </div>
           </div>
@@ -666,7 +670,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <div style={{ display: 'flex', gap: 6 }}>
               {editing ? (
                 <>
-                  <button onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(135deg, #007aff, #0055cc)', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 4px 12px rgba(0,122,255,0.3)' }}><Save size={13} /> {saving ? '…' : 'Save'}</button>
+                  <button onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(135deg, #007aff, #0055cc)', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 4px 12px rgba(0,122,255,0.3)' }}><Save size={13} /> {saving ? 'â¦' : 'Save'}</button>
                   <button onClick={handleCancel} style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(200,210,230,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><X size={13} /> Cancel</button>
                 </>
               ) : (
@@ -677,12 +681,12 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
         </div>
       </div>
 
-      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
+      {/* âââ TWO-COLUMN LAYOUT âââ */}
       <div className="client-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
 
-        {/* ── LEFT COLUMN: Deadline tiles + data sections ── */}
+        {/* ââ LEFT COLUMN: Deadline tiles + data sections ââ */}
         <div>
-          {/* Key Deadlines — grid of interactive date tiles */}
+          {/* Key Deadlines â grid of interactive date tiles */}
           <div style={{ ...glassCard, padding: '16px 18px', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <AlertTriangle size={16} style={{ color: '#ff453a' }} />
@@ -731,14 +735,14 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <InlineField label="Request Letter" field="request_letter" value={f.request_letter} type="text" editing={editing} onChange={handleChange} />
           </CollapsibleSection>
 
-          {/* Notes — full width in left column */}
+          {/* Notes â full width in left column */}
           <NotesSection clientId={client.id} currentUserId={currentUserId} />
 
           {/* Activity */}
           <ActivitySection clientId={client.id} />
         </div>
 
-        {/* ── RIGHT COLUMN: Sidebar ── */}
+        {/* ââ RIGHT COLUMN: Sidebar ââ */}
         <div>
           {/* AI Intelligence */}
           {!editing && (
@@ -768,7 +772,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             )}
             {!editing && f.eligibility_code && getEligibilityDescription(f.eligibility_code as string) && (
               <div style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '6px 0' }}>
-                <span style={{ fontWeight: 600 }}>{f.eligibility_code as string}</span> · {getEligibilityDescription(f.eligibility_code as string)}
+                <span style={{ fontWeight: 600 }}>{f.eligibility_code as string}</span> Â· {getEligibilityDescription(f.eligibility_code as string)}
               </div>
             )}
             <InlineField label="Created" field="" value={client.created_at ? formatDate(client.created_at.split('T')[0]) : null} type="text" editing={false} onChange={() => {}} />
@@ -778,14 +782,14 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             {canReassign && planners.length > 0 && (
               <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 10 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reassign</div>
-                <input type="text" value={plannerSearch} onChange={e => setPlannerSearch(e.target.value)} placeholder="Search…" style={{ ...inputStyle, fontSize: 11, marginBottom: 6 }} />
+                <input type="text" value={plannerSearch} onChange={e => setPlannerSearch(e.target.value)} placeholder="Searchâ¦" style={{ ...inputStyle, fontSize: 11, marginBottom: 6 }} />
                 <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} style={{ ...selectStyle, fontSize: 11, marginBottom: 6 }}>
-                  <option value="">— Select —</option>
+                  <option value="">â Select â</option>
                   {filteredPlanners.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                 </select>
                 <button onClick={handleReassign} disabled={!assignedTo || assignSaving || assignedTo === client.assigned_to}
                   style={{ background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 8, color: '#007aff', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer', width: '100%', opacity: (!assignedTo || assignSaving) ? 0.4 : 1 }}>
-                  {assignSaving ? 'Saving…' : 'Reassign'}
+                  {assignSaving ? 'Savingâ¦' : 'Reassign'}
                 </button>
               </div>
             )}
@@ -835,7 +839,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <button onClick={handleMarkDeceased} disabled={deactivating} style={{
               background: 'transparent', color: 'rgba(255,69,58,0.8)', border: '1px solid rgba(255,69,58,0.2)',
               borderRadius: 10, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: deactivating ? 0.6 : 1,
-            }}>{deactivating ? 'Saving…' : 'Mark as Deceased'}</button>
+            }}>{deactivating ? 'Savingâ¦' : 'Mark as Deceased'}</button>
           </div>
         </div>
       )}
