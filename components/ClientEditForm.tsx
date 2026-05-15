@@ -281,7 +281,32 @@ function AIAskClient({ clientId }: { clientId: string }) {
     if (!question.trim()) return
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/blhbot/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: clientId, question: question.trim() }) })
+      let res = await fetch('/api/blhbot/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ id: clientId, question: question.trim() }),
+      })
+
+      // Auto-retry on 401: refresh the session token and try once more
+      if (res.status === 401) {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { error: refreshErr } = await supabase.auth.refreshSession()
+        if (!refreshErr) {
+          res = await fetch('/api/blhbot/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ id: clientId, question: question.trim() }),
+          })
+        }
+      }
+
+      if (res.status === 401) {
+        throw new Error('Session expired \u2014 please refresh the page and sign in again')
+      }
+
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setAnswer(data.answer)
@@ -312,7 +337,32 @@ function AISummary({ clientId }: { clientId: string }) {
   const generate = async () => {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/client-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId }) })
+      let res = await fetch('/api/client-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ clientId }),
+      })
+
+      // Auto-retry on 401: refresh the session token and try once more
+      if (res.status === 401) {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { error: refreshErr } = await supabase.auth.refreshSession()
+        if (!refreshErr) {
+          res = await fetch('/api/client-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ clientId }),
+          })
+        }
+      }
+
+      if (res.status === 401) {
+        throw new Error('Session expired \u2014 please refresh the page and sign in again')
+      }
+
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setSummary(data.summary)

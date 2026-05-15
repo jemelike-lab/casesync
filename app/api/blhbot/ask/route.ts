@@ -40,9 +40,17 @@ export async function POST(req: NextRequest) {
   // - role-aware scope + knowledge blocks
   // - Anthropic streaming
   // - AI rate limiting (checkAiRateLimit on /api/case-ai)
+  //
+  // IMPORTANT: Forward the cookie header so case-ai's getUser() sees the
+  // same auth session. Without this, the server-to-server fetch arrives
+  // with no cookies and case-ai returns 401.
+  const cookieHeader = req.headers.get('cookie') ?? ''
   const res = await fetch(new URL('/api/case-ai', req.url), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+    },
     body: JSON.stringify({
       userId: user.id,
       clientId: id,

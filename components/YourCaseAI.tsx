@@ -417,15 +417,47 @@ export default function BLHAssistant() {
         content: m.content,
       }))
 
-      const res = await fetch('/api/case-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: conversationMessages,
-          userId,
-          clientId: currentClientId,
-        }),
+      const payload = JSON.stringify({
+        messages: conversationMessages,
+        userId,
+        clientId: currentClientId,
       })
+
+      // Helper: make the API call
+      const doFetch = () =>
+        fetch('/api/case-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin', // ensure cookies are sent
+          body: payload,
+        })
+
+      let res = await doFetch()
+
+      // Fix 4: On 401, force a token refresh and retry once.
+      // The middleware refreshes tokens on page navigations, but if the user
+      // has been on the same page for a while (e.g. reading a client detail),
+      // the access token may have expired between page loads.
+      if (res.status === 401) {
+        const supabase = createClient()
+        const { error: refreshError } = await supabase.auth.refreshSession()
+        if (!refreshError) {
+          // Token refreshed — retry the API call
+          res = await doFetch()
+        }
+      }
+
+      // Still 401 after refresh attempt — session is truly dead
+      if (res.status === 401) {
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantId
+              ? { ...m, content: '⚠️ Your session has expired. Please refresh the page and sign in again.' }
+              : m
+          )
+        )
+        return
+      }
 
       if (res.status === 429) {
         const errData = await res.json().catch(() => ({}))
@@ -462,10 +494,19 @@ export default function BLHAssistant() {
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Something went wrong'
+      // User-friendly messages for common errors
+      let displayMsg: string
+      if (errMsg.includes('401') || errMsg.toLowerCase().includes('unauthorized')) {
+        displayMsg = '⚠️ Your session has expired. Please refresh the page and sign in again.'
+      } else if (errMsg.includes('fetch') || errMsg.includes('network') || errMsg.includes('Failed')) {
+        displayMsg = '⚠️ Network error — please check your connection and try again.'
+      } else {
+        displayMsg = `Sorry, something went wrong. Please try again. (${errMsg})`
+      }
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantId
-            ? { ...m, content: `Sorry, I encountered an error: ${errMsg}` }
+            ? { ...m, content: displayMsg }
             : m
         )
       )
