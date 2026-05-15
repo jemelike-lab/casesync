@@ -20,7 +20,7 @@ import { isManagerOrAbove } from '@/lib/workryn/permissions'
 //   4. Supervisor can manually re-send or nudge at any time
 
 const CALENDLY_URL = 'https://calendly.com/sabbott-9/evaluations'
-const COUNTY_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSey8jldz9vSIbqZuHc5Z9TE4JB9j8awyk_1zLDKruto6-gkuw/viewform'
+const COUNTY_FORM_URL = 'https://www.blhcasesync.com/w/county-preference'
 
 // ── POST: Trigger the onboarding workflow for a user ──
 //   Body: { userId, hireDate?, action? }

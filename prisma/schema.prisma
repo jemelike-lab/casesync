@@ -61,6 +61,7 @@ model User {
   trainingEnrollments  TrainingEnrollment[] @relation("TrainingEnrollments")
   evaluationsReceived  Evaluation[]         @relation("AgentEvaluations")
   evaluationsGiven     Evaluation[]         @relation("EvaluatorEvaluations")
+  countyPreference     CountyPreference?
 
   // Department head
   headedDepartment    Department?         @relation("DepartmentHead")
@@ -517,6 +518,27 @@ model EvaluationScore {
 
   @@schema("public")
   @@map("w_evaluation_score")
+}
+
+// ── County Preference (30-Day Onboarding) ────────────────────
+
+model CountyPreference {
+  id              String   @id @default(cuid())
+  residenceCounty String
+  preferredCounties String  // JSON array of selected counties
+  additionalCounties String? // JSON array of extra counties
+  excusedFromVisits Boolean @default(false)
+  notes           String?
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  submittedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId])
+  @@schema("public")
+  @@map("w_county_preference")
 }
 
 model AuditLog {

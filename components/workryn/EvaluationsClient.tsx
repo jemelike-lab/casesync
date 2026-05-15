@@ -947,7 +947,7 @@ function OnboardingWorkflowPanel({ staffUsers, currentUserName }: { staffUsers: 
   }
 
   const CALENDLY = 'https://calendly.com/sabbott-9/evaluations'
-  const COUNTY_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSey8jldz9vSIbqZuHc5Z9TE4JB9j8awyk_1zLDKruto6-gkuw/viewform'
+  const COUNTY_FORM = '/w/county-preference'
 
   return (
     <div className="ob-panel animate-slide-up" style={{ animationDelay: '280ms' }}>
@@ -984,7 +984,7 @@ function OnboardingWorkflowPanel({ staffUsers, currentUserName }: { staffUsers: 
               </div>
               <span style={{ fontSize: '0.6875rem', color: 'var(--brand-light)' }}>Open →</span>
             </a>
-            <a href={COUNTY_FORM} target="_blank" rel="noopener noreferrer" className="ob-link-card focus-ring" style={{ '--ob-accent': '#10b981' } as React.CSSProperties}>
+            <a href={COUNTY_FORM} className="ob-link-card focus-ring" style={{ '--ob-accent': '#10b981' } as React.CSSProperties}>
               <div className="ob-link-icon" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>📝</div>
               <div className="ob-link-info">
                 <div className="ob-link-label">County Preference Form</div>
