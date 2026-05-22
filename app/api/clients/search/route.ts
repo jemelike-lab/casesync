@@ -2,6 +2,7 @@ import { isSupervisorLike } from '@/lib/roles'
 import { getStarterViewNamesForRole, listSavedViewsForCurrentUser } from '@/lib/saved-views'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { sanitizeSearchParam } from '@/lib/validation'
 
 const QUEUE_RESULTS = [
   { id: 'queue:overdue', label: 'Overdue Queue', description: 'All overdue active clients', href: '/team?full=1&filter=overdue', roles: ['team_manager', 'supervisor', 'it'] },
@@ -56,8 +57,8 @@ export async function GET(req: Request) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), { status: 403 })
     }
 
-    const role = String(profile.role ?? '')
-    const qSafe = q.toLowerCase().replace(/[,()%_\\]/g, '')
+    const role = String(profile.role ?? '').toLowerCase()
+    const qSafe = sanitizeSearchParam(q)
     const qLower = q.toLowerCase()
 
     const admin = createSupabaseJsClient(

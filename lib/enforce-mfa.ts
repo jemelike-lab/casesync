@@ -1,7 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-const MFA_REQUIRED_ROLES = ['supervisor', 'it', 'team_manager', 'supports_planner', 'case_manager']
+// Active CaseSync roles (legacy 'case_manager' removed — see migration 016).
+const MFA_REQUIRED_ROLES = ['supervisor', 'it', 'team_manager', 'supports_planner']
+
+/**
+ * Identifies a Next.js redirect() thrown from within a try/catch so we can
+ * re-raise it instead of swallowing it as "an MFA check error".
+ *
+ * Next 15 and 16 both use throw-an-Error to implement redirect(), but the
+ * marker is on either `.digest` (a string starting with NEXT_REDIRECT) or
+ * `.message` (some build paths). Check both for forward-compat.
+ */
+function isNextRedirect(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false
+  const anyE = e as { digest?: unknown; message?: unknown }
+  if (typeof anyE.digest === 'string' && anyE.digest.includes('NEXT_REDIRECT')) return true
+  if (typeof anyE.message === 'string' && anyE.message.includes('NEXT_REDIRECT')) return true
+  return false
+}
 
 /**
  * Check if the current user's role requires MFA and if they have it enabled.
@@ -29,17 +46,18 @@ export async function enforceMfa() {
 
     // Check if user has TOTP MFA enrolled
     const { data: factors } = await supabase.auth.mfa.listFactors()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totpFactors = (factors as any)?.totp ?? (factors as any)?.all?.filter((f: any) => f.factor_type === 'totp') ?? []
     const hasVerifiedFactor = Array.isArray(totpFactors) && totpFactors.some(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (f: any) => f.status === 'verified'
     )
 
     if (!hasVerifiedFactor) {
       redirect('/settings/security?mfa_required=1')
     }
-  } catch (e: any) {
-    // Don't block on MFA check errors — log and continue
-    if (e?.digest?.includes('NEXT_REDIRECT')) throw e // re-throw redirect
-    console.error('[enforceMfa] Error checking MFA:', e?.message)
+  } catch (e) {
+    if (isNextRedirect(e)) throw e
+    console.error('[enforceMfa] Error checking MFA:', (e as Error)?.message)
   }
 }

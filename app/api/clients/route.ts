@@ -3,7 +3,8 @@ import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact, Client } from '@/lib/types'
-import { auditLog } from '@/lib/audit'
+import { auditBulkAccess } from '@/lib/audit'
+import { sanitizeSearchParam } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,9 @@ export async function GET(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), { status: 403 })
     }
 
-    const role = String(profile.role ?? '')
+    // Fix 2026-05-22: lowercase the role for consistency with api-auth.ts and
+    // to defend against accidental capitalization drift in the profiles table.
+    const role = String(profile.role ?? '').toLowerCase()
     const from = page * limit
     const to = from + limit - 1
 
@@ -108,7 +111,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (search.trim()) {
-      const q = search.trim().toLowerCase().replace(/[,()%_\\]/g, '')
+      const q = sanitizeSearchParam(search.trim())
       if (q) {
         query = query.or(
           `last_name.ilike.%${q}%,first_name.ilike.%${q}%,client_id.ilike.%${q}%,eligibility_code.ilike.%${q}%`
@@ -152,8 +155,8 @@ export async function GET(req: NextRequest) {
     const { data: clients, error, count } = filteredResult
 
     if (error) {
-      console.error('Error fetching paginated clients:', error)
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      console.error('[api/clients] DB error:', error.message)
+      return new Response(JSON.stringify({ error: 'Failed to load clients' }), { status: 500 })
     }
 
     const pageClients = (clients ?? []) as unknown as Client[]
@@ -184,6 +187,21 @@ export async function GET(req: NextRequest) {
         return days !== null && days >= 7
       }).length,
     } : fullSummary
+
+    // HIPAA: log bulk PHI access. auditBulkAccess only writes when
+    // count >= BULK_THRESHOLD (100), so this is silent for normal pages
+    // and noisy for the kind of access that matters for exfil detection.
+    // Fix 2026-05-22: previously no audit row was written when supervisors
+    // pulled their full caseload. See AUDIT_2026-05-22.md §5C P1-11.
+    await auditBulkAccess(req, {
+      userId,
+      userEmail: authData.user.email ?? undefined,
+      userRole: role,
+      action: 'client.bulk_access',
+      resourceType: 'clients',
+      count: allClients.length,
+      details: { page, limit, filter, search: search ? '[redacted]' : null, has_assigned_filter: !!assignedTo },
+    }).catch(() => {})
 
     return new Response(JSON.stringify({ clients: pageClients, total, hasMore, summary, fullSummary }), {
       headers: { 'Content-Type': 'application/json' },

@@ -4,6 +4,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { hash } from 'bcryptjs'
 import { isManagerOrAbove, canCreateRole } from '@/lib/workryn/permissions'
+import { validatePasswordStrength } from '@/lib/password-policy'
 
 // Fields safe to expose to clients — deliberately excludes password, mfaSecret, emailVerified.
 const SAFE_USER_SELECT = {
@@ -47,8 +48,20 @@ export async function POST(req: NextRequest) {
   if (!name || !email || !password) {
     return NextResponse.json({ error: 'Name, email, and password required' }, { status: 400 })
   }
-  if (typeof password !== 'string' || password.length < 6) {
-    return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+
+  // Fix 2026-05-22: HIPAA-grade password floor. Was 6 chars with no
+  // complexity, now requires 12+ with at least 3 of 4 character classes.
+  // See AUDIT_2026-05-22.md §2C finding P1-9.
+  const pwErr = validatePasswordStrength(password)
+  if (pwErr) return NextResponse.json({ error: pwErr }, { status: 400 })
+
+  // Basic email-shape check before normalising / hitting the DB
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
+  }
+
+  if (typeof name !== 'string' || name.trim().length < 1 || name.length > 200) {
+    return NextResponse.json({ error: 'Name must be 1-200 characters' }, { status: 400 })
   }
 
   const targetRole = role || 'STAFF'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
-import { canManageTeam } from '@/lib/roles'
+import { isSupervisorLike } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { auditLog } from '@/lib/audit'
 import {
@@ -14,6 +14,10 @@ export const dynamic = 'force-dynamic'
 
 type Mode = 'validate' | 'import'
 
+// Fix 2026-05-22: tightened role gate from canManageTeam (allowed
+// team_manager) to isSupervisorLike (supervisor/it only). Mass client
+// import is a HIPAA-significant operation that mints PHI records and
+// must not be available to team managers per the audit spec §2A.
 async function getAuthorizedContext() {
   const supabase = await createServerClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -28,7 +32,7 @@ async function getAuthorizedContext() {
     .eq('id', authData.user.id)
     .single()
 
-  if (profileError || !profile || !canManageTeam(profile.role)) {
+  if (profileError || !profile || !isSupervisorLike(profile.role)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 

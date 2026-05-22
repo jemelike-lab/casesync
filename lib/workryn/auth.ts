@@ -53,9 +53,18 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
         .single()
 
       if (profile) {
-        // Map CaseSync role → Workryn role
+        // Map CaseSync role → Workryn role.
+        // Mapping is intentional and must match lib/workryn/permissions.ts
+        // role hierarchy (OWNER=6, SUPERVISOR=5, ADMIN=4, MANAGER=3, STAFF=2):
+        //   supervisor     → SUPERVISOR (full access in Workryn)
+        //   it             → ADMIN      (full admin, cannot create SUPERVISOR/OWNER)
+        //   team_manager   → MANAGER    (team management)
+        //   supports_planner → STAFF    (own data only)
+        // Fix 2026-05-22: supervisor previously mapped to ADMIN, which gave
+        // CaseSync supervisors *less* privilege in Workryn than they should
+        // have had. See AUDIT_2026-05-22.md §2B.
         const roleMap: Record<string, string> = {
-          supervisor: 'ADMIN',
+          supervisor: 'SUPERVISOR',
           team_manager: 'MANAGER',
           supports_planner: 'STAFF',
           it: 'ADMIN',

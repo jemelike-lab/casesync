@@ -7,12 +7,12 @@
  * MANAGER / TEAM_MANAGER — manage team, see all staff, can invite SUPPORT_PLANNER
  * STAFF / SUPPORT_PLANNER — read-only own data, cannot invite
  *
- * CaseSync role mapping:
- *   supervisor      → SUPERVISOR
- *   team_manager    → TEAM_MANAGER
- *   support_planner → SUPPORT_PLANNER
- *   it              → ADMIN
- *   default         → SUPPORT_PLANNER
+ * CaseSync role mapping (see lib/workryn/auth.ts roleMap):
+ *   supervisor       → SUPERVISOR
+ *   it               → ADMIN
+ *   team_manager     → TEAM_MANAGER (canonical) or MANAGER (legacy)
+ *   supports_planner → STAFF (canonical) or SUPPORT_PLANNER (legacy)
+ *   default          → STAFF
  */
 
 export type Role =
