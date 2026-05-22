@@ -7,6 +7,24 @@ const INACTIVITY_TIMEOUT_S = 15 * 60
 const DATA_RATE_LIMIT = 100
 const DATA_RATE_WINDOW_MS = 60 * 1000
 
+// Methods we apply the Origin / CSRF check to. Same-origin browser requests
+// always send an Origin header that matches Host; cross-origin POST attempts
+// from a malicious page would send a different Origin. Server-to-server
+// callers (no Origin) are funneled through the exempt list.
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+// Paths exempt from the Origin check — webhooks called server-to-server,
+// auth bootstrap routes whose own handlers do signature validation,
+// Vercel cron jobs that authenticate via x-vercel-cron header.
+const ORIGIN_CHECK_EXEMPT = [
+  '/api/webhooks/',
+  '/api/auth/',
+  '/api/workryn/evaluations/cron',
+  '/api/check-deadlines',
+  '/api/health',
+  '/api/version',
+]
+
 const PUBLIC_PATHS = [
   '/login', '/accept-invite', '/reset-password', '/onboarding',
   '/offline', '/security', '/api/auth', '/api/health', '/api/webhooks',
@@ -31,8 +49,36 @@ function isDataApiRoute(pathname: string): boolean {
   return DATA_API_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
+function isOriginExempt(pathname: string): boolean {
+  return ORIGIN_CHECK_EXEMPT.some((p) => pathname === p || pathname.startsWith(p))
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── Origin / CSRF defense ──────────────────────────────────────────────────
+  // Runs before any other logic so even pre-auth state-changers are protected.
+  // Doesn't fire on safe methods (GET/HEAD/OPTIONS) or exempt webhook/cron paths.
+  if (MUTATING_METHODS.has(request.method.toUpperCase()) && !isOriginExempt(pathname)) {
+    const origin = request.headers.get('origin')
+    const host = request.headers.get('host')
+    if (origin) {
+      try {
+        const originHost = new URL(origin).host
+        if (originHost !== host) {
+          return NextResponse.json(
+            { error: 'Cross-origin request rejected' },
+            { status: 403 }
+          )
+        }
+      } catch {
+        return NextResponse.json(
+          { error: 'Malformed Origin header' },
+          { status: 400 }
+        )
+      }
+    }
+  }
 
   if (isPublic(pathname)) {
     return NextResponse.next()
