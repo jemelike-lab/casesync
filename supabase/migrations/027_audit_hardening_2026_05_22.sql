@@ -21,7 +21,7 @@ UPDATE public.w_user AS w
 SET role = 'SUPERVISOR',
     "updatedAt" = NOW()
 FROM public.profiles AS p
-WHERE w."supabaseId" = p.id
+WHERE w."supabaseId"::uuid = p.id
   AND p.role = 'supervisor'
   AND w.role = 'ADMIN';
 

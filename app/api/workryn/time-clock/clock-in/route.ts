@@ -29,15 +29,32 @@ export async function POST(req: NextRequest) {
     // ignore
   }
 
-  const entry = await db.timeEntry.create({
-    data: {
-      userId,
-      clockInAt: new Date(),
-      status: 'ACTIVE',
-      notes,
-    },
-    include: { breaks: true },
-  })
+  // Race-safe path: a partial unique index on (userId) WHERE status='ACTIVE'
+  // (migration 029) guarantees only one ACTIVE entry per user. If two requests
+  // arrive in the same tick, the second one bombs with Prisma P2002 — translate
+  // that to the same friendly 409 the find-first path returns.
+  let entry
+  try {
+    entry = await db.timeEntry.create({
+      data: {
+        userId,
+        clockInAt: new Date(),
+        status: 'ACTIVE',
+        notes,
+      },
+      include: { breaks: true },
+    })
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const code = (err as any)?.code
+    if (code === 'P2002') {
+      return NextResponse.json(
+        { error: 'You are already clocked in.' },
+        { status: 409 },
+      )
+    }
+    throw err
+  }
 
   await db.auditLog.create({
     data: {
