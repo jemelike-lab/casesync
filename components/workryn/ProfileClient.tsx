@@ -1,21 +1,23 @@
 'use client'
 
 /**
- * ProfileClient — Mantine v9 rewrite (Phase 2, page #1 of 8).
+ * ProfileClient — Mantine v9, enhanced visual identity pass.
  *
- * Visual identity: "Energetic Product" per the Workryn brand plan.
- *   Primary  : violet  #7C3AED   (theme.colors.violet[6])
- *   Accent   : coral   #FB7185   (theme.colors.coral[4])
- *   Success  : mint    #34D399   (theme.colors.mint[4])
+ * Builds on the first Mantine port with the dashboard's signature
+ * animation language:
+ *   - Animated gradient mesh in the hero (CSS keyframes, slow drift)
+ *   - useCountUp on stat numbers (existing SSR-safe hook from /hooks)
+ *   - Gradient accent bars on top of every stat card
+ *   - Staggered slide-up entrance (80ms steps)
+ *   - Hover lift + brand-colored shadow on cards
+ *   - Pulsing glow ring on avatar matched to avatarColor
+ *   - Gradient text on the headline and section titles
  *
- * Behavior parity with the previous (CSS-prefixed) version:
+ * Behavior contract is identical to the previous version:
  *   - Same props interface — page.tsx unchanged.
- *   - Same API endpoints: /api/workryn/profile/me (PUT),
- *     /api/workryn/evaluations?agentId=… (GET),
- *     /api/workryn/evaluations/:id/acknowledge (POST).
- *   - Same tabs: Overview / Training / Evaluations / Settings.
- *   - Owner crown indicator preserved; MFA badge preserved.
- *   - jobTitle remains admin-only in the PUT payload.
+ *   - Same API endpoints: PUT /api/workryn/profile/me,
+ *     GET /api/workryn/evaluations?agentId=,
+ *     POST /api/workryn/evaluations/:id/acknowledge.
  */
 
 import { useEffect, useState } from 'react'
@@ -60,11 +62,12 @@ import {
   Phone,
   Save,
   Shield,
-  Star,
+  Sparkles,
   Ticket,
   User as UserIcon,
 } from 'lucide-react'
 import { getInitials, formatDate, timeAgo } from '@/lib/workryn/utils'
+import { useCountUp } from '@/hooks/useCountUp'
 
 // ---------- Types (unchanged contract) ----------
 
@@ -127,6 +130,30 @@ const AVATAR_COLORS = [
   '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
 ]
 
+// Per-stat-card visual config: accent gradient + icon color.
+const STAT_THEMES = {
+  violet: {
+    bar: 'linear-gradient(90deg, #7C3AED 0%, #a855f7 100%)',
+    glow: 'rgba(124,58,237,0.30)',
+    color: 'violet' as const,
+  },
+  orange: {
+    bar: 'linear-gradient(90deg, #f59e0b 0%, #FB7185 100%)',
+    glow: 'rgba(245,158,11,0.30)',
+    color: 'orange' as const,
+  },
+  mint: {
+    bar: 'linear-gradient(90deg, #10b981 0%, #34D399 100%)',
+    glow: 'rgba(52,211,153,0.30)',
+    color: 'mint' as const,
+  },
+  coral: {
+    bar: 'linear-gradient(90deg, #FB7185 0%, #f43f5e 100%)',
+    glow: 'rgba(251,113,133,0.30)',
+    color: 'coral' as const,
+  },
+}
+
 // =================================================================
 // MAIN COMPONENT
 // =================================================================
@@ -141,159 +168,254 @@ export default function ProfileClient({
   const isOwner = profile.role === 'OWNER'
 
   return (
-    <Container size="xl" py="lg">
-      {/* ---------- Header ---------- */}
-      <Paper
-        radius="lg"
-        p="xl"
-        mb="lg"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(251,113,133,0.10) 100%)',
-          border: '1px solid var(--mantine-color-violet-9)',
-        }}
-      >
-        <Group align="center" gap="xl" wrap="wrap">
-          <Avatar
-            size={96}
-            radius="50%"
-            style={{
-              backgroundColor: profile.avatarColor,
-              color: '#fff',
-              fontSize: '2rem',
-              fontWeight: 800,
-              border: '3px solid rgba(255,255,255,0.08)',
-              boxShadow: `0 0 32px ${profile.avatarColor}66`,
-            }}
-          >
-            {getInitials(profile.name ?? profile.email ?? 'U')}
-          </Avatar>
+    <>
+      <Container size="xl" py="lg" className="wp-profile-root">
+        {/* ---------- Header ---------- */}
+        <Paper radius="lg" p="xl" mb="lg" className="wp-hero">
+          {/* Drifting gradient mesh background layer */}
+          <div className="wp-hero-mesh" aria-hidden />
 
-          <Stack gap="xs" style={{ flex: 1, minWidth: 240 }}>
-            <Group gap="sm" wrap="wrap" align="center">
-              <Title order={1} size="h2" fw={800} lh={1.1}>
-                {profile.name ?? 'Unnamed User'}
-              </Title>
-              <Badge
-                size="md"
-                variant="light"
-                color="violet"
-                leftSection={isOwner ? <Crown size={12} /> : null}
-                tt="uppercase"
+          <Group align="center" gap="xl" wrap="wrap" style={{ position: 'relative', zIndex: 1 }}>
+            <div className="wp-avatar-wrap">
+              <Avatar
+                size={104}
+                radius="50%"
+                className="wp-avatar"
+                style={{
+                  backgroundColor: profile.avatarColor,
+                  color: '#fff',
+                  fontSize: '2.1rem',
+                  fontWeight: 800,
+                  // CSS variable consumed by the pulse keyframe
+                  ['--wp-avatar-color' as string]: profile.avatarColor,
+                } as React.CSSProperties}
               >
-                {profile.role}
-              </Badge>
-            </Group>
+                {getInitials(profile.name ?? profile.email ?? 'U')}
+              </Avatar>
+              {profile.isActive && (
+                <span className="wp-online-dot" aria-label="active" />
+              )}
+            </div>
 
-            {profile.jobTitle && (
-              <Group gap={6} c="dimmed">
-                <Briefcase size={14} />
-                <Text size="sm" fw={500}>
-                  {profile.jobTitle}
-                </Text>
+            <Stack gap="xs" style={{ flex: 1, minWidth: 240 }}>
+              <Group gap="sm" wrap="wrap" align="center">
+                <Title order={1} className="wp-hero-title">
+                  {profile.name ?? 'Unnamed User'}
+                </Title>
+                <Badge
+                  size="md"
+                  variant="light"
+                  color="violet"
+                  leftSection={isOwner ? <Crown size={12} /> : <Sparkles size={12} />}
+                  tt="uppercase"
+                  className="wp-role-pill"
+                >
+                  {profile.role}
+                </Badge>
               </Group>
-            )}
 
-            <Group gap="md" wrap="wrap">
-              {profile.email && (
+              {profile.jobTitle && (
                 <Group gap={6} c="dimmed">
-                  <Mail size={13} />
-                  <Text size="sm">{profile.email}</Text>
+                  <Briefcase size={14} />
+                  <Text size="sm" fw={500}>{profile.jobTitle}</Text>
                 </Group>
               )}
-              {profile.department && (
-                <Badge
-                  variant="light"
-                  leftSection={<Building2 size={12} />}
-                  style={{
-                    backgroundColor: `${profile.department.color}22`,
-                    color: profile.department.color,
-                    borderColor: `${profile.department.color}44`,
-                    borderWidth: 1,
-                    borderStyle: 'solid',
-                  }}
-                >
-                  {profile.department.name}
-                </Badge>
-              )}
-              {profile.mfaEnabled && (
-                <Badge
-                  variant="light"
-                  color="mint"
-                  leftSection={<Shield size={11} />}
-                >
-                  MFA Enabled
-                </Badge>
-              )}
-            </Group>
-          </Stack>
-        </Group>
-      </Paper>
 
-      {/* ---------- Stats Grid ---------- */}
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
-        <StatCard
-          label="Tasks Assigned"
-          value={stats.tasksAssigned}
-          icon={CheckSquare}
-          color="violet"
-        />
-        <StatCard
-          label="Tickets Created"
-          value={stats.ticketsCreated}
-          icon={Ticket}
-          color="orange"
-        />
-        <StatCard
-          label="Training Completed"
-          value={stats.trainingCompleted}
-          icon={GraduationCap}
-          color="mint"
-        />
-        <StatCard
-          label="Evaluations Received"
-          value={stats.evaluationsReceived}
-          icon={ClipboardCheck}
-          color="coral"
-        />
-      </SimpleGrid>
+              <Group gap="md" wrap="wrap">
+                {profile.email && (
+                  <Group gap={6} c="dimmed">
+                    <Mail size={13} />
+                    <Text size="sm">{profile.email}</Text>
+                  </Group>
+                )}
+                {profile.department && (
+                  <Badge
+                    variant="light"
+                    leftSection={<Building2 size={12} />}
+                    style={{
+                      backgroundColor: `${profile.department.color}22`,
+                      color: profile.department.color,
+                      borderColor: `${profile.department.color}55`,
+                      borderWidth: 1,
+                      borderStyle: 'solid',
+                    }}
+                  >
+                    {profile.department.name}
+                  </Badge>
+                )}
+                {profile.mfaEnabled && (
+                  <Badge variant="light" color="mint" leftSection={<Shield size={11} />}>
+                    MFA Enabled
+                  </Badge>
+                )}
+              </Group>
+            </Stack>
+          </Group>
+        </Paper>
 
-      {/* ---------- Tabs ---------- */}
-      <Tabs
-        value={activeTab}
-        onChange={(v) => setActiveTab((v ?? 'overview') as Tab)}
-        variant="pills"
-        radius="md"
-      >
-        <Tabs.List mb="md">
-          <Tabs.Tab value="overview" leftSection={<UserIcon size={14} />}>
-            Overview
-          </Tabs.Tab>
-          <Tabs.Tab value="training" leftSection={<GraduationCap size={14} />}>
-            Training Progress
-          </Tabs.Tab>
-          <Tabs.Tab value="evaluations" leftSection={<ClipboardCheck size={14} />}>
-            Evaluations
-          </Tabs.Tab>
-          <Tabs.Tab value="settings" leftSection={<Palette size={14} />}>
-            Settings
-          </Tabs.Tab>
-        </Tabs.List>
+        {/* ---------- Stats Grid ---------- */}
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
+          <StatCard label="Tasks Assigned"      value={stats.tasksAssigned}      icon={CheckSquare}     theme="violet" delay={0}   />
+          <StatCard label="Tickets Created"     value={stats.ticketsCreated}     icon={Ticket}          theme="orange" delay={80}  />
+          <StatCard label="Training Completed"  value={stats.trainingCompleted}  icon={GraduationCap}   theme="mint"   delay={160} />
+          <StatCard label="Evaluations Received" value={stats.evaluationsReceived} icon={ClipboardCheck} theme="coral"  delay={240} />
+        </SimpleGrid>
 
-        <Tabs.Panel value="overview">
-          <OverviewTab profile={profile} />
-        </Tabs.Panel>
-        <Tabs.Panel value="training">
-          <TrainingTab enrollments={initialEnrollments} />
-        </Tabs.Panel>
-        <Tabs.Panel value="evaluations">
-          <EvaluationsTab userId={profile.id} />
-        </Tabs.Panel>
-        <Tabs.Panel value="settings">
-          <SettingsTab profile={profile} />
-        </Tabs.Panel>
-      </Tabs>
-    </Container>
+        {/* ---------- Tabs ---------- */}
+        <Tabs
+          value={activeTab}
+          onChange={(v) => setActiveTab((v ?? 'overview') as Tab)}
+          variant="pills"
+          radius="md"
+          className="wp-tabs"
+        >
+          <Tabs.List mb="md">
+            <Tabs.Tab value="overview"    leftSection={<UserIcon size={14} />}>Overview</Tabs.Tab>
+            <Tabs.Tab value="training"    leftSection={<GraduationCap size={14} />}>Training Progress</Tabs.Tab>
+            <Tabs.Tab value="evaluations" leftSection={<ClipboardCheck size={14} />}>Evaluations</Tabs.Tab>
+            <Tabs.Tab value="settings"    leftSection={<Palette size={14} />}>Settings</Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="overview"><OverviewTab profile={profile} /></Tabs.Panel>
+          <Tabs.Panel value="training"><TrainingTab enrollments={initialEnrollments} /></Tabs.Panel>
+          <Tabs.Panel value="evaluations"><EvaluationsTab userId={profile.id} /></Tabs.Panel>
+          <Tabs.Panel value="settings"><SettingsTab profile={profile} /></Tabs.Panel>
+        </Tabs>
+      </Container>
+
+      {/* ---------------- Scoped visual identity styles ---------------- */}
+      <style>{`
+        @keyframes wp-slide-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes wp-mesh-drift {
+          0%   { transform: translate(0, 0) scale(1); }
+          50%  { transform: translate(3%, -2%) scale(1.05); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes wp-avatar-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 var(--wp-avatar-color, #7C3AED), 0 0 32px var(--wp-avatar-color, #7C3AED); }
+          50%      { box-shadow: 0 0 0 8px transparent, 0 0 48px var(--wp-avatar-color, #7C3AED); }
+        }
+        @keyframes wp-online-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6); }
+          50%      { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .wp-profile-root *,
+          .wp-profile-root *::before,
+          .wp-profile-root *::after {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+
+        /* ---------- Hero ---------- */
+        .wp-hero {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid var(--mantine-color-violet-9);
+          background:
+            linear-gradient(135deg, rgba(124,58,237,0.20) 0%, rgba(251,113,133,0.10) 60%, rgba(52,211,153,0.06) 100%);
+          animation: wp-slide-up 420ms ease-out backwards;
+        }
+        .wp-hero-mesh {
+          position: absolute;
+          inset: -25%;
+          background:
+            radial-gradient(circle at 20% 30%, rgba(124,58,237,0.35), transparent 40%),
+            radial-gradient(circle at 80% 20%, rgba(251,113,133,0.30), transparent 45%),
+            radial-gradient(circle at 60% 80%, rgba(52,211,153,0.20), transparent 50%);
+          filter: blur(36px);
+          animation: wp-mesh-drift 18s ease-in-out infinite;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .wp-hero-title {
+          font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          line-height: 1.05;
+          margin: 0;
+          background: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #FB7185 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        /* ---------- Avatar ---------- */
+        .wp-avatar-wrap {
+          position: relative;
+          flex-shrink: 0;
+        }
+        .wp-avatar {
+          border: 3px solid rgba(255,255,255,0.08);
+          animation: wp-avatar-pulse 3.6s ease-in-out infinite;
+        }
+        .wp-online-dot {
+          position: absolute;
+          bottom: 4px;
+          right: 4px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #34D399;
+          border: 3px solid #0f172a;
+          animation: wp-online-pulse 2s ease-in-out infinite;
+        }
+
+        /* ---------- Stat cards ---------- */
+        .wp-stat-card {
+          position: relative;
+          overflow: hidden;
+          transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+          animation: wp-slide-up 460ms ease-out backwards;
+        }
+        .wp-stat-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: var(--wp-bar, linear-gradient(90deg, #7C3AED, #a855f7));
+        }
+        .wp-stat-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 28px var(--wp-glow, rgba(124,58,237,0.30));
+          border-color: var(--mantine-color-violet-7);
+        }
+        .wp-stat-value {
+          font-size: 1.75rem;
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: -0.02em;
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* ---------- Tabs ---------- */
+        .wp-tabs [data-active] {
+          box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+        }
+
+        /* ---------- Content cards: lift on hover ---------- */
+        .wp-card {
+          transition: transform 200ms ease, border-color 200ms ease;
+          animation: wp-slide-up 460ms ease-out backwards;
+        }
+        .wp-card:hover {
+          border-color: var(--mantine-color-violet-8);
+        }
+
+        /* Section titles get the gradient too */
+        .wp-section-title {
+          background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        }
+      `}</style>
+    </>
   )
 }
 
@@ -305,26 +427,37 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  color,
+  theme,
+  delay,
 }: {
   label: string
   value: number
   icon: React.ComponentType<{ size?: number }>
-  color: string
+  theme: keyof typeof STAT_THEMES
+  delay: number
 }) {
+  const animated = useCountUp(value, 900)
+  const cfg = STAT_THEMES[theme]
+
   return (
-    <Card radius="lg" p="md" withBorder>
+    <Card
+      radius="lg"
+      p="md"
+      withBorder
+      className="wp-stat-card"
+      style={{
+        animationDelay: `${delay}ms`,
+        ['--wp-bar' as string]: cfg.bar,
+        ['--wp-glow' as string]: cfg.glow,
+      } as React.CSSProperties}
+    >
       <Group gap="sm" align="center">
-        <ThemeIcon size="lg" radius="md" variant="light" color={color}>
+        <ThemeIcon size="lg" radius="md" variant="light" color={cfg.color}>
           <Icon size={18} />
         </ThemeIcon>
         <Stack gap={2}>
-          <Text size="xl" fw={700} lh={1}>
-            {value}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {label}
-          </Text>
+          <Text className="wp-stat-value">{animated}</Text>
+          <Text size="xs" c="dimmed">{label}</Text>
         </Stack>
       </Group>
     </Card>
@@ -335,35 +468,19 @@ function StatCard({
 
 function OverviewTab({ profile }: { profile: ProfileProps['profile'] }) {
   return (
-    <Card radius="lg" p="lg" withBorder>
-      <Title order={3} mb="md">
+    <Card radius="lg" p="lg" withBorder className="wp-card">
+      <Title order={3} mb="md" className="wp-section-title">
         Personal Information
       </Title>
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        <InfoItem icon={UserIcon} label="Full Name" value={profile.name ?? '—'} />
-        <InfoItem icon={Mail} label="Email" value={profile.email ?? '—'} />
-        <InfoItem
-          icon={Briefcase}
-          label="Job Title"
-          value={profile.jobTitle ?? 'Not set'}
-        />
-        <InfoItem icon={Phone} label="Phone" value={profile.phone ?? 'Not set'} />
-        <InfoItem
-          icon={Building2}
-          label="Department"
-          value={profile.department?.name ?? 'Unassigned'}
-        />
-        <InfoItem icon={Shield} label="Role" value={profile.role} />
-        <InfoItem
-          icon={Calendar}
-          label="Joined"
-          value={formatDate(profile.createdAt)}
-        />
-        <InfoItem
-          icon={Clock}
-          label="Last Login"
-          value={profile.lastLogin ? timeAgo(profile.lastLogin) : 'Never'}
-        />
+        <InfoItem icon={UserIcon}  label="Full Name"  value={profile.name ?? '—'} />
+        <InfoItem icon={Mail}      label="Email"      value={profile.email ?? '—'} />
+        <InfoItem icon={Briefcase} label="Job Title"  value={profile.jobTitle ?? 'Not set'} />
+        <InfoItem icon={Phone}     label="Phone"      value={profile.phone ?? 'Not set'} />
+        <InfoItem icon={Building2} label="Department" value={profile.department?.name ?? 'Unassigned'} />
+        <InfoItem icon={Shield}    label="Role"       value={profile.role} />
+        <InfoItem icon={Calendar}  label="Joined"     value={formatDate(profile.createdAt)} />
+        <InfoItem icon={Clock}     label="Last Login" value={profile.lastLogin ? timeAgo(profile.lastLogin) : 'Never'} />
       </SimpleGrid>
     </Card>
   )
@@ -384,12 +501,8 @@ function InfoItem({
         <Icon size={14} />
       </ThemeIcon>
       <Stack gap={2}>
-        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-          {label}
-        </Text>
-        <Text size="sm" fw={500}>
-          {value}
-        </Text>
+        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>{label}</Text>
+        <Text size="sm" fw={500}>{value}</Text>
       </Stack>
     </Group>
   )
@@ -403,17 +516,13 @@ function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
 
   if (enrollments.length === 0) {
     return (
-      <Card radius="lg" p="xl" withBorder>
+      <Card radius="lg" p="xl" withBorder className="wp-card">
         <Stack align="center" gap="sm" py="xl">
           <ThemeIcon size={48} radius="xl" variant="light" color="violet">
             <BookOpen size={24} />
           </ThemeIcon>
-          <Text size="lg" fw={600}>
-            No training enrollments yet
-          </Text>
-          <Text size="sm" c="dimmed">
-            Courses you enroll in will appear here.
-          </Text>
+          <Text size="lg" fw={600}>No training enrollments yet</Text>
+          <Text size="sm" c="dimmed">Courses you enroll in will appear here.</Text>
         </Stack>
       </Card>
     )
@@ -422,10 +531,8 @@ function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
   return (
     <Stack gap="md">
       {inProgress.length > 0 && (
-        <Card radius="lg" p="lg" withBorder>
-          <Title order={3} mb="md">
-            In Progress
-          </Title>
+        <Card radius="lg" p="lg" withBorder className="wp-card">
+          <Title order={3} mb="md" className="wp-section-title">In Progress</Title>
           <Stack gap="md">
             {inProgress.map((e) => (
               <Box key={e.id}>
@@ -435,20 +542,17 @@ function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
                       <BookOpen size={14} />
                     </ThemeIcon>
                     <Stack gap={0}>
-                      <Text fw={600} size="sm">
-                        {e.course?.title}
-                      </Text>
+                      <Text fw={600} size="sm">{e.course?.title}</Text>
                       <Text size="xs" c="dimmed">
-                        {e.course?.category ?? 'Uncategorized'} • enrolled{' '}
-                        {timeAgo(e.enrolledAt)}
+                        {e.course?.category ?? 'Uncategorized'} • enrolled {timeAgo(e.enrolledAt)}
                       </Text>
                     </Stack>
                   </Group>
-                  <Text size="sm" fw={600} c="violet">
+                  <Text size="sm" fw={700} c="violet" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {e.progress ?? 0}%
                   </Text>
                 </Group>
-                <Progress value={e.progress ?? 0} color="violet" radius="xl" />
+                <Progress value={e.progress ?? 0} color="violet" radius="xl" animated />
               </Box>
             ))}
           </Stack>
@@ -456,10 +560,8 @@ function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
       )}
 
       {completed.length > 0 && (
-        <Card radius="lg" p="lg" withBorder>
-          <Title order={3} mb="md">
-            Completed
-          </Title>
+        <Card radius="lg" p="lg" withBorder className="wp-card">
+          <Title order={3} mb="md" className="wp-section-title">Completed</Title>
           <Stack gap="sm">
             {completed.map((e) => (
               <Group key={e.id} gap="sm" wrap="nowrap">
@@ -467,17 +569,13 @@ function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
                   <Check size={14} />
                 </ThemeIcon>
                 <Stack gap={0} style={{ flex: 1 }}>
-                  <Text fw={600} size="sm">
-                    {e.course?.title}
-                  </Text>
+                  <Text fw={600} size="sm">{e.course?.title}</Text>
                   <Text size="xs" c="dimmed">
                     Completed {e.completedAt ? timeAgo(e.completedAt) : '—'}
                   </Text>
                 </Stack>
                 {e.quizScore != null && (
-                  <Badge variant="light" color="mint">
-                    {e.quizScore}%
-                  </Badge>
+                  <Badge variant="light" color="mint">{e.quizScore}%</Badge>
                 )}
               </Group>
             ))}
@@ -500,9 +598,7 @@ function EvaluationsTab({ userId }: { userId: string }) {
     async function load() {
       try {
         setLoading(true)
-        const res = await fetch(
-          `/api/workryn/evaluations?agentId=${encodeURIComponent(userId)}`,
-        )
+        const res = await fetch(`/api/workryn/evaluations?agentId=${encodeURIComponent(userId)}`)
         if (!res.ok) throw new Error('Failed to load evaluations')
         const data = await res.json()
         if (!cancelled) setItems(data?.items ?? data ?? [])
@@ -513,67 +609,43 @@ function EvaluationsTab({ userId }: { userId: string }) {
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [userId])
 
   async function acknowledge(id: string) {
     try {
-      const res = await fetch(`/api/workryn/evaluations/${id}/acknowledge`, {
-        method: 'POST',
-      })
+      const res = await fetch(`/api/workryn/evaluations/${id}/acknowledge`, { method: 'POST' })
       if (!res.ok) throw new Error('Failed to acknowledge')
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === id ? { ...it, acknowledgedAt: new Date().toISOString() } : it,
-        ),
-      )
-      notifications.show({
-        title: 'Acknowledged',
-        message: 'Evaluation acknowledged.',
-        color: 'mint',
-      })
+      setItems((prev) => prev.map((it) =>
+        it.id === id ? { ...it, acknowledgedAt: new Date().toISOString() } : it
+      ))
+      notifications.show({ title: 'Acknowledged', message: 'Evaluation acknowledged.', color: 'mint' })
     } catch (err) {
-      notifications.show({
-        title: 'Error',
-        message: (err as Error).message,
-        color: 'coral',
-      })
+      notifications.show({ title: 'Error', message: (err as Error).message, color: 'coral' })
     }
   }
 
   if (loading) {
     return (
-      <Card radius="lg" p="xl" withBorder>
-        <Group justify="center" py="xl">
-          <Loader color="violet" />
-        </Group>
+      <Card radius="lg" p="xl" withBorder className="wp-card">
+        <Group justify="center" py="xl"><Loader color="violet" /></Group>
       </Card>
     )
   }
 
   if (error) {
-    return (
-      <Alert icon={<AlertCircle size={16} />} color="coral" variant="light">
-        {error}
-      </Alert>
-    )
+    return <Alert icon={<AlertCircle size={16} />} color="coral" variant="light">{error}</Alert>
   }
 
   if (items.length === 0) {
     return (
-      <Card radius="lg" p="xl" withBorder>
+      <Card radius="lg" p="xl" withBorder className="wp-card">
         <Stack align="center" gap="sm" py="xl">
           <ThemeIcon size={48} radius="xl" variant="light" color="violet">
             <ClipboardCheck size={24} />
           </ThemeIcon>
-          <Text size="lg" fw={600}>
-            No evaluations yet
-          </Text>
-          <Text size="sm" c="dimmed">
-            Evaluations from your manager will appear here.
-          </Text>
+          <Text size="lg" fw={600}>No evaluations yet</Text>
+          <Text size="sm" c="dimmed">Evaluations from your manager will appear here.</Text>
         </Stack>
       </Card>
     )
@@ -582,7 +654,7 @@ function EvaluationsTab({ userId }: { userId: string }) {
   return (
     <Stack gap="md">
       {items.map((it) => (
-        <Card key={it.id} radius="lg" p="lg" withBorder>
+        <Card key={it.id} radius="lg" p="lg" withBorder className="wp-card">
           <Group justify="space-between" align="flex-start" mb="sm">
             <Stack gap={2}>
               <Text fw={600}>{it.template?.name ?? 'Evaluation'}</Text>
@@ -593,9 +665,7 @@ function EvaluationsTab({ userId }: { userId: string }) {
             {it.overallRating != null && (
               <Group gap={4}>
                 <Rating value={it.overallRating} readOnly fractions={2} />
-                <Text size="sm" c="dimmed">
-                  {it.overallRating.toFixed(1)}
-                </Text>
+                <Text size="sm" c="dimmed">{it.overallRating.toFixed(1)}</Text>
               </Group>
             )}
           </Group>
@@ -603,9 +673,7 @@ function EvaluationsTab({ userId }: { userId: string }) {
           {it.comments && (
             <>
               <Divider my="sm" />
-              <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                {it.comments}
-              </Text>
+              <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>{it.comments}</Text>
             </>
           )}
 
@@ -616,18 +684,12 @@ function EvaluationsTab({ userId }: { userId: string }) {
                 Acknowledged {timeAgo(it.acknowledgedAt)}
               </Badge>
             ) : (
-              <Badge variant="light" color="coral">
-                Awaiting acknowledgment
-              </Badge>
+              <Badge variant="light" color="coral">Awaiting acknowledgment</Badge>
             )}
             {!it.acknowledgedAt && (
-              <Button
-                size="xs"
-                variant="light"
-                color="violet"
+              <Button size="xs" variant="light" color="violet"
                 leftSection={<Check size={14} />}
-                onClick={() => acknowledge(it.id)}
-              >
+                onClick={() => acknowledge(it.id)}>
                 Acknowledge
               </Button>
             )}
@@ -658,7 +720,6 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
     setSuccess(false)
     try {
       const body: Record<string, unknown> = { name, phone, avatarColor }
-      // jobTitle is admin-only on /api/profile/me — only include for admins
       if (isAdmin) body.jobTitle = jobTitle || null
 
       const res = await fetch(`/api/workryn/profile/me`, {
@@ -675,11 +736,7 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
       }
 
       setSuccess(true)
-      notifications.show({
-        title: 'Saved',
-        message: 'Profile updated successfully.',
-        color: 'mint',
-      })
+      notifications.show({ title: 'Saved', message: 'Profile updated successfully.', color: 'mint' })
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -688,15 +745,11 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
   }
 
   return (
-    <Card radius="lg" p="lg" withBorder>
-      <Title order={3} mb="md">
-        Edit Profile
-      </Title>
+    <Card radius="lg" p="lg" withBorder className="wp-card">
+      <Title order={3} mb="md" className="wp-section-title">Edit Profile</Title>
 
       {error && (
-        <Alert icon={<AlertCircle size={16} />} color="coral" variant="light" mb="md">
-          {error}
-        </Alert>
+        <Alert icon={<AlertCircle size={16} />} color="coral" variant="light" mb="md">{error}</Alert>
       )}
       {success && (
         <Alert icon={<Check size={16} />} color="mint" variant="light" mb="md">
@@ -719,9 +772,7 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
             value={jobTitle}
             onChange={(e) => setJobTitle(e.currentTarget.value)}
             disabled={!isAdmin}
-            description={
-              !isAdmin ? 'Only administrators can edit job titles.' : undefined
-            }
+            description={!isAdmin ? 'Only administrators can edit job titles.' : undefined}
           />
 
           <TextInput
@@ -734,9 +785,7 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
           />
 
           <Box>
-            <Text size="sm" fw={500} mb={6}>
-              Avatar Color
-            </Text>
+            <Text size="sm" fw={500} mb={6}>Avatar Color</Text>
             <Group gap="xs" wrap="wrap">
               {AVATAR_COLORS.map((c) => (
                 <ColorSwatch
@@ -745,18 +794,16 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
                   size={32}
                   style={{
                     cursor: 'pointer',
-                    border:
-                      c === avatarColor
-                        ? '3px solid var(--mantine-color-violet-6)'
-                        : '3px solid transparent',
-                    transition: 'transform 120ms ease',
-                    transform: c === avatarColor ? 'scale(1.1)' : 'scale(1)',
+                    border: c === avatarColor
+                      ? '3px solid var(--mantine-color-violet-6)'
+                      : '3px solid transparent',
+                    transition: 'transform 160ms ease, box-shadow 160ms ease',
+                    transform: c === avatarColor ? 'scale(1.12)' : 'scale(1)',
+                    boxShadow: c === avatarColor ? `0 0 20px ${c}80` : 'none',
                   }}
                   onClick={() => setAvatarColor(c)}
                 >
-                  {c === avatarColor && (
-                    <Check size={16} color="#fff" strokeWidth={3} />
-                  )}
+                  {c === avatarColor && <Check size={16} color="#fff" strokeWidth={3} />}
                 </ColorSwatch>
               ))}
             </Group>
@@ -768,6 +815,10 @@ function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
               loading={saving}
               leftSection={<Save size={16} />}
               color="violet"
+              size="md"
+              style={{
+                boxShadow: '0 4px 14px rgba(124,58,237,0.35)',
+              }}
             >
               Save Changes
             </Button>
