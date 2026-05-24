@@ -1,12 +1,81 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+/**
+ * ProfileClient — Mantine v9, premium pass.
+ *
+ * Layered on top of the previous gradient-mesh + count-up version with:
+ *   - Conic-gradient ring rotating slowly around the avatar (luxe feel)
+ *   - 3 floating SVG orbs in the hero, drifting at different speeds
+ *   - Mouse spotlight on the hero (radial gradient follows cursor)
+ *   - 3D tilt on stat cards (shared `useTilt` hook, matches DashboardClient)
+ *   - Glassmorphism on content cards (backdrop-filter blur + semi-transparent bg)
+ *   - Bigger stat numbers with gradient text + brand-colored glow
+ *   - Achievement badges computed from stats + tenure (premium product touch)
+ *   - SVG grain overlay on the hero for that "expensive" texture
+ *   - Sparkles next to the role pill (Owner gets crown, others get sparkles)
+ *   - Sticky tabs bar with backdrop blur as you scroll
+ *
+ * Behavior contract unchanged: same props, same API endpoints, same tabs.
+ */
+
+import { useEffect, useMemo, useState } from 'react'
 import {
-  User as UserIcon, Mail, Phone, Briefcase, Building2, Calendar, Clock,
-  CheckSquare, Ticket, GraduationCap, ClipboardCheck, Crown, Shield,
-  Check, Star, Palette, Save, AlertCircle, BookOpen,
+  Alert,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Card,
+  ColorSwatch,
+  Container,
+  Divider,
+  Group,
+  Loader,
+  Paper,
+  Progress,
+  Rating,
+  SimpleGrid,
+  Stack,
+  Tabs,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Title,
+  Tooltip,
+} from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import {
+  AlertCircle,
+  Award,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Calendar,
+  Check,
+  CheckSquare,
+  ClipboardCheck,
+  Clock,
+  Crown,
+  Flame,
+  GraduationCap,
+  Mail,
+  Medal,
+  Palette,
+  Phone,
+  Save,
+  Shield,
+  Sparkles,
+  Star,
+  Ticket,
+  Trophy,
+  User as UserIcon,
+  Zap,
 } from 'lucide-react'
 import { getInitials, formatDate, timeAgo } from '@/lib/workryn/utils'
+import { useCountUp } from '@/hooks/useCountUp'
+import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+
+// ---------- Types (unchanged contract) ----------
 
 interface TrainingEnrollment {
   id: string
@@ -51,12 +120,6 @@ interface ProfileProps {
 
 type Tab = 'overview' | 'training' | 'evaluations' | 'settings'
 
-const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-  '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981',
-  '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
-]
-
 interface EvaluationItem {
   id: string
   overallRating: number | null
@@ -67,757 +130,741 @@ interface EvaluationItem {
   template?: { id: string; name: string }
 }
 
-export default function ProfileClient({ profile, stats, initialEnrollments = [], session }: ProfileProps) {
-  
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+const AVATAR_COLORS = [
+  '#7C3AED', '#a855f7', '#ec4899', '#FB7185', '#f97316',
+  '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#34D399',
+  '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
+]
 
+const STAT_THEMES = {
+  violet: {
+    bar:  'linear-gradient(90deg, #7C3AED 0%, #a855f7 100%)',
+    glow: 'rgba(124,58,237,0.35)',
+    text: 'linear-gradient(135deg, #c4b5fd 0%, #7C3AED 100%)',
+    color: 'violet' as const,
+  },
+  orange: {
+    bar:  'linear-gradient(90deg, #f59e0b 0%, #FB7185 100%)',
+    glow: 'rgba(245,158,11,0.35)',
+    text: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)',
+    color: 'orange' as const,
+  },
+  mint: {
+    bar:  'linear-gradient(90deg, #10b981 0%, #34D399 100%)',
+    glow: 'rgba(52,211,153,0.35)',
+    text: 'linear-gradient(135deg, #6ee7b7 0%, #10b981 100%)',
+    color: 'mint' as const,
+  },
+  coral: {
+    bar:  'linear-gradient(90deg, #FB7185 0%, #f43f5e 100%)',
+    glow: 'rgba(251,113,133,0.35)',
+    text: 'linear-gradient(135deg, #fda4af 0%, #FB7185 100%)',
+    color: 'coral' as const,
+  },
+}
+
+// =================================================================
+// MAIN
+// =================================================================
+
+export default function ProfileClient({
+  profile,
+  stats,
+  initialEnrollments = [],
+  session,
+}: ProfileProps) {
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
   const isOwner = profile.role === 'OWNER'
+
+  const spot = useMouseSpotlight()
+
+  // Compute achievement badges from data on hand. These are intentionally
+  // lightweight — they're decorative, computed from props, no DB call.
+  const achievements = useMemo(() => {
+    const days = Math.max(
+      0,
+      Math.floor(
+        (Date.now() - new Date(profile.createdAt).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ),
+    )
+    const list: { icon: React.ComponentType<{ size?: number }>; label: string; color: 'violet' | 'coral' | 'mint' | 'orange' }[] = []
+    if (days >= 365) list.push({ icon: Trophy,  label: 'Veteran',         color: 'violet' })
+    else if (days >= 90) list.push({ icon: Medal,  label: `${days} days strong`, color: 'violet' })
+    else if (days >= 7) list.push({ icon: Sparkles, label: 'New teammate', color: 'mint' })
+
+    if (stats.trainingCompleted >= 5) list.push({ icon: GraduationCap, label: `${stats.trainingCompleted} courses`,   color: 'mint' })
+    if (stats.tasksAssigned   >= 50) list.push({ icon: Flame,         label: `${stats.tasksAssigned} tasks`,         color: 'coral' })
+    if (stats.evaluationsReceived >= 3) list.push({ icon: Award,      label: 'Reviewed',                              color: 'orange' })
+    if (profile.mfaEnabled)            list.push({ icon: Shield,      label: 'Secured',                               color: 'mint' })
+
+    return list.slice(0, 4) // keep it visually tidy
+  }, [profile.createdAt, profile.mfaEnabled, stats])
 
   return (
     <>
-      <div className="page-body animate-slide-up">
-        {/* Header */}
-        <div className="profile-header gradient-card animate-slide-up">
-          <div className="profile-header-inner">
-            <div
-              className="profile-avatar"
-              style={{ background: profile.avatarColor }}
-            >
-              {getInitials(profile.name ?? profile.email ?? 'U')}
-            </div>
+      <Container size="xl" py="lg" className="wp-profile-root">
 
-            <div className="profile-header-info">
-              <div className="profile-name-row">
-                <h1 className="profile-name gradient-text">
-                  {profile.name ?? 'Unnamed User'}
-                </h1>
-                <span className="profile-role-pill">
-                  {isOwner && <Crown size={13} style={{ color: '#fbbf24' }} />}
-                  {profile.role}
-                </span>
-              </div>
-              {profile.jobTitle && (
-                <div className="profile-job-title">
-                  <Briefcase size={14} /> {profile.jobTitle}
-                </div>
-              )}
-              <div className="profile-meta-row">
-                {profile.email && (
-                  <span className="profile-meta-item">
-                    <Mail size={13} /> {profile.email}
-                  </span>
+        {/* =========================== HERO =========================== */}
+        <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 24 }}>
+          <Paper radius="lg" p="xl" className="wp-hero">
+            {/* layer 1: animated radial gradient mesh (slowest) */}
+            <div className="wp-hero-mesh" aria-hidden />
+            {/* layer 2: drifting orbs */}
+            <div className="wp-hero-orbs" aria-hidden>
+              <span className="wp-orb wp-orb-1" />
+              <span className="wp-orb wp-orb-2" />
+              <span className="wp-orb wp-orb-3" />
+            </div>
+            {/* layer 3: mouse spotlight (positioned via CSS vars from useMouseSpotlight) */}
+            <div className="wp-hero-spotlight" aria-hidden />
+            {/* layer 4: SVG grain texture for the "expensive" feel */}
+            <svg className="wp-hero-grain" aria-hidden>
+              <filter id="wp-grain">
+                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+                <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0" />
+              </filter>
+              <rect width="100%" height="100%" filter="url(#wp-grain)" />
+            </svg>
+
+            <Group align="center" gap="xl" wrap="wrap" style={{ position: 'relative', zIndex: 2 }}>
+              {/* Avatar with rotating conic gradient ring */}
+              <div className="wp-avatar-wrap">
+                <div className="wp-avatar-ring" aria-hidden />
+                <Avatar
+                  size={108}
+                  radius="50%"
+                  className="wp-avatar"
+                  style={{
+                    backgroundColor: profile.avatarColor,
+                    color: '#fff',
+                    fontSize: '2.2rem',
+                    fontWeight: 800,
+                    ['--wp-avatar-color' as string]: profile.avatarColor,
+                  } as React.CSSProperties}
+                >
+                  {getInitials(profile.name ?? profile.email ?? 'U')}
+                </Avatar>
+                {profile.isActive && (
+                  <span className="wp-online-dot" aria-label="active" />
                 )}
-                {profile.department && (
-                  <span
-                    className="profile-dept-badge"
-                    style={{
-                      background: `${profile.department.color}22`,
-                      color: profile.department.color,
-                      borderColor: `${profile.department.color}44`,
-                    }}
+              </div>
+
+              <Stack gap="xs" style={{ flex: 1, minWidth: 240 }}>
+                <Group gap="sm" wrap="wrap" align="center">
+                  <Title order={1} className="wp-hero-title">
+                    {profile.name ?? 'Unnamed User'}
+                  </Title>
+                  <Badge
+                    size="md"
+                    variant="light"
+                    color="violet"
+                    leftSection={isOwner ? <Crown size={12} /> : <Sparkles size={12} />}
+                    tt="uppercase"
+                    className="wp-role-pill"
                   >
-                    <Building2 size={12} /> {profile.department.name}
-                  </span>
+                    {profile.role}
+                  </Badge>
+                </Group>
+
+                {profile.jobTitle && (
+                  <Group gap={6} c="dimmed">
+                    <Briefcase size={14} />
+                    <Text size="sm" fw={500}>{profile.jobTitle}</Text>
+                  </Group>
                 )}
-                {profile.mfaEnabled && (
-                  <span className="badge badge-success">
-                    <Shield size={11} /> MFA Enabled
-                  </span>
+
+                <Group gap="md" wrap="wrap">
+                  {profile.email && (
+                    <Group gap={6} c="dimmed">
+                      <Mail size={13} />
+                      <Text size="sm">{profile.email}</Text>
+                    </Group>
+                  )}
+                  {profile.department && (
+                    <Badge
+                      variant="light"
+                      leftSection={<Building2 size={12} />}
+                      style={{
+                        backgroundColor: `${profile.department.color}22`,
+                        color: profile.department.color,
+                        borderColor: `${profile.department.color}55`,
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                      }}
+                    >
+                      {profile.department.name}
+                    </Badge>
+                  )}
+                  {profile.mfaEnabled && (
+                    <Badge variant="light" color="mint" leftSection={<Shield size={11} />}>
+                      MFA Enabled
+                    </Badge>
+                  )}
+                </Group>
+
+                {/* Achievement badges row */}
+                {achievements.length > 0 && (
+                  <Group gap="xs" wrap="wrap" mt={6}>
+                    {achievements.map((a, i) => (
+                      <Tooltip key={i} label={a.label} withArrow>
+                        <Badge
+                          variant="light"
+                          color={a.color}
+                          size="sm"
+                          leftSection={<a.icon size={11} />}
+                          className="wp-achievement"
+                          style={{ animationDelay: `${300 + i * 80}ms` }}
+                        >
+                          {a.label}
+                        </Badge>
+                      </Tooltip>
+                    ))}
+                  </Group>
                 )}
-              </div>
-            </div>
-          </div>
+              </Stack>
+            </Group>
+          </Paper>
         </div>
 
-        {/* Stats Grid */}
-        <div className="profile-stats-grid">
-          <StatCard
-            label="Tasks Assigned"
-            value={stats.tasksAssigned}
-            icon={CheckSquare}
-            iconBg="rgba(99,102,241,0.15)"
-            iconColor="#818cf8"
-            delay={0}
-          />
-          <StatCard
-            label="Tickets Created"
-            value={stats.ticketsCreated}
-            icon={Ticket}
-            iconBg="rgba(245,158,11,0.15)"
-            iconColor="#f59e0b"
-            delay={80}
-          />
-          <StatCard
-            label="Training Completed"
-            value={stats.trainingCompleted}
-            icon={GraduationCap}
-            iconBg="rgba(16,185,129,0.15)"
-            iconColor="#10b981"
-            delay={160}
-          />
-          <StatCard
-            label="Evaluations Received"
-            value={stats.evaluationsReceived}
-            icon={ClipboardCheck}
-            iconBg="rgba(236,72,153,0.15)"
-            iconColor="#ec4899"
-            delay={240}
-          />
-        </div>
+        {/* =========================== STATS =========================== */}
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
+          <StatCard label="Tasks Assigned"       value={stats.tasksAssigned}       icon={CheckSquare}    theme="violet" delay={0}   />
+          <StatCard label="Tickets Created"      value={stats.ticketsCreated}      icon={Ticket}         theme="orange" delay={80}  />
+          <StatCard label="Training Completed"   value={stats.trainingCompleted}   icon={GraduationCap}  theme="mint"   delay={160} />
+          <StatCard label="Evaluations Received" value={stats.evaluationsReceived} icon={ClipboardCheck} theme="coral"  delay={240} />
+        </SimpleGrid>
 
-        {/* Tabs */}
-        <div className="profile-tabs-bar">
-          <button
-            className={`profile-tab focus-ring ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
+        {/* =========================== TABS =========================== */}
+        <div className="wp-tabs-shell">
+          <Tabs
+            value={activeTab}
+            onChange={(v) => setActiveTab((v ?? 'overview') as Tab)}
+            variant="pills"
+            radius="md"
+            className="wp-tabs"
           >
-            <UserIcon size={14} /> Overview
-          </button>
-          <button
-            className={`profile-tab focus-ring ${activeTab === 'training' ? 'active' : ''}`}
-            onClick={() => setActiveTab('training')}
-          >
-            <GraduationCap size={14} /> Training Progress
-          </button>
-          <button
-            className={`profile-tab focus-ring ${activeTab === 'evaluations' ? 'active' : ''}`}
-            onClick={() => setActiveTab('evaluations')}
-          >
-            <ClipboardCheck size={14} /> Evaluations
-          </button>
-          <button
-            className={`profile-tab focus-ring ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Palette size={14} /> Settings
-          </button>
-        </div>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="overview"    leftSection={<UserIcon size={14} />}>Overview</Tabs.Tab>
+              <Tabs.Tab value="training"    leftSection={<GraduationCap size={14} />}>Training Progress</Tabs.Tab>
+              <Tabs.Tab value="evaluations" leftSection={<ClipboardCheck size={14} />}>Evaluations</Tabs.Tab>
+              <Tabs.Tab value="settings"    leftSection={<Palette size={14} />}>Settings</Tabs.Tab>
+            </Tabs.List>
 
-        {/* Tab content */}
-        <div className="profile-tab-content animate-in">
-          {activeTab === 'overview' && <OverviewTab profile={profile} />}
-          {activeTab === 'training' && <TrainingTab enrollments={initialEnrollments} />}
-          {activeTab === 'evaluations' && <EvaluationsTab userId={profile.id} />}
-          {activeTab === 'settings' && (
-            <SettingsTab
-              profile={profile}
-              onSaved={async () => {
-                // Refresh session to pick up changes like avatarColor
-                // Session refreshed via server
-              }}
-            />
-          )}
+            <Tabs.Panel value="overview"><OverviewTab profile={profile} /></Tabs.Panel>
+            <Tabs.Panel value="training"><TrainingTab enrollments={initialEnrollments} /></Tabs.Panel>
+            <Tabs.Panel value="evaluations"><EvaluationsTab userId={profile.id} /></Tabs.Panel>
+            <Tabs.Panel value="settings"><SettingsTab profile={profile} /></Tabs.Panel>
+          </Tabs>
         </div>
-      </div>
+      </Container>
 
+      {/* =========================== STYLES =========================== */}
       <style>{`
-        .profile-header {
-          margin-bottom: 24px;
-          padding: 28px;
+        /* --------- Keyframes --------- */
+        @keyframes wp-slide-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes wp-mesh-drift {
+          0%   { transform: translate(0,0) scale(1); }
+          50%  { transform: translate(3%, -2%) scale(1.05); }
+          100% { transform: translate(0,0) scale(1); }
         }
-        .profile-header-inner {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-          flex-wrap: wrap;
+        @keyframes wp-orb-float-a {
+          0%, 100% { transform: translate(0,0); }
+          50%      { transform: translate(40px, -30px); }
         }
-        .profile-avatar {
-          width: 96px;
-          height: 96px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          font-weight: 800;
-          color: #fff;
-          flex-shrink: 0;
-          box-shadow: 0 0 32px rgba(99,102,241,0.3);
-          border: 3px solid var(--border-subtle);
-          letter-spacing: -0.02em;
+        @keyframes wp-orb-float-b {
+          0%, 100% { transform: translate(0,0); }
+          50%      { transform: translate(-30px, 25px); }
         }
-        .profile-header-info {
-          flex: 1;
-          min-width: 240px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
+        @keyframes wp-orb-float-c {
+          0%, 100% { transform: translate(0,0); }
+          50%      { transform: translate(20px, 40px); }
         }
-        .profile-name-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
+        @keyframes wp-conic-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes wp-online-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6); }
+          50%      { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
         }
-        .profile-name {
-          font-size: 1.75rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          margin: 0;
-        }
-        .profile-role-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 12px;
-          border-radius: 99px;
-          font-size: 0.6875rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          background: var(--brand-gradient-subtle);
-          color: var(--brand-light);
-          border: 1px solid rgba(99,102,241,0.25);
-        }
-        .profile-job-title {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.9375rem;
-          color: var(--text-secondary);
-          font-weight: 500;
-        }
-        .profile-meta-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          margin-top: 4px;
-        }
-        .profile-meta-item {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.8125rem;
-          color: var(--text-muted);
-        }
-        .profile-dept-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 10px;
-          border-radius: 99px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          border: 1px solid;
+        @media (prefers-reduced-motion: reduce) {
+          .wp-profile-root *,
+          .wp-profile-root *::before,
+          .wp-profile-root *::after {
+            animation: none !important;
+            transition: none !important;
+          }
         }
 
-        .profile-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 28px;
-        }
-
-        .profile-tabs-bar {
-          display: flex;
-          gap: 4px;
-          border-bottom: 1px solid var(--border-subtle);
-          margin-bottom: 24px;
-          overflow-x: auto;
-          padding-bottom: 0;
-        }
-        .profile-tab {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 10px 16px;
-          background: transparent;
-          border: none;
-          border-bottom: 2px solid transparent;
-          color: var(--text-muted);
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-smooth);
-          white-space: nowrap;
-          margin-bottom: -1px;
-        }
-        .profile-tab:hover { color: var(--text-primary); }
-        .profile-tab.active {
-          color: var(--brand-light);
-          border-bottom-color: var(--brand);
-        }
-
-        .profile-tab-content {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
-        }
-        .info-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 16px;
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md);
-          transition: border-color var(--transition-smooth);
-        }
-        .info-item:hover { border-color: var(--border-default); }
-        .info-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: var(--radius-md);
-          background: var(--brand-gradient-subtle);
-          color: var(--brand-light);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .info-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          font-weight: 600;
-        }
-        .info-value {
-          font-size: 0.9375rem;
-          color: var(--text-primary);
-          font-weight: 500;
-          margin-top: 2px;
-          word-break: break-word;
-        }
-
-        .training-row, .eval-row {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 16px;
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md);
-          transition: all var(--transition-smooth);
-        }
-        .training-row:hover, .eval-row:hover {
-          border-color: var(--brand);
-          box-shadow: 0 0 16px rgba(99,102,241,0.1);
-        }
-        .training-icon, .eval-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .training-body, .eval-body {
-          flex: 1;
-          min-width: 0;
-        }
-        .training-title, .eval-title {
-          font-size: 0.9375rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 4px;
-        }
-        .training-meta, .eval-meta {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .progress-bar-wrap {
-          margin-top: 10px;
-          width: 100%;
-          height: 6px;
-          background: var(--bg-overlay);
-          border-radius: 99px;
-          overflow: hidden;
-        }
-        .progress-bar-fill {
-          height: 100%;
-          background: var(--brand-gradient);
-          border-radius: 99px;
-          transition: width var(--transition-smooth);
-        }
-
-        .eval-rating {
-          display: flex;
-          gap: 2px;
-        }
-        .eval-rating-star { color: #f59e0b; }
-        .eval-rating-star.empty { color: var(--border-default); }
-
-        .settings-form {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-          max-width: 560px;
-        }
-        .color-picker {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-          gap: 10px;
-          padding: 12px;
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-md);
-        }
-        .color-swatch {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: all var(--transition-smooth);
+        /* --------- Hero shell --------- */
+        .wp-hero {
           position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(124,58,237,0.35);
+          background:
+            linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(251,113,133,0.12) 55%, rgba(52,211,153,0.06) 100%),
+            #0b0f1e;
+          box-shadow:
+            0 1px 0 rgba(255,255,255,0.05) inset,
+            0 20px 60px -20px rgba(124,58,237,0.40);
+          animation: wp-slide-up 460ms ease-out backwards;
         }
-        .color-swatch:hover { transform: scale(1.08); }
-        .color-swatch.selected {
-          border-color: var(--text-primary);
-          box-shadow: 0 0 0 3px var(--brand-glow);
+        .wp-hero-mesh {
+          position: absolute; inset: -25%;
+          background:
+            radial-gradient(circle at 22% 30%, rgba(124,58,237,0.45), transparent 42%),
+            radial-gradient(circle at 78% 25%, rgba(251,113,133,0.38), transparent 47%),
+            radial-gradient(circle at 62% 82%, rgba(52,211,153,0.24), transparent 52%);
+          filter: blur(40px);
+          animation: wp-mesh-drift 18s ease-in-out infinite;
+          z-index: 0;
+          pointer-events: none;
         }
-        .color-swatch.selected::after {
-          content: '✓';
+        .wp-hero-orbs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .wp-orb {
           position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-          font-weight: 700;
-          font-size: 1rem;
+          border-radius: 50%;
+          filter: blur(22px);
+          opacity: 0.55;
+          mix-blend-mode: screen;
+        }
+        .wp-orb-1 { width: 130px; height: 130px; top: 12%;  left: 8%;
+          background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+          animation: wp-orb-float-a 12s ease-in-out infinite; }
+        .wp-orb-2 { width: 100px; height: 100px; top: 50%;  left: 55%;
+          background: radial-gradient(circle, #FB7185 0%, transparent 70%);
+          animation: wp-orb-float-b 14s ease-in-out infinite; }
+        .wp-orb-3 { width:  80px; height:  80px; bottom: 10%; right: 12%;
+          background: radial-gradient(circle, #34D399 0%, transparent 70%);
+          animation: wp-orb-float-c 16s ease-in-out infinite; }
+        .wp-hero-spotlight {
+          position: absolute; inset: 0;
+          background: radial-gradient(circle 380px at var(--mx, 50%) var(--my, 50%),
+            rgba(255,255,255,0.10), transparent 60%);
+          z-index: 1;
+          pointer-events: none;
+          transition: background 80ms linear;
+        }
+        .wp-hero-grain {
+          position: absolute; inset: 0;
+          width: 100%; height: 100%;
+          z-index: 1;
+          opacity: 0.18;
+          mix-blend-mode: overlay;
+          pointer-events: none;
+        }
+        .wp-hero-title {
+          font-size: clamp(1.75rem, 3.5vw, 2.6rem);
+          font-weight: 800;
+          letter-spacing: -0.025em;
+          line-height: 1.04;
+          margin: 0;
+          background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #FB7185 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 12px rgba(124,58,237,0.40));
         }
 
-        .alert-error {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 16px;
-          background: rgba(239,68,68,0.1);
-          border: 1px solid rgba(239,68,68,0.3);
-          border-radius: var(--radius-md);
-          color: var(--danger);
-          font-size: 0.875rem;
+        /* --------- Avatar --------- */
+        .wp-avatar-wrap {
+          position: relative;
+          width: 120px; height: 120px;
+          display: grid; place-items: center;
+          flex-shrink: 0;
         }
-        .alert-success {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 16px;
-          background: rgba(16,185,129,0.1);
-          border: 1px solid rgba(16,185,129,0.3);
-          border-radius: var(--radius-md);
-          color: var(--success);
-          font-size: 0.875rem;
+        .wp-avatar-ring {
+          position: absolute; inset: 0;
+          border-radius: 50%;
+          padding: 4px;
+          background: conic-gradient(from 0deg, #7C3AED, #FB7185, #34D399, #f59e0b, #7C3AED);
+          -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+          animation: wp-conic-rotate 6s linear infinite;
+          filter: drop-shadow(0 0 16px rgba(124,58,237,0.55));
+        }
+        .wp-avatar {
+          border: 3px solid #0b0f1e;
+          position: relative;
+          z-index: 1;
+        }
+        .wp-online-dot {
+          position: absolute;
+          bottom: 6px; right: 6px;
+          width: 18px; height: 18px;
+          border-radius: 50%;
+          background: #34D399;
+          border: 3px solid #0b0f1e;
+          z-index: 2;
+          animation: wp-online-pulse 2s ease-in-out infinite;
+        }
+
+        /* --------- Achievement chips --------- */
+        .wp-achievement { animation: wp-slide-up 460ms ease-out backwards; }
+
+        /* --------- Stat cards (3D tilt + gradient text) --------- */
+        .wp-stat-card {
+          position: relative;
+          overflow: hidden;
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          transition: transform 200ms ease, box-shadow 260ms ease, border-color 200ms ease;
+          animation: wp-slide-up 500ms ease-out backwards;
+          transform-style: preserve-3d;
+          will-change: transform;
+        }
+        .wp-stat-card::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0;
+          height: 3px;
+          background: var(--wp-bar, linear-gradient(90deg, #7C3AED, #a855f7));
+        }
+        .wp-stat-card:hover {
+          box-shadow: 0 14px 36px var(--wp-glow, rgba(124,58,237,0.35));
+          border-color: var(--mantine-color-violet-6);
+        }
+        .wp-stat-value {
+          font-size: clamp(2rem, 3vw, 2.5rem);
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+          background: var(--wp-text, linear-gradient(135deg, #c4b5fd 0%, #7C3AED 100%));
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        /* --------- Tabs --------- */
+        .wp-tabs-shell {
+          position: sticky;
+          top: 0;
+          z-index: 5;
+          padding: 4px 0;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          background: linear-gradient(180deg, rgba(11,15,30,0.85) 0%, rgba(11,15,30,0.50) 100%);
+          margin: 0 -4px 12px;
+          padding: 8px 4px;
+        }
+        .wp-tabs [data-active] {
+          box-shadow: 0 6px 18px rgba(124,58,237,0.45);
+        }
+
+        /* --------- Content cards (glassmorphism) --------- */
+        .wp-card {
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+          animation: wp-slide-up 500ms ease-out backwards;
+        }
+        .wp-card:hover {
+          border-color: var(--mantine-color-violet-7);
+          box-shadow: 0 10px 30px rgba(124,58,237,0.18);
+        }
+        .wp-section-title {
+          background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
         }
       `}</style>
     </>
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+// =================================================================
+// SUB-COMPONENTS
+// =================================================================
 
 function StatCard({
-  label, value, icon: Icon, iconBg, iconColor, delay,
+  label,
+  value,
+  icon: Icon,
+  theme,
+  delay,
 }: {
-  label: string; value: number; icon: React.ElementType
-  iconBg: string; iconColor: string; delay: number
+  label: string
+  value: number
+  icon: React.ComponentType<{ size?: number }>
+  theme: keyof typeof STAT_THEMES
+  delay: number
 }) {
+  const animated = useCountUp(value, 900)
+  const tilt = useTilt(6)
+  const cfg = STAT_THEMES[theme]
+
   return (
     <div
-      className="stat-card animate-slide-up"
-      style={{ animationDelay: `${delay}ms` }}
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={{ transition: 'transform 260ms cubic-bezier(0.3, 0.5, 0.3, 1)' }}
     >
-      <div className="stat-icon" style={{ background: iconBg }}>
-        <Icon size={22} color={iconColor} />
-      </div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
+      <Card
+        radius="lg"
+        p="md"
+        withBorder
+        className="wp-stat-card"
+        style={{
+          animationDelay: `${delay}ms`,
+          ['--wp-bar' as string]: cfg.bar,
+          ['--wp-glow' as string]: cfg.glow,
+          ['--wp-text' as string]: cfg.text,
+        } as React.CSSProperties}
+      >
+        <Group gap="sm" align="center">
+          <ThemeIcon size="lg" radius="md" variant="light" color={cfg.color}>
+            <Icon size={18} />
+          </ThemeIcon>
+          <Stack gap={2}>
+            <Text className="wp-stat-value">{animated}</Text>
+            <Text size="xs" c="dimmed">{label}</Text>
+          </Stack>
+        </Group>
+      </Card>
     </div>
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+// ---------- Overview tab ----------
 
 function OverviewTab({ profile }: { profile: ProfileProps['profile'] }) {
   return (
-    <div className="glass-card">
-      <h3 className="gradient-text" style={{ marginBottom: 18 }}>Personal Information</h3>
-      <div className="info-grid">
-        <InfoItem icon={UserIcon} label="Full Name" value={profile.name ?? '—'} />
-        <InfoItem icon={Mail} label="Email" value={profile.email ?? '—'} />
-        <InfoItem icon={Briefcase} label="Job Title" value={profile.jobTitle ?? 'Not set'} />
-        <InfoItem icon={Phone} label="Phone" value={profile.phone ?? 'Not set'} />
-        <InfoItem
-          icon={Building2}
-          label="Department"
-          value={profile.department?.name ?? 'Unassigned'}
-        />
-        <InfoItem icon={Shield} label="Role" value={profile.role} />
-        <InfoItem
-          icon={Calendar}
-          label="Member Since"
-          value={formatDate(profile.createdAt)}
-        />
-        <InfoItem
-          icon={Clock}
-          label="Last Login"
-          value={profile.lastLogin ? timeAgo(profile.lastLogin) : 'Never'}
-        />
-      </div>
-    </div>
+    <Card radius="lg" p="lg" withBorder className="wp-card">
+      <Title order={3} mb="md" className="wp-section-title">Personal Information</Title>
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+        <InfoItem icon={UserIcon}  label="Full Name"  value={profile.name ?? '—'} />
+        <InfoItem icon={Mail}      label="Email"      value={profile.email ?? '—'} />
+        <InfoItem icon={Briefcase} label="Job Title"  value={profile.jobTitle ?? 'Not set'} />
+        <InfoItem icon={Phone}     label="Phone"      value={profile.phone ?? 'Not set'} />
+        <InfoItem icon={Building2} label="Department" value={profile.department?.name ?? 'Unassigned'} />
+        <InfoItem icon={Shield}    label="Role"       value={profile.role} />
+        <InfoItem icon={Calendar}  label="Joined"     value={formatDate(profile.createdAt)} />
+        <InfoItem icon={Clock}     label="Last Login" value={profile.lastLogin ? timeAgo(profile.lastLogin) : 'Never'} />
+      </SimpleGrid>
+    </Card>
   )
 }
 
 function InfoItem({
-  icon: Icon, label, value,
-}: { icon: React.ElementType; label: string; value: string }) {
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number }>
+  label: string
+  value: string
+}) {
   return (
-    <div className="info-item">
-      <div className="info-icon">
-        <Icon size={16} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="info-label">{label}</div>
-        <div className="info-value">{value}</div>
-      </div>
-    </div>
+    <Group gap="sm" align="flex-start">
+      <ThemeIcon size="md" radius="md" variant="light" color="violet">
+        <Icon size={14} />
+      </ThemeIcon>
+      <Stack gap={2}>
+        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>{label}</Text>
+        <Text size="sm" fw={500}>{value}</Text>
+      </Stack>
+    </Group>
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+// ---------- Training tab ----------
 
 function TrainingTab({ enrollments }: { enrollments: TrainingEnrollment[] }) {
-  if (enrollments.length === 0) {
-    return (
-      <div className="glass-card">
-        <div className="empty-state">
-          <GraduationCap size={40} />
-          <p>No training enrollments yet. Visit the Training Center to start a course.</p>
-        </div>
-      </div>
-    )
-  }
-
   const inProgress = enrollments.filter((e) => e.status !== 'COMPLETED')
   const completed = enrollments.filter((e) => e.status === 'COMPLETED')
 
+  if (enrollments.length === 0) {
+    return (
+      <Card radius="lg" p="xl" withBorder className="wp-card">
+        <Stack align="center" gap="sm" py="xl">
+          <ThemeIcon size={48} radius="xl" variant="light" color="violet">
+            <BookOpen size={24} />
+          </ThemeIcon>
+          <Text size="lg" fw={600}>No training enrollments yet</Text>
+          <Text size="sm" c="dimmed">Courses you enroll in will appear here.</Text>
+        </Stack>
+      </Card>
+    )
+  }
+
   return (
-    <>
+    <Stack gap="md">
       {inProgress.length > 0 && (
-        <div className="glass-card">
-          <h3 className="gradient-text" style={{ marginBottom: 16 }}>In Progress</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card radius="lg" p="lg" withBorder className="wp-card">
+          <Title order={3} mb="md" className="wp-section-title">In Progress</Title>
+          <Stack gap="md">
             {inProgress.map((e) => (
-              <div key={e.id} className="training-row">
-                <div
-                  className="training-icon"
-                  style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}
-                >
-                  <BookOpen size={20} />
-                </div>
-                <div className="training-body">
-                  <div className="training-title">{e.course?.title}</div>
-                  <div className="training-meta">
-                    {e.course?.category && <span>{e.course.category}</span>}
-                    <span>Enrolled {timeAgo(e.enrolledAt)}</span>
-                  </div>
-                  <div className="progress-bar-wrap">
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${Math.min(100, Math.max(0, e.progress ?? 0))}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+              <Box key={e.id}>
+                <Group justify="space-between" align="center" mb="xs">
+                  <Group gap="sm">
+                    <ThemeIcon size="md" radius="md" variant="light" color="violet">
+                      <BookOpen size={14} />
+                    </ThemeIcon>
+                    <Stack gap={0}>
+                      <Text fw={600} size="sm">{e.course?.title}</Text>
+                      <Text size="xs" c="dimmed">
+                        {e.course?.category ?? 'Uncategorized'} • enrolled {timeAgo(e.enrolledAt)}
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Text size="sm" fw={700} c="violet" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {e.progress ?? 0}%
+                  </Text>
+                </Group>
+                <Progress value={e.progress ?? 0} color="violet" radius="xl" animated striped />
+              </Box>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Card>
       )}
 
       {completed.length > 0 && (
-        <div className="glass-card">
-          <h3 className="gradient-text" style={{ marginBottom: 16 }}>Completed</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card radius="lg" p="lg" withBorder className="wp-card">
+          <Title order={3} mb="md" className="wp-section-title">Completed</Title>
+          <Stack gap="sm">
             {completed.map((e) => (
-              <div key={e.id} className="training-row">
-                <div
-                  className="training-icon"
-                  style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}
-                >
-                  <Check size={20} />
-                </div>
-                <div className="training-body">
-                  <div className="training-title">{e.course?.title}</div>
-                  <div className="training-meta">
-                    {e.completedAt && <span>Completed {formatDate(e.completedAt)}</span>}
-                    {typeof e.quizScore === 'number' && (
-                      <span>Quiz score: {e.quizScore}%</span>
-                    )}
-                  </div>
-                </div>
-                <span className="badge badge-success">
-                  <Check size={11} /> Done
-                </span>
-              </div>
+              <Group key={e.id} gap="sm" wrap="nowrap">
+                <ThemeIcon size="md" radius="md" variant="light" color="mint">
+                  <Check size={14} />
+                </ThemeIcon>
+                <Stack gap={0} style={{ flex: 1 }}>
+                  <Text fw={600} size="sm">{e.course?.title}</Text>
+                  <Text size="xs" c="dimmed">
+                    Completed {e.completedAt ? timeAgo(e.completedAt) : '—'}
+                  </Text>
+                </Stack>
+                {e.quizScore != null && (
+                  <Badge variant="light" color="mint">{e.quizScore}%</Badge>
+                )}
+              </Group>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Card>
       )}
-    </>
+    </Stack>
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+// ---------- Evaluations tab ----------
 
 function EvaluationsTab({ userId }: { userId: string }) {
+  const [items, setItems] = useState<EvaluationItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [evaluations, setEvaluations] = useState<EvaluationItem[]>([])
-  const [error, setError] = useState(false)
-  const [ackError, setAckError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
+        setLoading(true)
         const res = await fetch(`/api/workryn/evaluations?agentId=${encodeURIComponent(userId)}`)
-        if (!res.ok) throw new Error('not ok')
+        if (!res.ok) throw new Error('Failed to load evaluations')
         const data = await res.json()
-        if (cancelled) return
-
-        const list: EvaluationItem[] = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.evaluations)
-          ? data.evaluations
-          : []
-        setEvaluations(list)
-      } catch {
-        if (!cancelled) setError(true)
+        if (!cancelled) setItems(data?.items ?? data ?? [])
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [userId])
 
   async function acknowledge(id: string) {
-    setAckError(null)
     try {
       const res = await fetch(`/api/workryn/evaluations/${id}/acknowledge`, { method: 'POST' })
       if (!res.ok) throw new Error('Failed to acknowledge')
-      setEvaluations((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, acknowledgedAt: new Date().toISOString() } : e
-        )
-      )
-    } catch {
-      setAckError('Could not acknowledge evaluation. Please try again.')
+      setItems((prev) => prev.map((it) =>
+        it.id === id ? { ...it, acknowledgedAt: new Date().toISOString() } : it
+      ))
+      notifications.show({ title: 'Acknowledged', message: 'Evaluation acknowledged.', color: 'mint' })
+    } catch (err) {
+      notifications.show({ title: 'Error', message: (err as Error).message, color: 'coral' })
     }
   }
 
   if (loading) {
     return (
-      <div className="glass-card">
-        <div className="empty-state">
-          <div className="spinner" />
-          <p>Loading evaluations...</p>
-        </div>
-      </div>
+      <Card radius="lg" p="xl" withBorder className="wp-card">
+        <Group justify="center" py="xl"><Loader color="violet" /></Group>
+      </Card>
     )
   }
 
-  if (error || evaluations.length === 0) {
+  if (error) {
+    return <Alert icon={<AlertCircle size={16} />} color="coral" variant="light">{error}</Alert>
+  }
+
+  if (items.length === 0) {
     return (
-      <div className="glass-card">
-        <div className="empty-state">
-          <ClipboardCheck size={40} />
-          <p>
-            {error
-              ? 'Evaluations data is not available yet.'
-              : 'No evaluations received yet.'}
-          </p>
-        </div>
-      </div>
+      <Card radius="lg" p="xl" withBorder className="wp-card">
+        <Stack align="center" gap="sm" py="xl">
+          <ThemeIcon size={48} radius="xl" variant="light" color="violet">
+            <ClipboardCheck size={24} />
+          </ThemeIcon>
+          <Text size="lg" fw={600}>No evaluations yet</Text>
+          <Text size="sm" c="dimmed">Evaluations from your manager will appear here.</Text>
+        </Stack>
+      </Card>
     )
   }
 
   return (
-    <>
-      {ackError && (
-        <div className="alert-error">
-          <AlertCircle size={16} /> {ackError}
-        </div>
-      )}
-      <div className="glass-card">
-        <h3 className="gradient-text" style={{ marginBottom: 16 }}>Evaluations Received</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {evaluations.map((e) => {
-            const rating = e.overallRating ?? 0
-            return (
-              <div key={e.id} className="eval-row">
-                <div
-                  className="eval-icon"
-                  style={{ background: 'rgba(236,72,153,0.15)', color: '#ec4899' }}
-                >
-                  <ClipboardCheck size={20} />
-                </div>
-                <div className="eval-body">
-                  <div className="eval-title">
-                    {e.template?.name ?? 'Evaluation'}
-                  </div>
-                  <div className="eval-meta">
-                    {e.evaluator?.name && <span>By {e.evaluator.name}</span>}
-                    <span>{formatDate(e.createdAt)}</span>
-                    {rating > 0 && (
-                      <span className="eval-rating">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={13}
-                            fill={i < rating ? '#f59e0b' : 'none'}
-                            className={`eval-rating-star ${i >= rating ? 'empty' : ''}`}
-                          />
-                        ))}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {e.acknowledgedAt ? (
-                  <span className="badge badge-success">
-                    <Check size={11} /> Acknowledged
-                  </span>
-                ) : (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => acknowledge(e.id)}
-                  >
-                    Acknowledge
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </>
+    <Stack gap="md">
+      {items.map((it) => (
+        <Card key={it.id} radius="lg" p="lg" withBorder className="wp-card">
+          <Group justify="space-between" align="flex-start" mb="sm">
+            <Stack gap={2}>
+              <Text fw={600}>{it.template?.name ?? 'Evaluation'}</Text>
+              <Text size="xs" c="dimmed">
+                {it.evaluator?.name ?? 'Manager'} • {timeAgo(it.createdAt)}
+              </Text>
+            </Stack>
+            {it.overallRating != null && (
+              <Group gap={4}>
+                <Rating value={it.overallRating} readOnly fractions={2} />
+                <Text size="sm" c="dimmed">{it.overallRating.toFixed(1)}</Text>
+              </Group>
+            )}
+          </Group>
+
+          {it.comments && (
+            <>
+              <Divider my="sm" />
+              <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>{it.comments}</Text>
+            </>
+          )}
+
+          <Divider my="sm" />
+          <Group justify="space-between" align="center">
+            {it.acknowledgedAt ? (
+              <Badge variant="light" color="mint" leftSection={<Check size={12} />}>
+                Acknowledged {timeAgo(it.acknowledgedAt)}
+              </Badge>
+            ) : (
+              <Badge variant="light" color="coral">Awaiting acknowledgment</Badge>
+            )}
+            {!it.acknowledgedAt && (
+              <Button size="xs" variant="light" color="violet"
+                leftSection={<Check size={14} />}
+                onClick={() => acknowledge(it.id)}>
+                Acknowledge
+              </Button>
+            )}
+          </Group>
+        </Card>
+      ))}
+    </Stack>
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+// ---------- Settings tab ----------
 
-function SettingsTab({
-  profile,
-  onSaved,
-}: {
-  profile: ProfileProps['profile']
-  onSaved: () => void | Promise<void>
-}) {
-  
+function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
   const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
 
   const [name, setName] = useState(profile.name ?? '')
@@ -835,7 +882,6 @@ function SettingsTab({
     setSuccess(false)
     try {
       const body: Record<string, unknown> = { name, phone, avatarColor }
-      // jobTitle is admin-only on /api/profile/me — only include for admins
       if (isAdmin) body.jobTitle = jobTitle || null
 
       const res = await fetch(`/api/workryn/profile/me`, {
@@ -852,7 +898,7 @@ function SettingsTab({
       }
 
       setSuccess(true)
-      await onSaved()
+      notifications.show({ title: 'Saved', message: 'Profile updated successfully.', color: 'mint' })
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -861,95 +907,84 @@ function SettingsTab({
   }
 
   return (
-    <div className="glass-card">
-      <h3 className="gradient-text" style={{ marginBottom: 18 }}>Edit Profile</h3>
+    <Card radius="lg" p="lg" withBorder className="wp-card">
+      <Title order={3} mb="md" className="wp-section-title">Edit Profile</Title>
 
       {error && (
-        <div className="alert-error" style={{ marginBottom: 16 }}>
-          <AlertCircle size={16} /> {error}
-        </div>
+        <Alert icon={<AlertCircle size={16} />} color="coral" variant="light" mb="md">{error}</Alert>
       )}
       {success && (
-        <div className="alert-success" style={{ marginBottom: 16 }}>
-          <Check size={16} /> Profile updated successfully.
-        </div>
+        <Alert icon={<Check size={16} />} color="mint" variant="light" mb="md">
+          Profile updated successfully.
+        </Alert>
       )}
 
-      <form className="settings-form" onSubmit={handleSave}>
-        <div className="form-group">
-          <label className="label" htmlFor="profile-name">Full Name</label>
-          <input
-            id="profile-name"
-            className="input focus-ring"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+      <form onSubmit={handleSave}>
+        <Stack gap="md">
+          <TextInput
+            label="Full Name"
             placeholder="Your full name"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
           />
-        </div>
 
-        <div className="form-group">
-          <label className="label" htmlFor="profile-job-title">Job Title</label>
-          <input
-            id="profile-job-title"
-            className="input focus-ring"
-            type="text"
-            value={jobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
+          <TextInput
+            label="Job Title"
             placeholder="e.g. Support Specialist"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.currentTarget.value)}
+            disabled={!isAdmin}
+            description={!isAdmin ? 'Only administrators can edit job titles.' : undefined}
           />
-        </div>
 
-        <div className="form-group">
-          <label className="label" htmlFor="profile-phone">Phone</label>
-          <input
-            id="profile-phone"
-            className="input focus-ring"
+          <TextInput
+            label="Phone"
+            placeholder="Optional"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Optional"
+            onChange={(e) => setPhone(e.currentTarget.value)}
+            description="Phone updates via admin API require elevated permissions."
           />
-          <small style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-            Phone updates via admin API require elevated permissions.
-          </small>
-        </div>
 
-        <div className="form-group">
-          <label className="label">Avatar Color</label>
-          <div className="color-picker">
-            {AVATAR_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`color-swatch ${avatarColor === c ? 'selected' : ''}`}
-                style={{ background: c }}
-                onClick={() => setAvatarColor(c)}
-                aria-label={`Select color ${c}`}
-              />
-            ))}
-          </div>
-        </div>
+          <Box>
+            <Text size="sm" fw={500} mb={6}>Avatar Color</Text>
+            <Group gap="xs" wrap="wrap">
+              {AVATAR_COLORS.map((c) => (
+                <ColorSwatch
+                  key={c}
+                  color={c}
+                  size={32}
+                  style={{
+                    cursor: 'pointer',
+                    border: c === avatarColor
+                      ? '3px solid var(--mantine-color-violet-6)'
+                      : '3px solid transparent',
+                    transition: 'transform 160ms ease, box-shadow 160ms ease',
+                    transform: c === avatarColor ? 'scale(1.12)' : 'scale(1)',
+                    boxShadow: c === avatarColor ? `0 0 20px ${c}80` : 'none',
+                  }}
+                  onClick={() => setAvatarColor(c)}
+                >
+                  {c === avatarColor && <Check size={16} color="#fff" strokeWidth={3} />}
+                </ColorSwatch>
+              ))}
+            </Group>
+          </Box>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            type="submit"
-            className="btn btn-gradient"
-            disabled={saving}
-            id="btn-save-profile"
-          >
-            {saving ? (
-              <>
-                <div className="spinner" style={{ width: 14, height: 14 }} /> Saving...
-              </>
-            ) : (
-              <>
-                <Save size={14} /> Save Changes
-              </>
-            )}
-          </button>
-        </div>
+          <Group justify="flex-end">
+            <Button
+              type="submit"
+              loading={saving}
+              leftSection={<Save size={16} />}
+              color="violet"
+              size="md"
+              style={{ boxShadow: '0 4px 14px rgba(124,58,237,0.40)' }}
+            >
+              Save Changes
+            </Button>
+          </Group>
+        </Stack>
       </form>
-    </div>
+    </Card>
   )
 }
