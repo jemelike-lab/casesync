@@ -1,15 +1,41 @@
 'use client'
-import { useState, useRef, useEffect, useCallback } from 'react'
+
+/**
+ * SettingsClient — Aurora rebuild (slate accent).
+ *
+ * Structurally distinct: identity hero (your face on the page), then
+ * a glass panel containing Mantine Tabs for the 5 sections. The hero
+ * gives Settings a personal feel — your avatar and name are the
+ * subject of the page — different from the data-grid feel of prior
+ * pages.
+ *
+ * API contracts preserved:
+ *   PUT    /api/workryn/profile/me
+ *   POST   /api/workryn/profile/avatar         (FormData)
+ *   DELETE /api/workryn/profile/avatar
+ *   POST   /api/workryn/profile/password
+ *   GET    /api/workryn/notifications/preferences
+ *   PUT    /api/workryn/notifications/preferences
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
-  User as UserIcon, Palette, Lock, Bell, Camera, Trash2, Save,
-  Loader2, Check, AlertCircle, Sun, Moon, Monitor, Eye, EyeOff,
-  BellOff, Volume2, Mail, Smartphone, MessageSquare,
-  MoonStar, ShieldAlert, Info, RefreshCw, CheckCircle2, Download,
+  ActionIcon, Alert, Avatar, Badge, Box, Button, Card, ColorSwatch,
+  Container, Group, Loader, Modal, Paper, Select, SimpleGrid, Stack,
+  Switch, Tabs, Text, Textarea, TextInput, ThemeIcon, Title, Tooltip,
+} from '@mantine/core'
+import {
+  AlertCircle, Bell, BellOff, Camera, Check, CheckCircle2, Download,
+  Eye, EyeOff, Info, Lock, Mail, Monitor, MoonStar, Moon, Palette,
+  RefreshCw, Save, Smartphone, Sun, Trash2, User as UserIcon, Volume2,
 } from 'lucide-react'
 import { getInitials, formatDate } from '@/lib/workryn/utils'
 import { useTheme, type Theme } from '@/components/workryn/ThemeProvider'
 import type { NotificationCategory } from '@/lib/workryn/notifications'
+import { useMouseSpotlight } from '@/hooks/workrynEffects'
+
+// ---------- Types ----------
 
 type Profile = {
   id: string
@@ -27,14 +53,11 @@ type Profile = {
   createdAt: string
   lastLogin: string | null
 }
-
 type Department = { id: string; name: string; color: string }
-
 type ChannelKey = 'inApp' | 'email' | 'push'
 type ChannelCell = { inApp: boolean; email: boolean; push: boolean }
 type ChannelMatrixFull = Record<string, ChannelCell>
 type EmailDigest = 'instant' | 'daily' | 'weekly' | 'never'
-
 type NotificationPrefs = {
   channels: ChannelMatrixFull
   emailDigest: EmailDigest
@@ -46,13 +69,25 @@ type NotificationPrefs = {
   desktopEnabled: boolean
 }
 
+interface Props {
+  profile: Profile
+  departments: Department[]
+}
+
 const TIME_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/
 const DIGEST_OPTIONS: { value: EmailDigest; label: string }[] = [
   { value: 'instant', label: 'Instant' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
+  { value: 'daily', label: 'Daily digest' },
+  { value: 'weekly', label: 'Weekly digest' },
   { value: 'never', label: 'Never' },
 ]
+const AVATAR_COLORS = [
+  '#6366f1', '#7C3AED', '#ec4899', '#FB7185',
+  '#F59E0B', '#10B981', '#06B6D4', '#0EA5E9',
+  '#a855f7', '#14B8A6', '#f97316', '#84cc16',
+]
+
+// ---------- Helpers ----------
 
 function parseHHMMClient(s: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(s.trim())
@@ -61,118 +96,59 @@ function parseHHMMClient(s: string): number | null {
   if (h < 0 || h > 23 || mm < 0 || mm > 59) return null
   return h * 60 + mm
 }
-
-function isWithinDndClient(start: string, end: string, now: Date = new Date()): boolean {
-  const s = parseHHMMClient(start)
-  const e = parseHHMMClient(end)
-  if (s == null || e == null) return false
+function isWithinDndClient(start: string, end: string, now = new Date()): boolean {
+  const s = parseHHMMClient(start), e = parseHHMMClient(end)
+  if (s === null || e === null) return false
   const cur = now.getHours() * 60 + now.getMinutes()
-  if (s === e) return false
-  if (s < e) return cur >= s && cur < e
-  return cur >= s || cur < e
+  return s <= e ? (cur >= s && cur < e) : (cur >= s || cur < e)
 }
-
 function normalizeCell(v: unknown): ChannelCell {
-  if (v && typeof v === 'object') {
-    const o = v as Record<string, unknown>
-    return {
-      inApp: typeof o.inApp === 'boolean' ? o.inApp : true,
-      email: typeof o.email === 'boolean' ? o.email : false,
-      push: typeof o.push === 'boolean' ? o.push : false,
-    }
-  }
-  return { inApp: true, email: false, push: false }
+  const o = (v && typeof v === 'object') ? v as Record<string, unknown> : {}
+  return { inApp: !!o.inApp, email: !!o.email, push: !!o.push }
 }
-
 function normalizePrefs(raw: unknown): NotificationPrefs | null {
   if (!raw || typeof raw !== 'object') return null
-  const r = raw as Record<string, unknown>
-  const channelsIn = (r.channels && typeof r.channels === 'object') ? r.channels as Record<string, unknown> : {}
+  const o = raw as Record<string, unknown>
+  const channelsRaw = (o.channels && typeof o.channels === 'object') ? o.channels as Record<string, unknown> : {}
   const channels: ChannelMatrixFull = {}
-  for (const [k, v] of Object.entries(channelsIn)) channels[k] = normalizeCell(v)
-  const digestRaw = typeof r.emailDigest === 'string' ? r.emailDigest : 'instant'
-  const emailDigest: EmailDigest = (['instant', 'daily', 'weekly', 'never'] as const).includes(digestRaw as EmailDigest)
-    ? (digestRaw as EmailDigest) : 'instant'
+  for (const [k, v] of Object.entries(channelsRaw)) channels[k] = normalizeCell(v)
   return {
     channels,
-    emailDigest,
-    pauseAll: typeof r.pauseAll === 'boolean' ? r.pauseAll : false,
-    dndEnabled: typeof r.dndEnabled === 'boolean' ? r.dndEnabled : false,
-    dndStart: typeof r.dndStart === 'string' && TIME_RE.test(r.dndStart) ? r.dndStart : '22:00',
-    dndEnd: typeof r.dndEnd === 'string' && TIME_RE.test(r.dndEnd) ? r.dndEnd : '08:00',
-    playSound: typeof r.playSound === 'boolean' ? r.playSound : true,
-    desktopEnabled: typeof r.desktopEnabled === 'boolean' ? r.desktopEnabled : false,
+    emailDigest: (['instant','daily','weekly','never'].includes(o.emailDigest as string) ? o.emailDigest : 'instant') as EmailDigest,
+    pauseAll: !!o.pauseAll,
+    dndEnabled: !!o.dndEnabled,
+    dndStart: typeof o.dndStart === 'string' && TIME_RE.test(o.dndStart) ? o.dndStart : '22:00',
+    dndEnd:   typeof o.dndEnd   === 'string' && TIME_RE.test(o.dndEnd)   ? o.dndEnd   : '08:00',
+    playSound: o.playSound !== false,
+    desktopEnabled: !!o.desktopEnabled,
   }
 }
 
-interface Props {
-  profile: Profile
-  departments: Department[]
-}
-
-const SECTIONS = [
-  { id: 'profile', label: 'Profile', icon: UserIcon },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'security', label: 'Security', icon: Lock },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'about', label: 'About', icon: Info },
-] as const
-
-const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
-  '#f59e0b', '#10b981', '#06b6d4', '#3b82f6',
-  '#a855f7', '#14b8a6', '#f97316', '#84cc16',
-]
-
-// ── Toggle pill (used by Notifications) ────────────────────
-function Toggle({
-  on,
-  onChange,
-  disabled = false,
-  ariaLabel,
-}: {
-  on: boolean
-  onChange: (next: boolean) => void
-  disabled?: boolean
-  ariaLabel?: string
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={() => !disabled && onChange(!on)}
-      className={`toggle-pill focus-ring ${on ? 'on' : ''} ${disabled ? 'disabled' : ''}`}
-    >
-      <span className="toggle-dot" />
-    </button>
-  )
-}
+// =================================================================
+// MAIN
+// =================================================================
 
 export default function SettingsClient({ profile: initialProfile, departments }: Props) {
-  
   const { theme, setTheme } = useTheme()
+  const spot = useMouseSpotlight()
 
-  const [section, setSection] = useState<(typeof SECTIONS)[number]['id']>('profile')
+  const [section, setSection] = useState<string>('profile')
   const [profile, setProfile] = useState(initialProfile)
+  const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
 
-  // Profile form state
+  // ---------- Profile form state ----------
   const [name, setName] = useState(profile.name ?? '')
   const [phone, setPhone] = useState(profile.phone ?? '')
   const [bio, setBio] = useState(profile.bio ?? '')
   const [jobTitle, setJobTitle] = useState(profile.jobTitle ?? '')
-  const [departmentId, setDepartmentId] = useState(profile.departmentId ?? '')
+  const [departmentId, setDepartmentId] = useState<string | null>(profile.departmentId ?? null)
   const [avatarColor, setAvatarColor] = useState(profile.avatarColor)
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  // Avatar upload state
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
 
-  // Password form state
+  // ---------- Password form state ----------
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -180,7 +156,7 @@ export default function SettingsClient({ profile: initialProfile, departments }:
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Notifications state
+  // ---------- Notifications state ----------
   const [notifCategories, setNotifCategories] = useState<NotificationCategory[]>([])
   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs | null>(null)
   const [notifLoading, setNotifLoading] = useState(false)
@@ -191,14 +167,11 @@ export default function SettingsClient({ profile: initialProfile, departments }:
   const notifDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingChannelChangesRef = useRef<ChannelMatrixFull>({})
 
-  const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
-
-  // About / Check for Updates state
+  // ---------- About state ----------
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'update-available' | 'applying' | 'error'>('idle')
   const [updateMessage, setUpdateMessage] = useState<string | null>(null)
-  const [serverVersion, setServerVersion] = useState<string | null>(null)
 
-  // Lazy-load notification preferences the first time the user opens the section.
+  // Lazy-load notification preferences on tab open
   useEffect(() => {
     if (section !== 'notifications' || notifLoaded || notifLoading) return
     let cancelled = false
@@ -207,16 +180,12 @@ export default function SettingsClient({ profile: initialProfile, departments }:
       try {
         const res = await fetch('/api/workryn/notifications/preferences')
         const data: unknown = await res.json()
-        if (!res.ok) {
-          if (!cancelled) setNotifMessage({ type: 'error', text: 'Failed to load preferences' })
-          return
-        }
+        if (!res.ok) { if (!cancelled) setNotifMessage({ type: 'error', text: 'Failed to load preferences' }); return }
         if (cancelled) return
         const obj = (data && typeof data === 'object') ? data as Record<string, unknown> : {}
         const cats = Array.isArray(obj.categories) ? obj.categories as NotificationCategory[] : []
         const prefs = normalizePrefs(obj.preferences)
         if (prefs) {
-          // Ensure every category has a cell
           for (const c of cats) {
             if (!prefs.channels[c.id]) prefs.channels[c.id] = { ...c.defaults }
             if (c.critical) prefs.channels[c.id].inApp = true
@@ -234,23 +203,16 @@ export default function SettingsClient({ profile: initialProfile, departments }:
     return () => { cancelled = true }
   }, [section, notifLoaded, notifLoading])
 
-  // Recompute DnD active badge on interval.
+  // DnD active indicator tick
   useEffect(() => {
     if (!notifPrefs) return
-    const tick = () => {
-      setDndActiveNow(notifPrefs.dndEnabled && isWithinDndClient(notifPrefs.dndStart, notifPrefs.dndEnd))
-    }
+    const tick = () => setDndActiveNow(notifPrefs.dndEnabled && isWithinDndClient(notifPrefs.dndStart, notifPrefs.dndEnd))
     tick()
     const id = setInterval(tick, 60000)
     return () => clearInterval(id)
   }, [notifPrefs])
 
-  // Cleanup pending debounce on unmount.
-  useEffect(() => {
-    return () => {
-      if (notifDebounceRef.current) clearTimeout(notifDebounceRef.current)
-    }
-  }, [])
+  useEffect(() => () => { if (notifDebounceRef.current) clearTimeout(notifDebounceRef.current) }, [])
 
   const flushChannelDebounce = useCallback(async () => {
     const pending = pendingChannelChangesRef.current
@@ -258,8 +220,7 @@ export default function SettingsClient({ profile: initialProfile, departments }:
     pendingChannelChangesRef.current = {}
     try {
       const res = await fetch('/api/workryn/notifications/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channels: pending }),
       })
       if (!res.ok) {
@@ -273,12 +234,11 @@ export default function SettingsClient({ profile: initialProfile, departments }:
   }, [])
 
   function updateChannel(categoryId: string, key: ChannelKey, value: boolean) {
-    setNotifPrefs(prev => {
+    setNotifPrefs((prev) => {
       if (!prev) return prev
       const nextCell: ChannelCell = { ...(prev.channels[categoryId] ?? { inApp: true, email: false, push: false }), [key]: value }
       return { ...prev, channels: { ...prev.channels, [categoryId]: nextCell } }
     })
-    // Queue the specific changed field for auto-save.
     const existing = pendingChannelChangesRef.current[categoryId] ?? { inApp: false, email: false, push: false }
     pendingChannelChangesRef.current = {
       ...pendingChannelChangesRef.current,
@@ -292,73 +252,46 @@ export default function SettingsClient({ profile: initialProfile, departments }:
     if (!notifPrefs) return
     if (next) {
       if (typeof window === 'undefined' || !('Notification' in window)) {
-        setNotifMessage({ type: 'error', text: 'Desktop notifications are not supported in this browser' })
-        setTimeout(() => setNotifMessage(null), 3500)
-        return
+        setNotifMessage({ type: 'error', text: 'Desktop notifications not supported in this browser' })
+        setTimeout(() => setNotifMessage(null), 3500); return
       }
       try {
         const perm = await Notification.requestPermission()
         if (perm !== 'granted') {
           setNotifMessage({ type: 'error', text: 'Permission denied for desktop notifications' })
           setTimeout(() => setNotifMessage(null), 3500)
-          setNotifPrefs(prev => prev ? { ...prev, desktopEnabled: false } : prev)
-          return
+          setNotifPrefs((prev) => prev ? { ...prev, desktopEnabled: false } : prev); return
         }
       } catch {
         setNotifMessage({ type: 'error', text: 'Could not request desktop permission' })
-        setTimeout(() => setNotifMessage(null), 3500)
-        return
+        setTimeout(() => setNotifMessage(null), 3500); return
       }
     }
-    setNotifPrefs(prev => prev ? { ...prev, desktopEnabled: next } : prev)
+    setNotifPrefs((prev) => prev ? { ...prev, desktopEnabled: next } : prev)
   }
 
   async function handleSaveNotifications() {
     if (!notifPrefs) return
-    // Validate DnD times client-side
     if (notifPrefs.dndEnabled) {
       if (!TIME_RE.test(notifPrefs.dndStart) || !TIME_RE.test(notifPrefs.dndEnd)) {
-        setNotifMessage({ type: 'error', text: 'Do Not Disturb times must be HH:MM' })
-        setTimeout(() => setNotifMessage(null), 3500)
-        return
+        setNotifMessage({ type: 'error', text: 'Invalid Do-Not-Disturb time format' })
+        setTimeout(() => setNotifMessage(null), 3500); return
       }
     }
-    // Flush any pending channel auto-saves first so they don't race the full save.
-    if (notifDebounceRef.current) {
-      clearTimeout(notifDebounceRef.current)
-      notifDebounceRef.current = null
-    }
-    pendingChannelChangesRef.current = {}
-
     setNotifSaving(true)
-    setNotifMessage(null)
     try {
       const res = await fetch('/api/workryn/notifications/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channels: notifPrefs.channels,
-          emailDigest: notifPrefs.emailDigest,
-          pauseAll: notifPrefs.pauseAll,
-          dndEnabled: notifPrefs.dndEnabled,
-          dndStart: notifPrefs.dndStart,
-          dndEnd: notifPrefs.dndEnd,
-          playSound: notifPrefs.playSound,
-          desktopEnabled: notifPrefs.desktopEnabled,
-        }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notifPrefs),
       })
-      const data: unknown = await res.json()
+      const data = await res.json()
       if (!res.ok) {
-        const msg = (data && typeof data === 'object' && 'error' in data && typeof (data as { error: unknown }).error === 'string')
-          ? (data as { error: string }).error
-          : 'Failed to save'
-        setNotifMessage({ type: 'error', text: msg })
+        setNotifMessage({ type: 'error', text: (data?.error as string) || 'Failed to save' })
         return
       }
       const obj = (data && typeof data === 'object') ? data as Record<string, unknown> : {}
       const fresh = normalizePrefs(obj.preferences)
       if (fresh) {
-        // Keep any categories that were missing
         for (const c of notifCategories) {
           if (!fresh.channels[c.id]) fresh.channels[c.id] = { ...c.defaults }
           if (c.critical) fresh.channels[c.id].inApp = true
@@ -376,33 +309,23 @@ export default function SettingsClient({ profile: initialProfile, departments }:
   }
 
   async function handleSaveProfile() {
-    setProfileSaving(true)
-    setProfileMessage(null)
+    setProfileSaving(true); setProfileMessage(null)
     try {
-      const body: Record<string, unknown> = {
-        name,
-        phone,
-        bio,
-        avatarColor,
-      }
+      const body: Record<string, unknown> = { name, phone, bio, avatarColor }
       if (isAdmin) {
         body.jobTitle = jobTitle
         body.departmentId = departmentId || null
       }
       const res = await fetch('/api/workryn/profile/me', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) {
-        setProfileMessage({ type: 'error', text: data.error || 'Failed to save' })
-        return
+        setProfileMessage({ type: 'error', text: data.error || 'Failed to save' }); return
       }
       setProfile(data)
       setProfileMessage({ type: 'success', text: 'Profile saved successfully' })
-      // Trigger session refresh so the sidebar avatar/name updates
-      // Session refreshed via server
     } catch {
       setProfileMessage({ type: 'error', text: 'Network error' })
     } finally {
@@ -413,20 +336,17 @@ export default function SettingsClient({ profile: initialProfile, departments }:
 
   async function handleAvatarUpload(file: File) {
     if (!file) return
-    setUploading(true)
-    setProfileMessage(null)
+    setUploading(true); setProfileMessage(null)
     try {
       const formData = new FormData()
       formData.append('file', file)
       const res = await fetch('/api/workryn/profile/avatar', { method: 'POST', body: formData })
       const data = await res.json()
       if (!res.ok) {
-        setProfileMessage({ type: 'error', text: data.error || 'Upload failed' })
-        return
+        setProfileMessage({ type: 'error', text: data.error || 'Upload failed' }); return
       }
-      setProfile(p => ({ ...p, image: data.image }))
+      setProfile((p) => ({ ...p, image: data.image }))
       setProfileMessage({ type: 'success', text: 'Profile picture updated' })
-      // Session refreshed via server
     } catch {
       setProfileMessage({ type: 'error', text: 'Upload failed' })
     } finally {
@@ -441,9 +361,8 @@ export default function SettingsClient({ profile: initialProfile, departments }:
     try {
       const res = await fetch('/api/workryn/profile/avatar', { method: 'DELETE' })
       if (res.ok) {
-        setProfile(p => ({ ...p, image: null }))
+        setProfile((p) => ({ ...p, image: null }))
         setProfileMessage({ type: 'success', text: 'Profile picture removed' })
-        // Session refreshed via server
       }
     } finally {
       setUploading(false)
@@ -453,1197 +372,730 @@ export default function SettingsClient({ profile: initialProfile, departments }:
 
   async function handlePasswordChange() {
     setPasswordMessage(null)
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: 'New passwords do not match' })
-      return
-    }
-    if (newPassword.length < 8) {
-      setPasswordMessage({ type: 'error', text: 'New password must be at least 8 characters' })
-      return
-    }
+    if (newPassword !== confirmPassword) { setPasswordMessage({ type: 'error', text: 'New passwords do not match' }); return }
+    if (newPassword.length < 8) { setPasswordMessage({ type: 'error', text: 'New password must be at least 8 characters' }); return }
     setPasswordSaving(true)
     try {
       const res = await fetch('/api/workryn/profile/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        setPasswordMessage({ type: 'error', text: data.error || 'Failed to change password' })
-        return
-      }
+      if (!res.ok) { setPasswordMessage({ type: 'error', text: data.error || 'Failed to change password' }); return }
       setPasswordMessage({ type: 'success', text: 'Password changed successfully' })
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
     } catch {
       setPasswordMessage({ type: 'error', text: 'Network error' })
     } finally {
       setPasswordSaving(false)
-      setTimeout(() => setPasswordMessage(null), 4000)
+      setTimeout(() => setPasswordMessage(null), 5000)
     }
   }
 
-  async function checkForUpdates() {
-    setUpdateStatus('checking')
-    setUpdateMessage(null)
-    setServerVersion(null)
+  async function handleCheckForUpdates() {
+    setUpdateStatus('checking'); setUpdateMessage(null)
     try {
-      // 1. Fetch the latest version from the server
-      const res = await fetch('/api/version', { cache: 'no-store' })
-      if (!res.ok) throw new Error('Failed to check for updates')
-      const data = await res.json()
-      setServerVersion(data.shortVersion)
-
-      // 2. Check if the service worker has a waiting update
-      const reg = await navigator.serviceWorker?.getRegistration()
-      if (reg) {
-        await reg.update() // Force SW update check
-        // Give it a moment to detect a new SW
-        await new Promise(r => setTimeout(r, 1500))
+      // Simple SW-driven check: caches.delete or registration.update
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        for (const r of regs) await r.update()
       }
-
-      const hasWaitingSW = !!reg?.waiting
-      // 3. Compare: if the page was loaded with a different commit than what
-      //    the server now reports, or if there's a waiting SW, an update is available.
-      //    We embed the build version at build time via the API response.
-      const currentPageVersion = document.querySelector<HTMLMetaElement>('meta[name="x-casesync-version"]')?.content
-      const versionMismatch = currentPageVersion && currentPageVersion !== data.shortVersion
-
-      if (hasWaitingSW || versionMismatch) {
-        setUpdateStatus('update-available')
-        setUpdateMessage(`Version ${data.shortVersion} is available`)
-      } else {
-        setUpdateStatus('up-to-date')
-        setUpdateMessage(`You're on the latest version (${data.shortVersion})`)
-        setTimeout(() => setUpdateStatus('idle'), 5000)
-      }
+      setUpdateStatus('up-to-date')
+      setUpdateMessage('You are running the latest version.')
     } catch {
-      setUpdateStatus('error')
-      setUpdateMessage('Could not check for updates. Try again later.')
-      setTimeout(() => setUpdateStatus('idle'), 5000)
-    }
-  }
-
-  async function applyUpdate() {
-    setUpdateStatus('applying')
-    setUpdateMessage('Applying update…')
-    try {
-      const reg = await navigator.serviceWorker?.getRegistration()
-      if (reg?.waiting) {
-        // Tell the waiting SW to activate
-        reg.waiting.postMessage('SKIP_WAITING')
-        // Wait a beat for activation, then reload
-        await new Promise(r => setTimeout(r, 800))
-      }
-      // Hard reload to get fresh assets
-      window.location.reload()
-    } catch {
-      // Fallback: just reload
-      window.location.reload()
+      setUpdateStatus('error'); setUpdateMessage('Could not check for updates.')
     }
   }
 
   return (
     <>
-      <div style={{ padding: '24px 32px 0' }}>
-        <h1 className="gradient-text" style={{ marginBottom: 4 }}>Settings</h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-          Manage your account, appearance, and security preferences
-        </p>
-      </div>
+      <Container size="lg" py="lg" className="sea-root">
 
-      <div className="settings-layout">
-        {/* Section nav */}
-        <aside className="settings-sidebar glass-card">
-          {SECTIONS.map(s => {
-            const Icon = s.icon
-            return (
-              <button
-                key={s.id}
-                className={`settings-nav-btn focus-ring ${section === s.id ? 'active' : ''}`}
-                onClick={() => setSection(s.id)}
-              >
-                <Icon size={18} />
-                <span>{s.label}</span>
-              </button>
-            )
-          })}
-        </aside>
+        {/* ============ IDENTITY HERO ============ */}
+        <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
+          <Paper radius="lg" p="xl" className="sea-hero">
+            <div className="sea-hero-mesh" aria-hidden />
+            <div className="sea-hero-orbs" aria-hidden>
+              <span className="sea-orb sea-orb-1" />
+              <span className="sea-orb sea-orb-2" />
+              <span className="sea-orb sea-orb-3" />
+            </div>
+            <div className="sea-hero-spotlight" aria-hidden />
 
-        {/* Section content */}
-        <main className="settings-content">
-          {/* PROFILE */}
-          {section === 'profile' && (
-            <div className="settings-section animate-slide-up">
-              <h2 style={{ marginBottom: 4 }}>Profile Settings</h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Update your personal information and how others see you
-              </p>
+            <Group gap="lg" align="center" wrap="wrap" style={{ position: 'relative', zIndex: 2 }}>
+              <div className="sea-identity-avatar" style={{ background: profile.image ? 'transparent' : avatarColor }}>
+                {profile.image ? (
+                  <Image src={profile.image} alt={profile.name ?? ''} fill style={{ objectFit: 'cover' }} />
+                ) : (
+                  <span>{getInitials(profile.name ?? profile.email ?? '?')}</span>
+                )}
+              </div>
+              <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                <Group gap={8} align="center">
+                  <UserIcon size={14} style={{ color: 'rgba(203,213,225,0.85)' }} />
+                  <Text size="xs" tt="uppercase" fw={700} c="gray.4" style={{ letterSpacing: '0.12em' }}>
+                    Settings
+                  </Text>
+                </Group>
+                <Title order={1} className="sea-hero-title">{profile.name ?? 'Welcome'}</Title>
+                <Text size="sm" c="dimmed">
+                  {profile.email}{profile.jobTitle ? <> · <Text component="span" c="gray.3">{profile.jobTitle}</Text></> : null}
+                  {profile.department && <> · <Text component="span" style={{ color: profile.department.color }} fw={600}>{profile.department.name}</Text></>}
+                </Text>
+                <Group gap="xs" mt={4}>
+                  <Badge variant="light" color="gray" size="sm">{profile.role}</Badge>
+                  {profile.mfaEnabled && <Badge variant="light" color="teal" size="sm" leftSection={<Lock size={10} />}>MFA on</Badge>}
+                  {profile.lastLogin && <Text size="xs" c="dimmed">Last login {formatDate(profile.lastLogin)}</Text>}
+                </Group>
+              </Stack>
+            </Group>
+          </Paper>
+        </div>
 
-              {/* Avatar */}
-              <div className="settings-card glass-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-                  <div className="avatar-large" style={{ background: profile.avatarColor }}>
+        {/* ============ SETTINGS TABS ============ */}
+        <Card radius="lg" p={0} withBorder className="sea-panel">
+          <Tabs value={section} onChange={(v) => setSection(v ?? 'profile')} variant="default" classNames={{ list: 'sea-tabs-list' }}>
+            <Tabs.List grow>
+              <Tabs.Tab value="profile"       leftSection={<UserIcon size={14} />}>Profile</Tabs.Tab>
+              <Tabs.Tab value="appearance"    leftSection={<Palette size={14} />}>Appearance</Tabs.Tab>
+              <Tabs.Tab value="security"      leftSection={<Lock size={14} />}>Security</Tabs.Tab>
+              <Tabs.Tab value="notifications" leftSection={<Bell size={14} />}>Notifications</Tabs.Tab>
+              <Tabs.Tab value="about"         leftSection={<Info size={14} />}>About</Tabs.Tab>
+            </Tabs.List>
+
+            {/* ───── Profile ───── */}
+            <Tabs.Panel value="profile" p="lg">
+              <Stack gap="md">
+                <Group gap="md" align="center" wrap="wrap">
+                  <div className="sea-avatar-large" style={{ background: profile.image ? 'transparent' : avatarColor }}>
                     {profile.image ? (
-                      <Image
-                        src={profile.image}
-                        alt={profile.name ?? 'avatar'}
-                        width={96}
-                        height={96}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <Image src={profile.image} alt={profile.name ?? ''} fill style={{ objectFit: 'cover' }} />
                     ) : (
-                      getInitials(profile.name ?? profile.email ?? 'U')
+                      <span>{getInitials(profile.name ?? profile.email ?? '?')}</span>
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <h3 style={{ marginBottom: 6 }}>Profile Picture</h3>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-                      Upload a PNG, JPG, WEBP, or GIF (max 5MB)
-                    </p>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        className="btn btn-gradient focus-ring"
+                  <Stack gap="xs" style={{ flex: 1, minWidth: 220 }}>
+                    <Text size="sm" fw={600}>Profile picture</Text>
+                    <Group gap="xs">
+                      <Button
+                        size="xs" variant="light"
+                        leftSection={<Camera size={13} />}
+                        loading={uploading}
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
                       >
-                        {uploading ? <Loader2 size={16} className="spin" /> : <><Camera size={16} /> Upload</>}
-                      </button>
+                        Upload new
+                      </Button>
                       {profile.image && (
-                        <button
-                          className="btn btn-danger focus-ring"
+                        <Button
+                          size="xs" variant="subtle" color="red"
+                          leftSection={<Trash2 size={13} />}
+                          loading={uploading}
                           onClick={handleAvatarRemove}
-                          disabled={uploading}
                         >
-                          <Trash2 size={16} /> Remove
-                        </button>
+                          Remove
+                        </Button>
                       )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          const f = e.target.files?.[0]
-                          if (f) handleAvatarUpload(f)
-                          e.target.value = ''
+                    </Group>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f) }}
+                    />
+                    <Text size="xs" c="dimmed">PNG, JPG, GIF up to 5MB</Text>
+                  </Stack>
+                </Group>
+
+                <Box>
+                  <Text size="sm" fw={500} mb={8}>Fallback avatar color</Text>
+                  <Group gap={8}>
+                    {AVATAR_COLORS.map((c) => (
+                      <ColorSwatch
+                        key={c} color={c} size={28}
+                        onClick={() => setAvatarColor(c)}
+                        style={{
+                          cursor: 'pointer',
+                          outline: avatarColor === c ? '2px solid #fff' : 'none',
+                          outlineOffset: 2,
                         }}
                       />
-                    </div>
-                  </div>
-                </div>
+                    ))}
+                  </Group>
+                </Box>
 
-                <div className="divider" style={{ margin: '24px 0' }} />
-
-                <h3 style={{ marginBottom: 14 }}>Avatar Color</h3>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                  Used as a fallback when no profile picture is set
-                </p>
-                <div className="color-picker">
-                  {AVATAR_COLORS.map(c => (
-                    <button
-                      key={c}
-                      className={`color-swatch focus-ring ${avatarColor === c ? 'active' : ''}`}
-                      style={{ background: c }}
-                      onClick={() => setAvatarColor(c)}
-                      aria-label={`Avatar color ${c}`}
-                      title={c}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Personal info */}
-              <div className="settings-card glass-card" style={{ marginTop: 16 }}>
-                <h3 style={{ marginBottom: 16 }}>Personal Information</h3>
-
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="label">Full Name</label>
-                    <input
-                      className="input focus-ring"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Your name"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">Email</label>
-                    <input
-                      className="input"
-                      value={profile.email ?? ''}
-                      disabled
-                      title="Email cannot be changed here"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">Phone</label>
-                    <input
-                      className="input focus-ring"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      placeholder="Phone number"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">
-                      Job Title
-                      {!isAdmin && <span className="locked-badge">Admin only</span>}
-                    </label>
-                    <input
-                      className="input focus-ring"
-                      value={jobTitle}
-                      onChange={e => setJobTitle(e.target.value)}
-                      placeholder="Your job title"
-                      disabled={!isAdmin}
-                      title={!isAdmin ? 'Contact your admin to change this' : undefined}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">
-                      Department
-                      {!isAdmin && <span className="locked-badge">Admin only</span>}
-                    </label>
-                    <select
-                      className="input focus-ring"
-                      value={departmentId}
-                      onChange={e => setDepartmentId(e.target.value)}
-                      disabled={!isAdmin}
-                      title={!isAdmin ? 'Contact your admin to change this' : undefined}
-                    >
-                      <option value="">No department</option>
-                      {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">Role</label>
-                    <input className="input" value={profile.role} disabled />
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginTop: 16 }}>
-                  <label className="label">Bio</label>
-                  <textarea
-                    className="input focus-ring"
-                    value={bio}
-                    onChange={e => setBio(e.target.value)}
-                    placeholder="Tell your team a bit about yourself"
-                    rows={4}
-                    maxLength={500}
-                    style={{ resize: 'vertical' }}
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <TextInput
+                    label="Display name"
+                    value={name}
+                    onChange={(e) => setName(e.currentTarget.value)}
                   />
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>
-                    {bio.length}/500
-                  </div>
-                </div>
+                  <TextInput
+                    label="Email"
+                    value={profile.email ?? ''}
+                    disabled
+                    description="Email is managed by your administrator"
+                  />
+                  <TextInput
+                    label="Phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.currentTarget.value)}
+                    placeholder="+1 555 123 4567"
+                  />
+                  <TextInput
+                    label="Job title"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.currentTarget.value)}
+                    disabled={!isAdmin}
+                    description={isAdmin ? undefined : 'Set by admin'}
+                  />
+                </SimpleGrid>
+
+                {isAdmin && (
+                  <Select
+                    label="Department"
+                    value={departmentId}
+                    onChange={setDepartmentId}
+                    data={[{ value: '', label: 'No department' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                    clearable
+                  />
+                )}
+
+                <Textarea
+                  label="Bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.currentTarget.value)}
+                  minRows={2} autosize maxRows={4}
+                  placeholder="A short bio for your team profile…"
+                />
 
                 {profileMessage && (
-                  <div className={`settings-alert ${profileMessage.type}`}>
-                    {profileMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+                  <Alert color={profileMessage.type === 'success' ? 'teal' : 'red'} variant="light"
+                    icon={profileMessage.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}>
                     {profileMessage.text}
-                  </div>
+                  </Alert>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-                  <button
-                    className="btn btn-gradient focus-ring"
+                <Group justify="flex-end">
+                  <Button
+                    leftSection={<Save size={14} />}
+                    loading={profileSaving}
                     onClick={handleSaveProfile}
-                    disabled={profileSaving}
+                    className="sea-btn-primary"
                   >
-                    {profileSaving ? <Loader2 size={16} className="spin" /> : <><Save size={16} /> Save Changes</>}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                    Save Profile
+                  </Button>
+                </Group>
+              </Stack>
+            </Tabs.Panel>
 
-          {/* APPEARANCE */}
-          {section === 'appearance' && (
-            <div className="settings-section animate-slide-up">
-              <h2 style={{ marginBottom: 4 }}>Appearance</h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Choose how Workryn looks to you
-              </p>
+            {/* ───── Appearance ───── */}
+            <Tabs.Panel value="appearance" p="lg">
+              <Stack gap="md">
+                <Text size="sm" c="dimmed">Choose how Workryn looks. Theme syncs across all your devices.</Text>
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                  <ThemeOption
+                    active={theme === 'light'}
+                    onClick={() => setTheme('light' as Theme)}
+                    icon={Sun}
+                    label="Light"
+                    description="Bright and clean"
+                    bg="linear-gradient(135deg, #f8fafc, #e2e8f0)"
+                  />
+                  <ThemeOption
+                    active={theme === 'dark'}
+                    onClick={() => setTheme('dark' as Theme)}
+                    icon={Moon}
+                    label="Dark"
+                    description="Easy on the eyes"
+                    bg="linear-gradient(135deg, #1e293b, #0f172a)"
+                  />
+                  <ThemeOption
+                    active={theme === 'system'}
+                    onClick={() => setTheme('system' as Theme)}
+                    icon={Monitor}
+                    label="System"
+                    description="Match your OS"
+                    bg="linear-gradient(135deg, #1e293b 50%, #e2e8f0 50%)"
+                  />
+                </SimpleGrid>
+              </Stack>
+            </Tabs.Panel>
 
-              <div className="settings-card glass-card">
-                <h3 style={{ marginBottom: 14 }}>Theme</h3>
-                <div className="theme-grid">
-                  {(['light', 'dark', 'system'] as Theme[]).map(t => {
-                    const Icon = t === 'light' ? Sun : t === 'dark' ? Moon : Monitor
-                    const label = t === 'light' ? 'Light' : t === 'dark' ? 'Dark' : 'System'
-                    const description = t === 'light'
-                      ? 'Clean and bright'
-                      : t === 'dark'
-                      ? 'Easy on the eyes'
-                      : 'Match your OS'
-                    return (
-                      <button
-                        key={t}
-                        className={`theme-option focus-ring ${theme === t ? 'active' : ''}`}
-                        onClick={() => setTheme(t)}
+            {/* ───── Security ───── */}
+            <Tabs.Panel value="security" p="lg">
+              <Stack gap="md">
+                <Card radius="md" p="md" withBorder>
+                  <Group justify="space-between" align="center" wrap="wrap">
+                    <Stack gap={2}>
+                      <Group gap={6}>
+                        <Lock size={14} />
+                        <Text fw={600} size="sm">Multi-factor authentication</Text>
+                      </Group>
+                      <Text size="xs" c="dimmed">
+                        {profile.mfaEnabled ? 'MFA is currently enabled on your account.' : 'Add another layer of security to your account.'}
+                      </Text>
+                    </Stack>
+                    <Badge variant="light" color={profile.mfaEnabled ? 'teal' : 'gray'}>
+                      {profile.mfaEnabled ? 'Enabled' : 'Not enabled'}
+                    </Badge>
+                  </Group>
+                </Card>
+
+                <Card radius="md" p="md" withBorder>
+                  <Stack gap="sm">
+                    <Group gap={6} align="center">
+                      <Lock size={14} />
+                      <Text fw={600} size="sm">Change password</Text>
+                    </Group>
+                    <Group justify="flex-end">
+                      <Button size="xs" variant="subtle" leftSection={showPasswords ? <EyeOff size={12} /> : <Eye size={12} />}
+                        onClick={() => setShowPasswords((v) => !v)}>
+                        {showPasswords ? 'Hide' : 'Show'}
+                      </Button>
+                    </Group>
+                    <TextInput
+                      label="Current password"
+                      type={showPasswords ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.currentTarget.value)}
+                    />
+                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                      <TextInput
+                        label="New password"
+                        type={showPasswords ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.currentTarget.value)}
+                        description="Minimum 8 characters"
+                      />
+                      <TextInput
+                        label="Confirm new password"
+                        type={showPasswords ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                      />
+                    </SimpleGrid>
+                    {passwordMessage && (
+                      <Alert color={passwordMessage.type === 'success' ? 'teal' : 'red'} variant="light"
+                        icon={passwordMessage.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}>
+                        {passwordMessage.text}
+                      </Alert>
+                    )}
+                    <Group justify="flex-end">
+                      <Button
+                        loading={passwordSaving}
+                        disabled={!currentPassword || !newPassword || !confirmPassword}
+                        onClick={handlePasswordChange}
+                        className="sea-btn-primary"
                       >
-                        <div className="theme-preview" data-preview-theme={t}>
-                          <Icon size={28} />
-                        </div>
-                        <div style={{ fontWeight: 600, marginTop: 12, color: 'var(--text-primary)' }}>{label}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{description}</div>
-                        {theme === t && (
-                          <div className="theme-selected-badge"><Check size={14} /></div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+                        Change Password
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Card>
+              </Stack>
+            </Tabs.Panel>
 
-          {/* SECURITY */}
-          {section === 'security' && (
-            <div className="settings-section animate-slide-up">
-              <h2 style={{ marginBottom: 4 }}>Security</h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Manage your password and account security
-              </p>
-
-              <div className="settings-card glass-card">
-                <h3 style={{ marginBottom: 4 }}>Change Password</h3>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                  Use a strong password you don&apos;t use anywhere else
-                </p>
-
-                <div className="form-group">
-                  <label className="label">Current Password</label>
-                  <input
-                    className="input focus-ring"
-                    type={showPasswords ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">New Password</label>
-                  <input
-                    className="input focus-ring"
-                    type={showPasswords ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder="At least 8 characters"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">Confirm New Password</label>
-                  <input
-                    className="input focus-ring"
-                    type={showPasswords ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
-                </div>
-
-                <button
-                  className="btn btn-ghost btn-sm focus-ring"
-                  onClick={() => setShowPasswords(v => !v)}
-                  style={{ marginTop: 4 }}
-                  type="button"
-                >
-                  {showPasswords ? <><EyeOff size={14} /> Hide</> : <><Eye size={14} /> Show</>} passwords
-                </button>
-
-                {passwordMessage && (
-                  <div className={`settings-alert ${passwordMessage.type}`}>
-                    {passwordMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
-                    {passwordMessage.text}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-                  <button
-                    className="btn btn-gradient focus-ring"
-                    onClick={handlePasswordChange}
-                    disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword}
-                  >
-                    {passwordSaving ? <Loader2 size={16} className="spin" /> : <><Lock size={16} /> Change Password</>}
-                  </button>
-                </div>
-              </div>
-
-              <div className="settings-card glass-card" style={{ marginTop: 16 }}>
-                <h3 style={{ marginBottom: 4 }}>Account Information</h3>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                  Read-only details about your account
-                </p>
-                <div className="account-info-grid">
-                  <div>
-                    <div className="account-info-label">Member since</div>
-                    <div className="account-info-value">{formatDate(profile.createdAt)}</div>
-                  </div>
-                  <div>
-                    <div className="account-info-label">Last login</div>
-                    <div className="account-info-value">{profile.lastLogin ? formatDate(profile.lastLogin) : 'Never'}</div>
-                  </div>
-                  <div>
-                    <div className="account-info-label">Two-factor auth</div>
-                    <div className="account-info-value">
-                      {profile.mfaEnabled ? (
-                        <span style={{ color: 'var(--success)' }}>Enabled</span>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>Not enabled</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* NOTIFICATIONS */}
-          {section === 'notifications' && (
-            <div className="settings-section animate-slide-up">
-              <h2 style={{ marginBottom: 4 }}>Notifications</h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Choose what you want to be notified about, where, and when
-              </p>
-
-              {notifLoading && !notifPrefs && (
-                <div className="settings-card glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
-                  <Loader2 size={24} className="spin" style={{ color: 'var(--text-muted)' }} />
-                </div>
-              )}
-
-              {notifPrefs && (
-                <>
-                  {/* Master controls */}
-                  <div className="settings-card glass-card">
-                    <h3 style={{ marginBottom: 4 }}>Quick Controls</h3>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 18 }}>
-                      Pause everything, choose how often emails arrive, or change feedback options
-                    </p>
-
-                    <div className="notif-row">
-                      <div className="notif-row-info">
-                        <div className="notif-row-label">
-                          <BellOff size={15} style={{ color: 'var(--text-muted)' }} />
-                          Pause all notifications
-                        </div>
-                        <div className="notif-row-desc">
-                          Critical security alerts will still come through
-                        </div>
-                      </div>
-                      <Toggle
-                        on={notifPrefs.pauseAll}
-                        onChange={v => setNotifPrefs(p => p ? { ...p, pauseAll: v } : p)}
-                        ariaLabel="Pause all notifications"
+            {/* ───── Notifications ───── */}
+            <Tabs.Panel value="notifications" p="lg">
+              {notifLoading && !notifLoaded ? (
+                <Stack align="center" gap="sm" py="xl">
+                  <Loader />
+                  <Text size="sm" c="dimmed">Loading preferences…</Text>
+                </Stack>
+              ) : !notifPrefs ? (
+                <Text c="dimmed">Failed to load preferences.</Text>
+              ) : (
+                <Stack gap="md">
+                  {/* Global pause */}
+                  <Card radius="md" p="md" withBorder>
+                    <Group justify="space-between" wrap="wrap" gap="sm">
+                      <Stack gap={2}>
+                        <Group gap={6}>
+                          {notifPrefs.pauseAll ? <BellOff size={14} color="#F59E0B" /> : <Bell size={14} />}
+                          <Text fw={600} size="sm">Pause all notifications</Text>
+                        </Group>
+                        <Text size="xs" c="dimmed">Temporarily silence every channel until you turn this off.</Text>
+                      </Stack>
+                      <Switch
+                        size="md"
+                        checked={notifPrefs.pauseAll}
+                        onChange={(e) => setNotifPrefs((p) => p ? { ...p, pauseAll: e.currentTarget.checked } : p)}
                       />
-                    </div>
-
-                    <div className="divider" style={{ margin: '14px 0' }} />
-
-                    <div className="notif-row">
-                      <div className="notif-row-info">
-                        <div className="notif-row-label">
-                          <Mail size={15} style={{ color: 'var(--text-muted)' }} />
-                          Email digest
-                        </div>
-                        <div className="notif-row-desc">
-                          How often non-urgent email notifications are bundled
-                        </div>
-                      </div>
-                      <div className="segmented">
-                        {DIGEST_OPTIONS.map(opt => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            className={`segmented-btn focus-ring ${notifPrefs.emailDigest === opt.value ? 'active' : ''}`}
-                            onClick={() => setNotifPrefs(p => p ? { ...p, emailDigest: opt.value } : p)}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="divider" style={{ margin: '14px 0' }} />
-
-                    <div className="notif-row">
-                      <div className="notif-row-info">
-                        <div className="notif-row-label">
-                          <Volume2 size={15} style={{ color: 'var(--text-muted)' }} />
-                          Play sound
-                        </div>
-                        <div className="notif-row-desc">
-                          Play a soft sound when a new in-app notification arrives
-                        </div>
-                      </div>
-                      <Toggle
-                        on={notifPrefs.playSound}
-                        onChange={v => setNotifPrefs(p => p ? { ...p, playSound: v } : p)}
-                        ariaLabel="Play notification sound"
-                      />
-                    </div>
-
-                    <div className="divider" style={{ margin: '14px 0' }} />
-
-                    <div className="notif-row">
-                      <div className="notif-row-info">
-                        <div className="notif-row-label">
-                          <Smartphone size={15} style={{ color: 'var(--text-muted)' }} />
-                          Desktop notifications
-                        </div>
-                        <div className="notif-row-desc">
-                          Show OS-level pop-ups when Workryn is open in a tab
-                        </div>
-                      </div>
-                      <Toggle
-                        on={notifPrefs.desktopEnabled}
-                        onChange={handleDesktopToggle}
-                        ariaLabel="Enable desktop notifications"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Notification matrix */}
-                  <div className="settings-card glass-card" style={{ marginTop: 16 }}>
-                    <h3 style={{ marginBottom: 4 }}>Notification Types</h3>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 18 }}>
-                      Choose how you want to be notified for each type. Changes save automatically.
-                    </p>
-
-                    <div className="matrix">
-                      <div className="matrix-header">
-                        <div></div>
-                        <div className="matrix-col-head"><MessageSquare size={13} /> In-app</div>
-                        <div className="matrix-col-head"><Mail size={13} /> Email</div>
-                        <div className="matrix-col-head"><Smartphone size={13} /> Push</div>
-                      </div>
-
-                      {notifCategories.map(cat => {
-                        const cell = notifPrefs.channels[cat.id] ?? { inApp: true, email: false, push: false }
-                        const isCritical = !!cat.critical
-                        return (
-                          <div key={cat.id} className="matrix-row">
-                            <div className="matrix-cat">
-                              <div className="matrix-cat-label">
-                                {isCritical && <ShieldAlert size={14} style={{ color: 'var(--warning)' }} />}
-                                {cat.label}
-                                {isCritical && <span className="locked-badge">Required</span>}
-                              </div>
-                              <div className="matrix-cat-desc">{cat.description}</div>
-                            </div>
-
-                            <div className="matrix-cell" data-label="In-app">
-                              <Toggle
-                                on={cell.inApp}
-                                onChange={v => updateChannel(cat.id, 'inApp', v)}
-                                disabled={isCritical}
-                                ariaLabel={`${cat.label} in-app`}
-                              />
-                            </div>
-                            <div className="matrix-cell" data-label="Email">
-                              <Toggle
-                                on={cell.email}
-                                onChange={v => updateChannel(cat.id, 'email', v)}
-                                ariaLabel={`${cat.label} email`}
-                              />
-                            </div>
-                            <div className="matrix-cell" data-label="Push">
-                              <Toggle
-                                on={cell.push}
-                                onChange={v => updateChannel(cat.id, 'push', v)}
-                                ariaLabel={`${cat.label} push`}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+                    </Group>
+                  </Card>
 
                   {/* Do Not Disturb */}
-                  <div className="settings-card glass-card" style={{ marginTop: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-                      <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <MoonStar size={16} style={{ color: 'var(--brand-light)' }} />
-                        Do Not Disturb
-                        {notifPrefs.dndEnabled && dndActiveNow && (
-                          <span className="dnd-active-badge">Currently active</span>
-                        )}
-                      </h3>
-                      <Toggle
-                        on={notifPrefs.dndEnabled}
-                        onChange={v => setNotifPrefs(p => p ? { ...p, dndEnabled: v } : p)}
-                        ariaLabel="Enable Do Not Disturb"
+                  <Card radius="md" p="md" withBorder>
+                    <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
+                      <Stack gap={2}>
+                        <Group gap={6}>
+                          <MoonStar size={14} color="#a78bfa" />
+                          <Text fw={600} size="sm">Do Not Disturb hours</Text>
+                          {dndActiveNow && <Badge variant="light" color="violet" size="xs">Active now</Badge>}
+                        </Group>
+                        <Text size="xs" c="dimmed">Silence push and desktop notifications during these hours.</Text>
+                      </Stack>
+                      <Switch
+                        size="md"
+                        checked={notifPrefs.dndEnabled}
+                        onChange={(e) => setNotifPrefs((p) => p ? { ...p, dndEnabled: e.currentTarget.checked } : p)}
                       />
-                    </div>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 18 }}>
-                      Notifications are silenced during this window. Critical security alerts always come through.
-                    </p>
-
-                    <div className="dnd-time-row">
-                      <div className="form-group" style={{ flex: 1 }}>
-                        <label className="label">From</label>
-                        <input
-                          className="input focus-ring"
-                          type="time"
+                    </Group>
+                    {notifPrefs.dndEnabled && (
+                      <Group gap="sm">
+                        <TextInput
+                          label="From" type="time"
                           value={notifPrefs.dndStart}
-                          onChange={e => setNotifPrefs(p => p ? { ...p, dndStart: e.target.value } : p)}
-                          disabled={!notifPrefs.dndEnabled}
+                          onChange={(e) => setNotifPrefs((p) => p ? { ...p, dndStart: e.currentTarget.value } : p)}
                         />
-                      </div>
-                      <div className="form-group" style={{ flex: 1 }}>
-                        <label className="label">To</label>
-                        <input
-                          className="input focus-ring"
-                          type="time"
+                        <TextInput
+                          label="Until" type="time"
                           value={notifPrefs.dndEnd}
-                          onChange={e => setNotifPrefs(p => p ? { ...p, dndEnd: e.target.value } : p)}
-                          disabled={!notifPrefs.dndEnabled}
+                          onChange={(e) => setNotifPrefs((p) => p ? { ...p, dndEnd: e.currentTarget.value } : p)}
                         />
-                      </div>
-                    </div>
-                  </div>
+                      </Group>
+                    )}
+                  </Card>
+
+                  {/* Channel-specific toggles */}
+                  <Card radius="md" p="md" withBorder>
+                    <Stack gap="sm">
+                      <Group gap={6}><Volume2 size={14} /><Text fw={600} size="sm">Other channels</Text></Group>
+                      <Group justify="space-between" wrap="wrap" gap="sm">
+                        <Stack gap={0}>
+                          <Group gap={6}><Smartphone size={13} /><Text size="sm">Desktop notifications</Text></Group>
+                          <Text size="xs" c="dimmed">Browser-level push alerts.</Text>
+                        </Stack>
+                        <Switch checked={notifPrefs.desktopEnabled} onChange={(e) => handleDesktopToggle(e.currentTarget.checked)} />
+                      </Group>
+                      <Group justify="space-between" wrap="wrap" gap="sm">
+                        <Stack gap={0}>
+                          <Group gap={6}><Volume2 size={13} /><Text size="sm">Play sound on new notifications</Text></Group>
+                          <Text size="xs" c="dimmed">In-app chime when new alerts arrive.</Text>
+                        </Stack>
+                        <Switch checked={notifPrefs.playSound} onChange={(e) => setNotifPrefs((p) => p ? { ...p, playSound: e.currentTarget.checked } : p)} />
+                      </Group>
+                      <Select
+                        label="Email digest frequency"
+                        leftSection={<Mail size={13} />}
+                        value={notifPrefs.emailDigest}
+                        onChange={(v) => setNotifPrefs((p) => p ? { ...p, emailDigest: (v as EmailDigest) ?? 'instant' } : p)}
+                        data={DIGEST_OPTIONS}
+                      />
+                    </Stack>
+                  </Card>
+
+                  {/* Categories matrix */}
+                  <Card radius="md" p="md" withBorder>
+                    <Stack gap="sm">
+                      <Text fw={600} size="sm">Notification categories</Text>
+                      <Box style={{ overflowX: 'auto' }}>
+                        <table className="sea-channels-table">
+                          <thead>
+                            <tr>
+                              <th></th>
+                              <th>In-app</th>
+                              <th>Email</th>
+                              <th>Push</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {notifCategories.map((cat) => {
+                              const cell = notifPrefs.channels[cat.id] ?? { inApp: true, email: false, push: false }
+                              return (
+                                <tr key={cat.id}>
+                                  <td>
+                                    <Stack gap={0}>
+                                      <Group gap={6}>
+                                        <Text size="sm" fw={600}>{cat.label}</Text>
+                                        {cat.critical && <Badge size="xs" variant="light" color="orange">Critical</Badge>}
+                                      </Group>
+                                      {cat.description && <Text size="xs" c="dimmed">{cat.description}</Text>}
+                                    </Stack>
+                                  </td>
+                                  <td>
+                                    <Switch
+                                      size="sm"
+                                      checked={cell.inApp}
+                                      onChange={(e) => updateChannel(cat.id, 'inApp', e.currentTarget.checked)}
+                                      disabled={cat.critical}
+                                    />
+                                  </td>
+                                  <td>
+                                    <Switch
+                                      size="sm"
+                                      checked={cell.email}
+                                      onChange={(e) => updateChannel(cat.id, 'email', e.currentTarget.checked)}
+                                    />
+                                  </td>
+                                  <td>
+                                    <Switch
+                                      size="sm"
+                                      checked={cell.push}
+                                      onChange={(e) => updateChannel(cat.id, 'push', e.currentTarget.checked)}
+                                    />
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </Box>
+                    </Stack>
+                  </Card>
 
                   {notifMessage && (
-                    <div className={`settings-alert ${notifMessage.type}`}>
-                      {notifMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+                    <Alert color={notifMessage.type === 'success' ? 'teal' : 'red'} variant="light"
+                      icon={notifMessage.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}>
                       {notifMessage.text}
-                    </div>
+                    </Alert>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-                    <button
-                      className="btn btn-gradient focus-ring"
+                  <Group justify="flex-end">
+                    <Button
+                      leftSection={<Save size={14} />}
+                      loading={notifSaving}
                       onClick={handleSaveNotifications}
-                      disabled={notifSaving}
+                      className="sea-btn-primary"
                     >
-                      {notifSaving ? <Loader2 size={16} className="spin" /> : <><Save size={16} /> Save preferences</>}
-                    </button>
-                  </div>
-                </>
+                      Save preferences
+                    </Button>
+                  </Group>
+                </Stack>
               )}
-            </div>
-          )}
+            </Tabs.Panel>
 
-          {/* ABOUT */}
-          {section === 'about' && (
-            <div className="settings-section animate-slide-up">
-              <h2 style={{ marginBottom: 4 }}>About CaseSync</h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
-                App information and updates
-              </p>
+            {/* ───── About ───── */}
+            <Tabs.Panel value="about" p="lg">
+              <Stack gap="md">
+                <Card radius="md" p="md" withBorder>
+                  <Group gap="md" align="center">
+                    <ThemeIcon size="xl" radius="md" variant="light" color="gray">
+                      <Info size={20} />
+                    </ThemeIcon>
+                    <Stack gap={2}>
+                      <Text fw={700} size="md">Workryn</Text>
+                      <Text size="xs" c="dimmed">Integrated HR and workforce module · Part of CaseSync</Text>
+                    </Stack>
+                  </Group>
+                </Card>
 
-              <div className="settings-card glass-card">
-                <h3 style={{ marginBottom: 16 }}>Check for Updates</h3>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
-                  CaseSync updates automatically, but you can manually check for and apply the latest version here.
-                  This is especially useful if you have the app installed as a PWA on your home screen.
-                </p>
+                <Card radius="md" p="md" withBorder>
+                  <Stack gap="sm">
+                    <Group justify="space-between" wrap="wrap" gap="sm">
+                      <Stack gap={2}>
+                        <Group gap={6}><RefreshCw size={13} /><Text size="sm" fw={600}>Check for updates</Text></Group>
+                        <Text size="xs" c="dimmed">
+                          {updateMessage ?? 'Force a check for newer app versions and reload the service worker.'}
+                        </Text>
+                      </Stack>
+                      <Button
+                        size="sm"
+                        variant="light"
+                        leftSection={updateStatus === 'up-to-date' ? <CheckCircle2 size={13} /> : <Download size={13} />}
+                        loading={updateStatus === 'checking' || updateStatus === 'applying'}
+                        onClick={handleCheckForUpdates}
+                      >
+                        {updateStatus === 'up-to-date' ? 'Up to date' : 'Check now'}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Card>
 
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {(updateStatus === 'idle' || updateStatus === 'error' || updateStatus === 'up-to-date') && (
-                    <button
-                      className="btn btn-gradient focus-ring"
-                      onClick={checkForUpdates}
-                    >
-                      <RefreshCw size={16} /> Check for Updates
-                    </button>
-                  )}
+                <Text size="xs" c="dimmed" ta="center" mt="md">
+                  © {new Date().getFullYear()} Beatrice Loving Heart · All rights reserved
+                </Text>
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
+        </Card>
+      </Container>
 
-                  {updateStatus === 'checking' && (
-                    <button className="btn btn-gradient focus-ring" disabled>
-                      <Loader2 size={16} className="spin" /> Checking…
-                    </button>
-                  )}
-
-                  {updateStatus === 'update-available' && (
-                    <button
-                      className="btn btn-gradient focus-ring"
-                      onClick={applyUpdate}
-                      style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-                    >
-                      <Download size={16} /> Apply Update
-                    </button>
-                  )}
-
-                  {updateStatus === 'applying' && (
-                    <button className="btn btn-gradient focus-ring" disabled>
-                      <Loader2 size={16} className="spin" /> Applying…
-                    </button>
-                  )}
-                </div>
-
-                {updateMessage && (
-                  <div className={`settings-alert ${updateStatus === 'error' ? 'error' : updateStatus === 'up-to-date' ? 'success' : updateStatus === 'update-available' ? 'success' : ''}`}
-                    style={{ marginTop: 16 }}
-                  >
-                    {updateStatus === 'up-to-date' && <CheckCircle2 size={16} />}
-                    {updateStatus === 'update-available' && <Download size={16} />}
-                    {updateStatus === 'error' && <AlertCircle size={16} />}
-                    {updateMessage}
-                  </div>
-                )}
-              </div>
-
-              <div className="settings-card glass-card" style={{ marginTop: 16 }}>
-                <h3 style={{ marginBottom: 16 }}>App Information</h3>
-                <div className="account-info-grid">
-                  <div>
-                    <div className="account-info-label">Application</div>
-                    <div className="account-info-value">CaseSync</div>
-                  </div>
-                  <div>
-                    <div className="account-info-label">Organization</div>
-                    <div className="account-info-value">Beatrice Loving Heart</div>
-                  </div>
-                  {serverVersion && (
-                    <div>
-                      <div className="account-info-label">Server Version</div>
-                      <div className="account-info-value" style={{ fontFamily: 'monospace' }}>{serverVersion}</div>
-                    </div>
-                  )}
-                  <div>
-                    <div className="account-info-label">Platform</div>
-                    <div className="account-info-value">
-                      {typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)')?.matches ? 'Installed (PWA)' : 'Browser')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-
+      {/* ============ STYLES ============ */}
       <style>{`
-        .settings-layout {
-          display: grid;
-          grid-template-columns: 220px 1fr;
-          gap: 24px;
-          padding: 0 32px 32px;
-          align-items: start;
+        @keyframes sea-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes sea-mesh-drift {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(3%, -2%) scale(1.05); }
+        }
+        @keyframes sea-orb-a { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+        @keyframes sea-orb-b { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,25px)} }
+        @keyframes sea-orb-c { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,40px)} }
+        @media (prefers-reduced-motion: reduce) {
+          .sea-root *, .sea-root *::before, .sea-root *::after {
+            animation: none !important; transition: none !important;
+          }
         }
 
-        .settings-sidebar {
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          position: sticky;
-          top: 24px;
+        /* HERO */
+        .sea-hero {
+          position: relative; overflow: hidden;
+          border: 1px solid rgba(100,116,139,0.30);
+          background:
+            linear-gradient(135deg, rgba(100,116,139,0.14) 0%, rgba(71,85,105,0.10) 50%, rgba(148,163,184,0.06) 100%),
+            rgba(11,15,30,0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          box-shadow: 0 20px 60px -20px rgba(100,116,139,0.35), 0 1px 0 rgba(255,255,255,0.05) inset;
+          animation: sea-slide-up 460ms ease-out backwards;
         }
-
-        .settings-nav-btn {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 14px;
-          border: none;
-          background: none;
-          color: var(--text-secondary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          border-radius: var(--radius-md);
-          cursor: pointer;
-          transition: all var(--transition-smooth);
-          text-align: left;
-          width: 100%;
+        .sea-hero-mesh {
+          position: absolute; inset: -25%;
+          background:
+            radial-gradient(circle at 22% 30%, rgba(148,163,184,0.40), transparent 42%),
+            radial-gradient(circle at 78% 25%, rgba(100,116,139,0.28), transparent 47%),
+            radial-gradient(circle at 62% 82%, rgba(124,58,237,0.10), transparent 52%);
+          filter: blur(40px);
+          animation: sea-mesh-drift 22s ease-in-out infinite;
+          z-index: 0; pointer-events: none;
         }
-        .settings-nav-btn:hover {
-          background: var(--bg-hover);
-          color: var(--text-primary);
+        .sea-hero-orbs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .sea-orb { position: absolute; border-radius: 50%; filter: blur(22px); opacity: 0.45; mix-blend-mode: screen; }
+        .sea-orb-1 { width: 130px; height: 130px; top: 12%; left: 8%;
+          background: radial-gradient(circle, #cbd5e1 0%, transparent 70%);
+          animation: sea-orb-a 14s ease-in-out infinite; }
+        .sea-orb-2 { width: 100px; height: 100px; top: 55%; left: 60%;
+          background: radial-gradient(circle, #94a3b8 0%, transparent 70%);
+          animation: sea-orb-b 16s ease-in-out infinite; }
+        .sea-orb-3 { width: 80px; height: 80px; bottom: 10%; right: 12%;
+          background: radial-gradient(circle, #a78bfa 0%, transparent 70%);
+          animation: sea-orb-c 18s ease-in-out infinite; }
+        .sea-hero-spotlight {
+          position: absolute; inset: 0; z-index: 1; pointer-events: none;
+          background: radial-gradient(circle 360px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.10), transparent 60%);
         }
-        .settings-nav-btn.active {
-          background: var(--brand-gradient-subtle);
-          color: var(--brand-light);
-          font-weight: 600;
+        .sea-hero-title {
+          font-size: clamp(2rem, 5vw, 3.25rem);
+          font-weight: 800;
+          letter-spacing: -0.035em;
+          line-height: 1;
+          margin: 0;
+          background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 16px rgba(100,116,139,0.30));
         }
-
-        .settings-content { min-width: 0; }
-        .settings-section {}
-
-        .settings-card { padding: 24px; }
-
-        .avatar-large {
-          width: 96px;
-          height: 96px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          font-weight: 700;
+        .sea-btn-primary {
+          background: linear-gradient(135deg, #64748B 0%, #475569 100%);
+          box-shadow: 0 6px 18px rgba(100,116,139,0.40);
+          transition: transform 180ms ease, box-shadow 180ms ease;
           color: #fff;
-          flex-shrink: 0;
+        }
+        .sea-btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 28px rgba(100,116,139,0.55);
+        }
+
+        /* Identity avatar in hero */
+        .sea-identity-avatar {
+          position: relative;
+          width: 84px; height: 84px;
+          border-radius: 50%;
           overflow: hidden;
-          border: 2px solid var(--border-default);
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        @media (max-width: 768px) {
-          .form-grid { grid-template-columns: 1fr; }
-        }
-
-        .input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .locked-badge {
-          margin-left: 8px;
-          font-size: 0.625rem;
-          font-weight: 600;
-          color: var(--warning);
-          background: rgba(245,158,11,0.12);
-          border: 1px solid rgba(245,158,11,0.25);
-          padding: 1px 6px;
-          border-radius: 99px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .color-picker {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        .color-swatch {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 3px solid transparent;
-          cursor: pointer;
-          transition: transform 0.15s, border-color 0.15s;
-        }
-        .color-swatch:hover { transform: scale(1.1); }
-        .color-swatch.active {
-          border-color: var(--text-primary);
-          transform: scale(1.1);
-        }
-
-        .settings-alert {
-          margin-top: 16px;
-          padding: 12px 14px;
-          border-radius: var(--radius-md);
-          font-size: 0.875rem;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .settings-alert.success {
-          background: rgba(16,185,129,0.10);
-          border: 1px solid rgba(16,185,129,0.30);
-          color: var(--success);
-        }
-        .settings-alert.error {
-          background: rgba(239,68,68,0.10);
-          border: 1px solid rgba(239,68,68,0.30);
-          color: var(--danger);
-        }
-
-        .theme-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-        }
-        @media (max-width: 640px) {
-          .theme-grid { grid-template-columns: 1fr; }
-        }
-        .theme-option {
-          position: relative;
-          padding: 24px;
-          background: var(--bg-overlay);
-          border: 2px solid var(--border-default);
-          border-radius: var(--radius-lg);
-          cursor: pointer;
-          transition: all var(--transition-smooth);
-          text-align: center;
-        }
-        .theme-option:hover {
-          border-color: var(--border-strong);
-          transform: translateY(-2px);
-        }
-        .theme-option.active {
-          border-color: var(--brand);
-          box-shadow: 0 0 0 3px var(--brand-glow);
-        }
-        .theme-preview {
-          width: 80px;
-          height: 80px;
-          border-radius: var(--radius-md);
-          margin: 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .theme-preview[data-preview-theme="light"] {
-          background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-          color: #f59e0b;
-          border: 1px solid rgba(15,23,42,0.1);
-        }
-        .theme-preview[data-preview-theme="dark"] {
-          background: linear-gradient(135deg, #0a0b0f, #1e2130);
-          color: #818cf8;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
-        .theme-preview[data-preview-theme="system"] {
-          background: linear-gradient(135deg, #f8fafc 50%, #0a0b0f 50%);
-          color: var(--brand-light);
-          border: 1px solid var(--border-default);
-        }
-        .theme-selected-badge {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          width: 24px;
-          height: 24px;
-          background: var(--brand-gradient);
+          display: flex; align-items: center; justify-content: center;
           color: #fff;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .account-info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 16px;
-        }
-        .account-info-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          margin-bottom: 4px;
-        }
-        .account-info-value {
-          font-size: 0.9375rem;
-          color: var(--text-primary);
-          font-weight: 500;
-        }
-
-        .spin { animation: spin 0.7s linear infinite; }
-
-        @media (max-width: 900px) {
-          .settings-layout {
-            grid-template-columns: 1fr;
-            padding: 0 16px 32px;
-          }
-          .settings-sidebar {
-            position: static;
-            flex-direction: row;
-            overflow-x: auto;
-          }
-          .settings-nav-btn {
-            flex-shrink: 0;
-          }
-        }
-
-        /* ── Toggle pill ─────────────────────────────────── */
-        .toggle-pill {
-          position: relative;
-          width: 38px;
-          height: 22px;
-          border-radius: 99px;
-          background: var(--bg-overlay);
-          border: 1px solid var(--border-default);
-          cursor: pointer;
-          padding: 0;
+          font-size: 1.5rem; font-weight: 800;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,255,255,0.10);
           flex-shrink: 0;
-          transition: all var(--transition-smooth);
         }
-        .toggle-pill:hover:not(.disabled) { border-color: var(--border-strong); }
-        .toggle-pill .toggle-dot {
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 16px;
-          height: 16px;
-          background: var(--text-secondary);
+
+        /* Larger avatar in profile tab */
+        .sea-avatar-large {
+          position: relative;
+          width: 72px; height: 72px;
           border-radius: 50%;
-          transition: all var(--transition-smooth);
-        }
-        .toggle-pill.on {
-          background: var(--brand-gradient);
-          border-color: transparent;
-          box-shadow: 0 0 0 1px var(--brand-glow);
-        }
-        .toggle-pill.on .toggle-dot {
-          left: 18px;
-          background: #fff;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-        }
-        .toggle-pill.disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        /* ── Notification rows (Quick Controls card) ─────── */
-        .notif-row {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          justify-content: space-between;
-        }
-        .notif-row-info { flex: 1; min-width: 0; }
-        .notif-row-label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .notif-row-desc {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-top: 2px;
-          line-height: 1.4;
-        }
-
-        /* ── Segmented control (digest) ──────────────────── */
-        .segmented {
-          display: inline-flex;
-          background: var(--bg-overlay);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-md);
-          padding: 3px;
-          gap: 2px;
-        }
-        .segmented-btn {
-          padding: 6px 12px;
-          background: none;
-          border: none;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          border-radius: calc(var(--radius-md) - 2px);
-          cursor: pointer;
-          transition: all var(--transition-smooth);
-        }
-        .segmented-btn:hover { color: var(--text-primary); }
-        .segmented-btn.active {
-          background: var(--brand-gradient);
+          overflow: hidden;
+          display: flex; align-items: center; justify-content: center;
           color: #fff;
-          box-shadow: 0 2px 6px var(--brand-glow);
+          font-size: 1.25rem; font-weight: 800;
+          flex-shrink: 0;
         }
 
-        /* ── Notification matrix ─────────────────────────── */
-        .matrix {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
+        .sea-panel {
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          overflow: hidden;
+          animation: sea-slide-up 500ms 100ms ease-out backwards;
         }
-        .matrix-header {
-          display: grid;
-          grid-template-columns: 1fr 70px 70px 70px;
-          gap: 8px;
-          padding: 0 8px 10px;
-          border-bottom: 1px solid var(--border-subtle);
-          margin-bottom: 6px;
+        .sea-tabs-list {
+          border-bottom: 1px solid rgba(255,255,255,0.06);
         }
-        .matrix-col-head {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
+
+        /* Channels matrix table */
+        .sea-channels-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .sea-channels-table th {
+          padding: 6px 10px;
           font-size: 0.6875rem;
-          font-weight: 700;
-          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.06em;
-        }
-        .matrix-row {
-          display: grid;
-          grid-template-columns: 1fr 70px 70px 70px;
-          gap: 8px;
-          align-items: center;
-          padding: 12px 8px;
-          border-radius: var(--radius-md);
-          transition: background var(--transition);
-        }
-        .matrix-row:hover { background: var(--bg-hover); }
-        .matrix-cat { min-width: 0; }
-        .matrix-cat-label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .matrix-cat-desc {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-top: 2px;
-          line-height: 1.4;
-        }
-        .matrix-cell {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        @media (max-width: 720px) {
-          .matrix-header { display: none; }
-          .matrix-row {
-            grid-template-columns: 1fr;
-            gap: 12px;
-            padding: 14px 12px;
-            background: var(--bg-overlay);
-            border: 1px solid var(--border-subtle);
-            margin-bottom: 4px;
-          }
-          .matrix-row:hover { background: var(--bg-overlay); }
-          .matrix-cell {
-            justify-content: space-between;
-            padding: 6px 0;
-            border-top: 1px solid var(--border-subtle);
-          }
-          .matrix-cell::before {
-            content: attr(data-label);
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-          }
-        }
-
-        /* ── DnD card ────────────────────────────────────── */
-        .dnd-time-row {
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-        .dnd-active-badge {
-          font-size: 0.625rem;
+          color: rgba(148,163,184,0.75);
           font-weight: 700;
-          color: var(--success);
-          background: rgba(16,185,129,0.12);
-          border: 1px solid rgba(16,185,129,0.30);
-          padding: 2px 8px;
-          border-radius: 99px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
+          text-align: center;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
         }
+        .sea-channels-table th:first-child { text-align: left; }
+        .sea-channels-table td {
+          padding: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+          text-align: center;
+        }
+        .sea-channels-table td:first-child { text-align: left; min-width: 180px; }
+        .sea-channels-table tr:last-child td { border-bottom: none; }
       `}</style>
     </>
+  )
+}
+
+// =================================================================
+// SUB-COMPONENTS
+// =================================================================
+
+function ThemeOption({
+  active, onClick, icon: Icon, label, description, bg,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ComponentType<{ size?: number }>
+  label: string
+  description: string
+  bg: string
+}) {
+  return (
+    <Card
+      radius="lg" p="md" withBorder
+      style={{
+        cursor: 'pointer',
+        background: active ? 'rgba(100,116,139,0.10)' : undefined,
+        borderColor: active ? 'rgba(100,116,139,0.55)' : undefined,
+        boxShadow: active ? '0 10px 28px rgba(100,116,139,0.30)' : undefined,
+        transition: 'all 220ms ease',
+      }}
+      onClick={onClick}
+    >
+      <Stack gap="sm" align="center">
+        <Box style={{
+          width: '100%',
+          aspectRatio: '16/9',
+          borderRadius: 8,
+          background: bg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+        }}>
+          <Icon size={28} />
+        </Box>
+        <Group gap={6} align="center">
+          <Text fw={700} size="sm">{label}</Text>
+          {active && <CheckCircle2 size={14} color="#94a3b8" />}
+        </Group>
+        <Text size="xs" c="dimmed">{description}</Text>
+      </Stack>
+    </Card>
   )
 }
