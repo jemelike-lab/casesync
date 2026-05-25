@@ -127,8 +127,8 @@
   }
 }
 
-/* ---------- Ensure all page content sits ABOVE the bg layers ---------- */
-.w-app-shell > * {
+/* ---------- Content sits above the bg layers via its own stacking context ---------- */
+.w-app-shell .w-page-content {
   position: relative;
   z-index: 2;
 }
