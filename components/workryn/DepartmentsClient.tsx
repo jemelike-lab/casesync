@@ -1,43 +1,55 @@
 'use client'
 
+/**
+ * DepartmentsClient — Aurora rebuild (indigo accent).
+ *
+ * Structurally distinct: department cards grid is the centerpiece.
+ * Stats are baked into the hero subtitle instead of a separate
+ * stat-tile row, so the cards get all the screen weight. Each card
+ * uses its OWN department color as its accent stripe + icon halo +
+ * hover shadow tint — so the grid feels like a colorful showcase
+ * rather than a uniform palette.
+ *
+ * API contract preserved:
+ *   POST /api/workryn/departments
+ *
+ * Clicking a card navigates to /w/departments/:id.
+ */
+
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Building2, Briefcase, Users, Heart, Code, Settings as SettingsIcon,
-  ShieldCheck, Headphones, Crown, Plus, Search, X, Loader2, ChevronRight,
-  Ticket, CheckSquare, UserCheck, UserX,
+  ActionIcon, Alert, Avatar, Badge, Box, Button, Card, ColorSwatch,
+  Container, Group, Modal, Paper, SimpleGrid, Stack, Text, TextInput,
+  Textarea, ThemeIcon, Title, Tooltip,
+} from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import {
+  Briefcase, Building2, CheckSquare, ChevronRight, Code, Crown,
+  Headphones, Heart, Plus, Search, Settings as SettingsIcon,
+  ShieldCheck, Ticket as TicketIcon, UserCheck, UserX, Users, AlertTriangle,
 } from 'lucide-react'
 import { getInitials } from '@/lib/workryn/utils'
+import { useCountUp } from '@/hooks/useCountUp'
+import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
 
-/* ─── Types ─────────────────────────────────────────────────────────────── */
+/* ─── Types ─────────────────────────────────────────────────── */
 type DeptHead = {
-  id: string
-  name: string | null
-  avatarColor: string
-  jobTitle: string | null
-  role: string
+  id: string; name: string | null; avatarColor: string
+  jobTitle: string | null; role: string
 } | null
 
 export type DepartmentListItem = {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  color: string
-  icon: string
-  createdAt: string
-  updatedAt: string
+  id: string; name: string; slug: string; description: string | null
+  color: string; icon: string
+  createdAt: string; updatedAt: string
   head: DeptHead
   _count: { users: number; tasks: number; tickets: number }
 }
 
 type UserOption = {
-  id: string
-  name: string | null
-  email: string | null
-  jobTitle: string | null
-  role: string
-  avatarColor: string
+  id: string; name: string | null; email: string | null
+  jobTitle: string | null; role: string; avatarColor: string
   departmentId: string | null
 }
 
@@ -47,49 +59,51 @@ interface Props {
   currentUserRole: string
 }
 
-/* ─── Icon registry ─────────────────────────────────────────────────────── */
+/* ─── Icon registry (preserved) ──────────────────────────────── */
 export const DEPT_ICON_OPTIONS = [
-  { key: 'building-2', label: 'Building', Icon: Building2 },
-  { key: 'briefcase', label: 'Briefcase', Icon: Briefcase },
-  { key: 'users', label: 'Users', Icon: Users },
-  { key: 'heart', label: 'Heart', Icon: Heart },
-  { key: 'code', label: 'Code', Icon: Code },
-  { key: 'settings', label: 'Settings', Icon: SettingsIcon },
-  { key: 'shield-check', label: 'Shield', Icon: ShieldCheck },
-  { key: 'headphones', label: 'Support', Icon: Headphones },
+  { key: 'building-2',  label: 'Building',  Icon: Building2 },
+  { key: 'briefcase',   label: 'Briefcase', Icon: Briefcase },
+  { key: 'users',       label: 'Users',     Icon: Users },
+  { key: 'heart',       label: 'Heart',     Icon: Heart },
+  { key: 'code',        label: 'Code',      Icon: Code },
+  { key: 'settings',    label: 'Settings',  Icon: SettingsIcon },
+  { key: 'shield-check',label: 'Shield',    Icon: ShieldCheck },
+  { key: 'headphones',  label: 'Support',   Icon: Headphones },
 ] as const
 
 export function getDeptIcon(key: string) {
-  return DEPT_ICON_OPTIONS.find(o => o.key === key)?.Icon ?? Building2
+  return DEPT_ICON_OPTIONS.find((o) => o.key === key)?.Icon ?? Building2
 }
 
 export const DEPT_COLOR_SWATCHES = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f59e0b', '#10b981', '#06b6d4', '#3b82f6',
+  '#6366F1', '#7C3AED', '#ec4899', '#FB7185',
+  '#F59E0B', '#10B981', '#06B6D4', '#0EA5E9',
 ] as const
 
-/* ─── Component ─────────────────────────────────────────────────────────── */
+// =================================================================
+// MAIN
+// =================================================================
+
 export default function DepartmentsClient({ initialDepartments, users, currentUserRole }: Props) {
   const router = useRouter()
   const isAdmin = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN'
 
   const [departments, setDepartments] = useState<DepartmentListItem[]>(initialDepartments)
   const [search, setSearch] = useState('')
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [modalOpened, modal] = useDisclosure(false)
   const [saving, setSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    color: DEPT_COLOR_SWATCHES[0] as string,
-    icon: 'building-2',
-    headId: '',
+    name: '', description: '', color: DEPT_COLOR_SWATCHES[0] as string,
+    icon: 'building-2', headId: '',
   })
+
+  const spot = useMouseSpotlight()
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return departments
-    return departments.filter(d =>
+    return departments.filter((d) =>
       d.name.toLowerCase().includes(q) ||
       (d.description ?? '').toLowerCase().includes(q) ||
       (d.head?.name ?? '').toLowerCase().includes(q)
@@ -98,41 +112,35 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
 
   const stats = useMemo(() => {
     const totalMembers = departments.reduce((sum, d) => sum + d._count.users, 0)
-    const withHead = departments.filter(d => d.head).length
-    const withoutHead = departments.length - withHead
+    const withHead = departments.filter((d) => d.head).length
     return {
       total: departments.length,
       totalMembers,
       withHead,
-      withoutHead,
+      withoutHead: departments.length - withHead,
     }
   }, [departments])
 
+  const animTotal   = useCountUp(stats.total, 700)
+  const animMembers = useCountUp(stats.totalMembers, 800)
+  const animHeads   = useCountUp(stats.withHead, 700)
+
   function openCreate() {
-    setForm({
-      name: '',
-      description: '',
-      color: DEPT_COLOR_SWATCHES[0] as string,
-      icon: 'building-2',
-      headId: '',
-    })
+    setForm({ name: '', description: '', color: DEPT_COLOR_SWATCHES[0] as string, icon: 'building-2', headId: '' })
     setCreateError(null)
-    setShowCreateModal(true)
+    modal.open()
   }
 
   async function handleCreate() {
     if (!form.name.trim()) return
-    setSaving(true)
-    setCreateError(null)
+    setSaving(true); setCreateError(null)
     try {
       const res = await fetch('/api/workryn/departments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name.trim(),
           description: form.description.trim() || undefined,
-          color: form.color,
-          icon: form.icon,
+          color: form.color, icon: form.icon,
           headId: form.headId || undefined,
         }),
       })
@@ -142,8 +150,8 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
         return
       }
       const created = await res.json()
-      setDepartments(d => [...d, created].sort((a, b) => a.name.localeCompare(b.name)))
-      setShowCreateModal(false)
+      setDepartments((d) => [...d, created].sort((a, b) => a.name.localeCompare(b.name)))
+      modal.close()
     } catch {
       setCreateError('Failed to create department')
     } finally {
@@ -153,503 +161,484 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
 
   return (
     <>
-      <div style={{ padding: '28px 32px 0' }}>
-        <h1 className="gradient-text" style={{ marginBottom: 4 }}>Departments</h1>
-        <p style={{ fontSize: '0.9375rem', marginBottom: 24 }}>
-          Manage your team structure and view department members
-        </p>
+      <Container size="xl" py="lg" className="dpa-root">
 
-        {/* Stats Row */}
-        <div className="dept-stats-row">
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.12)' }}>
-              <Building2 size={22} color="#6366f1" />
+        {/* ============ HERO (stats baked in) ============ */}
+        <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
+          <Paper radius="lg" p="xl" className="dpa-hero">
+            <div className="dpa-hero-mesh" aria-hidden />
+            <div className="dpa-hero-orbs" aria-hidden>
+              <span className="dpa-orb dpa-orb-1" />
+              <span className="dpa-orb dpa-orb-2" />
+              <span className="dpa-orb dpa-orb-3" />
             </div>
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total Departments</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(139,92,246,0.12)' }}>
-              <Users size={22} color="#8b5cf6" />
-            </div>
-            <div className="stat-value">{stats.totalMembers}</div>
-            <div className="stat-label">Total Members</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.12)' }}>
-              <UserCheck size={22} color="#10b981" />
-            </div>
-            <div className="stat-value">{stats.withHead}</div>
-            <div className="stat-label">With Head Assigned</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(239,68,68,0.12)' }}>
-              <UserX size={22} color="#ef4444" />
-            </div>
-            <div className="stat-value">{stats.withoutHead}</div>
-            <div className="stat-label">Without Head</div>
-          </div>
+            <div className="dpa-hero-spotlight" aria-hidden />
+
+            <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
+              <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+                <Group gap={8} align="center">
+                  <Building2 size={14} style={{ color: 'rgba(165,180,252,0.9)' }} />
+                  <Text size="xs" tt="uppercase" fw={700} c="indigo.3" style={{ letterSpacing: '0.12em' }}>
+                    Departments
+                  </Text>
+                </Group>
+                <Title order={1} className="dpa-hero-title">
+                  {animTotal} {animTotal === 1 ? 'team' : 'teams'}
+                </Title>
+
+                {/* Stats inline in hero */}
+                <Group gap="lg" mt="xs" wrap="wrap">
+                  <HeroStat icon={<Users size={14} />} value={animMembers} label="Members" color="#a78bfa" />
+                  <HeroStat icon={<UserCheck size={14} />} value={animHeads} label="With Head" color="#34d399" />
+                  {stats.withoutHead > 0 && (
+                    <HeroStat icon={<UserX size={14} />} value={stats.withoutHead} label="No Head" color="#f87171" />
+                  )}
+                </Group>
+
+                {isAdmin && (
+                  <Button
+                    size="md" mt="md"
+                    leftSection={<Plus size={16} />}
+                    onClick={openCreate}
+                    className="dpa-btn-primary"
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    New Department
+                  </Button>
+                )}
+              </Stack>
+            </Group>
+          </Paper>
         </div>
 
-        {/* Top bar */}
-        <div className="dept-topbar">
-          <div className="dept-search">
-            <Search size={16} className="dept-search-icon" />
-            <input
-              className="input focus-ring"
-              placeholder="Search departments, descriptions, or heads…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ paddingLeft: 38 }}
-            />
-          </div>
-          {isAdmin && (
-            <button
-              className="btn btn-gradient focus-ring"
-              onClick={openCreate}
-              id="btn-new-department"
-            >
-              <Plus size={16} /> New Department
-            </button>
-          )}
-        </div>
-      </div>
+        {/* ============ SEARCH BAR ============ */}
+        <Card radius="lg" p="md" withBorder mb="md" className="dpa-panel">
+          <TextInput
+            placeholder="Search departments, descriptions, or heads…"
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            leftSection={<Search size={14} />}
+            size="md"
+          />
+        </Card>
 
-      <div className="page-body" style={{ paddingTop: 20 }}>
+        {/* ============ DEPARTMENT GRID ============ */}
         {filtered.length === 0 ? (
-          <div className="empty-state">
-            <Building2 size={40} />
-            <p>
-              {search
-                ? `No departments match "${search}"`
-                : 'No departments yet. Create your first department to get started.'}
-            </p>
-          </div>
+          <Card radius="lg" p="xl" withBorder className="dpa-panel">
+            <Stack align="center" gap="sm" py="xl">
+              <ThemeIcon size={56} radius="xl" variant="light" color="indigo">
+                <Building2 size={26} />
+              </ThemeIcon>
+              <Text c="dimmed">
+                {search
+                  ? `No departments match "${search}"`
+                  : 'No departments yet. Create your first department to get started.'}
+              </Text>
+            </Stack>
+          </Card>
         ) : (
-          <div className="dept-grid">
-            {filtered.map((dept, idx) => {
-              const Icon = getDeptIcon(dept.icon)
-              return (
-                <button
-                  key={dept.id}
-                  id={`dept-card-${dept.id}`}
-                  className="dept-card animate-slide-up focus-ring"
-                  style={{
-                    animationDelay: `${Math.min(idx, 8) * 40}ms`,
-                    // expose color via CSS var for the top gradient bar
-                    ['--dept-color' as any]: dept.color,
-                  }}
-                  onClick={() => router.push(`/w/departments/${dept.id}`)}
-                >
-                  <div className="dept-card-top-bar" />
-
-                  <div className="dept-card-head">
-                    <div
-                      className="dept-card-icon"
-                      style={{
-                        background: `${dept.color}1a`,
-                        border: `1px solid ${dept.color}33`,
-                      }}
-                    >
-                      <Icon size={26} color={dept.color} />
-                    </div>
-                    <ChevronRight size={18} className="dept-card-arrow" />
-                  </div>
-
-                  <div className="dept-card-body">
-                    <div className="dept-card-name">{dept.name}</div>
-                    {dept.description ? (
-                      <div className="dept-card-desc">{dept.description}</div>
-                    ) : (
-                      <div className="dept-card-desc dim">No description</div>
-                    )}
-
-                    <div className="dept-card-counts">
-                      <span className="dept-count">
-                        <Users size={13} /> {dept._count.users}
-                      </span>
-                      <span className="dept-count">
-                        <Ticket size={13} /> {dept._count.tickets}
-                      </span>
-                      <span className="dept-count">
-                        <CheckSquare size={13} /> {dept._count.tasks}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="dept-card-foot">
-                    {dept.head ? (
-                      <div className="dept-head-chip">
-                        <div
-                          className="avatar avatar-sm"
-                          style={{ background: dept.head.avatarColor }}
-                        >
-                          {getInitials(dept.head.name ?? 'U')}
-                        </div>
-                        <div className="dept-head-info">
-                          <div className="dept-head-name">
-                            {dept.head.name}
-                            {dept.head.role === 'OWNER' && (
-                              <Crown size={11} color="#fbbf24" style={{ marginLeft: 4, display: 'inline' }} />
-                            )}
-                          </div>
-                          <div className="dept-head-role">Department Head</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="dept-head-chip empty">
-                        <div className="avatar avatar-sm empty-avatar">?</div>
-                        <div className="dept-head-info">
-                          <div className="dept-head-name muted">No head assigned</div>
-                          <div className="dept-head-role">—</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+            {filtered.map((dept, idx) => (
+              <DepartmentCard
+                key={dept.id}
+                dept={dept}
+                delay={Math.min(idx, 8) * 60}
+                onClick={() => router.push(`/w/departments/${dept.id}`)}
+              />
+            ))}
+          </SimpleGrid>
         )}
-      </div>
+      </Container>
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div
-            className="modal animate-scale-in"
-            onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 520 }}
-          >
-            <div className="modal-header">
-              <h3>New Department</h3>
-              <button
-                className="btn btn-icon btn-ghost focus-ring"
-                onClick={() => setShowCreateModal(false)}
-                aria-label="Close"
-                title="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="label">Name</label>
-                <input
-                  className="input focus-ring"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Engineering, Nursing, Finance"
-                  autoFocus
-                />
-              </div>
+      {/* ============ MODAL ============ */}
+      <Modal
+        opened={modalOpened}
+        onClose={modal.close}
+        title="New Department"
+        size="md"
+        radius="lg"
+        overlayProps={{ backgroundOpacity: 0.55, blur: 4 }}
+        classNames={{ content: 'dpa-modal-content' }}
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Name" required
+            placeholder="e.g. Engineering, Nursing, Finance"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.currentTarget.value }))}
+            autoFocus
+          />
+          <Textarea
+            label="Description"
+            placeholder="Brief description of this department…"
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.currentTarget.value }))}
+            minRows={2} autosize maxRows={4}
+          />
 
-              <div className="form-group">
-                <label className="label">Description</label>
-                <textarea
-                  className="input focus-ring"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Brief description of this department…"
-                  rows={2}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="label">Color</label>
-                <div className="dept-swatch-row">
-                  {DEPT_COLOR_SWATCHES.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      aria-label={`Select color ${c}`}
-                      className="dept-swatch"
-                      style={{
-                        background: c,
-                        outline: form.color === c ? `2px solid ${c}` : 'none',
-                        border: form.color === c ? '3px solid #fff' : '3px solid transparent',
-                      }}
-                      onClick={() => setForm(f => ({ ...f, color: c }))}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Icon</label>
-                <div className="dept-icon-grid">
-                  {DEPT_ICON_OPTIONS.map(({ key, label, Icon }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-label={label}
-                      title={label}
-                      className={`dept-icon-tile focus-ring ${form.icon === key ? 'active' : ''}`}
-                      style={form.icon === key ? {
-                        borderColor: form.color,
-                        background: `${form.color}1a`,
-                        color: form.color,
-                      } : undefined}
-                      onClick={() => setForm(f => ({ ...f, icon: key }))}
-                    >
-                      <Icon size={20} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Department Head (optional)</label>
-                <select
-                  className="input focus-ring"
-                  value={form.headId}
-                  onChange={e => setForm(f => ({ ...f, headId: e.target.value }))}
-                >
-                  <option value="">— No head assigned —</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} {u.jobTitle ? `· ${u.jobTitle}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {createError && (
-                <div
+          <Box>
+            <Text size="sm" fw={500} mb={8}>Color</Text>
+            <Group gap={8}>
+              {DEPT_COLOR_SWATCHES.map((c) => (
+                <ColorSwatch
+                  key={c}
+                  color={c}
+                  size={32}
+                  onClick={() => setForm((f) => ({ ...f, color: c }))}
                   style={{
-                    background: 'rgba(239,68,68,0.08)',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: 10,
-                    fontSize: '0.8125rem',
-                    color: 'var(--danger)',
+                    cursor: 'pointer',
+                    outline: form.color === c ? '2px solid #fff' : 'none',
+                    outlineOffset: 2,
                   }}
-                >
-                  {createError}
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-ghost focus-ring"
-                onClick={() => setShowCreateModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-gradient focus-ring"
-                onClick={handleCreate}
-                disabled={saving || !form.name.trim()}
-                id="btn-save-department"
-              >
-                {saving ? <Loader2 size={16} className="spin" /> : <><Plus size={16} /> Create Department</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                />
+              ))}
+            </Group>
+          </Box>
 
+          <Box>
+            <Text size="sm" fw={500} mb={8}>Icon</Text>
+            <Group gap={6}>
+              {DEPT_ICON_OPTIONS.map((opt) => {
+                const Icon = opt.Icon
+                const active = form.icon === opt.key
+                return (
+                  <Tooltip key={opt.key} label={opt.label} withArrow>
+                    <ActionIcon
+                      size="xl" radius="md"
+                      variant={active ? 'filled' : 'light'}
+                      color={active ? 'indigo' : 'gray'}
+                      onClick={() => setForm((f) => ({ ...f, icon: opt.key }))}
+                      style={{
+                        outline: active ? `2px solid ${form.color}` : 'none',
+                        outlineOffset: 2,
+                      }}
+                    >
+                      <Icon size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                )
+              })}
+            </Group>
+          </Box>
+
+          {users.length > 0 && (
+            <Stack gap={6}>
+              <Text size="sm" fw={500}>Department Head <Text component="span" size="xs" c="dimmed">(optional)</Text></Text>
+              <select
+                className="dpa-native-select"
+                value={form.headId}
+                onChange={(e) => setForm((f) => ({ ...f, headId: e.target.value }))}
+              >
+                <option value="">— No head assigned —</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name ?? u.email}{u.jobTitle ? ` · ${u.jobTitle}` : ''}
+                  </option>
+                ))}
+              </select>
+            </Stack>
+          )}
+
+          {createError && (
+            <Alert color="red" variant="light" icon={<AlertTriangle size={14} />}>
+              {createError}
+            </Alert>
+          )}
+
+          <Group justify="flex-end" mt="sm">
+            <Button variant="subtle" color="gray" onClick={modal.close}>Cancel</Button>
+            <Button
+              loading={saving}
+              disabled={!form.name.trim()}
+              onClick={handleCreate}
+              className="dpa-btn-primary"
+            >
+              Create Department
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* ============ STYLES ============ */}
       <style>{`
-        .dept-stats-row {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 14px;
-          margin-bottom: 22px;
+        @keyframes dpa-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes dpa-mesh-drift {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(3%, -2%) scale(1.05); }
         }
-        .dept-topbar {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding-bottom: 4px;
+        @keyframes dpa-orb-a { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+        @keyframes dpa-orb-b { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,25px)} }
+        @keyframes dpa-orb-c { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,40px)} }
+        @media (prefers-reduced-motion: reduce) {
+          .dpa-root *, .dpa-root *::before, .dpa-root *::after {
+            animation: none !important; transition: none !important;
+          }
         }
-        .dept-search {
-          position: relative;
-          flex: 1;
-          max-width: 480px;
+
+        /* HERO */
+        .dpa-hero {
+          position: relative; overflow: hidden;
+          border: 1px solid rgba(99,102,241,0.32);
+          background:
+            linear-gradient(135deg, rgba(99,102,241,0.16) 0%, rgba(124,58,237,0.10) 50%, rgba(236,72,153,0.06) 100%),
+            rgba(11,15,30,0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          box-shadow: 0 20px 60px -20px rgba(99,102,241,0.35), 0 1px 0 rgba(255,255,255,0.05) inset;
+          animation: dpa-slide-up 460ms ease-out backwards;
         }
-        .dept-search-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-          pointer-events: none;
+        .dpa-hero-mesh {
+          position: absolute; inset: -25%;
+          background:
+            radial-gradient(circle at 22% 30%, rgba(99,102,241,0.45), transparent 42%),
+            radial-gradient(circle at 78% 25%, rgba(124,58,237,0.30), transparent 47%),
+            radial-gradient(circle at 62% 82%, rgba(236,72,153,0.18), transparent 52%);
+          filter: blur(40px);
+          animation: dpa-mesh-drift 22s ease-in-out infinite;
+          z-index: 0; pointer-events: none;
         }
-        .dept-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 18px;
+        .dpa-hero-orbs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .dpa-orb { position: absolute; border-radius: 50%; filter: blur(22px); opacity: 0.55; mix-blend-mode: screen; }
+        .dpa-orb-1 { width: 130px; height: 130px; top: 12%; left: 8%;
+          background: radial-gradient(circle, #a5b4fc 0%, transparent 70%);
+          animation: dpa-orb-a 14s ease-in-out infinite; }
+        .dpa-orb-2 { width: 100px; height: 100px; top: 55%; left: 60%;
+          background: radial-gradient(circle, #7C3AED 0%, transparent 70%);
+          animation: dpa-orb-b 16s ease-in-out infinite; }
+        .dpa-orb-3 { width: 80px; height: 80px; bottom: 10%; right: 12%;
+          background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+          animation: dpa-orb-c 18s ease-in-out infinite; }
+        .dpa-hero-spotlight {
+          position: absolute; inset: 0; z-index: 1; pointer-events: none;
+          background: radial-gradient(circle 360px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.10), transparent 60%);
         }
-        @media (max-width: 1200px) {
-          .dept-grid { grid-template-columns: repeat(2, 1fr); }
-          .dept-stats-row { grid-template-columns: repeat(2, 1fr); }
+        .dpa-hero-title {
+          font-size: clamp(2.25rem, 6vw, 4rem);
+          font-weight: 800;
+          letter-spacing: -0.035em;
+          line-height: 1;
+          margin: 0;
+          font-variant-numeric: tabular-nums;
+          background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #6366F1 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 16px rgba(99,102,241,0.45));
         }
-        @media (max-width: 720px) {
-          .dept-grid { grid-template-columns: 1fr; }
-          .dept-stats-row { grid-template-columns: 1fr 1fr; }
-          .dept-topbar { flex-direction: column; align-items: stretch; }
-          .dept-search { max-width: none; }
+        .dpa-btn-primary {
+          background: linear-gradient(135deg, #6366F1 0%, #8b5cf6 100%);
+          box-shadow: 0 6px 18px rgba(99,102,241,0.40);
+          transition: transform 180ms ease, box-shadow 180ms ease;
+          color: #fff;
         }
-        .dept-card {
-          position: relative;
-          text-align: left;
-          background: var(--bg-surface);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-lg);
-          padding: 22px;
-          color: var(--text-primary);
+        .dpa-btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 28px rgba(99,102,241,0.55);
+        }
+
+        /* Hero stat pill */
+        .dpa-hero-stat {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 8px 12px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.10);
+          transition: background 140ms ease;
+        }
+        .dpa-hero-stat:hover { background: rgba(255,255,255,0.10); }
+
+        /* Panel */
+        .dpa-panel {
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          animation: dpa-slide-up 500ms 100ms ease-out backwards;
+        }
+
+        /* Department card */
+        .dpa-dept-card {
+          position: relative; overflow: hidden;
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(12px) saturate(140%);
+          -webkit-backdrop-filter: blur(12px) saturate(140%);
+          transition: box-shadow 260ms ease, border-color 220ms ease;
+          animation: dpa-slide-up 500ms ease-out backwards;
           cursor: pointer;
-          overflow: hidden;
-          transition: border-color var(--transition-smooth), transform var(--transition-smooth), box-shadow var(--transition-smooth);
-          display: flex;
-          flex-direction: column;
+          will-change: transform;
           min-height: 220px;
         }
-        .dept-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: linear-gradient(135deg, var(--dept-color), color-mix(in srgb, var(--dept-color) 40%, #fff));
-          opacity: 0.9;
+        .dpa-dept-card::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+          background: var(--dpa-bar);
         }
-        .dept-card:hover {
-          border-color: var(--border-default);
-          transform: translateY(-3px);
-          box-shadow: var(--shadow-glow), 0 4px 24px color-mix(in srgb, var(--dept-color) 15%, transparent);
+        .dpa-dept-card:hover {
+          border-color: var(--dpa-border-hover) !important;
+          box-shadow: 0 18px 44px var(--dpa-glow);
         }
-        .dept-card:hover .dept-card-arrow { transform: translateX(2px); opacity: 1; }
-        .dept-card-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          margin-bottom: 14px;
+        .dpa-dept-card .dpa-card-arrow {
+          opacity: 0.35;
+          transition: opacity 140ms ease, transform 140ms ease;
         }
-        .dept-card-icon {
-          width: 54px;
-          height: 54px;
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .dpa-dept-card:hover .dpa-card-arrow {
+          opacity: 1;
+          transform: translateX(3px);
+        }
+
+        .dpa-card-icon-wrap {
+          width: 52px; height: 52px;
+          border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
+          background: var(--dpa-icon-bg);
+          border: 1px solid var(--dpa-icon-border);
+          box-shadow: 0 4px 14px var(--dpa-glow);
         }
-        .dept-card-arrow {
-          color: var(--text-muted);
-          opacity: 0.5;
-          transition: transform var(--transition-smooth), opacity var(--transition-smooth);
-          margin-top: 4px;
+
+        /* Modal */
+        .dpa-modal-content {
+          background: rgba(15, 23, 42, 0.85) !important;
+          backdrop-filter: blur(18px) saturate(140%);
+          -webkit-backdrop-filter: blur(18px) saturate(140%);
+          border: 1px solid rgba(99,102,241,0.28);
         }
-        .dept-card-body { flex: 1; }
-        .dept-card-name {
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin-bottom: 6px;
-          letter-spacing: -0.01em;
-        }
-        .dept-card-desc {
+        .dpa-native-select {
+          width: 100%;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(11,15,30,0.65);
+          color: #e2e8f0;
+          border: 1px solid rgba(255,255,255,0.08);
           font-size: 0.875rem;
-          color: var(--text-secondary);
-          line-height: 1.5;
-          margin-bottom: 14px;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          font-family: inherit;
         }
-        .dept-card-desc.dim { color: var(--text-muted); font-style: italic; }
-        .dept-card-counts {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-bottom: 16px;
+        .dpa-native-select:focus {
+          outline: none;
+          border-color: #6366F1;
+          box-shadow: 0 0 0 2px rgba(99,102,241,0.20);
         }
-        .dept-count {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 4px 10px;
-          background: var(--bg-overlay);
-          border: 1px solid var(--border-subtle);
-          border-radius: 99px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-        }
-        .dept-card-foot {
-          padding-top: 14px;
-          border-top: 1px solid var(--border-subtle);
-        }
-        .dept-head-chip {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .dept-head-info { min-width: 0; flex: 1; }
-        .dept-head-name {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .dept-head-name.muted { color: var(--text-muted); font-weight: 500; }
-        .dept-head-role {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-        .empty-avatar {
-          background: var(--bg-hover) !important;
-          color: var(--text-muted) !important;
-          font-weight: 700;
-        }
-        .dept-swatch-row {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 4px;
-        }
-        .dept-swatch {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          cursor: pointer;
-          transition: transform var(--transition);
-        }
-        .dept-swatch:hover { transform: scale(1.1); }
-        .dept-icon-grid {
-          display: grid;
-          grid-template-columns: repeat(8, 1fr);
-          gap: 8px;
-          margin-top: 4px;
-        }
-        @media (max-width: 520px) {
-          .dept-icon-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        .dept-icon-tile {
-          aspect-ratio: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--bg-overlay);
-          border: 1px solid var(--border-default);
-          border-radius: var(--radius-md);
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-smooth);
-        }
-        .dept-icon-tile:hover {
-          border-color: var(--border-strong);
-          color: var(--text-primary);
-          transform: translateY(-1px);
-        }
-        .spin { animation: spin 0.7s linear infinite; }
       `}</style>
     </>
+  )
+}
+
+// =================================================================
+// SUB-COMPONENTS
+// =================================================================
+
+function HeroStat({ icon, value, label, color }: {
+  icon: React.ReactNode; value: number; label: string; color: string
+}) {
+  return (
+    <span className="dpa-hero-stat" style={{ color }}>
+      {icon}
+      <Text component="span" size="sm" fw={800} c="white" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+      </Text>
+      <Text component="span" size="xs" c="dimmed" fw={500}>
+        {label}
+      </Text>
+    </span>
+  )
+}
+
+function DepartmentCard({
+  dept, delay, onClick,
+}: {
+  dept: DepartmentListItem; delay: number; onClick: () => void
+}) {
+  const tilt = useTilt(4)
+  const Icon = getDeptIcon(dept.icon)
+
+  // Color-derived CSS vars for accents on this card
+  const cssVars = {
+    ['--dpa-bar' as string]:           `linear-gradient(90deg, ${dept.color}cc, ${dept.color})`,
+    ['--dpa-glow' as string]:          `${dept.color}38`,
+    ['--dpa-border-hover' as string]:  `${dept.color}80`,
+    ['--dpa-icon-bg' as string]:       `${dept.color}1f`,
+    ['--dpa-icon-border' as string]:   `${dept.color}55`,
+  } as React.CSSProperties
+
+  return (
+    <div
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={{ transition: 'transform 260ms cubic-bezier(0.3, 0.5, 0.3, 1)' }}
+    >
+      <Card
+        radius="lg" p="lg" withBorder
+        className="dpa-dept-card"
+        style={{ animationDelay: `${delay}ms`, ...cssVars }}
+        onClick={onClick}
+      >
+        <Stack gap="md" style={{ height: '100%' }}>
+          <Group justify="space-between" align="flex-start">
+            <div className="dpa-card-icon-wrap">
+              <Icon size={26} color={dept.color} />
+            </div>
+            <ChevronRight size={18} className="dpa-card-arrow" />
+          </Group>
+
+          <Stack gap={6}>
+            <Text fw={700} size="lg" style={{ lineHeight: 1.2 }}>{dept.name}</Text>
+            {dept.description ? (
+              <Text size="sm" c="dimmed" lineClamp={2}>{dept.description}</Text>
+            ) : (
+              <Text size="sm" c="dimmed" fs="italic" style={{ opacity: 0.55 }}>No description</Text>
+            )}
+          </Stack>
+
+          <Group gap="md" wrap="wrap">
+            <Group gap={4} align="center">
+              <Users size={13} color={dept.color} />
+              <Text size="xs" fw={700} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {dept._count.users}
+              </Text>
+              <Text size="xs" c="dimmed">members</Text>
+            </Group>
+            <Group gap={4} align="center">
+              <TicketIcon size={13} color="rgba(148,163,184,0.7)" />
+              <Text size="xs" fw={700} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {dept._count.tickets}
+              </Text>
+              <Text size="xs" c="dimmed">tickets</Text>
+            </Group>
+            <Group gap={4} align="center">
+              <CheckSquare size={13} color="rgba(148,163,184,0.7)" />
+              <Text size="xs" fw={700} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {dept._count.tasks}
+              </Text>
+              <Text size="xs" c="dimmed">tasks</Text>
+            </Group>
+          </Group>
+
+          <Box mt="auto" pt="sm" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {dept.head ? (
+              <Group gap="xs" align="center" wrap="nowrap">
+                <Avatar size="sm" radius="xl" style={{ background: dept.head.avatarColor, color: '#fff' }}>
+                  {getInitials(dept.head.name ?? 'U')}
+                </Avatar>
+                <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
+                  <Group gap={4} align="center">
+                    <Text size="xs" fw={700} truncate>{dept.head.name}</Text>
+                    {dept.head.role === 'OWNER' && (
+                      <Crown size={11} color="#fbbf24" />
+                    )}
+                  </Group>
+                  <Text size="xs" c="dimmed">Department Head</Text>
+                </Stack>
+              </Group>
+            ) : (
+              <Group gap="xs" align="center" wrap="nowrap" style={{ opacity: 0.55 }}>
+                <Avatar size="sm" radius="xl" color="gray">?</Avatar>
+                <Stack gap={0}>
+                  <Text size="xs" fw={600} c="dimmed">No head assigned</Text>
+                  <Text size="xs" c="dimmed">—</Text>
+                </Stack>
+              </Group>
+            )}
+          </Box>
+        </Stack>
+      </Card>
+    </div>
   )
 }
