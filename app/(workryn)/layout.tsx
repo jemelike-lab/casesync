@@ -8,6 +8,7 @@ import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
 import WorkrynOnboardingTour from '@/components/workryn/WorkrynOnboardingTour'
 import OfflineBanner from '@/components/workryn/OfflineBanner'
 import WorkrynMantineProvider from '@/components/workryn/WorkrynMantineProvider'
+import AuroraBackground from '@/components/workryn/AuroraBackground'
 
 // Mantine core styles — scoped to /w/* routes via this route group layout.
 // CaseSync routes never import these, so the existing app shell is unaffected.
@@ -15,6 +16,9 @@ import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/dates/styles.css'
 import '@mantine/charts/styles.css'
+
+// Aurora shell aesthetic — fixed gradient bg + per-route accent vars.
+import './aurora.css'
 
 /**
  * Maps CaseSync profile role → Workryn role.
@@ -86,6 +90,7 @@ export default async function WorkrynLayout({ children }: { children: React.Reac
   return (
     <WorkrynMantineProvider>
       <div className={`w-app-shell ${GeistSans.variable}`}>
+        <AuroraBackground />
         <WorkrynSidebar user={workrynUser} />
         <main className="w-page-content">
           {children}
