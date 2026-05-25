@@ -137,7 +137,11 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [modalOpened, modal] = useDisclosure(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    userId: string; title: string; date: string
+    startTime: string; endTime: string
+    color: string; departmentId: string; notes: string
+  }>({
     userId: '', title: 'Shift', date: '', startTime: '09:00', endTime: '17:00',
     color: SHIFT_COLORS[0], departmentId: '', notes: '',
   })
