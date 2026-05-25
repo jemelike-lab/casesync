@@ -23,6 +23,27 @@
   position: relative;
   min-height: 100vh;
   isolation: isolate;
+  /* Override the old workryn.css `display: flex; flex-direction: row` that
+     was designed for the old in-flow sidebar. Our new sidebar + topbar are
+     all position: fixed/sticky, so we no longer need (or want) the flex
+     row — it was eating ~280px of horizontal space on mobile where the
+     sticky topbar became a flex sibling competing with .w-page-content. */
+  display: block !important;
+}
+
+/* Force the page-content to span full width on mobile and reserve room for
+   the fixed sidebar only on desktop. Uses !important to defeat the older
+   workryn.css base rule `margin-left: var(--w-sidebar-width)`. */
+.w-app-shell .w-page-content {
+  margin-left: 0 !important;
+  padding: 80px 16px 24px !important;
+  width: auto !important;
+}
+@media (min-width: 1024px) {
+  .w-app-shell .w-page-content {
+    margin-left: 280px !important;
+    padding: 32px 40px !important;
+  }
 }
 
 /* Default accent — overridden per route on .w-app-shell[data-accent="..."]. */
@@ -150,14 +171,4 @@
 @keyframes aurora-slide-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ---------- Page-content padding for the new shell ---------- */
-.w-page-content {
-  padding: 20px !important;
-}
-@media (min-width: 768px) {
-  .w-page-content {
-    padding: 32px 40px !important;
-  }
 }
