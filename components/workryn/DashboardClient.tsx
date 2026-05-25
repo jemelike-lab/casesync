@@ -172,15 +172,15 @@ export default function DashboardClient({
   const tip = TIPS[new Date().getDay() % TIPS.length]
   const streak = Math.min(completedCount, 30)
 
-  const animTasks         = useCountUp(stats.taskCount,    800, 400)
-  const animTickets       = useCountUp(stats.openTickets,  800, 500)
-  const animHours         = useCountUp(stats.weeklyHours, 1000, 600)
-  const animProductivity  = useCountUp(productivity,      1200, 700)
+  const animTasks         = useCountUp(stats.taskCount,    800)
+  const animTickets       = useCountUp(stats.openTickets,  800)
+  const animHours         = useCountUp(stats.weeklyHours, 1000)
+  const animProductivity  = useCountUp(productivity,      1200)
 
-  const animOverdue       = useCountUp(csAlerts?.overdueClients         ?? 0, 800, 800)
-  const animDueWeek       = useCountUp(csAlerts?.dueThisWeek            ?? 0, 800, 900)
-  const animEligibility   = useCountUp(csAlerts?.eligibilityEndingSoon  ?? 0, 800, 1000)
-  const animNoContact     = useCountUp(csAlerts?.noContact7Days         ?? 0, 800, 1100)
+  const animOverdue       = useCountUp(csAlerts?.overdueClients         ?? 0, 800)
+  const animDueWeek       = useCountUp(csAlerts?.dueThisWeek            ?? 0, 800)
+  const animEligibility   = useCountUp(csAlerts?.eligibilityEndingSoon  ?? 0, 800)
+  const animNoContact     = useCountUp(csAlerts?.noContact7Days         ?? 0, 800)
 
   const formattedShifts = todayShifts.map((shift) => ({
     id: shift.id,
