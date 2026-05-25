@@ -2,6 +2,23 @@
 import { useMemo, useRef, useState, useEffect } from 'react'
 import MilestoneDashboard from './MilestoneDashboard'
 import {
+  Avatar as MAvatar,
+  Badge,
+  Button,
+  Card,
+  Container,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Tabs as MTabs,
+  Text,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
+import { useCountUp } from '@/hooks/useCountUp'
+import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import {
   Star,
   Award,
   ClipboardCheck,
@@ -161,30 +178,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
-/* ── Animated Count-Up ── */
-function useCountUp(target: number, duration = 900, delay = 200): number {
-  const [val, setVal] = useState(target)
-  const mounted = useRef(false)
-  useEffect(() => {
-    if (mounted.current) return
-    mounted.current = true
-    if (target === 0) { setVal(0); return }
-    setVal(0)
-    const timeout = setTimeout(() => {
-      const start = performance.now()
-      const step = (now: number) => {
-        const elapsed = now - start
-        const progress = Math.min(elapsed / duration, 1)
-        const eased = 1 - Math.pow(1 - progress, 3)
-        setVal(Math.round(eased * target))
-        if (progress < 1) requestAnimationFrame(step)
-      }
-      requestAnimationFrame(step)
-    }, delay)
-    return () => clearTimeout(timeout)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return val
-}
+/* ── Animated Count-Up imported from @/hooks/useCountUp ── */
 
 function StarRow({
   value,
@@ -297,7 +291,7 @@ function ratingColor(rating: number): string {
 function StatCard({ icon: Icon, label, value, color, delay = 0 }: {
   icon: typeof Award; label: string; value: number | string; color: string; delay?: number
 }) {
-  const numVal = typeof value === 'number' ? useCountUp(value, 900, 200 + delay) : value
+  const numVal = typeof value === 'number' ? useCountUp(value, 900) : value
 
   return (
     <div className="eval-stat-card animate-slide-up" style={{ animationDelay: `${delay}ms` }}>
@@ -324,6 +318,7 @@ export default function EvaluationsClient({
   const [templates, setTemplates] = useState<Template[]>(initialTemplates)
   const isManager = isManagerOrAbove(currentUser.role)
   const isAdmin = isAdminOrAbove(currentUser.role)
+  const spot = useMouseSpotlight()
 
   const [tab, setTab] = useState<Tab>(isManager ? 'given' : 'received')
   const [detailEval, setDetailEval] = useState<Evaluation | null>(null)
@@ -428,67 +423,100 @@ export default function EvaluationsClient({
       ]
     : []
 
+  // Count-ups for hero/stats
+  const animTotal       = useCountUp(evaluations.length, 800)
+  const animPending     = useCountUp(pendingAck, 800)
+  const animTemplates   = useCountUp(activeTemplateCount, 800)
+
   return (
-    <>
-      {/* ── Header ── */}
-      <div className="eval-page-header">
-        <div className="eval-header-top">
-          <div>
-            <h1 className="gradient-text eval-title">
-              <Award size={28} style={{ opacity: 0.7 }} />
-              Performance Evaluations
-            </h1>
-            <p className="eval-subtitle">
-              {isManager
-                ? 'Review and author performance evaluations for your team.'
-                : 'Complete self-assessments and view evaluations from your supervisor.'}
-            </p>
+    <Container size="xl" py="lg" className="eva-root">
+      {/* ============ AURORA HERO ============ */}
+      <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
+        <Paper radius="lg" p="xl" className="eva-hero">
+          <div className="eva-hero-mesh" aria-hidden />
+          <div className="eva-hero-orbs" aria-hidden>
+            <span className="eva-orb eva-orb-1" />
+            <span className="eva-orb eva-orb-2" />
+            <span className="eva-orb eva-orb-3" />
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {/* Staff: self-assessment button */}
-            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-              <button className="btn btn-gradient focus-ring" onClick={() => setShowSelfAssessment(true)} type="button">
-                <Edit2 size={18} /> Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
-              </button>
-            )}
-            {isAdmin && tab === 'templates' && (
-              <button
-                className="btn btn-gradient focus-ring"
-                onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }}
-                type="button"
-              >
-                <Plus size={18} /> New Template
-              </button>
-            )}
-          </div>
-        </div>
+          <div className="eva-hero-spotlight" aria-hidden />
 
-        {/* ── Stats Row ── */}
-        <div className="eval-stats-row">
-          <StatCard icon={BarChart3} label="Total Evaluations" value={evaluations.length} color="#3b82f6" delay={0} />
-          <StatCard icon={Star} label="Avg Rating" value={avgRating} color="#f59e0b" delay={80} />
-          <StatCard icon={Clock} label="Pending Review" value={pendingAck} color={pendingAck > 0 ? '#ef4444' : '#10b981'} delay={160} />
-          <StatCard icon={ClipboardCheck} label="Active Templates" value={activeTemplateCount} color="#8b5cf6" delay={240} />
-        </div>
-
-        {/* ── Tab Bar ── */}
-        {isManager && (
-          <div className="eval-tab-bar">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                className={`eval-tab focus-ring ${tab === t.id ? 'active' : ''}`}
-                onClick={() => setTab(t.id)}
-                type="button"
-              >
-                <t.icon size={15} />
-                {t.label}
-                <span className="eval-tab-count">{t.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
+          <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
+            <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+              <Group gap={8} align="center">
+                <Award size={14} style={{ color: 'rgba(240,171,252,0.9)' }} />
+                <Text size="xs" tt="uppercase" fw={700} c="grape.3" style={{ letterSpacing: '0.12em' }}>
+                  Performance Evaluations
+                </Text>
+              </Group>
+              <Title order={1} className="eva-hero-title">
+                {animTotal} {animTotal === 1 ? 'evaluation' : 'evaluations'}
+              </Title>
+              <Text size="sm" c="dimmed">
+                {isManager
+                  ? `Review and author performance evaluations for your team.${pendingAck > 0 ? ` ${pendingAck} pending acknowledgement.` : ''}`
+                  : 'Complete self-assessments and view evaluations from your supervisor.'}
+              </Text>
+              <Group gap="xs" mt="sm">
+                {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
+                  <Button
+                    size="md"
+                    leftSection={<Edit2 size={16} />}
+                    onClick={() => setShowSelfAssessment(true)}
+                    className="eva-btn-primary"
+                  >
+                    Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
+                  </Button>
+                )}
+                {isAdmin && tab === 'templates' && (
+                  <Button
+                    size="md"
+                    leftSection={<Plus size={16} />}
+                    onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }}
+                    className="eva-btn-primary"
+                  >
+                    New Template
+                  </Button>
+                )}
+              </Group>
+            </Stack>
+          </Group>
+        </Paper>
       </div>
+
+      {/* ============ STAT CARDS ============ */}
+      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">
+        <EvaStatCard label="Total Evaluations" value={String(animTotal)}     icon={BarChart3}      theme="fuchsia" delay={0}   />
+        <EvaStatCard label="Avg Rating"        value={avgRating}              icon={Star}           theme="amber"   delay={80}  />
+        <EvaStatCard label="Pending Review"    value={String(animPending)}    icon={Clock}          theme={pendingAck > 0 ? 'red' : 'mint'} delay={160} />
+        <EvaStatCard label="Active Templates"  value={String(animTemplates)}  icon={ClipboardCheck} theme="violet"  delay={240} />
+      </SimpleGrid>
+
+      {/* ============ TAB BAR ============ */}
+      {isManager && (
+        <Card radius="lg" p={0} withBorder className="eva-tabs-wrap" mb="md">
+          <MTabs value={tab} onChange={(v) => v && setTab(v as Tab)} classNames={{ list: 'eva-tabs-list' }}>
+            <MTabs.List>
+              {tabs.map((t) => (
+                <MTabs.Tab
+                  key={t.id}
+                  value={t.id}
+                  leftSection={<t.icon size={14} />}
+                  rightSection={
+                    <Badge size="xs" variant="light" color={tab === t.id ? 'grape' : 'gray'}>
+                      {t.count}
+                    </Badge>
+                  }
+                >
+                  {t.label}
+                </MTabs.Tab>
+              ))}
+            </MTabs.List>
+          </MTabs>
+        </Card>
+      )}
+
+      {/* Existing content + modals continue below, unchanged */}
 
       {/* ── Content ── */}
       <div className="eval-content">
@@ -963,8 +991,175 @@ export default function EvaluationsClient({
         .sa-progress-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
         .sa-progress-fill { height: 100%; border-radius: 3px; transition: width 300ms ease; }
         .sa-progress-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: right; }
+
+        /* ============ AURORA HERO STYLES (fuchsia accent) ============ */
+        @keyframes eva-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes eva-mesh-drift {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(3%, -2%) scale(1.05); }
+        }
+        @keyframes eva-orb-a { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+        @keyframes eva-orb-b { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,25px)} }
+        @keyframes eva-orb-c { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,40px)} }
+        @media (prefers-reduced-motion: reduce) {
+          .eva-root *, .eva-root *::before, .eva-root *::after {
+            animation: none !important; transition: none !important;
+          }
+        }
+        .eva-hero {
+          position: relative; overflow: hidden;
+          border: 1px solid rgba(217,70,239,0.32);
+          background:
+            linear-gradient(135deg, rgba(217,70,239,0.16) 0%, rgba(168,85,247,0.10) 50%, rgba(99,102,241,0.06) 100%),
+            rgba(11,15,30,0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          box-shadow: 0 20px 60px -20px rgba(217,70,239,0.35), 0 1px 0 rgba(255,255,255,0.05) inset;
+          animation: eva-slide-up 460ms ease-out backwards;
+        }
+        .eva-hero-mesh {
+          position: absolute; inset: -25%;
+          background:
+            radial-gradient(circle at 22% 30%, rgba(217,70,239,0.45), transparent 42%),
+            radial-gradient(circle at 78% 25%, rgba(168,85,247,0.30), transparent 47%),
+            radial-gradient(circle at 62% 82%, rgba(99,102,241,0.18), transparent 52%);
+          filter: blur(40px);
+          animation: eva-mesh-drift 22s ease-in-out infinite;
+          z-index: 0; pointer-events: none;
+        }
+        .eva-hero-orbs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .eva-orb { position: absolute; border-radius: 50%; filter: blur(22px); opacity: 0.55; mix-blend-mode: screen; }
+        .eva-orb-1 { width: 130px; height: 130px; top: 12%; left: 8%;
+          background: radial-gradient(circle, #f0abfc 0%, transparent 70%);
+          animation: eva-orb-a 14s ease-in-out infinite; }
+        .eva-orb-2 { width: 100px; height: 100px; top: 55%; left: 60%;
+          background: radial-gradient(circle, #D946EF 0%, transparent 70%);
+          animation: eva-orb-b 16s ease-in-out infinite; }
+        .eva-orb-3 { width: 80px; height: 80px; bottom: 10%; right: 12%;
+          background: radial-gradient(circle, #818cf8 0%, transparent 70%);
+          animation: eva-orb-c 18s ease-in-out infinite; }
+        .eva-hero-spotlight {
+          position: absolute; inset: 0; z-index: 1; pointer-events: none;
+          background: radial-gradient(circle 360px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.10), transparent 60%);
+        }
+        .eva-hero-title {
+          font-size: clamp(2.25rem, 6vw, 4rem);
+          font-weight: 800;
+          letter-spacing: -0.035em;
+          line-height: 1;
+          margin: 0;
+          font-variant-numeric: tabular-nums;
+          background: linear-gradient(135deg, #ffffff 0%, #f0abfc 50%, #D946EF 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 16px rgba(217,70,239,0.45));
+        }
+        .eva-btn-primary {
+          background: linear-gradient(135deg, #D946EF 0%, #a855f7 100%);
+          box-shadow: 0 6px 18px rgba(217,70,239,0.40);
+          transition: transform 180ms ease, box-shadow 180ms ease;
+          color: #fff;
+        }
+        .eva-btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 28px rgba(217,70,239,0.55);
+        }
+        .eva-stat-card {
+          position: relative; overflow: hidden;
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(12px) saturate(140%);
+          -webkit-backdrop-filter: blur(12px) saturate(140%);
+          transition: box-shadow 260ms ease;
+          animation: eva-slide-up 500ms ease-out backwards;
+          will-change: transform;
+        }
+        .eva-stat-card::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+          background: var(--eva-bar);
+        }
+        .eva-stat-card:hover {
+          box-shadow: 0 14px 36px var(--eva-glow, rgba(217,70,239,0.35));
+        }
+        .eva-stat-value {
+          font-size: clamp(1.5rem, 2.5vw, 1.9rem);
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+          background: var(--eva-text);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .eva-tabs-wrap {
+          background: rgba(15, 23, 42, 0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          animation: eva-slide-up 500ms 100ms ease-out backwards;
+        }
+        .eva-tabs-list {
+          padding: 6px 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .eva-tabs-list [data-active='true'] {
+          color: #f0abfc !important;
+          border-color: #D946EF !important;
+        }
       `}</style>
-    </>
+    </Container>
+  )
+}
+
+// =================================================================
+// AURORA: EvaStatCard sub-component
+// =================================================================
+
+const EVA_STAT_THEMES = {
+  fuchsia: { bar: 'linear-gradient(90deg,#f0abfc,#D946EF)', glow: 'rgba(217,70,239,0.35)', text: 'linear-gradient(135deg,#f0abfc,#D946EF)', color: 'grape'  as const },
+  amber:   { bar: 'linear-gradient(90deg,#fbbf24,#F59E0B)', glow: 'rgba(245,158,11,0.35)', text: 'linear-gradient(135deg,#fcd34d,#F59E0B)', color: 'orange' as const },
+  mint:    { bar: 'linear-gradient(90deg,#6ee7b7,#10B981)', glow: 'rgba(52,211,153,0.35)', text: 'linear-gradient(135deg,#6ee7b7,#10B981)', color: 'teal'   as const },
+  red:     { bar: 'linear-gradient(90deg,#fca5a5,#ef4444)', glow: 'rgba(239,68,68,0.35)',  text: 'linear-gradient(135deg,#fca5a5,#ef4444)', color: 'red'    as const },
+  violet:  { bar: 'linear-gradient(90deg,#a78bfa,#7C3AED)', glow: 'rgba(124,58,237,0.35)', text: 'linear-gradient(135deg,#c4b5fd,#7C3AED)', color: 'violet' as const },
+} as const
+
+function EvaStatCard({
+  label, value, icon: Icon, theme, delay,
+}: {
+  label: string
+  value: string | number
+  icon: React.ComponentType<{ size?: number }>
+  theme: keyof typeof EVA_STAT_THEMES
+  delay: number
+}) {
+  const tilt = useTilt(5)
+  const cfg = EVA_STAT_THEMES[theme]
+  return (
+    <div
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={{ transition: 'transform 260ms cubic-bezier(0.3, 0.5, 0.3, 1)' }}
+    >
+      <Card
+        radius="lg" p="md" withBorder
+        className="eva-stat-card"
+        style={{
+          animationDelay: `${delay}ms`,
+          ['--eva-bar' as string]: cfg.bar,
+          ['--eva-glow' as string]: cfg.glow,
+          ['--eva-text' as string]: cfg.text,
+        } as React.CSSProperties}
+      >
+        <Group gap="sm" align="center" wrap="nowrap">
+          <ThemeIcon size="lg" radius="md" variant="light" color={cfg.color}>
+            <Icon size={16} />
+          </ThemeIcon>
+          <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+            <Text className="eva-stat-value">{value}</Text>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{label}</Text>
+          </Stack>
+        </Group>
+      </Card>
+    </div>
   )
 }
 
