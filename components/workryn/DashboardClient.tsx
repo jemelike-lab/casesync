@@ -1,15 +1,81 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+/**
+ * DashboardClient — Aurora rebuild.
+ *
+ * Visual: Aurora system applied head-to-toe.
+ *   - Hero is a gradient-mesh paper with violet primary, drifting orbs,
+ *     mouse spotlight, and a live clock with brand-colored glow.
+ *   - 4 stat cards in glass with per-card gradient accent bars,
+ *     3D tilt on hover (via shared useTilt), count-up numbers with
+ *     per-card gradient text, and a Mantine RingProgress on Productivity.
+ *   - Two-column grid:
+ *     LEFT: Today's Schedule (timeline), Recent Tasks, Quick Actions
+ *           (gradient buttons), CaseSync Alerts (conditional, 4 tiles).
+ *     RIGHT: Task Streak (flame + flicker), 30-Day Onboarding
+ *           (numbered timeline), Week at a Glance (bar chart with the
+ *           page accent), Recent Activity (audit log feed).
+ *
+ * Data contract is byte-for-byte identical to the previous Dashboard:
+ *   - Same Props shape (user, stats, auditLogs, recentTasks,
+ *     completedCount, totalTaskCount, todayShifts, csAlerts, csRole)
+ *   - Same conditional rendering for csAlerts visibility based on role
+ *   - Same Calendly link for step 3
+ *   - Same internal links (/w/tasks, /w/tickets, /w/time-clock,
+ *     /w/schedule, /w/county-preference, /w/evaluations, /dashboard,
+ *     /team?full=1&filter=...)
+ */
+
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { 
-  ArrowUpRight, Clock, Zap, MessageCircle, CalendarDays, 
-  CheckCircle2, Flame, Sun,
-  ChevronRight, ListTodo, Timer, 
-  Briefcase, LogIn, LogOut, FileEdit, Bell,
-  AlertTriangle, ExternalLink, Users, ShieldAlert, CalendarClock,
-  MapPin, ClipboardCheck, Send, Award, Sparkles,
+import {
+  Anchor,
+  Badge,
+  Box,
+  Card,
+  Container,
+  Group,
+  Paper,
+  RingProgress,
+  SimpleGrid,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
+  Tooltip,
+} from '@mantine/core'
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Award,
+  Bell,
+  Briefcase,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  Clock,
+  ExternalLink,
+  FileEdit,
+  Flame,
+  ListTodo,
+  LogIn,
+  LogOut,
+  MapPin,
+  MessageCircle,
+  ShieldAlert,
+  Sparkles,
+  Sun,
+  Timer,
+  Users,
+  Zap,
 } from 'lucide-react'
+import { timeAgo } from '@/lib/workryn/utils'
+import { useCountUp } from '@/hooks/useCountUp'
+import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+
+// ----------- Types (unchanged contract) -----------
 
 interface Props {
   user: { name?: string | null; role?: string }
@@ -19,35 +85,49 @@ interface Props {
   completedCount: number
   totalTaskCount: number
   todayShifts: { id: string; title?: string; startTime: string }[]
-  csAlerts?: { totalClients: number; overdueClients: number; dueThisWeek: number; eligibilityEndingSoon: number; noContact7Days: number }
+  csAlerts?: {
+    totalClients: number
+    overdueClients: number
+    dueThisWeek: number
+    eligibilityEndingSoon: number
+    noContact7Days: number
+  }
   csRole?: string | null
 }
 
+// ----------- Constants -----------
+
 const PRIORITY_COLOR: Record<string, string> = {
-  HIGH: '#ef4444', MEDIUM: '#f59e0b', LOW: '#10b981', URGENT: '#dc2626'
+  URGENT: '#dc2626',
+  HIGH:   '#ef4444',
+  MEDIUM: '#f59e0b',
+  LOW:    '#10b981',
 }
 
-const TIPS = [
-  "Stay hydrated — aim for 8 glasses of water today.",
-  "Take a 5-minute stretch break every hour.",
-  "Document your work as you go — future you will thank you.",
-  "Reach out to a colleague today — connection matters.",
-  "Review your PTO balance and plan time off proactively.",
-  "Set 3 priorities for today and focus on those first.",
-  "End your day by writing tomorrow's top task.",
-]
-
-const ACTION_META: Record<string, { icon: typeof Clock; color: string; label: string }> = {
-  TIME_CLOCKED_IN:  { icon: LogIn,     color: '#34d399', label: 'Clocked In' },
-  TIME_CLOCKED_OUT: { icon: LogOut,    color: '#f87171', label: 'Clocked Out' },
-  TASK_UPDATED:     { icon: FileEdit,  color: '#60a5fa', label: 'Task Updated' },
-  TASK_CREATED:     { icon: Zap,       color: '#a78bfa', label: 'Task Created' },
-  TICKET_CREATED:   { icon: MessageCircle, color: '#fbbf24', label: 'Ticket Created' },
-  TICKET_UPDATED:   { icon: Bell,      color: '#fb923c', label: 'Ticket Updated' },
+const ACTION_META: Record<
+  string,
+  { icon: React.ComponentType<{ size?: number }>; color: string; label: string }
+> = {
+  TASK_CREATED:     { icon: ListTodo,       color: '#a78bfa', label: 'Task Created' },
+  TASK_UPDATED:     { icon: FileEdit,       color: '#8b5cf6', label: 'Task Updated' },
+  TASK_COMPLETED:   { icon: CheckCircle2,   color: '#34d399', label: 'Task Completed' },
+  CLOCK_IN:         { icon: LogIn,          color: '#10b981', label: 'Clocked In' },
+  CLOCK_OUT:        { icon: LogOut,         color: '#06b6d4', label: 'Clocked Out' },
+  TICKET_CREATED:   { icon: MessageCircle,  color: '#fbbf24', label: 'Ticket Created' },
+  TICKET_UPDATED:   { icon: Bell,           color: '#fb923c', label: 'Ticket Updated' },
 }
 
 function getActionMeta(action: string) {
-  return ACTION_META[action] || { icon: Briefcase, color: '#64748b', label: action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) }
+  return (
+    ACTION_META[action] ?? {
+      icon: Briefcase,
+      color: '#64748b',
+      label: action
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    }
+  )
 }
 
 function greet(name: string): string {
@@ -56,163 +136,51 @@ function greet(name: string): string {
   return `${prefix}, ${name}`
 }
 
-/* ── Animated Count-Up Hook ── */
-function useCountUp(target: number, duration = 1200, delay = 300): number {
-  const [val, setVal] = useState(target) // SSR-safe: start at target
-  const mounted = useRef(false)
-  useEffect(() => {
-    if (mounted.current) return // only run once on initial mount
-    mounted.current = true
-    if (target === 0) { setVal(0); return }
-    // Reset to 0 then animate up
-    setVal(0)
-    const timeout = setTimeout(() => {
-      const start = performance.now()
-      const step = (now: number) => {
-        const elapsed = now - start
-        const progress = Math.min(elapsed / duration, 1)
-        const eased = 1 - Math.pow(1 - progress, 3)
-        setVal(Math.round(eased * target))
-        if (progress < 1) requestAnimationFrame(step)
-      }
-      requestAnimationFrame(step)
-    }, delay)
-    return () => clearTimeout(timeout)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return val
-}
-
-/* ── Live Clock with pulse ── */
-function LiveClock() {
-  const [time, setTime] = useState(new Date())
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  return (
-    <div className="wd-live-clock">
-      <div className="wd-clock-pulse" />
-      <span className="wd-clock-time">
-        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-      </span>
-      <span className="wd-clock-date">
-        {time.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-      </span>
-    </div>
-  )
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
-
-/* ── Floating Particles ── */
-function Particles() {
-  const particles = useMemo(() => 
-    Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      size: 2 + Math.random() * 3,
-      duration: 15 + Math.random() * 25,
-      delay: Math.random() * 10,
-      opacity: 0.15 + Math.random() * 0.25,
-    }))
-  , [])
-
-  return (
-    <div className="wd-particles" aria-hidden="true">
-      {particles.map(p => (
-        <div key={p.id} className="wd-particle" style={{
-          left: p.left, top: p.top,
-          width: p.size, height: p.size,
-          opacity: p.opacity,
-          animationDuration: `${p.duration}s`,
-          animationDelay: `${p.delay}s`,
-        }} />
-      ))}
-    </div>
-  )
-}
-
-/* ── SVG Progress Ring ── */
-function ProgressRing({ percent, size = 52, stroke = 5 }: { percent: number; size?: number; stroke?: number }) {
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const offset = circ - (percent / 100) * circ
-  return (
-    <svg width={size} height={size} className="wd-progress-ring">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="url(#ring-grad)" strokeWidth={stroke}
-        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-        style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.34,1.56,0.64,1) 0.5s', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }} />
-      <defs>
-        <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#2563eb" />
-          <stop offset="100%" stopColor="#60a5fa" />
-        </linearGradient>
-      </defs>
-    </svg>
-  )
-}
-
-/* ── 3D Tilt Card Wrapper ── */
-function TiltCard({ children, className, style, href }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; href?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const handleMove = useCallback((e: React.MouseEvent) => {
-    const el = ref.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    el.style.transform = `perspective(600px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg) translateY(-4px)`
-  }, [])
-  const handleLeave = useCallback(() => {
-    const el = ref.current
-    if (el) el.style.transform = ''
-  }, [])
-
-  const inner = (
-    <div ref={ref} className={className} style={style} onMouseMove={handleMove} onMouseLeave={handleLeave}>
-      {children}
-    </div>
-  )
-
-  if (href) {
-    return <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>{inner}</Link>
-  }
-  return inner
-}
-
-const STAT_ACCENTS = [
-  'linear-gradient(90deg, #a78bfa, #7c3aed)',
-  'linear-gradient(90deg, #fbbf24, #f59e0b)',
-  'linear-gradient(90deg, #34d399, #059669)',
-  'linear-gradient(90deg, #3b82f6, #2563eb)',
+const TIPS = [
+  'Stay hydrated — aim for 8 glasses of water today.',
+  'Take a 5-minute stretch break every hour.',
+  'Document your work as you go — future you will thank you.',
+  'Reach out to a colleague today — connection matters.',
+  'Review your PTO balance and plan time off proactively.',
+  'Set 3 priorities for today and focus on those first.',
+  'End your day by writing tomorrow\'s top task.',
 ]
 
-export default function DashboardClient({ user, stats, auditLogs, recentTasks, completedCount, totalTaskCount, todayShifts, csAlerts, csRole }: Props) {
+const STAT_THEMES = {
+  violet:  { bar: 'linear-gradient(90deg, #a78bfa, #7C3AED)', glow: 'rgba(124,58,237,0.35)',  text: 'linear-gradient(135deg, #c4b5fd, #7C3AED)' },
+  amber:   { bar: 'linear-gradient(90deg, #fbbf24, #f59e0b)', glow: 'rgba(245,158,11,0.35)',  text: 'linear-gradient(135deg, #fcd34d, #f59e0b)' },
+  mint:    { bar: 'linear-gradient(90deg, #6ee7b7, #10b981)', glow: 'rgba(52,211,153,0.35)',  text: 'linear-gradient(135deg, #6ee7b7, #10b981)' },
+  cyan:    { bar: 'linear-gradient(90deg, #67e8f9, #06b6d4)', glow: 'rgba(6,182,212,0.35)',   text: 'linear-gradient(135deg, #67e8f9, #06b6d4)' },
+} as const
+
+// =================================================================
+// MAIN
+// =================================================================
+
+export default function DashboardClient({
+  user,
+  stats,
+  auditLogs,
+  recentTasks,
+  completedCount,
+  totalTaskCount,
+  todayShifts,
+  csAlerts,
+  csRole,
+}: Props) {
   const productivity = totalTaskCount > 0 ? Math.round((completedCount / totalTaskCount) * 100) : 0
   const tip = TIPS[new Date().getDay() % TIPS.length]
   const streak = Math.min(completedCount, 30)
 
-  // Animated count-ups
-  const animTasks = useCountUp(stats.taskCount, 800, 400)
-  const animTickets = useCountUp(stats.openTickets, 800, 500)
-  const animHours = useCountUp(stats.weeklyHours, 1000, 600)
-  const animProductivity = useCountUp(productivity, 1200, 700)
+  const animTasks         = useCountUp(stats.taskCount,    800)
+  const animTickets       = useCountUp(stats.openTickets,  800)
+  const animHours         = useCountUp(stats.weeklyHours, 1000)
+  const animProductivity  = useCountUp(productivity,      1200)
 
-  // CaseSync alert count-ups
-  const animOverdue = useCountUp(csAlerts?.overdueClients ?? 0, 800, 800)
-  const animDueWeek = useCountUp(csAlerts?.dueThisWeek ?? 0, 800, 900)
-  const animEligibility = useCountUp(csAlerts?.eligibilityEndingSoon ?? 0, 800, 1000)
-  const animNoContact = useCountUp(csAlerts?.noContact7Days ?? 0, 800, 1100)
+  const animOverdue       = useCountUp(csAlerts?.overdueClients         ?? 0, 800)
+  const animDueWeek       = useCountUp(csAlerts?.dueThisWeek            ?? 0, 800)
+  const animEligibility   = useCountUp(csAlerts?.eligibilityEndingSoon  ?? 0, 800)
+  const animNoContact     = useCountUp(csAlerts?.noContact7Days         ?? 0, 800)
 
   const formattedShifts = todayShifts.map((shift) => ({
     id: shift.id,
@@ -227,355 +195,917 @@ export default function DashboardClient({ user, stats, auditLogs, recentTasks, c
     return days.map((d, i) => ({ label: d, isToday: i === todayIdx }))
   }, [])
 
+  const spot = useMouseSpotlight()
+
+  const showCsAlerts =
+    csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it')
+
   return (
-    <div className="wd">
-      {/* Ambient background + floating particles */}
-      <div className="wd-ambient" aria-hidden="true" />
-      <Particles />
+    <>
+      <Container size="xl" py="lg" className="wd-aurora">
 
-      {/* ═══ HERO SECTION ═══ */}
-      <div className="wd-hero">
-        <div className="wd-hero-left">
-          <h1 className="wd-hero-greeting">{greet(user.name ?? 'there')}</h1>
-          <p className="wd-hero-sub">Here&apos;s what&apos;s happening in your workspace today.</p>
+        {/* ============================== HERO ============================== */}
+        <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
+          <Paper radius="lg" p="xl" className="wd-hero">
+            <div className="wd-hero-mesh" aria-hidden />
+            <div className="wd-hero-orbs" aria-hidden>
+              <span className="wd-orb wd-orb-1" />
+              <span className="wd-orb wd-orb-2" />
+              <span className="wd-orb wd-orb-3" />
+            </div>
+            <div className="wd-hero-spotlight" aria-hidden />
+
+            <Group justify="space-between" align="center" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
+              <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+                <Title order={1} className="wd-hero-title">
+                  {greet(user.name ?? 'there')}
+                </Title>
+                <Text size="md" c="dimmed">
+                  Here&apos;s what&apos;s happening in your workspace today.
+                </Text>
+              </Stack>
+              <LiveClock />
+            </Group>
+          </Paper>
         </div>
-        <LiveClock />
-      </div>
 
-      {/* ═══ STAT CARDS with 3D tilt ═══ */}
-      <div className="wd-stats">
-        <TiltCard href="/w/tasks" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[0] } as React.CSSProperties}>
-          <div className="wd-stat-icon" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
-            <ListTodo size={28} />
-          </div>
-          <div className="wd-stat-body">
-            <span className="wd-stat-value">{animTasks}</span>
-            <span className="wd-stat-label">My Tasks</span>
-          </div>
-          <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </TiltCard>
+        {/* ============================== STATS ============================== */}
+        <SimpleGrid cols={{ base: 2, sm: 2, md: 4 }} spacing="md" mb="lg">
+          <StatCard
+            href="/w/tasks"
+            label="My Tasks"
+            value={animTasks}
+            icon={ListTodo}
+            theme="violet"
+            delay={0}
+          />
+          <StatCard
+            href="/w/tickets"
+            label="Open Tickets"
+            value={animTickets}
+            icon={MessageCircle}
+            theme="amber"
+            delay={80}
+          />
+          <StatCard
+            href="/w/time-clock"
+            label="Hours This Week"
+            value={animHours}
+            unit="h"
+            icon={Timer}
+            theme="mint"
+            delay={160}
+          />
+          <StatCard
+            label="Productivity"
+            value={animProductivity}
+            unit="%"
+            ring={productivity}
+            theme="cyan"
+            delay={240}
+          />
+        </SimpleGrid>
 
-        <TiltCard href="/w/tickets" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[1] } as React.CSSProperties}>
-          <div className="wd-stat-icon" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
-            <MessageCircle size={28} />
-          </div>
-          <div className="wd-stat-body">
-            <span className="wd-stat-value">{animTickets}</span>
-            <span className="wd-stat-label">Open Tickets</span>
-          </div>
-          <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </TiltCard>
+        {/* ============================== GRID ============================== */}
+        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
 
-        <TiltCard href="/w/time-clock" className="wd-stat-card wd-shimmer" style={{ '--accent': STAT_ACCENTS[2] } as React.CSSProperties}>
-          <div className="wd-stat-icon" style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}>
-            <Timer size={28} />
-          </div>
-          <div className="wd-stat-body">
-            <span className="wd-stat-value">{animHours}<span className="wd-stat-unit">h</span></span>
-            <span className="wd-stat-label">Hours This Week</span>
-          </div>
-          <ArrowUpRight size={18} className="wd-stat-arrow" />
-        </TiltCard>
+          {/* ================ LEFT COLUMN ================ */}
+          <Stack gap="md">
 
-        <TiltCard className="wd-stat-card wd-stat-productivity wd-shimmer" style={{ '--accent': STAT_ACCENTS[3] } as React.CSSProperties}>
-          <div className="wd-stat-icon-ring">
-            <ProgressRing percent={productivity} />
-          </div>
-          <div className="wd-stat-body">
-            <span className="wd-stat-value">{animProductivity}<span className="wd-stat-unit">%</span></span>
-            <span className="wd-stat-label">Productivity</span>
-          </div>
-        </TiltCard>
-      </div>
-
-      {/* ═══ MAIN GRID ═══ */}
-      <div className="wd-grid">
-        {/* LEFT COLUMN */}
-        <div className="wd-col">
-          <div className="wd-panel wd-panel-stagger" style={{ '--stagger': '0' } as React.CSSProperties}>
-            <div className="wd-panel-header">
-              <h2 className="wd-panel-title">
-                <CalendarDays size={18} className="wd-panel-title-icon" />
-                Today&apos;s Schedule
-              </h2>
-              <Link href="/w/schedule" className="wd-panel-link">View all <ChevronRight size={14} /></Link>
-            </div>
-            <div className="wd-panel-body">
+            {/* Today's Schedule */}
+            <PanelCard
+              title="Today's Schedule"
+              icon={CalendarDays}
+              accentColor="sky"
+              href="/w/schedule"
+              hrefLabel="View all"
+            >
               {formattedShifts.length === 0 ? (
-                <div className="wd-empty-mini">
-                  <CalendarDays size={36} />
-                  <p>No shifts scheduled today</p>
-                </div>
+                <EmptyMini icon={CalendarDays} text="No shifts scheduled today" />
               ) : (
-                <div className="wd-timeline">
-                  {formattedShifts.map(shift => (
-                    <div key={shift.id} className="wd-timeline-item">
-                      <div className="wd-timeline-dot" />
-                      <div className="wd-timeline-content">
-                        <span className="wd-timeline-title">{shift.title}</span>
-                        <span className="wd-timeline-time">{shift.time}</span>
-                      </div>
-                    </div>
+                <Stack gap="sm">
+                  {formattedShifts.map((shift) => (
+                    <Group key={shift.id} gap="sm" align="center" wrap="nowrap">
+                      <span className="wd-timeline-dot" aria-hidden />
+                      <Stack gap={0} style={{ flex: 1 }}>
+                        <Text fw={600} size="sm">{shift.title}</Text>
+                        <Text size="xs" c="dimmed">{shift.time}</Text>
+                      </Stack>
+                    </Group>
                   ))}
-                </div>
+                </Stack>
               )}
-            </div>
-          </div>
+            </PanelCard>
 
-          <div className="wd-panel wd-panel-stagger" style={{ '--stagger': '1' } as React.CSSProperties}>
-            <div className="wd-panel-header">
-              <h2 className="wd-panel-title">
-                <ListTodo size={18} className="wd-panel-title-icon" />
-                Recent Tasks
-              </h2>
-              <Link href="/w/tasks" className="wd-panel-link">View all <ChevronRight size={14} /></Link>
-            </div>
-            <div className="wd-panel-body">
+            {/* Recent Tasks */}
+            <PanelCard
+              title="Recent Tasks"
+              icon={ListTodo}
+              accentColor="coral"
+              href="/w/tasks"
+              hrefLabel="View all"
+            >
               {recentTasks.length === 0 ? (
-                <div className="wd-empty-mini">
-                  <Zap size={36} />
-                  <p>No tasks yet — create one to get started</p>
-                </div>
+                <EmptyMini icon={Zap} text="No tasks yet — create one to get started" />
               ) : (
-                <div className="wd-task-list">
-                  {recentTasks.slice(0, 5).map(task => (
+                <Stack gap={6}>
+                  {recentTasks.slice(0, 5).map((task) => (
                     <Link key={task.id} href="/w/tasks" className="wd-task-row">
-                      <span className="wd-task-priority" style={{ background: PRIORITY_COLOR[task.priority] || '#64748b' }} />
-                      <span className="wd-task-title">{task.title}</span>
-                      <span className={`wd-task-status wd-task-status-${task.status.toLowerCase()}`}>{task.status}</span>
+                      <span
+                        className="wd-task-priority"
+                        style={{ background: PRIORITY_COLOR[task.priority] || '#64748b' }}
+                      />
+                      <Text size="sm" fw={500} style={{ flex: 1, minWidth: 0 }} truncate>
+                        {task.title}
+                      </Text>
+                      <Badge size="xs" variant="light" color={statusColor(task.status)}>
+                        {task.status}
+                      </Badge>
                     </Link>
                   ))}
-                </div>
+                </Stack>
               )}
-            </div>
-          </div>
+            </PanelCard>
 
-          <div className="wd-panel wd-actions-panel wd-panel-stagger" style={{ '--stagger': '2' } as React.CSSProperties}>
-            <div className="wd-panel-header">
-              <h2 className="wd-panel-title">
-                <Zap size={18} className="wd-panel-title-icon" />
-                Quick Actions
-              </h2>
-            </div>
-            <div className="wd-panel-body">
-              <div className="wd-qa-grid">
-                <Link href="/w/tasks?new=true" className="wd-qa-btn wd-qa-purple wd-qa-pulse">
-                  <Zap size={24} />
-                  <span>New Task</span>
-                </Link>
-                <Link href="/w/tickets?new=true" className="wd-qa-btn wd-qa-amber">
-                  <MessageCircle size={24} />
-                  <span>Open Ticket</span>
-                </Link>
-                <Link href="/w/time-clock" className="wd-qa-btn wd-qa-green">
-                  <Clock size={24} />
-                  <span>Clock In</span>
-                </Link>
-                <Link href="/w/schedule" className="wd-qa-btn wd-qa-blue">
-                  <CalendarDays size={24} />
-                  <span>Schedule</span>
-                </Link>
-              </div>
-            </div>
-          </div>
+            {/* Quick Actions */}
+            <PanelCard title="Quick Actions" icon={Zap} accentColor="violet">
+              <SimpleGrid cols={{ base: 2 }} spacing="sm">
+                <QuickAction href="/w/tasks?new=true"     icon={Zap}            label="New Task"     gradient="linear-gradient(135deg, #7C3AED, #a855f7)" />
+                <QuickAction href="/w/tickets?new=true"   icon={MessageCircle}  label="Open Ticket"  gradient="linear-gradient(135deg, #f59e0b, #FB7185)" />
+                <QuickAction href="/w/time-clock"         icon={Clock}          label="Clock In"     gradient="linear-gradient(135deg, #10b981, #34D399)" />
+                <QuickAction href="/w/schedule"           icon={CalendarDays}   label="Schedule"     gradient="linear-gradient(135deg, #0EA5E9, #06b6d4)" />
+              </SimpleGrid>
+            </PanelCard>
 
-          {/* CaseSync Client Alerts */}
-          {csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it') && (
-            <div className="wd-panel wd-cs-alerts wd-panel-stagger" style={{ '--stagger': '3' } as React.CSSProperties}>
-              <div className="wd-cs-alerts-header">
-                <div className="wd-cs-alerts-title-row">
-                  <div className="wd-cs-alerts-badge">
-                    <ShieldAlert size={20} />
-                  </div>
-                  <div>
-                    <h2 className="wd-panel-title" style={{ margin: 0, gap: '0' }}>CaseSync Alerts</h2>
-                    <span className="wd-cs-alerts-scope">
-                      {csRole === 'supervisor' || csRole === 'it' ? 'All clients' : csRole === 'team_manager' ? 'Your team' : 'Your caseload'}
-                    </span>
-                  </div>
+            {/* CaseSync Alerts (conditional) */}
+            {showCsAlerts && csAlerts && (
+              <Card radius="lg" p="lg" withBorder className="wd-panel wd-cs-card">
+                <Group justify="space-between" align="flex-start" mb="md">
+                  <Group gap="sm" align="center">
+                    <ThemeIcon size="lg" radius="md" variant="light" color="red">
+                      <ShieldAlert size={18} />
+                    </ThemeIcon>
+                    <Stack gap={0}>
+                      <Text fw={700} size="md">CaseSync Alerts</Text>
+                      <Text size="xs" c="dimmed">
+                        {csRole === 'supervisor' || csRole === 'it'
+                          ? 'All clients'
+                          : csRole === 'team_manager'
+                          ? 'Your team'
+                          : 'Your caseload'}
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Anchor component={Link} href="/dashboard" size="xs" c="violet.4" underline="never">
+                    <Group gap={4}>Open CaseSync<ExternalLink size={12} /></Group>
+                  </Anchor>
+                </Group>
+
+                <SimpleGrid cols={{ base: 2 }} spacing="sm">
+                  <CsAlertTile href="/team?full=1&filter=overdue"                icon={AlertTriangle}  count={animOverdue}     label="Overdue"           color="#ef4444" />
+                  <CsAlertTile href="/team?full=1&filter=due_this_week"          icon={CalendarClock}  count={animDueWeek}     label="Due This Week"     color="#f59e0b" />
+                  <CsAlertTile href="/team?full=1&filter=eligibility_ending_soon" icon={CalendarDays}   count={animEligibility} label="Eligibility Ending" color="#06b6d4" />
+                  <CsAlertTile href="/team?full=1&filter=no_contact_7"            icon={Users}          count={animNoContact}   label="No Contact 7d"     color="#94a3b8" />
+                </SimpleGrid>
+
+                <Group gap={6} mt="sm" c="dimmed">
+                  <Users size={13} />
+                  <Text size="xs">{csAlerts.totalClients} total client{csAlerts.totalClients !== 1 ? 's' : ''}</Text>
+                </Group>
+              </Card>
+            )}
+          </Stack>
+
+          {/* ================ RIGHT COLUMN ================ */}
+          <Stack gap="md">
+
+            {/* Streak + tip */}
+            <Card radius="lg" p="lg" withBorder className="wd-panel wd-streak">
+              <Group gap="md" align="center" wrap="nowrap">
+                <div className="wd-streak-badge">
+                  <Flame size={28} />
+                  <span className="wd-streak-count">{streak}</span>
                 </div>
-                <Link href="/dashboard" className="wd-cs-switch-btn">
-                  <span>Open CaseSync</span>
-                  <ExternalLink size={14} />
-                </Link>
-              </div>
-              <div className="wd-cs-alerts-grid">
-                <Link href="/team?full=1&filter=overdue" className="wd-cs-alert-item wd-cs-alert-danger">
-                  <AlertTriangle size={18} />
-                  <span className="wd-cs-alert-count">{animOverdue}</span>
-                  <span className="wd-cs-alert-label">Overdue</span>
-                </Link>
-                <Link href="/team?full=1&filter=due_this_week" className="wd-cs-alert-item wd-cs-alert-warning">
-                  <CalendarClock size={18} />
-                  <span className="wd-cs-alert-count">{animDueWeek}</span>
-                  <span className="wd-cs-alert-label">Due This Week</span>
-                </Link>
-                <Link href="/team?full=1&filter=eligibility_ending_soon" className="wd-cs-alert-item wd-cs-alert-info">
-                  <CalendarDays size={18} />
-                  <span className="wd-cs-alert-count">{animEligibility}</span>
-                  <span className="wd-cs-alert-label">Eligibility Ending</span>
-                </Link>
-                <Link href="/team?full=1&filter=no_contact_7" className="wd-cs-alert-item wd-cs-alert-muted">
-                  <Users size={18} />
-                  <span className="wd-cs-alert-count">{animNoContact}</span>
-                  <span className="wd-cs-alert-label">No Contact 7d</span>
-                </Link>
-              </div>
-              <div className="wd-cs-alerts-footer">
-                <Users size={14} />
-                <span>{csAlerts.totalClients} total client{csAlerts.totalClients !== 1 ? 's' : ''}</span>
-              </div>
-            </div>
-          )}
-        </div>
+                <Stack gap={2} style={{ flex: 1 }}>
+                  <Text fw={700} size="md">Task Streak</Text>
+                  <Text size="xs" c="dimmed">
+                    {streak > 0
+                      ? `${streak} tasks completed — keep it up!`
+                      : 'Complete tasks to build your streak'}
+                  </Text>
+                </Stack>
+              </Group>
+              <Group gap="sm" mt="md" className="wd-tip">
+                <ThemeIcon size="sm" radius="md" variant="light" color="yellow">
+                  <Sun size={12} />
+                </ThemeIcon>
+                <Text size="xs" c="dimmed" style={{ flex: 1 }}>{tip}</Text>
+              </Group>
+            </Card>
 
-        {/* RIGHT COLUMN */}
-        <div className="wd-col">
-          <div className="wd-panel wd-streak-panel wd-panel-stagger" style={{ '--stagger': '0' } as React.CSSProperties}>
-            <div className="wd-streak-row">
-              <div className="wd-streak-badge wd-flame-flicker">
-                <Flame size={28} />
-                <span className="wd-streak-count">{streak}</span>
-              </div>
-              <div className="wd-streak-info">
-                <span className="wd-streak-title">Task Streak</span>
-                <span className="wd-streak-sub">{streak > 0 ? `${streak} tasks completed — keep it up!` : 'Complete tasks to build your streak'}</span>
-              </div>
-            </div>
-            <div className="wd-tip">
-              <Sun size={16} />
-              <span>{tip}</span>
-            </div>
-          </div>
+            {/* 30-Day Onboarding */}
+            <Card radius="lg" p="lg" withBorder className="wd-panel">
+              <Group gap="sm" align="center" mb="md">
+                <ThemeIcon size="lg" radius="md" variant="light" color="violet">
+                  <Award size={18} />
+                </ThemeIcon>
+                <Stack gap={0}>
+                  <Text fw={700} size="md">30-Day Onboarding</Text>
+                  <Text size="xs" c="dimmed">New support planner evaluation flow</Text>
+                </Stack>
+              </Group>
 
-          {/* ═══ ONBOARDING GUIDE ═══ */}
-          <div className="wd-panel wd-ob-guide wd-panel-stagger" style={{ '--stagger': '0.5' } as React.CSSProperties}>
-            <div className="wd-ob-guide-header">
-              <div className="wd-ob-guide-icon">
-                <Award size={20} />
-              </div>
-              <div>
-                <h2 className="wd-panel-title" style={{ margin: 0 }}>30-Day Onboarding</h2>
-                <span className="wd-ob-guide-sub">New support planner evaluation flow</span>
-              </div>
-            </div>
+              <Stack gap={0}>
+                <OnboardStep n={1} color="#60a5fa" line title="County Preference"  desc="Select your residence county and preferred client regions"          href="/w/county-preference"  cta="Open Form"            icon={MapPin} />
+                <OnboardStep n={2} color="#34d399" line title="Self-Assessment"    desc="Complete your 30-day self-evaluation in Workryn"                    href="/w/evaluations"        cta="Go to Evaluations"    icon={ClipboardCheck} />
+                <OnboardStep n={3} color="#fbbf24" line title="Schedule Meeting"   desc="Book your evaluation review with Sarah Abbott"                       extHref="https://calendly.com/sabbott-9/evaluations" cta="Schedule on Calendly" icon={CalendarDays} />
+                <OnboardStep n={4} color="#c084fc"      title="Supervisor Review" desc="Sarah reviews your self-assessment and completes the formal evaluation" />
+              </Stack>
 
-            <div className="wd-ob-steps">
-              <div className="wd-ob-step">
-                <div className="wd-ob-step-num" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>1</div>
-                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #3b82f6, #8b5cf6)' }} />
-                <div className="wd-ob-step-body">
-                  <div className="wd-ob-step-title">County Preference</div>
-                  <div className="wd-ob-step-desc">Select your residence county and preferred client regions</div>
-                  <Link href="/w/county-preference" className="wd-ob-step-link">
-                    <MapPin size={12} /> Open Form <ChevronRight size={12} />
-                  </Link>
-                </div>
-              </div>
+              <Group gap={6} mt="md" c="dimmed">
+                <Sparkles size={13} />
+                <Text size="xs">Complete steps 1–3 at least one week before your 30-day mark</Text>
+              </Group>
+            </Card>
 
-              <div className="wd-ob-step">
-                <div className="wd-ob-step-num" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>2</div>
-                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #10b981, #06b6d4)' }} />
-                <div className="wd-ob-step-body">
-                  <div className="wd-ob-step-title">Self-Assessment</div>
-                  <div className="wd-ob-step-desc">Complete your 30-day self-evaluation in Workryn</div>
-                  <Link href="/w/evaluations" className="wd-ob-step-link">
-                    <ClipboardCheck size={12} /> Go to Evaluations <ChevronRight size={12} />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="wd-ob-step">
-                <div className="wd-ob-step-num" style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>3</div>
-                <div className="wd-ob-step-line" style={{ background: 'linear-gradient(180deg, #f59e0b, #ef4444)' }} />
-                <div className="wd-ob-step-body">
-                  <div className="wd-ob-step-title">Schedule Meeting</div>
-                  <div className="wd-ob-step-desc">Book your evaluation review with Sarah Abbott</div>
-                  <a href="https://calendly.com/sabbott-9/evaluations" target="_blank" rel="noopener noreferrer" className="wd-ob-step-link">
-                    <CalendarDays size={12} /> Schedule on Calendly <ExternalLink size={10} />
-                  </a>
-                </div>
-              </div>
-
-              <div className="wd-ob-step">
-                <div className="wd-ob-step-num" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc' }}>4</div>
-                <div className="wd-ob-step-body">
-                  <div className="wd-ob-step-title">Supervisor Review</div>
-                  <div className="wd-ob-step-desc">Sarah reviews your self-assessment and completes the formal evaluation</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="wd-ob-guide-footer">
-              <Sparkles size={13} />
-              <span>Complete steps 1–3 at least one week before your 30-day mark</span>
-            </div>
-          </div>
-
-          <div className="wd-panel wd-week-panel wd-panel-stagger" style={{ '--stagger': '1' } as React.CSSProperties}>
-            <div className="wd-panel-header">
-              <h2 className="wd-panel-title">
-                <Timer size={18} className="wd-panel-title-icon" />
-                Week at a Glance
-              </h2>
-            </div>
-            <div className="wd-panel-body">
-              <div className="wd-week-chart">
+            {/* Week at a Glance */}
+            <PanelCard title="Week at a Glance" icon={Timer} accentColor="mint">
+              <Group align="flex-end" gap="xs" mb="sm" style={{ height: 120 }}>
                 {dayLabels.map(({ label, isToday }) => {
-                  const barPercent = isToday && stats.weeklyHours > 0 ? Math.min(stats.weeklyHours * 12.5, 100) : (isToday ? 8 : 0)
+                  const pct = isToday && stats.weeklyHours > 0
+                    ? Math.min(stats.weeklyHours * 12.5, 100)
+                    : (isToday ? 8 : 0)
                   return (
-                    <div key={label} className={`wd-week-bar-col ${isToday ? 'wd-week-today' : ''}`}>
-                      <div className="wd-week-bar-track">
-                        <div className="wd-week-bar-fill" style={{ height: `${barPercent}%` }} />
+                    <Stack key={label} gap={4} align="center" style={{ flex: 1, height: '100%' }}>
+                      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                        <div
+                          className="wd-week-bar"
+                          style={{
+                            height: `${pct}%`,
+                            background: isToday
+                              ? 'linear-gradient(180deg, #6ee7b7, #10b981)'
+                              : 'rgba(255,255,255,0.04)',
+                            boxShadow: isToday ? '0 0 16px rgba(52,211,153,0.55)' : 'none',
+                          }}
+                        />
                       </div>
-                      <span className="wd-week-bar-label">{label}</span>
-                    </div>
+                      <Text size="xs" c={isToday ? 'mint.4' : 'dimmed'} fw={isToday ? 700 : 500}>
+                        {label}
+                      </Text>
+                    </Stack>
                   )
                 })}
-              </div>
-              <div className="wd-week-summary">
-                <span className="wd-week-total">{animHours}h</span>
-                <span className="wd-week-total-label">total this week</span>
-              </div>
-            </div>
-          </div>
+              </Group>
+              <Group justify="space-between" align="baseline">
+                <Text className="wd-week-total" size="xl" fw={800}>{animHours}h</Text>
+                <Text size="xs" c="dimmed">total this week</Text>
+              </Group>
+            </PanelCard>
 
-          <div className="wd-panel wd-activity-panel wd-panel-stagger" style={{ '--stagger': '2' } as React.CSSProperties}>
-            <div className="wd-panel-header">
-              <h2 className="wd-panel-title">
-                <Clock size={18} className="wd-panel-title-icon" />
-                Recent Activity
-              </h2>
-            </div>
-            <div className="wd-panel-body">
+            {/* Recent Activity */}
+            <PanelCard title="Recent Activity" icon={Clock} accentColor="indigo">
               {auditLogs.length === 0 ? (
-                <div className="wd-empty-mini">
-                  <Clock size={36} />
-                  <p>No recent activity</p>
-                </div>
+                <EmptyMini icon={Clock} text="No recent activity" />
               ) : (
-                <div className="wd-activity-list">
+                <Stack gap={4}>
                   {auditLogs.slice(0, 8).map((log, idx) => {
                     const meta = getActionMeta(log.action)
                     const Icon = meta.icon
                     return (
-                      <div key={log.id} className="wd-act-row wd-act-slide" style={{ '--act-i': idx } as React.CSSProperties}>
-                        <div className="wd-act-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
-                          <Icon size={14} />
-                        </div>
-                        <div className="wd-act-content">
-                          <span className="wd-act-action">{meta.label}</span>
-                          <span className="wd-act-time">{timeAgo(log.createdAt)}</span>
-                        </div>
+                      <div
+                        key={log.id}
+                        className="wd-act-row"
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                      >
+                        <span
+                          className="wd-act-dot"
+                          style={{ background: `${meta.color}28`, color: meta.color }}
+                        >
+                          <Icon size={13} />
+                        </span>
+                        <Stack gap={0} style={{ flex: 1 }}>
+                          <Text size="sm" fw={500}>{meta.label}</Text>
+                          <Text size="xs" c="dimmed">{timeAgo(log.createdAt)}</Text>
+                        </Stack>
                       </div>
                     )
                   })}
-                </div>
+                </Stack>
               )}
-            </div>
-          </div>
-        </div>
+            </PanelCard>
+          </Stack>
+        </SimpleGrid>
+      </Container>
+
+      {/* ============================== STYLES ============================== */}
+      <style>{`
+        @keyframes wd-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes wd-mesh-drift {
+          0%, 100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(3%, -2%) scale(1.05); }
+        }
+        @keyframes wd-orb-a { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+        @keyframes wd-orb-b { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,25px)} }
+        @keyframes wd-orb-c { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,40px)} }
+        @keyframes wd-flame-flicker {
+          0%,100% { transform: scale(1) rotate(-2deg); filter: drop-shadow(0 0 8px #f59e0b); }
+          50%     { transform: scale(1.08) rotate(2deg); filter: drop-shadow(0 0 16px #f59e0b); }
+        }
+        @keyframes wd-clock-pulse {
+          0%,100% { box-shadow: 0 0 0 0 var(--accent, #7C3AED); }
+          50%     { box-shadow: 0 0 0 6px transparent; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .wd-aurora *, .wd-aurora *::before, .wd-aurora *::after {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+
+        /* ---------- Hero ---------- */
+        .wd-hero {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(124,58,237,0.35);
+          background:
+            linear-gradient(135deg, rgba(124,58,237,0.20) 0%, rgba(251,113,133,0.10) 60%, rgba(52,211,153,0.06) 100%),
+            rgba(11,15,30,0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          box-shadow: 0 20px 60px -20px rgba(124,58,237,0.40), 0 1px 0 rgba(255,255,255,0.05) inset;
+          animation: wd-slide-up 460ms ease-out backwards;
+        }
+        .wd-hero-mesh {
+          position: absolute; inset: -25%;
+          background:
+            radial-gradient(circle at 22% 30%, rgba(124,58,237,0.45), transparent 42%),
+            radial-gradient(circle at 78% 25%, rgba(251,113,133,0.30), transparent 47%),
+            radial-gradient(circle at 62% 82%, rgba(52,211,153,0.20), transparent 52%);
+          filter: blur(40px);
+          animation: wd-mesh-drift 22s ease-in-out infinite;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .wd-hero-orbs { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .wd-orb { position: absolute; border-radius: 50%; filter: blur(22px); opacity: 0.55; mix-blend-mode: screen; }
+        .wd-orb-1 { width: 130px; height: 130px; top: 12%; left: 8%;
+          background: radial-gradient(circle, #a855f7 0%, transparent 70%); animation: wd-orb-a 14s ease-in-out infinite; }
+        .wd-orb-2 { width: 100px; height: 100px; top: 60%; left: 55%;
+          background: radial-gradient(circle, #FB7185 0%, transparent 70%); animation: wd-orb-b 16s ease-in-out infinite; }
+        .wd-orb-3 { width: 80px;  height: 80px;  bottom: 10%; right: 12%;
+          background: radial-gradient(circle, #34D399 0%, transparent 70%); animation: wd-orb-c 18s ease-in-out infinite; }
+        .wd-hero-spotlight {
+          position: absolute; inset: 0; z-index: 1; pointer-events: none;
+          background: radial-gradient(circle 360px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.10), transparent 60%);
+        }
+        .wd-hero-title {
+          font-size: clamp(1.85rem, 4vw, 2.6rem);
+          font-weight: 800;
+          letter-spacing: -0.025em;
+          line-height: 1.05;
+          margin: 0;
+          background: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #FB7185 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 12px rgba(124,58,237,0.40));
+        }
+
+        /* ---------- Live clock ---------- */
+        .wd-live-clock {
+          position: relative;
+          display: inline-flex; flex-direction: column; align-items: flex-end;
+          padding: 12px 18px;
+          background: rgba(15,23,42,0.55);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+        .wd-clock-pulse {
+          position: absolute; top: 12px; right: 16px;
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: #34d399;
+          animation: wd-clock-pulse 1.8s ease-in-out infinite;
+          box-shadow: 0 0 8px #34d399;
+        }
+        .wd-clock-time {
+          font-variant-numeric: tabular-nums;
+          font-size: 1.875rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .wd-clock-date { font-size: 0.75rem; color: rgba(255,255,255,0.55); }
+
+        /* ---------- Stat cards ---------- */
+        .wd-stat-card {
+          position: relative;
+          overflow: hidden;
+          background: rgba(15,23,42,0.55);
+          backdrop-filter: blur(12px) saturate(140%);
+          -webkit-backdrop-filter: blur(12px) saturate(140%);
+          transition: transform 220ms ease, box-shadow 260ms ease, border-color 220ms ease;
+          animation: wd-slide-up 500ms ease-out backwards;
+          text-decoration: none;
+          color: inherit;
+          display: block;
+        }
+        .wd-stat-card::before {
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+          background: var(--wd-bar);
+        }
+        .wd-stat-card:hover {
+          border-color: var(--mantine-color-violet-6);
+          box-shadow: 0 14px 36px var(--wd-glow, rgba(124,58,237,0.35));
+        }
+        .wd-stat-value {
+          font-size: clamp(1.85rem, 3vw, 2.4rem);
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+          background: var(--wd-text);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .wd-stat-unit {
+          font-size: 0.6em;
+          opacity: 0.7;
+          font-weight: 700;
+          margin-left: 2px;
+        }
+
+        /* ---------- Panels ---------- */
+        .wd-panel {
+          background: rgba(15,23,42,0.55);
+          backdrop-filter: blur(14px) saturate(140%);
+          -webkit-backdrop-filter: blur(14px) saturate(140%);
+          animation: wd-slide-up 500ms ease-out backwards;
+          transition: border-color 200ms ease, box-shadow 220ms ease;
+        }
+        .wd-panel:hover {
+          border-color: var(--mantine-color-violet-7);
+        }
+        .wd-panel-title {
+          background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        }
+
+        /* ---------- Schedule timeline dot ---------- */
+        .wd-timeline-dot {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #0EA5E9, #06b6d4);
+          box-shadow: 0 0 10px rgba(14,165,233,0.55);
+          flex-shrink: 0;
+        }
+
+        /* ---------- Task row ---------- */
+        .wd-task-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.04);
+          text-decoration: none;
+          color: #e2e8f0;
+          transition: background 160ms ease, border-color 160ms ease;
+        }
+        .wd-task-row:hover {
+          background: rgba(124,58,237,0.08);
+          border-color: rgba(124,58,237,0.30);
+        }
+        .wd-task-priority {
+          width: 6px; height: 24px;
+          border-radius: 99px;
+          flex-shrink: 0;
+        }
+
+        /* ---------- Streak ---------- */
+        .wd-streak {
+          background: linear-gradient(135deg, rgba(245,158,11,0.10) 0%, rgba(15,23,42,0.55) 60%);
+          border-color: rgba(245,158,11,0.30);
+        }
+        .wd-streak-badge {
+          position: relative;
+          width: 64px; height: 64px;
+          display: grid; place-items: center;
+          background: radial-gradient(circle, rgba(245,158,11,0.30) 0%, rgba(245,158,11,0.05) 70%);
+          border-radius: 50%;
+          color: #fcd34d;
+          animation: wd-flame-flicker 1.6s ease-in-out infinite;
+        }
+        .wd-streak-count {
+          position: absolute;
+          right: -4px; bottom: -4px;
+          min-width: 22px; height: 22px; padding: 0 5px;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: linear-gradient(135deg, #f59e0b, #FB7185);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          border-radius: 999px;
+          box-shadow: 0 0 10px rgba(245,158,11,0.6);
+        }
+        .wd-tip {
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(251,191,36,0.06);
+          border: 1px solid rgba(251,191,36,0.15);
+        }
+
+        /* ---------- Onboarding ---------- */
+        .wd-ob-step {
+          position: relative;
+          display: grid;
+          grid-template-columns: 36px 1fr;
+          gap: 14px;
+          padding-bottom: 18px;
+        }
+        .wd-ob-step:last-child { padding-bottom: 0; }
+        .wd-ob-step-num {
+          width: 36px; height: 36px;
+          border-radius: 10px;
+          display: grid; place-items: center;
+          font-weight: 800;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+        .wd-ob-step-line {
+          position: absolute;
+          left: 17px; top: 36px; bottom: 0;
+          width: 2px;
+          border-radius: 99px;
+          opacity: 0.55;
+        }
+
+        /* ---------- Week chart ---------- */
+        .wd-week-bar {
+          width: 100%;
+          border-radius: 6px 6px 0 0;
+          transition: height 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .wd-week-total {
+          background: linear-gradient(135deg, #6ee7b7, #10b981);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* ---------- Activity ---------- */
+        .wd-act-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 8px 6px;
+          border-radius: 8px;
+          animation: wd-slide-up 400ms ease-out backwards;
+          transition: background 140ms ease;
+        }
+        .wd-act-row:hover { background: rgba(255,255,255,0.04); }
+        .wd-act-dot {
+          width: 28px; height: 28px;
+          display: grid; place-items: center;
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
+      `}</style>
+    </>
+  )
+}
+
+// =================================================================
+// SUB-COMPONENTS
+// =================================================================
+
+function statusColor(status: string): string {
+  const map: Record<string, string> = {
+    'TO_DO': 'gray',
+    'IN_PROGRESS': 'violet',
+    'IN_REVIEW': 'orange',
+    'DONE': 'mint',
+    'COMPLETED': 'mint',
+    'BLOCKED': 'red',
+  }
+  return map[status] ?? 'gray'
+}
+
+function StatCard({
+  href,
+  label,
+  value,
+  unit,
+  icon: Icon,
+  ring,
+  theme,
+  delay,
+}: {
+  href?: string
+  label: string
+  value: number | string
+  unit?: string
+  icon?: React.ComponentType<{ size?: number }>
+  ring?: number
+  theme: keyof typeof STAT_THEMES
+  delay: number
+}) {
+  const tilt = useTilt(6)
+  const cfg = STAT_THEMES[theme]
+
+  const inner = (
+    <Card
+      radius="lg"
+      p="md"
+      withBorder
+      className="wd-stat-card"
+      style={{
+        animationDelay: `${delay}ms`,
+        ['--wd-bar' as string]: cfg.bar,
+        ['--wd-glow' as string]: cfg.glow,
+        ['--wd-text' as string]: cfg.text,
+      } as React.CSSProperties}
+    >
+      <Group justify="space-between" align="center" wrap="nowrap">
+        {ring != null ? (
+          <RingProgress
+            size={60}
+            thickness={5}
+            sections={[{ value: ring, color: 'cyan.4' }]}
+            label={null}
+          />
+        ) : Icon ? (
+          <ThemeIcon size="xl" radius="md" variant="light" color={ringColorForTheme(theme)}>
+            <Icon size={22} />
+          </ThemeIcon>
+        ) : null}
+        <Stack gap={2} align="flex-end" style={{ flex: 1, minWidth: 0 }}>
+          <Text className="wd-stat-value">
+            {value}
+            {unit && <span className="wd-stat-unit">{unit}</span>}
+          </Text>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={600} ta="right">
+            {label}
+          </Text>
+        </Stack>
+        {href && <ArrowUpRight size={16} style={{ opacity: 0.5, position: 'absolute', top: 12, right: 12 }} />}
+      </Group>
+    </Card>
+  )
+
+  const wrapped = (
+    <div
+      ref={tilt.ref}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={{ transition: 'transform 260ms cubic-bezier(0.3, 0.5, 0.3, 1)' }}
+    >
+      {inner}
+    </div>
+  )
+
+  return href ? (
+    <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
+      {wrapped}
+    </Link>
+  ) : wrapped
+}
+
+function ringColorForTheme(theme: keyof typeof STAT_THEMES): string {
+  if (theme === 'violet') return 'violet'
+  if (theme === 'amber')  return 'orange'
+  if (theme === 'mint')   return 'mint'
+  if (theme === 'cyan')   return 'cyan'
+  return 'violet'
+}
+
+function PanelCard({
+  title,
+  icon: Icon,
+  accentColor,
+  href,
+  hrefLabel,
+  children,
+}: {
+  title: string
+  icon: React.ComponentType<{ size?: number }>
+  accentColor: string
+  href?: string
+  hrefLabel?: string
+  children: React.ReactNode
+}) {
+  return (
+    <Card radius="lg" p="lg" withBorder className="wd-panel">
+      <Group justify="space-between" align="center" mb="md">
+        <Group gap="xs" align="center">
+          <ThemeIcon size="md" radius="md" variant="light" color={accentColor}>
+            <Icon size={16} />
+          </ThemeIcon>
+          <Title order={3} size="h5" className="wd-panel-title">
+            {title}
+          </Title>
+        </Group>
+        {href && hrefLabel && (
+          <Anchor component={Link} href={href} size="xs" c="violet.4" underline="never">
+            <Group gap={2}>{hrefLabel}<ChevronRight size={12} /></Group>
+          </Anchor>
+        )}
+      </Group>
+      {children}
+    </Card>
+  )
+}
+
+function EmptyMini({
+  icon: Icon,
+  text,
+}: {
+  icon: React.ComponentType<{ size?: number }>
+  text: string
+}) {
+  return (
+    <Stack align="center" gap="xs" py="lg">
+      <ThemeIcon size="xl" radius="xl" variant="light" color="violet">
+        <Icon size={20} />
+      </ThemeIcon>
+      <Text size="sm" c="dimmed" ta="center">{text}</Text>
+    </Stack>
+  )
+}
+
+function QuickAction({
+  href,
+  icon: Icon,
+  label,
+  gradient,
+}: {
+  href: string
+  icon: React.ComponentType<{ size?: number }>
+  label: string
+  gradient: string
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        padding: '18px 12px',
+        borderRadius: 12,
+        background: gradient,
+        color: '#fff',
+        textDecoration: 'none',
+        fontWeight: 600,
+        fontSize: '0.875rem',
+        boxShadow: '0 8px 24px -8px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1) inset',
+        transition: 'transform 220ms ease, box-shadow 220ms ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-3px)'
+        e.currentTarget.style.boxShadow = '0 14px 32px -8px rgba(124,58,237,0.45), 0 0 1px rgba(255,255,255,0.15) inset'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = ''
+        e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1) inset'
+      }}
+    >
+      <Icon size={22} />
+      <span>{label}</span>
+    </Link>
+  )
+}
+
+function CsAlertTile({
+  href,
+  icon: Icon,
+  count,
+  label,
+  color,
+}: {
+  href: string
+  icon: React.ComponentType<{ size?: number }>
+  count: number
+  label: string
+  color: string
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: 12,
+        borderRadius: 12,
+        background: `${color}10`,
+        border: `1px solid ${color}33`,
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'background 160ms ease, border-color 160ms ease, transform 160ms ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = `${color}1f`
+        e.currentTarget.style.borderColor = `${color}66`
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = `${color}10`
+        e.currentTarget.style.borderColor = `${color}33`
+        e.currentTarget.style.transform = ''
+      }}
+    >
+      <div style={{ color, display: 'grid', placeItems: 'center' }}>
+        <Icon size={18} />
       </div>
+      <Stack gap={0}>
+        <Text fw={800} size="lg" style={{ color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {count}
+        </Text>
+        <Text size="xs" c="dimmed">{label}</Text>
+      </Stack>
+    </Link>
+  )
+}
+
+function OnboardStep({
+  n,
+  color,
+  line,
+  title,
+  desc,
+  href,
+  extHref,
+  cta,
+  icon: Icon,
+}: {
+  n: number
+  color: string
+  line?: boolean
+  title: string
+  desc: string
+  href?: string
+  extHref?: string
+  cta?: string
+  icon?: React.ComponentType<{ size?: number }>
+}) {
+  return (
+    <div className="wd-ob-step">
+      <div
+        className="wd-ob-step-num"
+        style={{ background: `${color}26`, color }}
+      >
+        {n}
+      </div>
+      {line && (
+        <div
+          className="wd-ob-step-line"
+          style={{ background: `linear-gradient(180deg, ${color}, ${color}66)` }}
+        />
+      )}
+      <Stack gap={4} pt={4}>
+        <Text fw={700} size="sm">{title}</Text>
+        <Text size="xs" c="dimmed">{desc}</Text>
+        {cta && Icon && (
+          href ? (
+            <Anchor component={Link} href={href} size="xs" c="violet.4" underline="never" mt={4}>
+              <Group gap={4} align="center"><Icon size={12} />{cta}<ChevronRight size={12} /></Group>
+            </Anchor>
+          ) : extHref ? (
+            <Anchor href={extHref} target="_blank" rel="noopener noreferrer" size="xs" c="violet.4" underline="never" mt={4}>
+              <Group gap={4} align="center"><Icon size={12} />{cta}<ExternalLink size={10} /></Group>
+            </Anchor>
+          ) : null
+        )}
+      </Stack>
+    </div>
+  )
+}
+
+function LiveClock() {
+  const [time, setTime] = useState<Date | null>(null)
+  useEffect(() => {
+    setTime(new Date())
+    const t = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  if (!time) {
+    return <div className="wd-live-clock" style={{ minWidth: 160, minHeight: 70 }} />
+  }
+  return (
+    <div className="wd-live-clock">
+      <div className="wd-clock-pulse" />
+      <span className="wd-clock-time">
+        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </span>
+      <span className="wd-clock-date">
+        {time.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
+      </span>
     </div>
   )
 }
