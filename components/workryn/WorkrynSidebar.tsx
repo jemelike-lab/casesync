@@ -369,6 +369,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           display: none;
           position: sticky; top: 0; z-index: 40;
           padding: 10px 14px;
+          padding-top: max(10px, env(safe-area-inset-top, 10px));
           align-items: center;
           gap: 10px;
           background: rgba(11,15,30,0.62);
