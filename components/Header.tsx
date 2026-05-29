@@ -9,6 +9,7 @@ import { Profile } from '@/lib/types'
 import NotificationBell from './NotificationBell'
 import { useTheme } from '@/hooks/useTheme'
 import { useState } from 'react'
+import { LogOut } from 'lucide-react'
 import OnboardingTour from './OnboardingTour'
 import GlobalSearch from './GlobalSearch'
 
@@ -211,7 +212,7 @@ export default function Header({ user, profile }: Props) {
             title="Sign out"
           >
             <span className="header-signout-text">Sign out</span>
-            <span className="header-signout-icon" aria-hidden="true">⎋</span>
+            <LogOut className="header-signout-icon" size={18} aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -241,9 +242,7 @@ export default function Header({ user, profile }: Props) {
           }
 
           .header-signout-icon {
-            display: inline;
-            font-size: 18px;
-            line-height: 1;
+            display: inline-block;
           }
 
           .header-right {
