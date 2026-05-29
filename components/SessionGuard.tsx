@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import IdleTimeout from './IdleTimeout'
@@ -10,14 +10,12 @@ import IdleTimeout from './IdleTimeout'
  *  1. IdleTimeout — 15min inactivity → warning → signout
  *  2. Auth event handling — SIGNED_OUT, TOKEN_REFRESHED
  *  3. Periodic freshness check — 60s getUser() poll
- *  4. PWA close detection — sendBeacon signout on swipe-away
+ *  4. Page close detection — sendBeacon signout on tab/app close
  */
 export default function SessionGuard() {
   const [authed, setAuthed] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-  const isStandalone = useRef(false)
-
   const redirectToLogin = useCallback(
     (reason: string) => {
       if (typeof window !== 'undefined' && window.location.pathname === '/login') return
@@ -27,12 +25,6 @@ export default function SessionGuard() {
   )
 
   useEffect(() => {
-    // Detect if running as installed PWA (standalone mode)
-    isStandalone.current =
-      typeof window !== 'undefined' &&
-      (window.matchMedia?.('(display-mode: standalone)')?.matches ||
-       (window.navigator as any).standalone === true)
-
     supabase.auth.getSession().then(({ data }) => {
       setAuthed(!!data.session)
     })
@@ -64,23 +56,20 @@ export default function SessionGuard() {
       }
     }, 60_000)
 
-    // ── PWA close / swipe-away detection ──
-    // When a PWA is swiped away on iOS/Android, the page transitions
+    // ── Page close / swipe-away detection ──
+    // When the app is closed or swiped away, the page transitions
     // through visibilitychange → pagehide → process kill. We use
     // sendBeacon to fire a signout request that survives the kill.
     //
-    // IMPORTANT: We do NOT sign out on visibilitychange because it
-    // fires on every in-app navigation, share sheet open, notification
-    // pull-down, and other benign transitions. Instead we only use
-    // pagehide — which fires once on actual page unload — with a
-    // check for event.persisted (bfcache) to avoid false positives.
-    //
-    // Only active for standalone (installed) PWAs — in a regular
-    // browser tab, closing shouldn't sign you out.
+    // We only use pagehide (not visibilitychange) because
+    // visibilitychange fires on benign transitions like in-app
+    // navigation, share sheet opens, and notification pull-downs.
+    // The !e.persisted check avoids bfcache false positives.
 
     function handlePageHide(e: PageTransitionEvent) {
-      if (isStandalone.current && !e.persisted) {
-        // Fire-and-forget signout via beacon — survives process kill
+      // Fire-and-forget signout on actual page unload (not bfcache).
+      // Covers browser tab close, app swipe-away, and PWA kill.
+      if (!e.persisted) {
         navigator.sendBeacon('/api/auth/signout')
       }
     }
