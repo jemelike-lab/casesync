@@ -56,19 +56,49 @@ export default function SessionGuard() {
       }
     }, 60_000)
 
-    // ── Page close / swipe-away detection ──
-    // When the app is closed or swiped away, the page transitions
-    // through visibilitychange → pagehide → process kill. We use
-    // sendBeacon to fire a signout request that survives the kill.
-    //
-    // We only use pagehide (not visibilitychange) because
-    // visibilitychange fires on benign transitions like in-app
-    // navigation, share sheet opens, and notification pull-downs.
-    // The !e.persisted check avoids bfcache false positives.
+    // ── Background detection (iOS PWA reliable) ──
+    // iOS PWAs don't honor session cookies — the WebKit process is
+    // suspended (not killed) on swipe-away, so cookies persist. And
+    // pagehide may not fire. We use visibilitychange + localStorage:
+    //  - hidden  → record timestamp
+    //  - visible → if elapsed > GRACE_MS, force logout
+    // localStorage survives the suspend, so the check on resume is reliable.
+    const BACKGROUND_GRACE_MS = 30_000 // 30 seconds
+    const HIDDEN_AT_KEY = 'cs_hidden_at'
+
+    function handleVisibility() {
+      if (document.visibilityState === 'hidden') {
+        try {
+          localStorage.setItem(HIDDEN_AT_KEY, String(Date.now()))
+        } catch {
+          // localStorage may throw in private mode — ignore
+        }
+        return
+      }
+
+      if (document.visibilityState === 'visible') {
+        let hiddenAt = 0
+        try {
+          hiddenAt = parseInt(localStorage.getItem(HIDDEN_AT_KEY) || '0', 10)
+          localStorage.removeItem(HIDDEN_AT_KEY)
+        } catch {
+          // ignore
+        }
+        if (hiddenAt > 0 && Date.now() - hiddenAt > BACKGROUND_GRACE_MS) {
+          // App was backgrounded too long → force logout
+          supabase.auth.signOut().finally(() => {
+            redirectToLogin('signed_out')
+          })
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
 
     function handlePageHide(e: PageTransitionEvent) {
       // Fire-and-forget signout on actual page unload (not bfcache).
-      // Covers browser tab close, app swipe-away, and PWA kill.
+      // Covers browser tab close and PWA process kill. iOS PWA swipe-away
+      // is handled by visibilitychange above (pagehide doesn't fire reliably).
       if (!e.persisted) {
         navigator.sendBeacon('/api/auth/signout')
       }
@@ -79,6 +109,7 @@ export default function SessionGuard() {
     return () => {
       subscription.unsubscribe()
       clearInterval(freshnessInterval)
+      document.removeEventListener('visibilitychange', handleVisibility)
       window.removeEventListener('pagehide', handlePageHide)
     }
   }, [supabase, redirectToLogin])
