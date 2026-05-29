@@ -99,9 +99,12 @@ export async function proxy(request: NextRequest) {
             request.cookies.set(name, value)
           )
           response = NextResponse.next({ request: { headers: request.headers } })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Strip maxAge/expires → session cookies that die on app close
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { maxAge, expires, ...sessionOpts } = options || {}
+            response.cookies.set(name, value, sessionOpts)
+          })
         },
       },
     }
