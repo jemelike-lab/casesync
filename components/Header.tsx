@@ -207,17 +207,43 @@ export default function Header({ user, profile }: Props) {
             onClick={handleLogout}
             className="btn-secondary header-signout"
             style={{ fontSize: 12 }}
+            aria-label="Sign out"
+            title="Sign out"
           >
-            Sign out
+            <span className="header-signout-text">Sign out</span>
+            <span className="header-signout-icon" aria-hidden="true">⎋</span>
           </button>
         </div>
       </header>
 
       <style>{`
+        .header-signout-icon {
+          display: none;
+        }
+
         @media (max-width: 640px) {
-          .header-user-meta,
-          .header-signout {
+          .header-user-meta {
             display: none !important;
+          }
+
+          .header-signout {
+            padding: 6px 10px !important;
+            font-size: 16px !important;
+            min-width: 36px;
+            height: 36px;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .header-signout-text {
+            display: none;
+          }
+
+          .header-signout-icon {
+            display: inline;
+            font-size: 18px;
+            line-height: 1;
           }
 
           .header-right {
