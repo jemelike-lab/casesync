@@ -19,6 +19,7 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 const ORIGIN_CHECK_EXEMPT = [
   '/api/webhooks/',
   '/api/auth/',
+  '/api/bot/',
   '/api/workryn/evaluations/cron',
   '/api/check-deadlines',
   '/api/health',
@@ -28,7 +29,7 @@ const ORIGIN_CHECK_EXEMPT = [
 const PUBLIC_PATHS = [
   '/login', '/accept-invite', '/reset-password', '/onboarding',
   '/offline', '/security', '/api/auth', '/api/health', '/api/webhooks',
-  '/api/version',
+  '/api/version', '/api/bot',
 ]
 
 const DATA_API_PREFIXES = [
