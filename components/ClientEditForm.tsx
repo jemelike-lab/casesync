@@ -7,6 +7,7 @@ import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate, ge
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
+import ClientFiles from '@/components/ClientFiles'
 import { useSearchParams } from 'next/navigation'
 import { sendAssignmentEmail } from '@/app/actions/notifications'
 import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
@@ -502,6 +503,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [assignedTo, setAssignedTo] = useState(client.assigned_to ?? '')
   const [plannerSearch, setPlannerSearch] = useState('')
+  const [reassignReason, setReassignReason] = useState('')
   const [highlightedField, setHighlightedField] = useState<string | null>(null)
   const [assignSaving, setAssignSaving] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
@@ -575,15 +577,44 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
   }
 
   const handleReassign = async () => {
-    if (!assignedTo) return; setAssignSaving(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('clients').update({ assigned_to: assignedTo }).eq('id', client.id)
-    if (!error) {
-      await supabase.from('activity_log').insert({ client_id: client.id, user_id: currentUserId, action: 'Reassigned client', field_name: 'assigned_to', old_value: client.assigned_to, new_value: assignedTo })
+    if (!assignedTo) return
+    setAssignSaving(true)
+    try {
+      const res = await fetch(`/api/clients/${client.id}/reassign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          new_planner_id: assignedTo,
+          reason: reassignReason.trim() || null,
+        }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `Reassign failed (${res.status})`)
+      }
+      // The RPC writes to client_assignment_history (audited). For
+      // backwards-compat, also append to activity_log so the existing
+      // timeline UI keeps showing reassignments.
+      const supabase = createClient()
+      await supabase.from('activity_log').insert({
+        client_id: client.id,
+        user_id: currentUserId,
+        action: 'Reassigned client',
+        field_name: 'assigned_to',
+        old_value: client.assigned_to,
+        new_value: assignedTo,
+      })
       sendAssignmentEmail(client.id, assignedTo).catch(() => {})
-      setToast({ type: 'success', message: 'Reassigned.' }); setTimeout(() => setToast(null), 3000)
+      setReassignReason('')
+      setToast({ type: 'success', message: 'Reassigned.' })
+      setTimeout(() => setToast(null), 3000)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Reassign failed'
+      setToast({ type: 'error', message: msg })
+      setTimeout(() => setToast(null), 4000)
+    } finally {
+      setAssignSaving(false)
     }
-    setAssignSaving(false)
   }
 
   const handleMarkDeceased = async () => {
@@ -787,6 +818,13 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
                   <option value="">â Select â</option>
                   {filteredPlanners.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                 </select>
+                <textarea
+                  value={reassignReason}
+                  onChange={e => setReassignReason(e.target.value)}
+                  placeholder="Reason (optional, recorded in audit history)"
+                  rows={2}
+                  style={{ ...inputStyle, fontSize: 11, marginBottom: 6, resize: 'vertical', fontFamily: 'inherit' }}
+                />
                 <button onClick={handleReassign} disabled={!assignedTo || assignSaving || assignedTo === client.assigned_to}
                   style={{ background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 8, color: '#007aff', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer', width: '100%', opacity: (!assignedTo || assignSaving) ? 0.4 : 1 }}>
                   {assignSaving ? 'Savingâ¦' : 'Reassign'}
@@ -823,7 +861,10 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <InlineField label="QA Review" field="qa_review" value={f.qa_review} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={QA_OPTIONS} />
           </CollapsibleSection>
 
-          {/* Documents */}
+          {/* Files (new, Supabase-native, in-portal viewer) */}
+          <ClientFiles clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
+
+          {/* Documents (legacy — SharePoint + Supabase combined view) */}
           <ClientDocuments clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
         </div>
       </div>

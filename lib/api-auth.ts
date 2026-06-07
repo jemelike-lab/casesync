@@ -58,7 +58,7 @@ export interface WithAuthOptions {
 type ApiHandler = (
   req: NextRequest,
   ctx: AuthContext,
-  routeCtx?: { params: Record<string, string> }
+  routeCtx?: { params: Promise<Record<string, string>> }
 ) => Promise<NextResponse | Response>
 
 // ---------- helpers ----------
@@ -76,7 +76,7 @@ export function withAuth(handler: ApiHandler, options?: WithAuthOptions) {
 
   return async function authedHandler(
     req: NextRequest,
-    routeCtx?: { params: Record<string, string> }
+    routeCtx?: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse | Response> {
     try {
       // 0. Read-only mode check — block writes before doing any DB work
