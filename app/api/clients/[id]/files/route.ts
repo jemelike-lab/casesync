@@ -30,7 +30,7 @@ const BUCKET = 'client-documents'
 // what; this endpoint just runs the query under the user's session.
 // ---------------------------------------------------------------------------
 export const GET = withAuth(async (req, ctx, routeCtx) => {
-  const clientId = routeCtx?.params?.id
+  const { id: clientId } = (await routeCtx?.params) ?? {}
   if (!clientId) {
     return NextResponse.json({ error: 'Missing client id' }, { status: 400 })
   }
@@ -66,7 +66,7 @@ export const GET = withAuth(async (req, ctx, routeCtx) => {
 // can't probe other clients' folders by crafting paths.
 // ---------------------------------------------------------------------------
 export const POST = withAuth(async (req: NextRequest, ctx, routeCtx) => {
-  const clientId = routeCtx?.params?.id
+  const { id: clientId } = (await routeCtx?.params) ?? {}
   if (!clientId) {
     return NextResponse.json({ error: 'Missing client id' }, { status: 400 })
   }

@@ -13,8 +13,7 @@ const BUCKET = 'client-documents'
 // can delete (uploader OR supervisor/it).
 // ---------------------------------------------------------------------------
 export const DELETE = withAuth(async (req, ctx, routeCtx) => {
-  const clientId = routeCtx?.params?.id
-  const fileId = routeCtx?.params?.fileId
+  const { id: clientId, fileId } = (await routeCtx?.params) ?? {}
   if (!clientId || !fileId) {
     return NextResponse.json(
       { error: 'Missing client id or file id' },

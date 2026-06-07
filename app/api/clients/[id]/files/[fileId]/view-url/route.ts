@@ -14,8 +14,7 @@ const SIGNED_URL_TTL_SECONDS = 300 // 5 minutes
 // we look up the file).
 // ---------------------------------------------------------------------------
 export const GET = withAuth(async (req, ctx, routeCtx) => {
-  const clientId = routeCtx?.params?.id
-  const fileId = routeCtx?.params?.fileId
+  const { id: clientId, fileId } = (await routeCtx?.params) ?? {}
   if (!clientId || !fileId) {
     return NextResponse.json(
       { error: 'Missing client id or file id' },
