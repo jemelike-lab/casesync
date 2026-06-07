@@ -75,11 +75,40 @@ function getDocIcon(mime: string | null | undefined, name: string) {
   return '📎'
 }
 
-function canPreviewInline(mime: string | null | undefined) {
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function canPreviewInline(mime: string | null | undefined, name?: string) {
   if (!mime) return false
   if (mime === 'application/pdf') return true
   if (mime.startsWith('image/')) return true
+  // Word
+  if (mime === 'application/msword') return true
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return true
+  if (name && /\.docx?$/i.test(name)) return true
+  // Excel
+  if (mime === 'application/vnd.ms-excel') return true
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return true
+  if (name && /\.xlsx?$/i.test(name)) return true
   return false
+}
+
+function isDocx(mime: string | null | undefined, name: string) {
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return true
+  if (mime === 'application/msword') return true
+  return /\.docx?$/i.test(name)
+}
+
+function isXlsx(mime: string | null | undefined, name: string) {
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return true
+  if (mime === 'application/vnd.ms-excel') return true
+  return /\.xlsx?$/i.test(name)
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +139,60 @@ function FileViewer({
 
   const isPdf = file.mime_type === 'application/pdf'
   const isImage = (file.mime_type ?? '').startsWith('image/')
+  const isWordDoc = isDocx(file.mime_type, file.file_name)
+  const isExcel = isXlsx(file.mime_type, file.file_name)
+
+  // Office formats render client-side from the signed URL. We lazy-load the
+  // converters only when actually needed so the bundle stays small.
+  const [officeHtml, setOfficeHtml] = useState<string | null>(null)
+  const [officeError, setOfficeError] = useState<string | null>(null)
+  const [officeLoading, setOfficeLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isWordDoc && !isExcel) return
+    let cancelled = false
+    setOfficeLoading(true)
+    setOfficeError(null)
+    setOfficeHtml(null)
+
+    ;(async () => {
+      try {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`Could not fetch file (${res.status})`)
+        const buf = await res.arrayBuffer()
+        if (cancelled) return
+
+        if (isWordDoc) {
+          // Dynamic import — only pulled in when a Word doc is opened
+          const mammoth = await import('mammoth')
+          const result = await mammoth.convertToHtml({ arrayBuffer: buf })
+          if (cancelled) return
+          setOfficeHtml(result.value || '<p><em>Document is empty.</em></p>')
+        } else if (isExcel) {
+          const XLSX = await import('xlsx')
+          const wb = XLSX.read(buf, { type: 'array' })
+          // Render each sheet as a table
+          const parts: string[] = []
+          wb.SheetNames.forEach(name => {
+            const sheet = wb.Sheets[name]
+            const html = XLSX.utils.sheet_to_html(sheet, { id: `sheet-${name}` })
+            parts.push(
+              `<h3 style="margin:24px 0 8px;font-size:14px;color:#0a84ff;border-bottom:1px solid #eee;padding-bottom:4px;">${escapeHtml(name)}</h3>${html}`
+            )
+          })
+          if (cancelled) return
+          setOfficeHtml(parts.join('\n'))
+        }
+      } catch (err) {
+        if (cancelled) return
+        setOfficeError(err instanceof Error ? err.message : 'Could not render preview')
+      } finally {
+        if (!cancelled) setOfficeLoading(false)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [url, isWordDoc, isExcel])
 
   return (
     <div
@@ -186,7 +269,50 @@ function FileViewer({
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
           />
         )}
-        {!isPdf && !isImage && (
+        {(isWordDoc || isExcel) && (
+          <div style={{
+            background: 'white', color: '#1d1d1f',
+            width: '100%', maxWidth: 1100, height: '100%',
+            overflow: 'auto', padding: '40px 56px',
+            borderRadius: 8, fontFamily: 'system-ui, -apple-system, sans-serif',
+            lineHeight: 1.6, fontSize: 14,
+          }}>
+            {officeLoading && (
+              <div style={{ color: '#86868b', textAlign: 'center', padding: 40 }}>
+                Rendering preview…
+              </div>
+            )}
+            {officeError && (
+              <div style={{ color: '#d32f2f', padding: 20, background: '#fff4f4', borderRadius: 6 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>Couldn&apos;t render preview</div>
+                <div style={{ fontSize: 13 }}>{officeError}</div>
+                <a
+                  href={url}
+                  download={file.file_name}
+                  style={{
+                    display: 'inline-block', marginTop: 16,
+                    background: '#0a84ff', color: 'white',
+                    borderRadius: 6, padding: '8px 14px',
+                    fontSize: 13, textDecoration: 'none',
+                  }}
+                >
+                  ↓ Download to open locally
+                </a>
+              </div>
+            )}
+            {officeHtml && (
+              <div
+                className="office-preview"
+                // Trusted: officeHtml is generated from the file content by
+                // mammoth (Word) or SheetJS (Excel). The file itself comes
+                // from our private signed URL and was uploaded by an
+                // authorized user.
+                dangerouslySetInnerHTML={{ __html: officeHtml }}
+              />
+            )}
+          </div>
+        )}
+        {!isPdf && !isImage && !isWordDoc && !isExcel && (
           <div style={{ color: '#f5f5f7', textAlign: 'center', maxWidth: 400 }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>{getDocIcon(file.mime_type, file.file_name)}</div>
             <div style={{ fontSize: 16, marginBottom: 8 }}>Preview not available for this file type yet</div>
@@ -395,7 +521,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {files.map(f => {
-              const previewable = canPreviewInline(f.mime_type)
+              const previewable = canPreviewInline(f.mime_type, f.file_name)
               const isLoadingThis = loadingView === f.id
               return (
                 <div key={f.id} style={{

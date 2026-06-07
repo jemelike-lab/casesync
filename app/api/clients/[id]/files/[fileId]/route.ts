@@ -30,6 +30,15 @@ export const DELETE = withAuth(async (req, ctx, routeCtx) => {
     .single()
 
   if (lookupErr || !doc) {
+    await auditLog(req, {
+      userId: ctx.user.id,
+      userEmail: ctx.user.email,
+      userRole: ctx.role,
+      action: 'client.files.delete.denied',
+      resourceType: 'client_document',
+      resourceId: fileId,
+      details: { client_id: clientId, reason: lookupErr?.message ?? 'not found or not authorized' },
+    })
     return NextResponse.json({ error: 'File not found' }, { status: 404 })
   }
 

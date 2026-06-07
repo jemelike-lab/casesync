@@ -131,6 +131,15 @@ export const POST = withAuth(async (req: NextRequest, ctx, routeCtx) => {
     { _client_id: clientId }
   )
   if (accessErr || canAccess !== true) {
+    await auditLog(req, {
+      userId: ctx.user.id,
+      userEmail: ctx.user.email,
+      userRole: ctx.role,
+      action: 'client.files.upload.denied',
+      resourceType: 'client',
+      resourceId: clientId,
+      details: { reason: accessErr?.message ?? 'not authorized for client' },
+    })
     return NextResponse.json(
       { error: 'Forbidden — you do not have access to this client' },
       { status: 403 }
