@@ -7,6 +7,7 @@ import { Client, Profile, ClientNote, ActivityLog, getDateStatus, formatDate, ge
 import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
+import ClientFiles from '@/components/ClientFiles'
 import { useSearchParams } from 'next/navigation'
 import { sendAssignmentEmail } from '@/app/actions/notifications'
 import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
@@ -823,7 +824,10 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <InlineField label="QA Review" field="qa_review" value={f.qa_review} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={QA_OPTIONS} />
           </CollapsibleSection>
 
-          {/* Documents */}
+          {/* Files (new, Supabase-native, in-portal viewer) */}
+          <ClientFiles clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
+
+          {/* Documents (legacy — SharePoint + Supabase combined view) */}
           <ClientDocuments clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
         </div>
       </div>
