@@ -1,0 +1,56 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="s-cal-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#065f46"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <radialGradient id="s-sun" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="320" cy="60" r="50" fill="url(#s-sun)" opacity="0.6"/>
+  <g transform="translate(60 40)">
+    <rect x="6" y="10" width="200" height="170" rx="10" fill="#cbd5e1" opacity="0.4"/>
+    <rect x="0" y="0" width="200" height="170" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M0,10 Q0,0 10,0 L190,0 Q200,0 200,10 L200,40 L0,40 Z" fill="url(#s-cal-top)"/>
+    <rect x="30" y="-6" width="6" height="20" rx="2" fill="#475569"/>
+    <rect x="164" y="-6" width="6" height="20" rx="2" fill="#475569"/>
+    <g font-family="system-ui,sans-serif" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">
+      <text x="22" y="58">S</text><text x="48" y="58">M</text><text x="74" y="58">T</text><text x="100" y="58">W</text><text x="126" y="58">T</text><text x="152" y="58">F</text><text x="178" y="58">S</text>
+    </g>
+    <line x1="10" y1="64" x2="190" y2="64" stroke="#cbd5e1" stroke-width="1"/>
+    <g font-family="system-ui,sans-serif" font-size="10" font-weight="600" fill="#475569" text-anchor="middle">
+      <text x="22" y="82">1</text><text x="48" y="82">2</text><text x="74" y="82">3</text><text x="100" y="82">4</text><text x="126" y="82">5</text><text x="152" y="82">6</text><text x="178" y="82">7</text>
+      <text x="22" y="102">8</text><text x="48" y="102">9</text><text x="74" y="102">10</text>
+      <circle cx="100" cy="98" r="11" fill="#10b981"/>
+      <text x="100" y="102" fill="#ffffff" font-weight="800">11</text>
+      <text x="126" y="102">12</text><text x="152" y="102">13</text><text x="178" y="102">14</text>
+      <text x="22" y="122">15</text><text x="48" y="122">16</text><text x="74" y="122">17</text><text x="100" y="122">18</text><text x="126" y="122">19</text><text x="152" y="122">20</text><text x="178" y="122">21</text>
+      <text x="22" y="142">22</text><text x="48" y="142">23</text><text x="74" y="142">24</text><text x="100" y="142">25</text><text x="126" y="142">26</text><text x="152" y="142">27</text><text x="178" y="142">28</text>
+    </g>
+    <rect x="40" y="106" width="16" height="3" rx="1" fill="#fb923c"/>
+    <rect x="118" y="106" width="16" height="3" rx="1" fill="#60a5fa"/>
+    <rect x="92" y="126" width="16" height="3" rx="1" fill="#a855f7"/>
+    <rect x="144" y="146" width="16" height="3" rx="1" fill="#10b981"/>
+  </g>
+  <g transform="translate(310 130)">
+    <circle cx="0" cy="0" r="38" fill="#ffffff" stroke="#065f46" stroke-width="3"/>
+    <circle cx="0" cy="0" r="33" fill="#f0fdf4"/>
+    <g stroke="#065f46" stroke-width="2">
+      <line x1="0" y1="-30" x2="0" y2="-24"/>
+      <line x1="0" y1="24" x2="0" y2="30"/>
+      <line x1="-30" y1="0" x2="-24" y2="0"/>
+      <line x1="24" y1="0" x2="30" y2="0"/>
+    </g>
+    <line x1="0" y1="0" x2="0" y2="-18" stroke="#065f46" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="14" y2="-10" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#065f46"/>
+  </g>
+  <g transform="translate(280 60)">
+    <rect x="0" y="0" width="80" height="22" rx="11" fill="#fb923c" stroke="#9a3412" stroke-width="1"/>
+    <circle cx="14" cy="11" r="4" fill="#ffffff"/>
+    <rect x="26" y="7" width="40" height="3" rx="1" fill="#ffffff"/>
+    <rect x="26" y="13" width="28" height="3" rx="1" fill="#ffffff" opacity="0.7"/>
+  </g>
+</svg>

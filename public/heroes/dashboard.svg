@@ -1,0 +1,61 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="d-sun" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="d-desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#92400e"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </linearGradient>
+    <linearGradient id="d-screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f2419"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </linearGradient>
+  </defs>
+  <circle cx="320" cy="60" r="60" fill="url(#d-sun)"/>
+  <rect x="60" y="40" width="120" height="100" rx="6" fill="#dbeafe" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="120" y1="40" x2="120" y2="140" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="60" y1="90" x2="180" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+  <ellipse cx="85" cy="65" rx="14" ry="6" fill="#ffffff"/>
+  <ellipse cx="100" cy="60" rx="10" ry="5" fill="#ffffff"/>
+  <ellipse cx="145" cy="68" rx="12" ry="5" fill="#ffffff"/>
+  <rect x="20" y="170" width="360" height="14" fill="url(#d-desk)" stroke="#451a03" stroke-width="1"/>
+  <rect x="20" y="184" width="360" height="6" fill="#7c2d12"/>
+  <g transform="translate(220 110)">
+    <rect x="-2" y="58" width="120" height="6" rx="2" fill="#475569"/>
+    <rect x="0" y="0" width="116" height="60" rx="4" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+    <rect x="6" y="6" width="104" height="48" rx="2" fill="url(#d-screen)"/>
+    <rect x="14" y="14" width="40" height="4" rx="1" fill="#34d399"/>
+    <rect x="14" y="22" width="60" height="2" fill="#6ee7b7" opacity="0.7"/>
+    <rect x="14" y="28" width="50" height="2" fill="#6ee7b7" opacity="0.5"/>
+    <rect x="14" y="38" width="28" height="10" rx="2" fill="#10b981"/>
+    <rect x="46" y="38" width="28" height="10" rx="2" fill="#34d399" opacity="0.7"/>
+    <rect x="78" y="38" width="22" height="10" rx="2" fill="#6ee7b7" opacity="0.5"/>
+  </g>
+  <g transform="translate(50 142)">
+    <rect x="0" y="0" width="30" height="28" rx="3" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+    <path d="M30,6 Q40,8 40,14 Q40,20 30,22" fill="none" stroke="#64748b" stroke-width="1.5"/>
+    <ellipse cx="15" cy="2" rx="13" ry="3" fill="#78350f"/>
+    <path d="M8,-4 Q10,-10 8,-16" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M16,-6 Q18,-12 16,-18" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M24,-4 Q26,-10 24,-16" stroke="#94a3b8" stroke-width="1.5" fill="none" opacity="0.5"/>
+  </g>
+  <g transform="translate(340 140)">
+    <path d="M0,30 L4,8 L8,30 Z" fill="#374151"/>
+    <ellipse cx="4" cy="32" rx="14" ry="3" fill="#1f2937"/>
+    <path d="M4,8 Q-10,-4 -14,8 Q-10,12 4,8 Z" fill="#10b981"/>
+    <path d="M4,8 Q18,-4 22,8 Q18,12 4,8 Z" fill="#059669"/>
+    <path d="M4,8 Q0,-12 -6,-8 Q-2,4 4,8 Z" fill="#34d399"/>
+    <path d="M4,8 Q8,-12 14,-8 Q10,4 4,8 Z" fill="#10b981"/>
+    <path d="M4,8 Q4,-18 4,-10 Q4,4 4,8 Z" stroke="#065f46" stroke-width="1" fill="#34d399"/>
+  </g>
+  <g transform="translate(150 158)">
+    <rect x="0" y="0" width="50" height="14" rx="1" fill="#fef3c7" stroke="#a16207" stroke-width="1"/>
+    <line x1="0" y1="4" x2="50" y2="4" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="0" y1="8" x2="50" y2="8" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="0" y1="12" x2="50" y2="12" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="20" y1="-4" x2="40" y2="-14" stroke="#1e3a8a" stroke-width="3" stroke-linecap="round"/>
+    <line x1="40" y1="-14" x2="44" y2="-18" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

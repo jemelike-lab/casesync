@@ -1,0 +1,38 @@
+<svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="et-board" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="et-clip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </linearGradient>
+    <radialGradient id="et-glow" cx="50%" cy="60%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="120" cy="170" rx="80" ry="14" fill="url(#et-glow)"/>
+  <g transform="translate(70 30)">
+    <rect x="5" y="14" width="100" height="120" rx="8" fill="#cbd5e1" opacity="0.4"/>
+    <rect x="0" y="10" width="100" height="120" rx="8" fill="url(#et-board)" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="35" y="0" width="30" height="18" rx="3" fill="url(#et-clip)"/>
+    <rect x="40" y="5" width="20" height="8" rx="1.5" fill="#0f2419"/>
+    <g stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4">
+      <line x1="14" y1="40" x2="86" y2="40"/>
+      <line x1="14" y1="56" x2="74" y2="56"/>
+      <line x1="14" y1="72" x2="82" y2="72"/>
+      <line x1="14" y1="88" x2="64" y2="88"/>
+    </g>
+    <circle cx="50" cy="108" r="14" fill="#10b981" opacity="0.15"/>
+    <circle cx="50" cy="108" r="11" fill="#10b981"/>
+    <path d="M44,108 L48,112 L56,103" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g fill="#fbbf24">
+    <path d="M50,40 l2,-6 l2,6 l6,2 l-6,2 l-2,6 l-2,-6 l-6,-2 z" opacity="0.8"/>
+    <path d="M190,60 l1.5,-4 l1.5,4 l4,1.5 l-4,1.5 l-1.5,4 l-1.5,-4 l-4,-1.5 z" opacity="0.7"/>
+    <path d="M40,140 l1,-3 l1,3 l3,1 l-3,1 l-1,3 l-1,-3 l-3,-1 z" opacity="0.6"/>
+    <path d="M200,160 l1,-3 l1,3 l3,1 l-3,1 l-1,3 l-1,-3 l-3,-1 z" opacity="0.6"/>
+  </g>
+</svg>

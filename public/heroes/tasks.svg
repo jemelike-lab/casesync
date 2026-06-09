@@ -1,0 +1,68 @@
+<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="t-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="t-glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="200" cy="120" rx="160" ry="90" fill="url(#t-glow)"/>
+  <g transform="translate(60 60) rotate(-6)">
+    <rect x="0" y="0" width="170" height="120" rx="10" fill="url(#t-card)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <rect x="0" y="0" width="4" height="120" rx="2" fill="#a855f7"/>
+    <rect x="16" y="16" width="80" height="8" rx="2" fill="#334155"/>
+    <rect x="16" y="32" width="120" height="4" rx="2" fill="#94a3b8" opacity="0.6"/>
+    <rect x="16" y="42" width="100" height="4" rx="2" fill="#94a3b8" opacity="0.6"/>
+    <g>
+      <rect x="16" y="60" width="14" height="14" rx="3" fill="#10b981"/>
+      <path d="M19,67 L23,71 L29,63" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="38" y1="62" x2="100" y2="62" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="69" x2="80" y2="69" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+    <g>
+      <rect x="16" y="80" width="14" height="14" rx="3" fill="#10b981"/>
+      <path d="M19,87 L23,91 L29,83" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="38" y1="82" x2="120" y2="82" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="89" x2="90" y2="89" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+    <g>
+      <rect x="16" y="100" width="14" height="14" rx="3" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+      <line x1="38" y1="102" x2="110" y2="102" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="109" x2="70" y2="109" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+  </g>
+  <g transform="translate(180 80) rotate(4)">
+    <rect x="0" y="0" width="170" height="120" rx="10" fill="url(#t-card)" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.15))"/>
+    <rect x="0" y="0" width="4" height="120" rx="2" fill="#10b981"/>
+    <rect x="16" y="16" width="90" height="8" rx="2" fill="#0f2419"/>
+    <rect x="16" y="32" width="130" height="4" rx="2" fill="#94a3b8" opacity="0.6"/>
+    <circle cx="148" cy="20" r="6" fill="#fbbf24"/>
+    <g>
+      <rect x="16" y="56" width="14" height="14" rx="3" fill="#10b981"/>
+      <path d="M19,63 L23,67 L29,59" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="38" y1="58" x2="130" y2="58" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="65" x2="100" y2="65" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+    <g>
+      <rect x="16" y="76" width="14" height="14" rx="3" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+      <line x1="38" y1="78" x2="120" y2="78" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="85" x2="80" y2="85" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+    <g>
+      <rect x="16" y="96" width="14" height="14" rx="3" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+      <line x1="38" y1="98" x2="100" y2="98" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="38" y1="105" x2="65" y2="105" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    </g>
+  </g>
+  <g transform="translate(340 50)">
+    <circle cx="0" cy="0" r="22" fill="#10b981" stroke="#065f46" stroke-width="2"/>
+    <path d="M-10,0 L-3,7 L10,-6" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g fill="#fbbf24">
+    <path d="M60,40 l2,-6 l2,6 l6,2 l-6,2 l-2,6 l-2,-6 l-6,-2 z" opacity="0.7"/>
+    <path d="M370,180 l1.5,-4 l1.5,4 l4,1.5 l-4,1.5 l-1.5,4 l-1.5,-4 l-4,-1.5 z" opacity="0.6"/>
+  </g>
+</svg>
