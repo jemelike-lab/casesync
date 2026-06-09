@@ -102,22 +102,16 @@ export default function SessionGuard() {
 
     document.addEventListener('visibilitychange', handleVisibility)
 
-    function handlePageHide(e: PageTransitionEvent) {
-      // Fire-and-forget signout on actual page unload (not bfcache).
-      // Covers browser tab close and PWA process kill. iOS PWA swipe-away
-      // is handled by visibilitychange above (pagehide doesn't fire reliably).
-      if (!e.persisted) {
-        navigator.sendBeacon('/api/auth/signout')
-      }
-    }
-
-    window.addEventListener('pagehide', handlePageHide)
+    // pagehide handler removed — it fired on every same-origin navigation
+    // (clicking any sidebar link), which sent a sendBeacon to /api/auth/signout
+    // and killed the server session before the next page could load. iOS PWA
+    // backgrounding is already covered by the visibilitychange handler above;
+    // browser tab close lets the server-side inactivity timeout reap naturally.
 
     return () => {
       subscription.unsubscribe()
       clearInterval(freshnessInterval)
       document.removeEventListener('visibilitychange', handleVisibility)
-      window.removeEventListener('pagehide', handlePageHide)
     }
   }, [supabase, redirectToLogin])
 
