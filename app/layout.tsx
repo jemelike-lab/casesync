@@ -5,8 +5,10 @@ import './workryn.css'
 import './workryn-timeclock.css'
 import './workryn-schedule.css'
 import './workryn-tickets.css'
+import './workryn-light-mode.css'
 import InstallBanner from '@/components/InstallBanner'
 import SessionGuard from '@/components/SessionGuard'
+import { ThemeProvider } from '@/components/workryn/ThemeProvider'
 import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,8 +30,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/*
+          Early theme-init: runs synchronously before any paint so the
+          stored theme is applied before React hydrates. Without this,
+          the page renders with the dark defaults from globals.css and
+          the body inline style — even when localStorage says "light" —
+          and may stay that way on routes that don't re-mount ThemeProvider.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('workryn-theme');if(t==='system'||!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
+          }}
+        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f0f11" />
         <meta name="author" content="VELOX Automated Operations LLC" />
@@ -58,12 +72,14 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/splash-ipad-pro-11.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
         <link rel="apple-touch-startup-image" href="/splash/splash-ipad-pro-12.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
-      <body className={inter.className} style={{ background: '#0f0f11', color: '#f5f5f7', minHeight: '100dvh' }}>
-        {children}
-        {/* SessionGuard: mounts IdleTimeout for all authenticated routes */}
-        <SessionGuard />
-        <InstallBanner />
-        <Analytics />
+      <body className={inter.className} style={{ minHeight: '100dvh' }}>
+        <ThemeProvider>
+          {children}
+          {/* SessionGuard: mounts IdleTimeout for all authenticated routes */}
+          <SessionGuard />
+          <InstallBanner />
+          <Analytics />
+        </ThemeProvider>
       <script dangerouslySetInnerHTML={{__html: "if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});}"}} />
       </body>
     </html>
