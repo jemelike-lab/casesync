@@ -66,6 +66,13 @@ export default function SessionGuard() {
     const BACKGROUND_GRACE_MS = 30_000 // 30 seconds
     const HIDDEN_AT_KEY = 'cs_hidden_at'
 
+    // Clear any stale hidden-timestamp from a previous browser session.
+    // localStorage persists across PWA restarts and browser tab closes, so
+    // without this cleanup the FIRST visibilitychange in a new session
+    // would compare against an ancient timestamp and force an immediate
+    // logout — even on something as innocuous as a sidebar nav.
+    try { localStorage.removeItem(HIDDEN_AT_KEY) } catch { /* ignore */ }
+
     function handleVisibility() {
       if (document.visibilityState === 'hidden') {
         try {
