@@ -215,6 +215,8 @@ export default function DashboardClient({
             </div>
             <div className="wd-hero-spotlight" aria-hidden />
 
+            <img src="/heroes/dashboard.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
+
             <Group justify="space-between" align="center" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
               <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
                 <Title order={1} className="wd-hero-title">

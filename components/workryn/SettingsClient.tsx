@@ -422,6 +422,8 @@ export default function SettingsClient({ profile: initialProfile, departments }:
             </div>
             <div className="sea-hero-spotlight" aria-hidden />
 
+            <img src="/heroes/settings.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
+
             <Group gap="lg" align="center" wrap="wrap" style={{ position: 'relative', zIndex: 2 }}>
               <div className="sea-identity-avatar" style={{ background: profile.image ? 'transparent' : avatarColor }}>
                 {profile.image ? (

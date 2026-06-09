@@ -219,6 +219,8 @@ export default function TrainingClient({
               <span className="tra-orb tra-orb-3" />
             </div>
             <div className="tra-hero-spotlight" aria-hidden />
+
+            <img src="/heroes/training.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
             {/* Vignette to keep text readable over the banner */}
             <div className="tra-hero-vignette" aria-hidden />
 

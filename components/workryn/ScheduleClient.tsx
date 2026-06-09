@@ -262,6 +262,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
             </div>
             <div className="sca-hero-spotlight" aria-hidden />
 
+            <img src="/heroes/schedule.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
+
             <Stack gap="md" style={{ position: 'relative', zIndex: 2 }}>
               <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
                 <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
