@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { workrynTheme } from '@/lib/workryn/theme'
+import { useTheme } from './ThemeProvider'
 
 /**
  * Client-side provider for Mantine inside the (workryn) route group.
@@ -10,20 +11,25 @@ import { workrynTheme } from '@/lib/workryn/theme'
  * Scope: only mounts on /w/* routes because it's imported by
  * app/(workryn)/layout.tsx. CaseSync routes are completely unaffected.
  *
- * Mode: forced dark to match the deep-navy aesthetic and the rest of the
- * Workryn shell (--bg #0f0f11 in globals.css). Theme switching can be added
- * later if needed.
+ * Mode: bound to the ThemeProvider's resolved theme so Mantine's
+ * built-in semantic colors (c="dimmed", default Title/Text colors,
+ * Card surface, etc.) match the user's chosen light/dark mode. Without
+ * this, every Mantine component renders with dark-mode colors regardless
+ * of data-theme — which is why stat-card labels, panel headers, and
+ * subtitles were invisible on light mode.
  */
 export default function WorkrynMantineProvider({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { resolved } = useTheme()
+
   return (
     <MantineProvider
       theme={workrynTheme}
-      defaultColorScheme="dark"
-      forceColorScheme="dark"
+      defaultColorScheme={resolved}
+      forceColorScheme={resolved}
     >
       <Notifications position="top-right" />
       {children}

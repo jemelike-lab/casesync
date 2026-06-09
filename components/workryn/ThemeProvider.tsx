@@ -31,23 +31,45 @@ function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
+function getInitialResolved(): 'light' | 'dark' {
+  // The early script in app/layout.tsx <head> already set data-theme on
+  // documentElement before React hydrated. Read from there so Mantine's
+  // first render matches what the CSS is already showing — no flash.
+  if (typeof document === 'undefined') return 'dark'
+  const attr = document.documentElement.getAttribute('data-theme')
+  return attr === 'light' ? 'light' : 'dark'
+}
+
+function getInitialTheme(): Theme {
+  if (typeof localStorage === 'undefined') return 'dark'
+  const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY)
+  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+  return 'dark'
+}
+
 function applyTheme(resolved: 'light' | 'dark') {
   if (typeof document === 'undefined') return
   document.documentElement.setAttribute('data-theme', resolved)
+  document.documentElement.style.colorScheme = resolved
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Default to dark on first paint to avoid flash; the effect below replaces it.
-  const [theme, setThemeState] = useState<Theme>('dark')
-  const [resolved, setResolved] = useState<'light' | 'dark'>('dark')
+  // Initialize from the value the early head-script already applied.
+  // This way the very first hydration render of the Mantine provider
+  // matches what data-theme already says — no flash to dark.
+  const [theme, setThemeState] = useState<Theme>(() =>
+    typeof window !== 'undefined' ? getInitialTheme() : 'dark'
+  )
+  const [resolved, setResolved] = useState<'light' | 'dark'>(() =>
+    typeof window !== 'undefined' ? getInitialResolved() : 'dark'
+  )
 
-  // On mount, read the stored preference and apply it
+  // Re-sync on mount in case the early script and localStorage got out
+  // of step (shouldn't happen, but safe).
   useEffect(() => {
-    // Prefer the shared 'theme' key; fall back to legacy 'workryn-theme'
-    const stored = (typeof localStorage !== 'undefined' && (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY))) as Theme | null
-    const initial: Theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
-    setThemeState(initial)
-    const eff = initial === 'system' ? getSystemTheme() : initial
+    const stored = getInitialTheme()
+    const eff = stored === 'system' ? getSystemTheme() : stored
+    setThemeState(stored)
     setResolved(eff)
     applyTheme(eff)
   }, [])

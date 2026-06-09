@@ -1,0 +1,624 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   workryn-light-mode.css
+   ─────────────────────────────────────────────────────────────────────
+   Comprehensive light-mode overrides for the Workryn Aurora rebuilds.
+
+   Each page (Dashboard, Time Clock, Tasks, Tickets, Evaluations,
+   Schedule, PTO, Training, Settings, Departments) was rebuilt with
+   its own class prefix (wd-, tca-, tka-, tia-, eva-, sca-, ptoa-,
+   tra-, sea-, dpa-) but with hardcoded dark glassy surfaces and
+   white-gradient text. That makes them invisible on the cream light
+   background.
+
+   This file translates all of those surfaces and text treatments to
+   light-mode equivalents in one place, keyed off [data-theme="light"].
+
+   It also:
+   - Forces the Aurora sidebar to a solid dark brown so its white text
+     stays readable (instead of bleeding through the transparent glass).
+   - Hides/dims the decorative orbs and meshes that don't make visual
+     sense on a light card.
+   - Handles the previously-untouched aurora-* sidebar classes.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────
+   1. Aurora SIDEBAR — solid dark, readable white text
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .aurora-sidebar {
+  background: linear-gradient(180deg, #2a1e10 0%, #1b1209 100%) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.06),
+    6px 0 28px -10px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="light"] .aurora-topbar {
+  background: linear-gradient(180deg, #2a1e10 0%, #221709 100%) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .aurora-brand-mark {
+  /* Was a white→lavender gradient. Force a warm cream gradient that pops
+     on the dark brown sidebar without going pure white. */
+  background: linear-gradient(135deg, #ffffff 0%, #f5d9b3 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+[data-theme="light"] .aurora-user-name {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .aurora-user-role {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+[data-theme="light"] .aurora-user:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .aurora-icon-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f5d9b3 !important;
+}
+
+[data-theme="light"] .aurora-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .aurora-cs-pill {
+  /* The CaseSync pill — was lavender-on-translucent-purple, invisible. */
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .aurora-cs-pill:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .aurora-sidebar-header,
+[data-theme="light"] .aurora-sidebar-footer {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Nav items — base + active + hover */
+[data-theme="light"] .aurora-nav a,
+[data-theme="light"] .aurora-nav button {
+  color: #e8d4b3 !important;
+}
+
+[data-theme="light"] .aurora-nav a:hover,
+[data-theme="light"] .aurora-nav button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .aurora-nav a[aria-current="page"],
+[data-theme="light"] .aurora-nav a.active,
+[data-theme="light"] .aurora-nav .active {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+/* Nav section labels ("WORKSPACE", "MANAGEMENT") */
+[data-theme="light"] .aurora-sidebar [class*="section-label"],
+[data-theme="light"] .aurora-sidebar [class*="nav-label"],
+[data-theme="light"] .aurora-sidebar [class*="nav-section"] {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Notifications panel inside sidebar — keep dark since it sits over the
+   dark sidebar, but make sure its title text is visible. */
+[data-theme="light"] .aurora-notif-panel {
+  background: rgba(20, 14, 6, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   2. Aurora HERO panels — the big gradient banner on every page
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .wd-hero,
+[data-theme="light"] .tca-hero,
+[data-theme="light"] .tka-hero,
+[data-theme="light"] .tia-hero,
+[data-theme="light"] .eva-hero,
+[data-theme="light"] .sca-hero,
+[data-theme="light"] .ptoa-hero,
+[data-theme="light"] .tra-hero,
+[data-theme="light"] .sea-hero,
+[data-theme="light"] .dpa-hero {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.92) 100%),
+    #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow:
+    0 10px 32px -8px rgba(60, 30, 0, 0.15),
+    0 2px 8px rgba(60, 30, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* The decorative meshes and orbs are radial-gradients in saturated
+   colors with mix-blend-mode: screen. They look great on dark but
+   muddy and weird on light. Dim them way down. */
+[data-theme="light"] .wd-hero-mesh,
+[data-theme="light"] .tca-hero-mesh,
+[data-theme="light"] .tka-hero-mesh,
+[data-theme="light"] .tia-hero-mesh,
+[data-theme="light"] .eva-hero-mesh,
+[data-theme="light"] .sca-hero-mesh,
+[data-theme="light"] .ptoa-hero-mesh,
+[data-theme="light"] .tra-hero-mesh,
+[data-theme="light"] .sea-hero-mesh,
+[data-theme="light"] .dpa-hero-mesh {
+  opacity: 0.18 !important;
+  mix-blend-mode: multiply !important;
+}
+
+[data-theme="light"] .wd-orb,
+[data-theme="light"] .tca-orb,
+[data-theme="light"] .tka-orb,
+[data-theme="light"] .tia-orb,
+[data-theme="light"] .eva-orb,
+[data-theme="light"] .sca-orb,
+[data-theme="light"] .ptoa-orb,
+[data-theme="light"] .tra-orb,
+[data-theme="light"] .sea-orb,
+[data-theme="light"] .dpa-orb {
+  opacity: 0.22 !important;
+  mix-blend-mode: multiply !important;
+}
+
+[data-theme="light"] .wd-hero-spotlight,
+[data-theme="light"] .tca-hero-spotlight,
+[data-theme="light"] .tka-hero-spotlight,
+[data-theme="light"] .tia-hero-spotlight,
+[data-theme="light"] .eva-hero-spotlight,
+[data-theme="light"] .sca-hero-spotlight,
+[data-theme="light"] .ptoa-hero-spotlight,
+[data-theme="light"] .tra-hero-spotlight,
+[data-theme="light"] .sea-hero-spotlight,
+[data-theme="light"] .dpa-hero-spotlight {
+  background: radial-gradient(
+    circle 360px at var(--mx, 50%) var(--my, 50%),
+    rgba(124, 58, 237, 0.06),
+    transparent 60%
+  ) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   3. Aurora HERO TITLES — the giant gradient headings
+   ───────────────────────────────────────────────────────────────────── */
+
+/* In dark mode these are gradients from #fff to an accent color, which
+   read as a glowing display title. On a white card they vanish.
+   We replace with a dark→accent gradient that keeps the brand colour
+   personality while staying readable. */
+
+[data-theme="light"] .wd-hero-title {
+  background: linear-gradient(135deg, #1a1108 0%, #6d28d9 55%, #db2777 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+[data-theme="light"] .tca-hero-title,
+[data-theme="light"] .tca-hero-title-idle,
+[data-theme="light"] .tca-hero-title-active,
+[data-theme="light"] .tca-hero-title-break {
+  background: linear-gradient(135deg, #1a1108 0%, #0e7490 50%, #0369a1 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+[data-theme="light"] .tca-hero-title-break {
+  background: linear-gradient(135deg, #1a1108 0%, #b45309 50%, #92400e 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+[data-theme="light"] .tka-hero-title {
+  background: linear-gradient(135deg, #1a1108 0%, #be123c 50%, #9f1239 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+[data-theme="light"] .tia-hero-title {
+  background: linear-gradient(135deg, #1a1108 0%, #b45309 50%, #92400e 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+[data-theme="light"] .eva-hero-title,
+[data-theme="light"] .sca-hero-title,
+[data-theme="light"] .ptoa-hero-title,
+[data-theme="light"] .tra-hero-title,
+[data-theme="light"] .sea-hero-title,
+[data-theme="light"] .dpa-hero-title {
+  background: linear-gradient(135deg, #1a1108 0%, #4338ca 50%, #6d28d9 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+/* Any descendant subtitle text inside a hero panel needs a dark colour
+   override because the original styles set it light. The hero panel is
+   now white, so unstyled paragraph text inherits dark — but Mantine's
+   c="dimmed" and inline-styled subtitle elements need this safety net. */
+[data-theme="light"] .wd-hero p,
+[data-theme="light"] .tca-hero p,
+[data-theme="light"] .tka-hero p,
+[data-theme="light"] .tia-hero p,
+[data-theme="light"] .eva-hero p,
+[data-theme="light"] .sca-hero p,
+[data-theme="light"] .ptoa-hero p,
+[data-theme="light"] .tra-hero p,
+[data-theme="light"] .sea-hero p,
+[data-theme="light"] .dpa-hero p {
+  color: #5c4a35 !important;
+}
+
+/* Dashboard live clock — the time + date capsule next to the greeting */
+[data-theme="light"] .wd-live-clock {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid #c9b89a !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+[data-theme="light"] .wd-clock-time {
+  background: linear-gradient(135deg, #1a1108 0%, #6d28d9 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+[data-theme="light"] .wd-clock-date {
+  color: #5c4a35 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   4. Aurora STAT CARDS — the 4-up metric row
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .wd-stat-card,
+[data-theme="light"] .tca-stat-card,
+[data-theme="light"] .tka-stat-card,
+[data-theme="light"] .tia-stat-card,
+[data-theme="light"] [class*="-stat-card"] {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 10px rgba(60, 30, 0, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .wd-stat-card:hover,
+[data-theme="light"] .tca-stat-card:hover,
+[data-theme="light"] .tka-stat-card:hover,
+[data-theme="light"] .tia-stat-card:hover,
+[data-theme="light"] [class*="-stat-card"]:hover {
+  border-color: #b8a080 !important;
+  box-shadow: 0 8px 22px rgba(60, 30, 0, 0.10) !important;
+}
+
+/* Stat values are gradient text in accent colors (cyan/violet/orange/mint).
+   Most read fine on white because they're saturated colors. But the
+   gradients start from #67e8f9, #c4b5fd, #fcd34d, #6ee7b7 — light pastels
+   that wash out on white. Force a darker stop so the value reads. */
+[data-theme="light"] .wd-stat-value,
+[data-theme="light"] .tca-stat-value,
+[data-theme="light"] .tka-stat-value,
+[data-theme="light"] .tia-stat-value,
+[data-theme="light"] [class*="-stat-value"] {
+  filter: saturate(1.1) brightness(0.85) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   5. Aurora PANELS — the column/section glass cards
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .wd-panel,
+[data-theme="light"] .tca-panel,
+[data-theme="light"] .tka-panel,
+[data-theme="light"] .tia-panel,
+[data-theme="light"] .eva-panel,
+[data-theme="light"] .sca-panel,
+[data-theme="light"] .ptoa-panel,
+[data-theme="light"] .tra-panel,
+[data-theme="light"] .sea-panel,
+[data-theme="light"] .dpa-panel,
+[data-theme="light"] .tca-clock-card,
+[data-theme="light"] .tka-card,
+[data-theme="light"] .wd-cs-card {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 12px rgba(60, 30, 0, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .wd-panel:hover,
+[data-theme="light"] .tca-panel:hover,
+[data-theme="light"] .tka-panel:hover,
+[data-theme="light"] .tia-panel:hover,
+[data-theme="light"] .eva-panel:hover,
+[data-theme="light"] .sca-panel:hover,
+[data-theme="light"] .ptoa-panel:hover,
+[data-theme="light"] .tra-panel:hover,
+[data-theme="light"] .sea-panel:hover,
+[data-theme="light"] .dpa-panel:hover {
+  border-color: #b8a080 !important;
+  box-shadow: 0 6px 20px rgba(60, 30, 0, 0.10) !important;
+}
+
+/* Panel titles — were white→cyan gradient, now dark→accent */
+[data-theme="light"] .wd-panel-title,
+[data-theme="light"] .tca-section-title,
+[data-theme="light"] [class*="-section-title"]:not(.aurora-sidebar *) {
+  background: linear-gradient(135deg, #1a1108 0%, #4338ca 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   6. Time Clock status capsule and clock-specific elements
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .tca-status-capsule {
+  background: linear-gradient(135deg, #ffffff 0%, #f7eedf 100%) !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 2px 8px rgba(60, 30, 0, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .tca-clock-card {
+  /* Already covered above, but reinforce since it has its own override
+     in the styled-jsx block. */
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .tca-clock-card:hover {
+  border-color: #b8a080 !important;
+  box-shadow: 0 8px 22px rgba(60, 30, 0, 0.10) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   7. Row elements that use rgba(255,255,255,0.02) backgrounds
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .tca-ts-row,
+[data-theme="light"] .wd-task-row,
+[data-theme="light"] .tia-row {
+  background: rgba(60, 30, 0, 0.025) !important;
+  border: 1px solid rgba(60, 30, 0, 0.06) !important;
+  color: #1a1108 !important;
+}
+
+[data-theme="light"] .tca-ts-row:hover,
+[data-theme="light"] .wd-task-row:hover,
+[data-theme="light"] .tia-row:hover {
+  background: rgba(37, 99, 235, 0.06) !important;
+  border-color: rgba(37, 99, 235, 0.20) !important;
+}
+
+[data-theme="light"] .tca-activity-row:hover {
+  background: rgba(6, 182, 212, 0.08) !important;
+}
+
+[data-theme="light"] .tca-hist-row:hover {
+  border-color: rgba(6, 182, 212, 0.30) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   8. Tasks kanban — columns, drop zones, cards
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .tka-col {
+  background: rgba(60, 30, 0, 0.03) !important;
+  border: 1.5px solid #c9b89a !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .tka-col-header {
+  /* In dark mode this is a dark band with white title. Keep the dark
+     band for column identity, but ensure the title contrasts. */
+  border-bottom: 1px solid #c9b89a !important;
+}
+
+[data-theme="light"] .tka-card {
+  background: #ffffff !important;
+  border: 1px solid #ddd0bb !important;
+  box-shadow: 0 1px 4px rgba(60, 30, 0, 0.06) !important;
+  color: #1a1108 !important;
+}
+
+[data-theme="light"] .tka-card:hover {
+  border-color: rgba(251, 113, 133, 0.45) !important;
+  box-shadow: 0 6px 18px rgba(60, 30, 0, 0.10) !important;
+}
+
+[data-theme="light"] .tka-card-title { color: #1a1108 !important; }
+[data-theme="light"] .tka-card-desc { color: #5c4a35 !important; }
+
+[data-theme="light"] .tka-empty {
+  border-color: rgba(60, 30, 0, 0.15) !important;
+  color: #9c8470 !important;
+}
+
+[data-theme="light"] .tka-ring-capsule {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid #c9b89a !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+[data-theme="light"] .tka-ring-label {
+  color: #5c4a35 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   9. Tickets list — rows, tabs, bulk bar
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .tia-list {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+
+[data-theme="light"] .tia-list-header {
+  background: rgba(60, 30, 0, 0.03) !important;
+  border-bottom: 1px solid #c9b89a !important;
+  color: #5c4a35 !important;
+}
+
+[data-theme="light"] .tia-row-title { color: #1a1108 !important; }
+[data-theme="light"] .tia-row-sub { color: #5c4a35 !important; }
+[data-theme="light"] .tia-row-meta { color: #5c4a35 !important; }
+
+[data-theme="light"] .tia-row-selected {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-left-color: #f59e0b !important;
+}
+
+[data-theme="light"] .tia-tab {
+  color: #5c4a35 !important;
+}
+[data-theme="light"] .tia-tab-active {
+  background: rgba(245, 158, 11, 0.10) !important;
+  color: #b45309 !important;
+  border-bottom-color: #f59e0b !important;
+}
+
+[data-theme="light"] .tia-bulk-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1.5px solid #c9b89a !important;
+  box-shadow: 0 8px 24px rgba(60, 30, 0, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+[data-theme="light"] .tia-filter-bar {
+  background: #ffffff !important;
+  border: 1.5px solid #c9b89a !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   10. Catch-all: backgrounds defined as rgba(15,23,42,X) or rgba(11,15,30,X)
+       on Aurora-prefixed elements should become white in light mode.
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .wd-aurora [style*="rgba(15, 23, 42"],
+[data-theme="light"] .wd-aurora [style*="rgba(15,23,42"],
+[data-theme="light"] .tca-root [style*="rgba(15, 23, 42"],
+[data-theme="light"] .tca-root [style*="rgba(15,23,42"],
+[data-theme="light"] .tka-root [style*="rgba(15, 23, 42"],
+[data-theme="light"] .tka-root [style*="rgba(15,23,42"],
+[data-theme="light"] .tia-root [style*="rgba(15, 23, 42"],
+[data-theme="light"] .tia-root [style*="rgba(15,23,42"] {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #1a1108 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   11. Mantine baseline overrides for inside Aurora content area only
+       (the sidebar stays dark; everything else gets light treatment).
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Card surface — Mantine's default is dark navy under
+   forceColorScheme="dark". With Mantine now in light mode, this is
+   mostly redundant, but keep as safety net for any explicit overrides. */
+[data-theme="light"] .w-page-content .mantine-Card-root,
+[data-theme="light"] .w-page-content .mantine-Paper-root {
+  background-color: #ffffff;
+}
+
+/* Mantine dimmed text inside content — Mantine should render this
+   correctly now that color scheme is synced, but force the warm-brown
+   secondary in case any cached styles linger. */
+[data-theme="light"] .w-page-content [data-mantine-color-scheme="dark"] {
+  /* If any nested Mantine subtree is still being forced to dark (e.g.
+     by a third-party widget), at least make its dimmed text legible. */
+  color-scheme: light;
+}
+
+/* Buttons defined with bright gradient backgrounds (tca-btn-primary etc.)
+   look fine on light, no change needed — they're already accent-colored
+   with white text. */
+
+/* ─────────────────────────────────────────────────────────────────────
+   12. Aurora background — soften saturated blooms on light page
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .aurora-bg {
+  background: radial-gradient(
+    ellipse at top,
+    rgba(124, 58, 237, 0.04),
+    transparent 50%
+  ) !important;
+}
+
+[data-theme="light"] .aurora-bg::before,
+[data-theme="light"] .aurora-bg::after {
+  opacity: 0.25 !important;
+  mix-blend-mode: multiply !important;
+}
+
+[data-theme="light"] .aurora-grain {
+  opacity: 0.4 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   13. Generic Mantine element fixes that show up inside Aurora pages
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Mantine Title default color in light mode is fine, but some components
+   pass c="white" or inline styles that need overriding. */
+[data-theme="light"] .w-page-content [style*="color: rgb(255, 255, 255)"]:not([class*="hero-title"]):not([class*="btn"]):not([class*="badge"]),
+[data-theme="light"] .w-page-content [style*="color: #fff"]:not([class*="hero-title"]):not([class*="btn"]):not([class*="badge"]),
+[data-theme="light"] .w-page-content [style*="color:#fff"]:not([class*="hero-title"]):not([class*="btn"]):not([class*="badge"]) {
+  /* Only override decorative white text — leave button/badge text alone */
+  color: #1a1108 !important;
+}
+
+/* Mantine ThemeIcon variant="light" used in stat cards renders a colored
+   square with a dim icon. On light mode the contrast can flip oddly; force
+   a slightly darker icon inside light-variant ThemeIcons inside stat cards. */
+[data-theme="light"] [class*="-stat-card"] .mantine-ThemeIcon-root[data-variant="light"] svg {
+  opacity: 0.95;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   14. Empty-state SVG icons and "no data" messages
+   ───────────────────────────────────────────────────────────────────── */
+
+[data-theme="light"] .w-page-content [class*="empty"] svg {
+  opacity: 0.5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   END.
+   ═══════════════════════════════════════════════════════════════════ */
