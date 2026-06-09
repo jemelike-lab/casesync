@@ -11,7 +11,7 @@ import {
   Award, GraduationCap,
 } from 'lucide-react'
 import { getInitials, formatDate, formatDateTime, timeAgo } from '@/lib/workryn/utils'
-import { DEPT_ICON_OPTIONS, DEPT_COLOR_SWATCHES, getDeptIcon } from './DepartmentsClient'
+import { DEPT_ICON_OPTIONS, DEPT_COLOR_SWATCHES, TEAM_BADGES, getDeptIcon } from './DepartmentsClient'
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type Member = {
@@ -372,13 +372,25 @@ export default function DepartmentDetailClient({
           <div className="dept-header-content">
             <div className="dept-header-left">
               <div
-                className="dept-header-icon"
-                style={{
-                  background: `${dept.color}1f`,
-                  border: `1px solid ${dept.color}44`,
-                }}
+                className={`dept-header-icon ${TEAM_BADGES.has(dept.slug) ? 'dept-header-icon-badge' : ''}`}
+                style={
+                  TEAM_BADGES.has(dept.slug)
+                    ? { boxShadow: `0 10px 28px ${dept.color}44, inset 0 0 0 2px rgba(255,255,255,0.05)` }
+                    : {
+                        background: `${dept.color}1f`,
+                        border: `1px solid ${dept.color}44`,
+                      }
+                }
               >
-                <Icon size={40} color={dept.color} />
+                {TEAM_BADGES.has(dept.slug) ? (
+                  <img
+                    src={`/teams/${dept.slug}.svg`}
+                    alt={`${dept.name} badge`}
+                    style={{ display: 'block', width: '100%', height: '100%' }}
+                  />
+                ) : (
+                  <Icon size={40} color={dept.color} />
+                )}
               </div>
               <div className="dept-header-text">
                 <h1 style={{ margin: 0, fontSize: '1.75rem', letterSpacing: '-0.02em' }}>
@@ -1801,6 +1813,13 @@ export default function DepartmentDetailClient({
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+        }
+        .dept-header-icon-badge {
+          border-radius: 50%;
+          background: rgba(255,255,255,0.02);
+          border: 1.5px solid rgba(255,255,255,0.06);
+          overflow: hidden;
+          padding: 0;
         }
         .dept-header-text { min-width: 0; flex: 1; }
         .dept-header-meta {

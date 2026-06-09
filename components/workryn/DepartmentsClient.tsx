@@ -71,7 +71,7 @@ export const DEPT_ICON_OPTIONS = [
   { key: 'headphones',  label: 'Support',   Icon: Headphones },
 ] as const
 
-const TEAM_BADGES: ReadonlySet<string> = new Set([
+export const TEAM_BADGES: ReadonlySet<string> = new Set([
   'maroon-musketeers','white-diamonds','indigo-gladiators',
   'bronze-butterflies','silver-titans','sage-sharks',
   'emerald-guardians','purple-penguins','blue-giants','gold-giants',
