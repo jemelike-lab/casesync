@@ -1,0 +1,34 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bb-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#c2731f"/>
+      <stop offset="100%" stop-color="#6b2e0a"/>
+    </radialGradient>
+    <linearGradient id="bb-wing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#7c2d12"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bb-bg)" stroke="#fde68a" stroke-width="2"/>
+  <g transform="translate(100 100)">
+    <!-- upper wings -->
+    <path d="M0,-5 Q-40,-50 -55,-30 Q-58,-10 -25,5 Z" fill="url(#bb-wing)" stroke="#451a03" stroke-width="1.5"/>
+    <path d="M0,-5 Q40,-50 55,-30 Q58,-10 25,5 Z" fill="url(#bb-wing)" stroke="#451a03" stroke-width="1.5"/>
+    <!-- lower wings -->
+    <path d="M0,5 Q-30,35 -45,30 Q-50,15 -20,2 Z" fill="url(#bb-wing)" stroke="#451a03" stroke-width="1.5"/>
+    <path d="M0,5 Q30,35 45,30 Q50,15 20,2 Z" fill="url(#bb-wing)" stroke="#451a03" stroke-width="1.5"/>
+    <!-- wing spots -->
+    <circle cx="-32" cy="-18" r="5" fill="#fef3c7"/>
+    <circle cx="32" cy="-18" r="5" fill="#fef3c7"/>
+    <circle cx="-25" cy="20" r="3.5" fill="#fef3c7"/>
+    <circle cx="25" cy="20" r="3.5" fill="#fef3c7"/>
+    <!-- body -->
+    <ellipse cx="0" cy="0" rx="3.5" ry="32" fill="#451a03"/>
+    <!-- antennae -->
+    <path d="M-1.5,-30 Q-9,-44 -14,-46" stroke="#451a03" stroke-width="2" fill="none"/>
+    <path d="M1.5,-30 Q9,-44 14,-46" stroke="#451a03" stroke-width="2" fill="none"/>
+    <circle cx="-14" cy="-46" r="2" fill="#451a03"/>
+    <circle cx="14" cy="-46" r="2" fill="#451a03"/>
+  </g>
+</svg>

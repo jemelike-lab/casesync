@@ -1,0 +1,52 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="pp-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </radialGradient>
+    <linearGradient id="pp-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f0a2e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#pp-bg)" stroke="#e9d5ff" stroke-width="2"/>
+  <!-- subtle snowflakes -->
+  <g fill="#f3e8ff" opacity="0.55">
+    <circle cx="35" cy="40" r="2"/>
+    <circle cx="165" cy="55" r="1.5"/>
+    <circle cx="30" cy="155" r="1.8"/>
+    <circle cx="170" cy="160" r="2.2"/>
+    <circle cx="170" cy="115" r="1.5"/>
+    <circle cx="28" cy="100" r="1.8"/>
+  </g>
+  <g transform="translate(100 105)">
+    <!-- body -->
+    <ellipse cx="0" cy="10" rx="40" ry="52" fill="url(#pp-body)" stroke="#0f0a2e" stroke-width="1.5"/>
+    <!-- white belly -->
+    <ellipse cx="0" cy="18" rx="26" ry="38" fill="#f5f3ff"/>
+    <!-- head -->
+    <ellipse cx="0" cy="-38" rx="28" ry="26" fill="url(#pp-body)" stroke="#0f0a2e" stroke-width="1.5"/>
+    <!-- white face patch -->
+    <ellipse cx="0" cy="-32" rx="18" ry="14" fill="#f5f3ff"/>
+    <!-- eyes -->
+    <circle cx="-8" cy="-40" r="3.5" fill="#0f0a2e"/>
+    <circle cx="8" cy="-40" r="3.5" fill="#0f0a2e"/>
+    <circle cx="-7" cy="-41" r="1" fill="#f5f3ff"/>
+    <circle cx="9" cy="-41" r="1" fill="#f5f3ff"/>
+    <!-- beak -->
+    <polygon points="-5,-28 5,-28 0,-18" fill="#f59e0b" stroke="#92400e" stroke-width="1"/>
+    <line x1="-5" y1="-23" x2="5" y2="-23" stroke="#92400e" stroke-width="0.8"/>
+    <!-- flippers -->
+    <ellipse cx="-36" cy="0" rx="8" ry="22" fill="url(#pp-body)" stroke="#0f0a2e" stroke-width="1" transform="rotate(-15 -36 0)"/>
+    <ellipse cx="36" cy="0" rx="8" ry="22" fill="url(#pp-body)" stroke="#0f0a2e" stroke-width="1" transform="rotate(15 36 0)"/>
+    <!-- feet -->
+    <ellipse cx="-12" cy="62" rx="10" ry="4" fill="#f59e0b" stroke="#92400e" stroke-width="1"/>
+    <ellipse cx="12" cy="62" rx="10" ry="4" fill="#f59e0b" stroke="#92400e" stroke-width="1"/>
+    <!-- bowtie (leadership flair) -->
+    <g transform="translate(0 -10)">
+      <polygon points="-12,0 -3,-4 -3,4" fill="#a855f7" stroke="#581c87" stroke-width="0.8"/>
+      <polygon points="12,0 3,-4 3,4" fill="#a855f7" stroke="#581c87" stroke-width="0.8"/>
+      <rect x="-3" y="-3" width="6" height="6" fill="#7e22ce" stroke="#581c87" stroke-width="0.8"/>
+    </g>
+  </g>
+</svg>

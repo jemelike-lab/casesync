@@ -1,0 +1,35 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="wd-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </radialGradient>
+    <linearGradient id="wd-diamond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="wd-diamond2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#wd-bg)" stroke="#ffffff" stroke-width="2"/>
+  <!-- big center diamond -->
+  <g transform="translate(100 100)">
+    <polygon points="0,-50 -32,-10 0,50 32,-10" fill="url(#wd-diamond)" stroke="#ffffff" stroke-width="1.5"/>
+    <polygon points="0,-50 -32,-10 0,-10" fill="#ffffff" opacity="0.6"/>
+    <polygon points="0,-50 32,-10 0,-10" fill="#cbd5e1"/>
+    <line x1="-32" y1="-10" x2="32" y2="-10" stroke="#475569" stroke-width="1"/>
+    <line x1="0" y1="-10" x2="0" y2="50" stroke="#475569" stroke-width="1"/>
+    <!-- side accent diamonds -->
+    <polygon points="-60,-5 -72,5 -60,20 -48,5" fill="url(#wd-diamond2)" opacity="0.85"/>
+    <polygon points="60,-5 48,5 60,20 72,5" fill="url(#wd-diamond2)" opacity="0.85"/>
+  </g>
+  <!-- crown above the diamond (leadership) -->
+  <g transform="translate(100 38)" fill="#fbbf24">
+    <path d="M-16,4 L-16,-6 L-10,0 L-5,-9 L0,0 L5,-9 L10,0 L16,-6 L16,4 Z" stroke="#92400e" stroke-width="1"/>
+    <circle cx="-10" cy="-5" r="1.6" fill="#fef3c7"/>
+    <circle cx="0" cy="-7" r="1.8" fill="#fef3c7"/>
+    <circle cx="10" cy="-5" r="1.6" fill="#fef3c7"/>
+  </g>
+</svg>

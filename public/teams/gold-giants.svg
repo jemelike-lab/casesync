@@ -1,0 +1,54 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gg-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </radialGradient>
+    <linearGradient id="gg-mt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </linearGradient>
+    <linearGradient id="gg-crown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#gg-bg)" stroke="#fef3c7" stroke-width="2"/>
+  <!-- sun rays behind -->
+  <g transform="translate(100 100)" opacity="0.4">
+    <g stroke="#fef3c7" stroke-width="2.5" fill="none">
+      <line x1="0" y1="-80" x2="0" y2="-95"/>
+      <line x1="56" y1="-56" x2="66" y2="-66"/>
+      <line x1="-56" y1="-56" x2="-66" y2="-66"/>
+      <line x1="80" y1="0" x2="95" y2="0"/>
+      <line x1="-80" y1="0" x2="-95" y2="0"/>
+    </g>
+  </g>
+  <g transform="translate(100 110)">
+    <!-- back mountain -->
+    <polygon points="-70,40 -10,-55 50,40" fill="url(#gg-mt)" stroke="#713f12" stroke-width="1.5"/>
+    <!-- front mountain (smaller, right) -->
+    <polygon points="-45,40 25,-25 70,40" fill="#a16207" stroke="#713f12" stroke-width="1.5"/>
+    <!-- gold sparkle/highlight on back mountain -->
+    <polygon points="-10,-55 -22,-22 -2,-26 5,-30" fill="#fef9c3" stroke="#fde68a" stroke-width="0.5"/>
+    <polygon points="25,-25 14,-7 32,-9 40,-13" fill="#fef3c7" stroke="#fde68a" stroke-width="0.5"/>
+    <!-- crown on peak -->
+    <g transform="translate(-10 -60)">
+      <path d="M-14,2 L-14,-7 L-9,-1 L-5,-11 L0,-1 L5,-11 L9,-1 L14,-7 L14,2 Z" fill="url(#gg-crown)" stroke="#713f12" stroke-width="1.2"/>
+      <rect x="-14" y="2" width="28" height="3" fill="#a16207" stroke="#713f12" stroke-width="0.8"/>
+      <circle cx="-9" cy="-6" r="1.6" fill="#fef3c7"/>
+      <circle cx="0" cy="-8" r="2" fill="#fef3c7"/>
+      <circle cx="9" cy="-6" r="1.6" fill="#fef3c7"/>
+      <circle cx="0" cy="4" r="1.4" fill="#dc2626"/>
+    </g>
+    <!-- gold coin pile at bottom -->
+    <g>
+      <ellipse cx="-30" cy="42" rx="10" ry="3" fill="#eab308" stroke="#713f12" stroke-width="0.8"/>
+      <ellipse cx="-30" cy="38" rx="10" ry="3" fill="#facc15" stroke="#713f12" stroke-width="0.8"/>
+      <ellipse cx="30" cy="42" rx="10" ry="3" fill="#eab308" stroke="#713f12" stroke-width="0.8"/>
+      <ellipse cx="30" cy="38" rx="10" ry="3" fill="#facc15" stroke="#713f12" stroke-width="0.8"/>
+      <ellipse cx="30" cy="34" rx="10" ry="3" fill="#fde68a" stroke="#713f12" stroke-width="0.8"/>
+    </g>
+  </g>
+</svg>

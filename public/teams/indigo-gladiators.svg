@@ -1,0 +1,30 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="ig-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </radialGradient>
+    <linearGradient id="ig-helm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="50%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#ig-bg)" stroke="#fde68a" stroke-width="2"/>
+  <g transform="translate(100 110)">
+    <!-- helmet base -->
+    <path d="M-40,-15 Q-40,-50 0,-50 Q40,-50 40,-15 L40,20 Q30,32 0,32 Q-30,32 -40,20 Z" fill="url(#ig-helm)" stroke="#7c2d12" stroke-width="1.5"/>
+    <!-- face slit -->
+    <rect x="-22" y="-10" width="44" height="6" fill="#1e1b4b" rx="1"/>
+    <rect x="-22" y="2" width="44" height="6" fill="#1e1b4b" rx="1"/>
+    <rect x="-3" y="-10" width="6" height="20" fill="url(#ig-helm)"/>
+    <!-- crest plume (red horsehair) -->
+    <path d="M-12,-50 Q0,-78 12,-50 L8,-50 Q0,-72 -8,-50 Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1"/>
+    <path d="M-12,-50 Q0,-70 12,-50" stroke="#fef2f2" stroke-width="1" fill="none"/>
+    <!-- chin guard rivets -->
+    <circle cx="-35" cy="15" r="2" fill="#7c2d12"/>
+    <circle cx="35" cy="15" r="2" fill="#7c2d12"/>
+    <circle cx="-35" cy="0" r="2" fill="#7c2d12"/>
+    <circle cx="35" cy="0" r="2" fill="#7c2d12"/>
+  </g>
+</svg>

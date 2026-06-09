@@ -71,6 +71,12 @@ export const DEPT_ICON_OPTIONS = [
   { key: 'headphones',  label: 'Support',   Icon: Headphones },
 ] as const
 
+const TEAM_BADGES: ReadonlySet<string> = new Set([
+  'maroon-musketeers','white-diamonds','indigo-gladiators',
+  'bronze-butterflies','silver-titans','sage-sharks',
+  'emerald-guardians','purple-penguins','blue-giants','gold-giants',
+])
+
 export function getDeptIcon(key: string) {
   return DEPT_ICON_OPTIONS.find((o) => o.key === key)?.Icon ?? Building2
 }
@@ -492,6 +498,15 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
           border: 1px solid var(--dpa-icon-border);
           box-shadow: 0 4px 14px var(--dpa-glow);
         }
+        .dpa-card-icon-wrap-badge {
+          width: 72px; height: 72px;
+          border-radius: 50%;
+          padding: 0;
+          background: var(--dpa-icon-bg);
+          border: 1.5px solid var(--dpa-icon-border);
+          box-shadow: 0 6px 22px var(--dpa-glow), inset 0 0 0 2px rgba(255,255,255,0.06);
+          overflow: hidden;
+        }
 
         /* Modal */
         .dpa-modal-content {
@@ -572,8 +587,12 @@ function DepartmentCard({
       >
         <Stack gap="md" style={{ height: '100%' }}>
           <Group justify="space-between" align="flex-start">
-            <div className="dpa-card-icon-wrap">
-              <Icon size={26} color={dept.color} />
+            <div className={`dpa-card-icon-wrap ${TEAM_BADGES.has(dept.slug) ? 'dpa-card-icon-wrap-badge' : ''}`}>
+              {TEAM_BADGES.has(dept.slug) ? (
+                <img src={`/teams/${dept.slug}.svg`} alt={`${dept.name} badge`} width={64} height={64} style={{display:'block',width:'100%',height:'100%'}} />
+              ) : (
+                <Icon size={26} color={dept.color} />
+              )}
             </div>
             <ChevronRight size={18} className="dpa-card-arrow" />
           </Group>

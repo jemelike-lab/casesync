@@ -1,0 +1,36 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="mm-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#a31a1a"/>
+      <stop offset="100%" stop-color="#5e0f0f"/>
+    </radialGradient>
+    <linearGradient id="mm-blade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#mm-bg)" stroke="#fde68a" stroke-width="2"/>
+  <!-- crossed swords (two) -->
+  <g transform="translate(100 100)">
+    <g transform="rotate(45)">
+      <rect x="-3" y="-70" width="6" height="110" fill="url(#mm-blade)"/>
+      <polygon points="0,-78 -4,-70 4,-70" fill="#e5e7eb"/>
+      <rect x="-16" y="38" width="32" height="5" fill="#fde68a"/>
+      <rect x="-3" y="40" width="6" height="22" fill="#7c2d12"/>
+      <circle cx="0" cy="64" r="5" fill="#fde68a"/>
+    </g>
+    <g transform="rotate(-45)">
+      <rect x="-3" y="-70" width="6" height="110" fill="url(#mm-blade)"/>
+      <polygon points="0,-78 -4,-70 4,-70" fill="#e5e7eb"/>
+      <rect x="-16" y="38" width="32" height="5" fill="#fde68a"/>
+      <rect x="-3" y="40" width="6" height="22" fill="#7c2d12"/>
+      <circle cx="0" cy="64" r="5" fill="#fde68a"/>
+    </g>
+    <!-- center fleur-de-lis -->
+    <g fill="#fde68a">
+      <path d="M0,-30 C-6,-22 -10,-10 0,0 C10,-10 6,-22 0,-30 Z"/>
+      <ellipse cx="0" cy="-3" rx="14" ry="3"/>
+    </g>
+  </g>
+</svg>

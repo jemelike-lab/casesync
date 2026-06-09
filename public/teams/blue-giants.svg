@@ -1,0 +1,40 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </radialGradient>
+    <linearGradient id="bg-mt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bfdbfe"/>
+      <stop offset="60%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bg-bg)" stroke="#bfdbfe" stroke-width="2"/>
+  <!-- sun behind -->
+  <circle cx="100" cy="80" r="22" fill="#fef3c7" opacity="0.4"/>
+  <g transform="translate(100 100)">
+    <!-- back mountain (taller) -->
+    <polygon points="-70,50 -10,-50 50,50" fill="url(#bg-mt)" stroke="#1e3a8a" stroke-width="1.5"/>
+    <!-- front mountain (overlap) -->
+    <polygon points="-50,50 25,-30 70,50" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+    <!-- snow caps -->
+    <polygon points="-10,-50 -22,-26 -2,-30 5,-34" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.5"/>
+    <polygon points="25,-30 14,-12 32,-14 40,-18" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.5"/>
+    <!-- giant figure climbing/standing on top -->
+    <g transform="translate(-10 -52)">
+      <!-- head -->
+      <circle cx="0" cy="-8" r="5" fill="#1e1b4b"/>
+      <!-- body -->
+      <path d="M-5,-3 L-7,12 L-3,12 L-2,4 L2,4 L3,12 L7,12 L5,-3 Z" fill="#1e1b4b"/>
+      <!-- arms raised -->
+      <path d="M-5,0 L-12,-12 L-10,-14 L-3,-3 Z" fill="#1e1b4b"/>
+      <path d="M5,0 L12,-12 L10,-14 L3,-3 Z" fill="#1e1b4b"/>
+      <!-- flag in hand -->
+      <line x1="12" y1="-12" x2="14" y2="-22" stroke="#1e1b4b" stroke-width="1.5"/>
+      <polygon points="14,-22 14,-15 22,-18" fill="#fbbf24" stroke="#92400e" stroke-width="0.6"/>
+    </g>
+    <!-- foreground hill base -->
+    <path d="M-90,50 Q-50,40 0,50 Q50,40 90,50 L90,55 L-90,55 Z" fill="#1e3a8a"/>
+  </g>
+</svg>

@@ -1,0 +1,46 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="ss-bg" cx="50%" cy="40%">
+      <stop offset="0%" stop-color="#84cc16"/>
+      <stop offset="100%" stop-color="#365314"/>
+    </radialGradient>
+    <linearGradient id="ss-shark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="60%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#ss-bg)" stroke="#d9f99d" stroke-width="2"/>
+  <!-- water ripples below shark -->
+  <g stroke="#bef264" stroke-width="2" fill="none" opacity="0.5">
+    <path d="M30 145 Q50 140 70 145 T110 145 T150 145 T170 145"/>
+    <path d="M40 158 Q60 153 80 158 T120 158 T160 158"/>
+  </g>
+  <g transform="translate(100 95)">
+    <!-- shark body -->
+    <path d="M-65,5 Q-55,-15 -20,-18 Q15,-22 50,-10 Q65,-5 70,5 Q60,8 50,8 Q15,16 -20,15 Q-45,15 -55,18 Q-65,15 -65,5 Z" fill="url(#ss-shark)" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- top fin -->
+    <path d="M-5,-18 L5,-50 L25,-15 Z" fill="url(#ss-shark)" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- tail -->
+    <path d="M-65,5 L-90,-12 L-78,5 L-90,22 Z" fill="url(#ss-shark)" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- side fin -->
+    <path d="M-15,12 L-5,30 L15,15 Z" fill="url(#ss-shark)" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- belly highlight -->
+    <path d="M-50,8 Q0,15 55,5 Q40,12 0,14 Q-30,14 -50,12 Z" fill="#cbd5e1" opacity="0.55"/>
+    <!-- eye -->
+    <circle cx="48" cy="-3" r="3.5" fill="#fef3c7"/>
+    <circle cx="49" cy="-2.5" r="2" fill="#0f172a"/>
+    <!-- teeth -->
+    <g fill="#f8fafc">
+      <polygon points="40,5 43,11 46,5"/>
+      <polygon points="48,6 51,12 54,6"/>
+      <polygon points="56,5 59,11 62,5"/>
+    </g>
+    <!-- gills -->
+    <g stroke="#0f172a" stroke-width="1" fill="none" opacity="0.7">
+      <path d="M28,-5 Q30,3 28,10"/>
+      <path d="M22,-6 Q24,3 22,11"/>
+      <path d="M16,-7 Q18,3 16,12"/>
+    </g>
+  </g>
+</svg>
