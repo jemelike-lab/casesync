@@ -79,11 +79,24 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
       style={{
         background: '#FFFFFF',
         borderBottom: '1px solid #E5E7EB',
-        padding: '8px 20px',
+        padding: '8px 12px',
       }}
     >
-      <Flex align="center" justify="space-between" gap="md" wrap="nowrap">
-        <Group gap={4} wrap="nowrap" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+      {/* Hide the horizontal scrollbar on the nav links container cleanly across
+          browsers. Inline <style> works inside a client component and avoids
+          adding global CSS for one element. */}
+      <style>{`
+        .cs-v2-nav-scroll::-webkit-scrollbar { display: none; }
+        .cs-v2-nav-scroll { scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+        .cs-v2-nav-tab { scroll-snap-align: start; }
+      `}</style>
+      <Flex align="center" justify="space-between" gap="sm" wrap="nowrap">
+        <Group
+          gap={2}
+          wrap="nowrap"
+          className="cs-v2-nav-scroll"
+          style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}
+        >
           {navLinks.map((link: NavLink) => {
             const isActive = link.href === activePath;
             return (
@@ -91,8 +104,9 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
                 key={link.href}
                 href={link.href}
                 underline="never"
+                className="cs-v2-nav-tab"
                 style={{
-                  padding: '8px 14px',
+                  padding: '8px 12px',
                   borderRadius: 8,
                   fontSize: 13,
                   fontWeight: 600,
@@ -108,7 +122,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
             );
           })}
         </Group>
-        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group gap={2} wrap="nowrap" style={{ flexShrink: 0 }}>
           <UnstyledButton
             aria-label="Help and tour"
             style={{
