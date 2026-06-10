@@ -318,7 +318,7 @@ export const teamTools: TeamToolCard[] = [
   },
   {
     id: 'team-manager-board',
-    icon: '🧭',
+    icon: '🔄',
     title: 'Team Manager Board',
     description: 'Drag Support Planners between Team Managers and update reporting assignments.',
   },

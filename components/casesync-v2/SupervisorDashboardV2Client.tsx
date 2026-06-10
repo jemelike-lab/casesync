@@ -83,7 +83,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
       }}
     >
       <Flex align="center" justify="space-between" gap="md" wrap="nowrap">
-        <Group gap={4} wrap="nowrap" style={{ overflowX: 'auto' }}>
+        <Group gap={4} wrap="nowrap" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
           {navLinks.map((link: NavLink) => {
             const isActive = link.href === activePath;
             return (
@@ -99,6 +99,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
                   color: isActive ? '#0F172A' : '#475569',
                   background: isActive ? '#F1F5F9' : 'transparent',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   transition: 'background 0.15s',
                 }}
               >
@@ -107,11 +108,11 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
             );
           })}
         </Group>
-        <Group gap={4} wrap="nowrap">
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
           <UnstyledButton
             aria-label="Help and tour"
             style={{
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: 8,
               fontSize: 12,
               fontWeight: 600,
@@ -121,6 +122,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               alignItems: 'center',
               gap: 6,
               position: 'relative',
+              flexShrink: 0,
             }}
           >
             <Box
@@ -135,7 +137,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               }}
             />
             <HelpCircle size={14} />
-            <Text fz={12} fw={600} visibleFrom="sm">
+            <Text fz={12} fw={600} visibleFrom="xl">
               Help &amp; Tour
             </Text>
           </UnstyledButton>
@@ -183,7 +185,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
           <UnstyledButton
             aria-label="Sign out"
             style={{
-              padding: '6px 12px',
+              padding: '6px 10px',
               borderRadius: 8,
               fontSize: 12,
               fontWeight: 600,
@@ -192,10 +194,11 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               display: 'flex',
               alignItems: 'center',
               gap: 4,
+              flexShrink: 0,
             }}
           >
             <LogOut size={14} />
-            <Text fz={12} fw={600} visibleFrom="sm">
+            <Text fz={12} fw={600} visibleFrom="xl">
               Sign out
             </Text>
           </UnstyledButton>
@@ -630,7 +633,7 @@ export default function SupervisorDashboardV2Client({
           </Grid.Col>
           <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
-              label="No Contact 7+ Days"
+              label="No Contact 7+"
               value={orgKpis.noContact7}
               deltaPct={orgKpis.noContact7DeltaPct}
               deltaInverted
@@ -724,9 +727,15 @@ export default function SupervisorDashboardV2Client({
           </Stack>
         </Paper>
 
-        {/* Bottom 2-col: Attention Feed (single-col stacked) + Team Tools sidebar */}
-        <Grid gap="md">
-          <Grid.Col span={{ base: 12, lg: 8 }}>
+        {/* Bottom 2-col: Attention Feed (single-col stacked) + Team Tools sidebar.
+            Using Flex with explicit grow ratios instead of Grid responsive cols —
+            the Grid lg-breakpoint variant wasn't applying in this nested context. */}
+        <Flex
+          direction={{ base: 'column', lg: 'row' }}
+          gap="md"
+          align="flex-start"
+        >
+          <Box style={{ flex: 2, minWidth: 0, width: '100%' }}>
             <Paper p="lg" style={{ background: '#FFFFFF' }}>
               <Flex justify="space-between" align="center" mb="md">
                 <Stack gap={2}>
@@ -753,9 +762,9 @@ export default function SupervisorDashboardV2Client({
                 ))}
               </Stack>
             </Paper>
-          </Grid.Col>
+          </Box>
 
-          <Grid.Col span={{ base: 12, lg: 4 }}>
+          <Box style={{ flex: 1, minWidth: 0, width: '100%' }}>
             <Paper p="lg" style={{ background: '#FFFFFF' }}>
               <Stack gap={2} mb="md">
                 <Text
@@ -777,8 +786,8 @@ export default function SupervisorDashboardV2Client({
                 ))}
               </Stack>
             </Paper>
-          </Grid.Col>
-        </Grid>
+          </Box>
+        </Flex>
 
         <Text fz={11} c="#94A3B8" ta="center" mt="xl">
           CaseSync v2 · north-star preview · data is mocked · /dashboard-v2
