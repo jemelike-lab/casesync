@@ -441,7 +441,7 @@ export default function EvaluationsClient({
           </div>
           <div className="eva-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/evaluations.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
+            <img src="/heroes/evaluations.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: "8%", top: "50%", transform: "translateY(-50%)", height: "75%", zIndex: 0, opacity: 0.45, pointerEvents: "none" }} />
 
           <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
             <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>

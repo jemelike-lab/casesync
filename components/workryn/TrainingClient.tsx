@@ -220,7 +220,7 @@ export default function TrainingClient({
             </div>
             <div className="tra-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/training.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", height: "85%", zIndex: 1, opacity: 0.7, pointerEvents: "none" }} />
+            <img src="/heroes/training.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: "8%", top: "50%", transform: "translateY(-50%)", height: "75%", zIndex: 0, opacity: 0.45, pointerEvents: "none" }} />
             {/* Vignette to keep text readable over the banner */}
             <div className="tra-hero-vignette" aria-hidden />
 
