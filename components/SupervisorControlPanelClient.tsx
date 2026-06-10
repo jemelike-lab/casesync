@@ -27,7 +27,7 @@ interface Props {
 }
 
 function RoleBadge({ role }: { role: string }) {
-  const color = role === 'team_manager' ? '#ff9f0a' : role === 'supports_planner' ? '#30d158' : role === 'it' ? '#bf5af2' : '#98989d'
+  const color = role === 'team_manager' ? '#FF8C3E' : role === 'supports_planner' ? '#10C97A' : role === 'it' ? '#bf5af2' : '#98989d'
   const label = role === 'team_manager' ? 'Team Manager' : role === 'supports_planner' ? 'Supports Planner' : role === 'it' ? 'IT' : role
   return (
     <span style={{
@@ -296,17 +296,15 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
           ? Math.round((scopedSummary.overdue_clients / scopedSummary.total_clients) * 100)
           : 0
         const orgHealth = overdueRate <= 10 ? 'Excellent' : overdueRate <= 25 ? 'Good' : overdueRate <= 50 ? 'Needs Attention' : 'Critical'
-        const orgColor = overdueRate <= 10 ? '#30d158' : overdueRate <= 25 ? '#ffd60a' : overdueRate <= 50 ? '#ff9f0a' : '#ff453a'
+        const orgColor = overdueRate <= 10 ? '#10C97A' : overdueRate <= 25 ? '#FFB840' : overdueRate <= 50 ? '#FF8C3E' : '#ff453a'
 
         return (
           <div className="scp-hero-row" style={{ marginBottom: 24, display: 'flex', gap: 16 }}>
             {/* Left: Greeting + org health meter */}
-            <div className="scp-hero-welcome" style={{
+            <div className="scp-hero-welcome cs-hero-blue" style={{
               flex: '0 0 280px',
               borderRadius: 22,
               padding: '28px 24px',
-              background: 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
-              border: '1px solid rgba(100,140,255,0.12)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -314,11 +312,11 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
               overflow: 'hidden',
             }}>
               {/* Decorative circles */}
-              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle, ${orgColor}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', bottom: -30, left: -30, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle, ${orgColor}30 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(160,180,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div className="cs-eyebrow" style={{ marginBottom: 6 }}>
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
@@ -332,33 +330,30 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
               {/* Org Health Meter */}
               <div style={{ position: 'relative', zIndex: 1, marginTop: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(160,180,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Org Health</span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: orgColor }}>{orgHealth}</span>
+                  <span className="cs-eyebrow">Org Health</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', textShadow: `0 1px 8px ${orgColor}` }}>{orgHealth}</span>
                 </div>
                 {/* Meter bar */}
-                <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>
                   <div className="meter-fill" style={{
                     height: '100%',
                     width: `${100 - overdueRate}%`,
                     borderRadius: 3,
-                    background: `linear-gradient(90deg, ${orgColor}, ${orgColor}aa)`,
-                    boxShadow: `0 0 10px ${orgColor}40`,
+                    background: `linear-gradient(90deg, #fff, rgba(255,255,255,0.7))`,
+                    boxShadow: `0 0 10px rgba(255,255,255,0.5)`,
                     transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
                   }} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                  <span style={{ fontSize: 10, color: 'rgba(160,180,255,0.35)' }}>{scopedSummary.overdue_clients} overdue of {scopedSummary.total_clients}</span>
-                  <span style={{ fontSize: 10, color: 'rgba(160,180,255,0.35)' }}>{100 - overdueRate}% on track</span>
+                  <span className="cs-muted" style={{ fontSize: 10 }}>{scopedSummary.overdue_clients} overdue of {scopedSummary.total_clients}</span>
+                  <span className="cs-muted" style={{ fontSize: 10 }}>{100 - overdueRate}% on track</span>
                 </div>
               </div>
             </div>
 
             {/* Right: Urgent clients list */}
-            <div className="card" style={{
+            <div className="cs-surface" style={{
               flex: 1,
-              borderRadius: 22,
-              background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
-              border: '1px solid rgba(255,255,255,0.05)',
               padding: hasUrgent ? '20px 20px 16px' : '28px 24px',
               display: 'flex',
               flexDirection: 'column',
@@ -368,10 +363,10 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                     <div className="pulse-dot" style={{
-                      width: 10, height: 10, borderRadius: '50%', background: '#ff453a',
-                      boxShadow: '0 0 8px rgba(255,69,58,0.6)',
+                      width: 10, height: 10, borderRadius: '50%', background: '#FF3B5C',
+                      boxShadow: '0 0 8px rgba(255,59,92,0.6)',
                     }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ff6b6b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2D4E', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                       {urgentClients.length} Urgent — Needs Attention
                     </span>
                   </div>
@@ -383,31 +378,19 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                         <Link
                           key={client.id}
                           href={`/clients/${client.id}`}
-                          className="urgent-row"
+                          className={`cs-urgent-row${isUnassigned ? '' : ' warn'}`}
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 14,
-                            padding: '12px 16px',
-                            background: isUnassigned
-                              ? 'linear-gradient(90deg, rgba(255,69,58,0.08) 0%, rgba(255,69,58,0.02) 100%)'
-                              : 'linear-gradient(90deg, rgba(255,159,10,0.06) 0%, rgba(255,159,10,0.01) 100%)',
-                            borderRadius: 14,
-                            textDecoration: 'none',
-                            borderLeft: isUnassigned ? '3px solid #ff453a' : '3px solid #ff9f0a',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             opacity: 0,
                             transform: 'translateX(-12px)',
-                            animation: `slideInRow 0.4s ${idx * 0.08}s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-                          }}
-                        >
+                            animation: `slideInRow 0.4s ${idx * 0.06}s ease forwards`,
+                          }}>
                           {/* Number badge */}
                           <div style={{
                             width: 30, height: 30, borderRadius: 10,
-                            background: isUnassigned ? 'rgba(255,69,58,0.15)' : 'rgba(255,159,10,0.12)',
+                            background: isUnassigned ? 'rgba(255,59,92,0.18)' : 'rgba(255,140,62,0.18)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 13, fontWeight: 800,
-                            color: isUnassigned ? '#ff453a' : '#ff9f0a',
+                            color: isUnassigned ? '#DC2D4E' : '#D97706',
                             flexShrink: 0,
                           }}>
                             {idx + 1}
@@ -418,7 +401,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                             </div>
                             <div style={{ fontSize: 11, fontWeight: 500, marginTop: 1 }}>
                               {isUnassigned ? (
-                                <span style={{ color: '#ff453a' }}>Unassigned — needs planner</span>
+                                <span style={{ color: '#DC2D4E' }}>Unassigned — needs planner</span>
                               ) : (
                                 <span style={{ color: 'var(--text-secondary)' }}>Assigned to {assignedPlanner?.full_name ?? 'Unknown'}</span>
                               )}
@@ -439,13 +422,14 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: '50%',
-                    background: 'rgba(48,209,88,0.1)', border: '2px solid rgba(48,209,88,0.2)',
+                    background: 'rgba(16,201,122,0.12)', border: '2px solid rgba(16,201,122,0.3)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+                    color: '#10C97A',
                   }}>
                     ✓
                   </div>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#30d158' }}>All clear</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#10C97A' }}>All clear</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No urgent clients across the org right now.</div>
                   </div>
                 </div>
@@ -546,29 +530,26 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
       </div>
 
       {/* ─── Premium Client Drill-Down ────────────────────────────────── */}
-      <div ref={clientResultsRef} style={{
-        marginBottom: 24, borderRadius: 22, overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+      <div ref={clientResultsRef} className="cs-surface" style={{
+        marginBottom: 24, overflow: 'hidden',
       }}>
         {/* Header bar */}
-        <div style={{
+        <div className="cs-surface-header" style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '16px 22px', gap: 12, flexWrap: 'wrap',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          background: 'rgba(255,255,255,0.015)',
+          gap: 12, flexWrap: 'wrap',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 8, height: 8, borderRadius: 2,
-              background: clientFilter === 'overdue' ? '#ff453a' : clientFilter === 'due_this_week' ? '#ff9f0a' : clientFilter === 'no_contact_7' ? '#ffd60a' : 'var(--accent)',
+              background: clientFilter === 'overdue' ? 'var(--red)' : clientFilter === 'due_this_week' ? 'var(--orange)' : clientFilter === 'no_contact_7' ? 'var(--yellow)' : 'var(--accent)',
             }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Client Drill-Down
             </span>
             <span style={{
               fontSize: 11, padding: '2px 10px', borderRadius: 20,
-              background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)',
+              background: 'var(--surface-2)', color: 'var(--text-secondary)',
+              border: '1px solid var(--border)',
               fontWeight: 600,
             }}>
               {loading ? '…' : `${total} total`}
@@ -579,7 +560,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             onClick={() => { window.location.href = fullResultsHref }}
             style={{
               fontSize: 12, color: 'var(--accent)', fontWeight: 700,
-              background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)',
+              background: 'rgba(30,124,255,0.10)', border: '1px solid rgba(30,124,255,0.25)',
               borderRadius: 8, padding: '6px 14px', cursor: 'pointer',
               transition: 'all 0.2s',
             }}
@@ -592,8 +573,8 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         <div style={{ padding: '12px 22px 8px', fontSize: 12, color: 'var(--text-secondary)' }}>
           Showing: <span style={{
             display: 'inline-block', padding: '2px 10px', borderRadius: 6,
-            background: clientFilter === 'overdue' ? 'rgba(255,69,58,0.12)' : clientFilter === 'due_this_week' ? 'rgba(255,159,10,0.1)' : clientFilter === 'no_contact_7' ? 'rgba(255,214,10,0.1)' : 'rgba(0,122,255,0.1)',
-            color: clientFilter === 'overdue' ? '#ff6b6b' : clientFilter === 'due_this_week' ? '#ffb340' : clientFilter === 'no_contact_7' ? '#ffe066' : 'var(--accent)',
+            background: clientFilter === 'overdue' ? 'rgba(255,59,92,0.12)' : clientFilter === 'due_this_week' ? 'rgba(255,140,62,0.12)' : clientFilter === 'no_contact_7' ? 'rgba(255,184,64,0.14)' : 'rgba(30,124,255,0.12)',
+            color: clientFilter === 'overdue' ? '#DC2D4E' : clientFilter === 'due_this_week' ? '#D97706' : clientFilter === 'no_contact_7' ? '#A16207' : 'var(--accent)',
             fontWeight: 700, fontSize: 11,
           }}>
             {clientFilter === 'all' ? 'Active Clients' : clientFilter === 'overdue' ? 'Overdue' : clientFilter === 'due_this_week' ? 'Due This Week' : 'No Contact 7+ Days'}
@@ -604,23 +585,14 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         <div style={{ display: 'grid', gap: 6, maxHeight: 480, overflowY: 'auto', padding: '8px 16px 16px' }}>
           {clients.map((client, idx) => {
             const isUnassigned = !client.assigned_to
+            const hue = (client.last_name?.charCodeAt(0) ?? 0) * 7 % 360
             return (
-              <Link key={client.id} href={`/clients/${client.id}`} className="drilldown-row" style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-                borderRadius: 14, textDecoration: 'none',
-                background: 'linear-gradient(90deg, rgba(255,255,255,0.025) 0%, transparent 100%)',
-                borderLeft: isUnassigned ? '3px solid rgba(255,69,58,0.5)' : '3px solid rgba(255,255,255,0.06)',
-                transition: 'all 0.25s ease',
+              <Link key={client.id} href={`/clients/${client.id}`} className={`cs-drill-row${isUnassigned ? ' unassigned' : ''}`} style={{
                 opacity: 0, animation: `slideInRow 0.35s ${idx * 0.04}s ease forwards`,
               }}>
                 {/* Avatar circle */}
-                <div style={{
-                  width: 38, height: 38, borderRadius: '50%',
-                  background: `linear-gradient(135deg, hsl(${(client.last_name?.charCodeAt(0) ?? 0) * 7 % 360}, 50%, 35%) 0%, hsl(${(client.last_name?.charCodeAt(0) ?? 0) * 7 % 360}, 40%, 25%) 100%)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.85)',
-                  flexShrink: 0,
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
+                <div className="cs-avatar" style={{
+                  background: `linear-gradient(135deg, hsl(${hue}, 70%, 55%) 0%, hsl(${hue}, 65%, 45%) 100%)`,
                 }}>
                   {(client.first_name?.[0] ?? '')}{(client.last_name?.[0] ?? '')}
                 </div>
@@ -629,14 +601,14 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                     {client.last_name}{client.first_name ? `, ${client.first_name}` : ''}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ opacity: 0.6 }}>ID {client.client_id}</span>
-                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-secondary)', opacity: 0.3 }} />
-                    <span style={{ color: isUnassigned ? '#ff6b6b' : 'var(--text-secondary)' }}>
+                    <span style={{ opacity: 0.7 }}>ID {client.client_id}</span>
+                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-secondary)', opacity: 0.4 }} />
+                    <span style={{ color: isUnassigned ? '#DC2D4E' : 'var(--text-secondary)', fontWeight: isUnassigned ? 600 : 400 }}>
                       {client.profiles?.full_name ?? (isUnassigned ? 'Unassigned' : 'Unknown')}
                     </span>
                   </div>
                 </div>
-                <div style={{ fontSize: 16, color: 'var(--text-secondary)', opacity: 0.3, transition: 'all 0.2s' }}>→</div>
+                <div style={{ fontSize: 16, color: 'var(--text-secondary)', opacity: 0.4, transition: 'all 0.2s' }}>→</div>
               </Link>
             )
           })}
@@ -648,7 +620,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
         {/* Pagination */}
         <div style={{
           display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
-          padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,0.04)',
+          padding: '14px 22px', borderTop: '1px solid var(--border)',
         }}>
           <button type="button" className="btn-secondary" style={{ fontSize: 12, minHeight: 32, borderRadius: 8 }}
             onClick={() => setClientPage(p => Math.max(0, p - 1))} disabled={clientPage === 0 || loading}>
@@ -668,13 +640,13 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
       <div ref={rosterRef} style={{ marginBottom: 24 }}>
         <div className="card" style={{
           borderRadius: 22, overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.05)',
-          background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+          border: '1px solid var(--border)',
+          background: 'var(--surface)',
         }}>
           <div style={{
             padding: '16px 22px',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
-            background: 'rgba(255,255,255,0.015)',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--surface-2)',
           }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Planner Workload
@@ -690,7 +662,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                   display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                   borderRadius: 14,
                   background: hasIssues ? 'linear-gradient(90deg, rgba(255,69,58,0.04) 0%, transparent 100%)' : 'rgba(255,255,255,0.015)',
-                  borderLeft: `3px solid ${row.overdue >= 3 ? '#ff453a' : row.overdue >= 1 ? '#ff9f0a' : '#30d158'}`,
+                  borderLeft: `3px solid ${row.overdue >= 3 ? '#ff453a' : row.overdue >= 1 ? '#FF8C3E' : '#10C97A'}`,
                   opacity: 0, animation: `slideInRow 0.35s ${idx * 0.06}s ease forwards`,
                   transition: 'background 0.2s',
                 }}>
@@ -721,9 +693,9 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                       <div style={{
                         height: '100%', borderRadius: 3,
                         width: `${loadPct}%`,
-                        background: row.overdue >= 3 ? 'linear-gradient(90deg, #ff453a, #ff6b5a)' : row.overdue >= 1 ? 'linear-gradient(90deg, #ff9f0a, #ffb340)' : 'linear-gradient(90deg, #30d158, #4ade80)',
+                        background: row.overdue >= 3 ? 'linear-gradient(90deg, #ff453a, #ff6b5a)' : row.overdue >= 1 ? 'linear-gradient(90deg, #FF8C3E, #ffb340)' : 'linear-gradient(90deg, #10C97A, #4ade80)',
                         transition: 'width 1s ease',
-                        boxShadow: `0 0 6px ${row.overdue >= 3 ? '#ff453a30' : row.overdue >= 1 ? '#ff9f0a30' : '#30d15830'}`,
+                        boxShadow: `0 0 6px ${row.overdue >= 3 ? '#ff453a30' : row.overdue >= 1 ? '#FF8C3E30' : '#10C97A30'}`,
                       }} />
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 3 }}>
@@ -749,7 +721,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                         padding: '6px 12px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none',
                         background: 'linear-gradient(160deg, rgba(60,20,25,0.98), rgba(40,12,18,0.98))',
                         border: '1px solid rgba(255,69,58,0.3)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                        fontSize: 11, fontWeight: 600, color: '#ff9090', zIndex: 50,
+                        fontSize: 11, fontWeight: 600, color: '#DC2D4E', zIndex: 50,
                       }}>
                         <span style={{ color: '#fff', fontWeight: 800 }}>{row.overdue}</span> overdue deadline{row.overdue !== 1 ? 's' : ''}
                         <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: 8, height: 8, background: 'rgba(40,12,18,0.98)', borderRight: '1px solid rgba(255,69,58,0.3)', borderBottom: '1px solid rgba(255,69,58,0.3)' }} />
@@ -771,7 +743,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                         padding: '6px 12px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none',
                         background: 'linear-gradient(160deg, rgba(50,40,15,0.98), rgba(35,28,10,0.98))',
                         border: '1px solid rgba(255,159,10,0.3)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                        fontSize: 11, fontWeight: 600, color: '#ffc870', zIndex: 50,
+                        fontSize: 11, fontWeight: 600, color: '#D97706', zIndex: 50,
                       }}>
                         <span style={{ color: '#fff', fontWeight: 800 }}>{row.dueThisWeek}</span> due this week
                         <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: 8, height: 8, background: 'rgba(35,28,10,0.98)', borderRight: '1px solid rgba(255,159,10,0.3)', borderBottom: '1px solid rgba(255,159,10,0.3)' }} />
@@ -805,7 +777,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             })}
           </div>
           {/* Legend */}
-          <div style={{ padding: '10px 22px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 16, fontSize: 10, color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '10px 22px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 16, fontSize: 10, color: 'var(--text-secondary)' }}>
             <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#ff6b6b', marginRight: 4, verticalAlign: 'middle' }} />Overdue</span>
             <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#ffb340', marginRight: 4, verticalAlign: 'middle' }} />Due This Week</span>
             <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#ffe066', marginRight: 4, verticalAlign: 'middle' }} />No Contact 7+</span>
@@ -816,13 +788,13 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
       {/* ─── Premium Team Roster ──────────────────────────────────────── */}
       <div className="card" style={{
         marginBottom: 24, borderRadius: 22, overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+        border: '1px solid var(--border)',
+        background: 'var(--surface)',
       }}>
         <div style={{
           padding: '16px 22px',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          background: 'rgba(255,255,255,0.015)',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface-2)',
         }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Team Roster
@@ -835,7 +807,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
             return (
               <div key={planner.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                borderRadius: 14, background: 'rgba(255,255,255,0.015)',
+                borderRadius: 14, background: 'var(--surface-2)',
                 opacity: 0, animation: `slideInRow 0.35s ${idx * 0.05}s ease forwards`,
                 transition: 'background 0.2s',
               }}
@@ -853,12 +825,12 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
                 <div style={{ minWidth: 120 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{planner.full_name ?? 'Unknown'}</div>
                   <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>
-                    TM: {tm?.full_name ?? <span style={{ color: '#ff9f0a' }}>Unassigned</span>}
+                    TM: {tm?.full_name ?? <span style={{ color: '#FF8C3E' }}>Unassigned</span>}
                   </div>
                 </div>
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                  background: 'rgba(48,209,88,0.1)', color: '#30d158',
+                  background: 'rgba(48,209,88,0.1)', color: '#10C97A',
                   textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0,
                 }}>
                   Support Planner
@@ -895,7 +867,7 @@ export default function SupervisorControlPanelClient({ planners, teamManagers, s
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                background: 'rgba(255,159,10,0.12)', color: '#ff9f0a',
+                background: 'rgba(255,159,10,0.12)', color: '#FF8C3E',
                 textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0,
               }}>
                 Team Manager

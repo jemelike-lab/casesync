@@ -179,14 +179,14 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
 
   const overdueByCategory = useMemo(() => [
     { name: 'CO', value: clients.filter(c => c.category === 'co' && isOverdue(c)).length, fill: '#ff453a' },
-    { name: 'CFC', value: clients.filter(c => c.category === 'cfc' && isOverdue(c)).length, fill: '#ff9f0a' },
-    { name: 'CPAS', value: clients.filter(c => c.category === 'cpas' && isOverdue(c)).length, fill: '#ffd60a' },
+    { name: 'CFC', value: clients.filter(c => c.category === 'cfc' && isOverdue(c)).length, fill: '#FF8C3E' },
+    { name: 'CPAS', value: clients.filter(c => c.category === 'cpas' && isOverdue(c)).length, fill: '#FFB840' },
   ], [clients])
 
   const goalDist = useMemo(() => {
     const buckets = [
       { name: '0–25%', value: 0, fill: '#ff453a' },
-      { name: '26–50%', value: 0, fill: '#ff9f0a' },
+      { name: '26–50%', value: 0, fill: '#FF8C3E' },
       { name: '51–75%', value: 0, fill: '#007aff' },
       { name: '76–100%', value: 0, fill: '#00c853' },
     ]
@@ -264,14 +264,15 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       {/* Premium Header */}
       <div style={{
         marginBottom: 24, borderRadius: 22, padding: '24px 28px',
-        background: 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
-        border: '1px solid rgba(100,140,255,0.12)',
+        background: 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)',
+        border: '1px solid rgba(30,124,255,0.3)',
+        boxShadow: '0 10px 30px -10px rgba(30,124,255,0.4), 0 4px 12px rgba(30,124,255,0.15)',
         position: 'relative', overflow: 'hidden',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
       }}>
         <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(160,180,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             {mode === 'supervisor' ? 'Supervisor Overview' : 'Team Manager Overview'}
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#fff' }}>{title}</h1>
@@ -281,19 +282,19 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
             <>
               <Link href="/team?view=transfer" style={{
                 fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
                 transition: 'all 0.2s',
               }}>Transfer Board →</Link>
               <Link href="/team?view=assign-planners" style={{
                 fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
                 transition: 'all 0.2s',
               }}>Team Manager Board →</Link>
             </>
           )}
           <Link href="/dashboard?full=1" style={{
             fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-            background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.25)', color: '#5ac8fa',
+            background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
           }}>← Dashboard</Link>
         </div>
       </div>
@@ -506,8 +507,9 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
 
       <div style={{
         marginBottom: 16, borderRadius: 18, padding: '20px 24px',
-        background: 'linear-gradient(160deg, #1a1230 0%, #251845 40%, #1c1035 100%)',
-        border: '1px solid rgba(138,100,255,0.15)',
+        background: 'linear-gradient(135deg, #FFA940 0%, #FFB85C 50%, #F59E0B 100%)',
+        border: '1px solid rgba(245,158,11,0.3)',
+        boxShadow: '0 10px 30px -10px rgba(245,158,11,0.35), 0 4px 12px rgba(245,158,11,0.12)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(138,100,255,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
@@ -534,12 +536,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link href="/team?view=transfer" style={{
             fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
             transition: 'all 0.2s',
           }}>Open Transfer Board →</Link>
           <Link href="/team?full=1&filter=overdue" style={{
             fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
             transition: 'all 0.2s',
           }}>Review Overdue Queue →</Link>
         </div>
@@ -548,12 +550,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       {/* Premium planner table */}
       <div className="card" style={{
         borderRadius: 22, overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
+        border: '1px solid var(--border)',
+        background: 'var(--surface)',
       }}>
         <div style={{
-          padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.05)',
-          background: 'rgba(255,255,255,0.015)',
+          padding: '16px 22px', borderBottom: '1px solid var(--border)',
+          background: 'var(--surface-2)',
         }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Supports Planners
@@ -585,7 +587,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
                         fontWeight: 700,
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase',
-                        color: ps.loadStatus === 'rebalance' ? '#ff453a' : ps.loadStatus === 'watch' ? '#ff9f0a' : '#30d158',
+                        color: ps.loadStatus === 'rebalance' ? '#ff453a' : ps.loadStatus === 'watch' ? '#FF8C3E' : '#10C97A',
                         background: ps.loadStatus === 'rebalance' ? 'rgba(255,69,58,0.12)' : ps.loadStatus === 'watch' ? 'rgba(255,159,10,0.12)' : 'rgba(48,209,88,0.12)',
                       }}>
                         {ps.loadStatus === 'rebalance' ? 'Rebalance' : ps.loadStatus === 'watch' ? 'Watch' : 'Balanced'}

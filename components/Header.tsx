@@ -72,23 +72,22 @@ export default function Header({ user, profile }: Props) {
 
   return (
     <>
+      <div className="cs-topbar-shell">
       <header style={{
-        background: theme === 'light' ? '#1E7CFF' : 'var(--surface)',
-        borderBottom: theme === 'light' ? '1px solid #1862C9' : '1px solid var(--border)',
+        background: theme === 'light' ? 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)' : 'var(--surface)',
+        borderBottom: theme === 'light' ? 'none' : '1px solid var(--border)',
         padding: '0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right))',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         width: '100%',
-        maxWidth: '100vw',
+        maxWidth: '100%',
         overflow: 'visible',
         minHeight: 60,
         height: 'calc(60px + env(safe-area-inset-top, 0px))',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
+        position: 'relative',
         zIndex: 100,
-        backdropFilter: 'blur(12px)',
       }}>
         {/* Left: Logo + nav */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, overflow: 'hidden' }}>
@@ -216,6 +215,7 @@ export default function Header({ user, profile }: Props) {
           </button>
         </div>
       </header>
+      </div>
 
       <style>{`
         .header-signout-icon {
