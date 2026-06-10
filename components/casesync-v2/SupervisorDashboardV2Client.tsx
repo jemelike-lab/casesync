@@ -614,19 +614,35 @@ export default function SupervisorDashboardV2Client({
       <TopBar viewer={viewer} />
 
       <Container size="xl" px="md" pb="xl">
-        {/* Greeting */}
-        <Stack gap={2} mb="lg">
-          <Text fz={13} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
-            Program Overview
-          </Text>
-          <Title order={1} fz={28} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
-            Good morning, {viewer.fullName.split(' ')[0]}.
-          </Title>
-          <Text fz={14} c="#64748B" mt={2}>
-            Org-wide caseload snapshot · {teams.length} teams ·{' '}
-            {teams.reduce((sum, t) => sum + t.spCount, 0)} Support Planners
-          </Text>
-        </Stack>
+        {/* Greeting + hero illustration. The hero is a Workryn placeholder
+            (schedule.svg) — CaseSync will get its own bespoke illustration set
+            per page in a later pass. Hidden at sub-sm widths so PWA gets a
+            text-only greeting with no horizontal squeeze. */}
+        <Flex justify="space-between" align="center" gap="lg" mb="lg" wrap="nowrap">
+          <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+            <Text fz={13} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+              Program Overview
+            </Text>
+            <Title order={1} fz={28} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
+              Good morning, {viewer.fullName.split(' ')[0]}.
+            </Title>
+            <Text fz={14} c="#64748B" mt={2}>
+              Org-wide caseload snapshot · {teams.length} teams ·{' '}
+              {teams.reduce((sum, t) => sum + t.spCount, 0)} Support Planners
+            </Text>
+          </Stack>
+          <Box visibleFrom="sm" style={{ flexShrink: 0, width: 200, height: 120 }}>
+            <Image
+              src="/heroes/schedule.svg"
+              alt="Schedule illustration"
+              width={200}
+              height={120}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              unoptimized
+              priority
+            />
+          </Box>
+        </Flex>
 
         {/* KPI row — 4-across at md (992px+), 2-across at xs (576px+), 1-across below */}
         <Grid gap="md" mb="lg">
