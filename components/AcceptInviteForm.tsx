@@ -22,7 +22,7 @@ export default function AcceptInviteForm({ invite, token }: { invite: UserInvite
     }}>
       <div style={{ width: '100%', maxWidth: '440px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ background: '#0F172A', borderRadius: 16, padding: 8, display: 'inline-block', marginBottom: 12 }}>
+          <div style={{ background: '#1a1108', borderRadius: 16, padding: 8, display: 'inline-block', marginBottom: 12 }}>
             <Image src="/logo.png" alt="Beatrice Loving Heart" width={120} height={120} style={{ objectFit: 'contain', display: 'block' }} />
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Welcome to CaseSync</h1>

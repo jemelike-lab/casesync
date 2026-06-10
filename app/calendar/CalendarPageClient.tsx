@@ -28,7 +28,7 @@ export default function CalendarPageClient({ userId, profile, canSeeAll }: Props
         <div style={{
           marginBottom: 24, borderRadius: 22, padding: '28px 28px 24px',
           background: lt
-            ? 'linear-gradient(160deg, #1E7CFF 0%, #1F6FEB 40%, #1862C9 100%)'
+            ? 'linear-gradient(160deg, #3b2a1a 0%, #4a3524 40%, #2a1e10 100%)'
             : 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
           border: lt ? '1px solid rgba(60,30,0,0.15)' : '1px solid rgba(100,140,255,0.12)',
           position: 'relative', overflow: 'hidden',

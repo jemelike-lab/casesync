@@ -73,8 +73,8 @@ export default function Header({ user, profile }: Props) {
   return (
     <>
       <header style={{
-        background: theme === 'light' ? '#1E7CFF' : 'var(--surface)',
-        borderBottom: theme === 'light' ? '1px solid #1862C9' : '1px solid var(--border)',
+        background: theme === 'light' ? '#3b2a1a' : 'var(--surface)',
+        borderBottom: theme === 'light' ? '1px solid #2a1e10' : '1px solid var(--border)',
         padding: '0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right))',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         width: '100%',
