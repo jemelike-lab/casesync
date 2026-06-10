@@ -148,11 +148,11 @@ export default function HelpPageClient({ profile }: Props) {
 
   const isLoading = loading[activeTab] && !contents[activeTab]
   const cBg = lt ? '#ffffff' : 'var(--surface)'
-  const cBorder = lt ? '1.5px solid #c9b89a' : '1px solid var(--border)'
-  const cShadow = lt ? '0 2px 12px rgba(60,30,0,0.08)' : 'none'
+  const cBorder = lt ? '1.5px solid #E4E8F2' : '1px solid var(--border)'
+  const cShadow = lt ? '0 2px 12px rgba(15,23,42,0.06)' : 'none'
   const chipBg = lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.04)'
-  const accent = lt ? '#3b2a1a' : 'var(--accent)'
-  const accentText = lt ? '#0071e3' : 'var(--accent)'
+  const accent = lt ? '#1E7CFF' : 'var(--accent)'
+  const accentText = lt ? '#1E7CFF' : 'var(--accent)'
 
   return (
     <>
@@ -165,10 +165,10 @@ export default function HelpPageClient({ profile }: Props) {
         {/* Header */}
         <div className="no-print" style={{
           marginBottom: 28, padding: '28px 28px 24px', borderRadius: 20,
-          background: lt ? 'linear-gradient(135deg, #3b2a1a 0%, #4a3524 50%, #2a1e10 100%)' : 'linear-gradient(135deg, #0c1a3a 0%, #142244 50%, #0e1630 100%)',
+          background: lt ? 'linear-gradient(135deg, #1E7CFF 0%, #1F6FEB 50%, #1862C9 100%)' : 'linear-gradient(135deg, #0c1a3a 0%, #142244 50%, #0e1630 100%)',
           position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: lt ? 'radial-gradient(circle, rgba(255,220,160,0.1) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: lt ? 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Help Center</div>
             <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#fff' }}>📚 CaseSync User Guide</h1>
@@ -263,7 +263,7 @@ export default function HelpPageClient({ profile }: Props) {
         }}>
           {/* Spine */}
           <div style={{
-            padding: '18px 24px', borderBottom: lt ? '1.5px solid #c9b89a' : '1px solid var(--border)',
+            padding: '18px 24px', borderBottom: lt ? '1.5px solid #E4E8F2' : '1px solid var(--border)',
             background: lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.02)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
@@ -303,14 +303,14 @@ export default function HelpPageClient({ profile }: Props) {
                           width: 32, height: 32, borderRadius: 8,
                           background: isAct ? accent : (lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.06)'),
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 13, fontWeight: 800, color: isAct ? '#fff' : (lt ? '#5c4a35' : 'var(--text-secondary)'),
+                          fontSize: 13, fontWeight: 800, color: isAct ? '#fff' : (lt ? '#5B6478' : 'var(--text-secondary)'),
                           flexShrink: 0, transition: 'all 0.15s',
                         }}>{ch.number}</div>
                       )}
-                      <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: isAct ? accent : (lt ? '#1a1108' : 'var(--text)') }}>
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: isAct ? accent : (lt ? '#0F172A' : 'var(--text)') }}>
                         {ch.title.replace(/^\d+\.\s*/, '')}
                       </span>
-                      <span style={{ fontSize: 12, color: lt ? '#9c8470' : 'var(--text-secondary)', flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+                      <span style={{ fontSize: 12, color: lt ? '#94A3B8' : 'var(--text-secondary)', flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
                     </button>
                     {isOpen && (
                       <div className="help-chapter-body" style={{

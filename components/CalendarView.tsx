@@ -75,7 +75,7 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
             }}>
               {/* Client name + urgency badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: lt ? '#1a1108' : '#e0e8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: lt ? '#0F172A' : '#e0e8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {first.clientName}
                 </span>
                 <span style={{
@@ -92,13 +92,13 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
                 {clientEvents.map((evt, j) => (
                   <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: UC[evt.urgency], flexShrink: 0, boxShadow: `0 0 4px ${UC[evt.urgency]}60` }} />
-                    <span style={{ color: lt ? '#5c4a35' : '#a0b4e0' }}>{evt.label}</span>
+                    <span style={{ color: lt ? '#5B6478' : '#a0b4e0' }}>{evt.label}</span>
                   </div>
                 ))}
               </div>
 
               {/* Planner + ID */}
-              <div style={{ fontSize: 10, color: lt ? '#9c8470' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
+              <div style={{ fontSize: 10, color: lt ? '#94A3B8' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
                 <span>ID {first.client_id}</span>
                 {first.plannerName && (
                   <>
@@ -231,7 +231,7 @@ export default function CalendarView({ assignedTo }: Props) {
   }
 
   const navBtn: React.CSSProperties = { background: lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.04)', border: lt ? '1px solid var(--border)' : '1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'8px 14px', color: lt ? 'var(--text)' : '#fff', cursor:'pointer', fontSize:14, transition:'background 0.2s' }
-  const todayBtn: React.CSSProperties = { background: lt ? 'rgba(0,113,227,0.1)' : 'rgba(0,122,255,0.12)', border: lt ? '1px solid rgba(0,113,227,0.3)' : '1px solid rgba(0,122,255,0.25)', borderRadius:10, padding:'8px 16px', color: lt ? '#0071e3' : '#5ac8fa', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.2s' }
+  const todayBtn: React.CSSProperties = { background: lt ? 'rgba(0,113,227,0.1)' : 'rgba(0,122,255,0.12)', border: lt ? '1px solid rgba(0,113,227,0.3)' : '1px solid rgba(0,122,255,0.25)', borderRadius:10, padding:'8px 16px', color: lt ? '#1E7CFF' : '#5ac8fa', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.2s' }
 
   return (
     <div>
@@ -242,7 +242,7 @@ export default function CalendarView({ assignedTo }: Props) {
             <button key={v} onClick={()=>setView(v)} style={{
               padding:'7px 18px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13,
               fontWeight:view===v?700:500, background:view===v ? (lt ? 'rgba(0,113,227,0.15)' : 'rgba(0,122,255,0.2)') : 'transparent',
-              color:view===v ? (lt ? '#0071e3' : '#5ac8fa') : 'var(--text-secondary)', transition:'all 0.2s',
+              color:view===v ? (lt ? '#1E7CFF' : '#5ac8fa') : 'var(--text-secondary)', transition:'all 0.2s',
             }}>{v[0].toUpperCase()+v.slice(1)}</button>
           ))}
         </div>
@@ -330,7 +330,7 @@ export default function CalendarView({ assignedTo }: Props) {
               {DAYS.map(d=>(
                 <div key={d} className="cal-header-cell" style={{
                   padding:'14px 4px', textAlign:'center', fontSize:12, fontWeight:800,
-                  color: lt ? '#5c4a35' : '#a0b4e0', letterSpacing:'0.12em', textTransform:'uppercase',
+                  color: lt ? '#5B6478' : '#a0b4e0', letterSpacing:'0.12em', textTransform:'uppercase',
                   background: lt
                     ? 'linear-gradient(180deg, #f0e4d4 0%, #e8dcc8 100%)'
                     : 'linear-gradient(180deg, rgba(35,45,90,0.9) 0%, rgba(25,32,70,0.9) 100%)',
@@ -404,7 +404,7 @@ export default function CalendarView({ assignedTo }: Props) {
                         ) : (
                           <span style={{
                             fontSize:14, fontWeight:hasEv?700:400,
-                            color:isSel ? (lt ? '#0071e3' : '#fff') : hasEv ? (lt ? '#1a1108' : '#d0daf0') : (lt ? '#9c8470' : '#4a5a7a'),
+                            color:isSel ? (lt ? '#1E7CFF' : '#fff') : hasEv ? (lt ? '#0F172A' : '#d0daf0') : (lt ? '#94A3B8' : '#4a5a7a'),
                           }}>{day}</span>
                         )}
                       </div>
@@ -424,7 +424,7 @@ export default function CalendarView({ assignedTo }: Props) {
                               {evt.clientName.split(',')[0]}
                             </div>
                           ))}
-                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#9c8470' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
+                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#94A3B8' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
                         </div>
                       )}
 
@@ -461,7 +461,7 @@ export default function CalendarView({ assignedTo }: Props) {
               <span style={{ fontSize:13, fontWeight:700, color: lt ? 'var(--text)' : '#c8d4f0' }}>
                 {selectedDate ? `Deadlines — ${new Date(selectedDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}` : 'Deadlines'}
               </span>
-              {selectedEvents.length>0 && <span style={{ fontSize:11, padding:'2px 10px', borderRadius:20, background: lt ? 'rgba(0,113,227,0.08)' : 'rgba(100,140,255,0.1)', color: lt ? '#0071e3' : '#8b9cc7', fontWeight:600 }}>{selectedEvents.length}</span>}
+              {selectedEvents.length>0 && <span style={{ fontSize:11, padding:'2px 10px', borderRadius:20, background: lt ? 'rgba(0,113,227,0.08)' : 'rgba(100,140,255,0.1)', color: lt ? '#1E7CFF' : '#8b9cc7', fontWeight:600 }}>{selectedEvents.length}</span>}
             </div>
             <div style={{ padding:'12px 16px 16px' }}>
               {!selectedDate ? <div style={{fontSize:13,color: lt ? 'var(--text-secondary)' : '#5a6a8a',padding:12,textAlign:'center'}}>{loading?'Loading…':'No due clients in this month.'}</div>
