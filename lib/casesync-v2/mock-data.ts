@@ -295,6 +295,80 @@ export const issueLabels: Record<AttentionItem['issue'], string> = {
 };
 
 // ============================================================================
+// Team Tools — stacked action cards in the right sidebar of the supervisor
+// dashboard. Mirrors the cards from the existing /supervisor page exactly
+// (same titles, descriptions, emoji icons). hrefs left as placeholders; the
+// existing routes can be wired in once layout is locked.
+// ============================================================================
+
+export interface TeamToolCard {
+  id: string;
+  icon: string; // emoji to match the existing site's visual language
+  title: string;
+  description: string;
+  href?: string; // intentionally optional during the iteration phase
+}
+
+export const teamTools: TeamToolCard[] = [
+  {
+    id: 'client-transfer',
+    icon: '🔀',
+    title: 'Client Transfer Board',
+    description: 'Drag clients between Support Planners and rebalance caseloads quickly.',
+  },
+  {
+    id: 'team-manager-board',
+    icon: '🧭',
+    title: 'Team Manager Board',
+    description: 'Drag Support Planners between Team Managers and update reporting assignments.',
+  },
+  {
+    id: 'team-view',
+    icon: '👥',
+    title: 'Team View',
+    description: 'Review Support Planner performance, current assignments, and team coverage in one place.',
+  },
+  {
+    id: 'batch-import',
+    icon: '⬆',
+    title: 'Batch Import',
+    description: 'Upload client batches and review recent import runs from one place.',
+  },
+  {
+    id: 'rebalance-history',
+    icon: '📈',
+    title: 'Rebalance History',
+    description: 'Review recent rebalance moves, outcomes, and planner impact without going into the audit log.',
+  },
+  {
+    id: 'queue-command-center',
+    icon: '🧭',
+    title: 'Queue Command Center',
+    description: 'Open overdue, today, week, next-14-day, and quiet-case queues from one manager-focused ops surface.',
+  },
+];
+
+// ============================================================================
+// Top nav links — the app-wide row of page tabs that sits above the cobalt
+// topbar. Mirrors the existing site's nav order and labels.
+// ============================================================================
+
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+export const navLinks: NavLink[] = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Team', href: '/team' },
+  { label: 'Supervisor', href: '/supervisor' },
+  { label: 'Calendar', href: '/calendar' },
+  { label: 'Admin', href: '/admin' },
+  { label: 'Audit Log', href: '/admin/audit-log' }, // best-guess path; iterate once verified
+  { label: 'Settings', href: '/settings' },
+];
+
+// ============================================================================
 // Viewer profile — who's looking at the dashboard. Used for the topbar greeting
 // and avatar. For mock, this is Gabriela.
 // ============================================================================

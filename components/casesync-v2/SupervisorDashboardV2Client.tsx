@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Anchor,
   Avatar,
   Badge,
   Box,
@@ -30,19 +31,25 @@ import {
   ChevronRight,
   CalendarDays,
   FileWarning,
+  Moon,
+  HelpCircle,
+  LogOut,
 } from 'lucide-react';
 import type {
   TeamSummary,
   OrgKpis,
   TrendPoint,
   AttentionItem,
+  TeamToolCard,
+  NavLink,
 } from '@/lib/casesync-v2/mock-data';
-import { issueLabels } from '@/lib/casesync-v2/mock-data';
+import { issueLabels, teamTools, navLinks } from '@/lib/casesync-v2/mock-data';
 
 // CaseSync v2 — Supervisor dashboard, program-supervisor (Gabriela) view.
-// Visual language reference: CaseFox screenshots (see docs/REDESIGN_PLAN.md).
-// Vivid cobalt topbar, soft lavender canvas, pure-white cards with soft slate
-// shadow, solid-fill KPI tiles, magenta/teal chart accents, Inter via Geist.
+// Layout: app nav row, cobalt floating topbar, greeting, KPI tiles, trend
+// chart, team overview, then a 2-column row with Attention Feed (left, stacked)
+// and Team Tools (right, stacked action cards) — mirrors the existing site's
+// stacked-card pattern with v2 visual language.
 
 interface ViewerProfile {
   fullName: string;
@@ -58,9 +65,149 @@ interface Props {
   attentionItems: AttentionItem[];
 }
 
-// ===== TopBar =====
-// Vivid cobalt floating bar, white text/icons, search in the middle, profile
-// on the right. Sticky so it stays visible on scroll.
+// ===== App nav row =====
+// Plain horizontal tab row above the cobalt topbar. Matches the existing
+// site's nav exactly: Dashboard / Team / Supervisor (active) / Calendar /
+// Admin / Audit Log / Settings, plus right-side help button, theme toggle,
+// bell, user pill, sign out. Theme toggle and sign out are visual stubs at
+// this stage — wiring is a separate pass.
+
+function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
+  const activePath = '/dashboard-v2'; // this page; no nav link matches yet
+  return (
+    <Box
+      style={{
+        background: '#FFFFFF',
+        borderBottom: '1px solid #E5E7EB',
+        padding: '8px 20px',
+      }}
+    >
+      <Flex align="center" justify="space-between" gap="md" wrap="nowrap">
+        <Group gap={4} wrap="nowrap" style={{ overflowX: 'auto' }}>
+          {navLinks.map((link: NavLink) => {
+            const isActive = link.href === activePath;
+            return (
+              <Anchor
+                key={link.href}
+                href={link.href}
+                underline="never"
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isActive ? '#0F172A' : '#475569',
+                  background: isActive ? '#F1F5F9' : 'transparent',
+                  whiteSpace: 'nowrap',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {link.label}
+              </Anchor>
+            );
+          })}
+        </Group>
+        <Group gap={4} wrap="nowrap">
+          <UnstyledButton
+            aria-label="Help and tour"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#475569',
+              border: '1px solid #E5E7EB',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              position: 'relative',
+            }}
+          >
+            <Box
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 6,
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                background: '#FF3B5C',
+              }}
+            />
+            <HelpCircle size={14} />
+            <Text fz={12} fw={600} visibleFrom="sm">
+              Help &amp; Tour
+            </Text>
+          </UnstyledButton>
+          <UnstyledButton
+            aria-label="Toggle theme"
+            style={{ padding: 8, borderRadius: 8, color: '#475569' }}
+          >
+            <Moon size={16} />
+          </UnstyledButton>
+          <UnstyledButton
+            aria-label="Notifications"
+            style={{ padding: 8, borderRadius: 8, color: '#475569', position: 'relative' }}
+          >
+            <Bell size={16} />
+            <Box
+              style={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                width: 7,
+                height: 7,
+                borderRadius: 4,
+                background: '#FF3B5C',
+                border: '1.5px solid #FFFFFF',
+              }}
+            />
+          </UnstyledButton>
+          <Group gap={6} wrap="nowrap" ml="xs" visibleFrom="md">
+            <Avatar
+              radius="xl"
+              size="xs"
+              style={{ background: '#1E7CFF', color: '#fff', fontWeight: 700, fontSize: 10 }}
+            >
+              {viewer.initials}
+            </Avatar>
+            <Stack gap={0}>
+              <Text fz={12} fw={600} c="#0F172A" lh={1.2}>
+                {viewer.fullName.split(' ')[0]} {viewer.fullName.split(' ')[1]?.[0] ?? ''}
+              </Text>
+              <Text fz={9} c="#94A3B8" lh={1.2} style={{ letterSpacing: '0.08em' }}>
+                {viewer.role.toUpperCase()}
+              </Text>
+            </Stack>
+          </Group>
+          <UnstyledButton
+            aria-label="Sign out"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#475569',
+              border: '1px solid #E5E7EB',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <LogOut size={14} />
+            <Text fz={12} fw={600} visibleFrom="sm">
+              Sign out
+            </Text>
+          </UnstyledButton>
+        </Group>
+      </Flex>
+    </Box>
+  );
+}
+
+// ===== Cobalt topbar =====
+// Search + bell + mail + profile chip. Kept from the prior iteration since
+// Josh signed off on the visual.
 
 function TopBar({ viewer }: { viewer: ViewerProfile }) {
   return (
@@ -79,7 +226,6 @@ function TopBar({ viewer }: { viewer: ViewerProfile }) {
       }}
     >
       <Flex align="center" justify="space-between" px="lg" py="sm" gap="md">
-        {/* Logo + brand */}
         <Group gap="sm" wrap="nowrap">
           <Box
             style={{
@@ -98,18 +244,11 @@ function TopBar({ viewer }: { viewer: ViewerProfile }) {
           >
             CS
           </Box>
-          <Text
-            visibleFrom="sm"
-            c="white"
-            fw={700}
-            fz="lg"
-            style={{ letterSpacing: '-0.01em' }}
-          >
+          <Text visibleFrom="sm" c="white" fw={700} fz="lg" style={{ letterSpacing: '-0.01em' }}>
             CaseSync
           </Text>
         </Group>
 
-        {/* Search */}
         <Box style={{ flex: 1, maxWidth: 520 }}>
           <TextInput
             placeholder="Search clients, SPs, audits..."
@@ -126,12 +265,8 @@ function TopBar({ viewer }: { viewer: ViewerProfile }) {
           />
         </Box>
 
-        {/* Right cluster: notifications, mail, profile */}
         <Group gap="md" wrap="nowrap">
-          <UnstyledButton
-            aria-label="Notifications"
-            style={{ color: '#fff', position: 'relative' }}
-          >
+          <UnstyledButton aria-label="Notifications" style={{ color: '#fff', position: 'relative' }}>
             <Bell size={20} />
             <Box
               style={{
@@ -150,12 +285,7 @@ function TopBar({ viewer }: { viewer: ViewerProfile }) {
             <Mail size={20} />
           </UnstyledButton>
           <Group gap="xs" wrap="nowrap">
-            <Avatar
-              radius="xl"
-              size="sm"
-              color="cobalt.1"
-              style={{ color: '#1E7CFF', fontWeight: 700 }}
-            >
+            <Avatar radius="xl" size="sm" style={{ background: '#fff', color: '#1E7CFF', fontWeight: 700 }}>
               {viewer.initials}
             </Avatar>
             <Stack gap={0} visibleFrom="md">
@@ -174,13 +304,12 @@ function TopBar({ viewer }: { viewer: ViewerProfile }) {
 }
 
 // ===== KPI Tile =====
-// Solid-fill colored card with white text, big number, delta indicator, icon.
 
 interface KpiTileProps {
   label: string;
   value: number;
   deltaPct: number;
-  deltaInverted?: boolean; // for metrics where down = good (overdue, no-contact)
+  deltaInverted?: boolean;
   icon: React.ReactNode;
   gradient: string;
   shadowColor: string;
@@ -255,7 +384,7 @@ function KpiTile({
 // ===== Team Overview row =====
 
 function TeamRow({ team }: { team: TeamSummary }) {
-  const trendDown = team.weekOverWeekDelta < 0; // improving
+  const trendDown = team.weekOverWeekDelta < 0;
   return (
     <UnstyledButton
       style={{
@@ -273,12 +402,7 @@ function TeamRow({ team }: { team: TeamSummary }) {
           <Avatar
             radius="md"
             size="md"
-            style={{
-              background: team.accentColor,
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 13,
-            }}
+            style={{ background: team.accentColor, color: '#fff', fontWeight: 700, fontSize: 13 }}
           >
             {team.leadInitials}
           </Avatar>
@@ -295,13 +419,9 @@ function TeamRow({ team }: { team: TeamSummary }) {
         </Group>
         <Group gap="lg" wrap="nowrap" visibleFrom="sm">
           <Stack gap={0} align="flex-end">
-            <Text fz={11} c="#64748B" fw={600}>
-              OVERDUE
-            </Text>
+            <Text fz={11} c="#64748B" fw={600}>OVERDUE</Text>
             <Group gap={4} wrap="nowrap">
-              <Text fz={15} fw={700} c="#FF3B5C">
-                {team.overdueCount}
-              </Text>
+              <Text fz={15} fw={700} c="#FF3B5C">{team.overdueCount}</Text>
               {trendDown ? (
                 <TrendingDown size={12} color="#10B981" />
               ) : (
@@ -311,12 +431,8 @@ function TeamRow({ team }: { team: TeamSummary }) {
           </Stack>
           <Stack gap={0} align="flex-end" style={{ width: 90 }}>
             <Group justify="space-between" w="100%">
-              <Text fz={11} c="#64748B" fw={600}>
-                ON-TIME
-              </Text>
-              <Text fz={11} c="#0F172A" fw={700}>
-                {team.completionRatePct}%
-              </Text>
+              <Text fz={11} c="#64748B" fw={600}>ON-TIME</Text>
+              <Text fz={11} c="#0F172A" fw={700}>{team.completionRatePct}%</Text>
             </Group>
             <Progress
               value={team.completionRatePct}
@@ -339,15 +455,11 @@ function TeamRow({ team }: { team: TeamSummary }) {
   );
 }
 
-// ===== Attention Feed row =====
+// ===== Attention Feed row (single-column, full-width) =====
 
 function AttentionRow({ item }: { item: AttentionItem }) {
   const severityColor =
-    item.severity === 'critical'
-      ? '#FF3B5C'
-      : item.severity === 'warning'
-      ? '#FFA940'
-      : '#1E7CFF';
+    item.severity === 'critical' ? '#FF3B5C' : item.severity === 'warning' ? '#FFA940' : '#1E7CFF';
   const severityBg =
     item.severity === 'critical'
       ? 'rgba(255,59,92,0.06)'
@@ -361,9 +473,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
       ? FileWarning
       : CalendarDays;
   const overdueLabel =
-    item.daysOverdue < 0
-      ? `in ${Math.abs(item.daysOverdue)}d`
-      : `${item.daysOverdue}d ago`;
+    item.daysOverdue < 0 ? `in ${Math.abs(item.daysOverdue)}d` : `${item.daysOverdue}d ago`;
   return (
     <UnstyledButton
       style={{
@@ -420,6 +530,41 @@ function AttentionRow({ item }: { item: AttentionItem }) {
   );
 }
 
+// ===== Team Tools action card =====
+
+function TeamToolRow({ tool }: { tool: TeamToolCard }) {
+  return (
+    <UnstyledButton
+      component="a"
+      href={tool.href ?? '#'}
+      style={{
+        display: 'block',
+        width: '100%',
+        padding: '14px 16px',
+        borderRadius: 12,
+        background: '#FAFBFC',
+        border: '1px solid #E5E7EB',
+        transition: 'all 0.15s ease',
+        textDecoration: 'none',
+      }}
+    >
+      <Stack gap={6}>
+        <Group gap={8} wrap="nowrap">
+          <Text fz={16} component="span" style={{ lineHeight: 1, flexShrink: 0 }}>
+            {tool.icon}
+          </Text>
+          <Text fz={14} fw={700} c="#0F172A">
+            {tool.title}
+          </Text>
+        </Group>
+        <Text fz={12} c="#64748B" lh={1.4}>
+          {tool.description}
+        </Text>
+      </Stack>
+    </UnstyledButton>
+  );
+}
+
 // ===== Main client =====
 
 export default function SupervisorDashboardV2Client({
@@ -431,6 +576,7 @@ export default function SupervisorDashboardV2Client({
 }: Props) {
   return (
     <Box>
+      <AppNavRow viewer={viewer} />
       <TopBar viewer={viewer} />
 
       <Container size="xl" px="md" pb="xl">
@@ -448,9 +594,9 @@ export default function SupervisorDashboardV2Client({
           </Text>
         </Stack>
 
-        {/* KPI row */}
+        {/* KPI row — 4-across at md (992px+), 2-across at xs (576px+), 1-across below */}
         <Grid gap="md" mb="lg">
-          <Grid.Col span={{ base: 12, xs: 6, lg: 3 }}>
+          <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
               label="Active Clients"
               value={orgKpis.activeClients}
@@ -460,7 +606,7 @@ export default function SupervisorDashboardV2Client({
               shadowColor="rgba(30,124,255,0.4)"
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, xs: 6, lg: 3 }}>
+          <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
               label="Overdue Deadlines"
               value={orgKpis.overdueDeadlines}
@@ -471,7 +617,7 @@ export default function SupervisorDashboardV2Client({
               shadowColor="rgba(255,59,92,0.4)"
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, xs: 6, lg: 3 }}>
+          <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
               label="Due This Week"
               value={orgKpis.dueThisWeek}
@@ -482,7 +628,7 @@ export default function SupervisorDashboardV2Client({
               shadowColor="rgba(255,169,64,0.4)"
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, xs: 6, lg: 3 }}>
+          <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
               label="No Contact 7+ Days"
               value={orgKpis.noContact7}
@@ -495,101 +641,63 @@ export default function SupervisorDashboardV2Client({
           </Grid.Col>
         </Grid>
 
-        {/* Trend chart + Team overview */}
-        <Grid gap="md" mb="lg">
-          <Grid.Col span={{ base: 12, lg: 8 }}>
-            <Paper p="lg" style={{ background: '#FFFFFF', minHeight: 380 }}>
-              <Flex justify="space-between" align="center" mb="md">
-                <Stack gap={2}>
-                  <Text
-                    fz={11}
-                    fw={700}
-                    c="#64748B"
-                    tt="uppercase"
-                    style={{ letterSpacing: '0.06em' }}
-                  >
-                    Last 12 Weeks
-                  </Text>
-                  <Title order={3} fz={18} fw={700} c="#0F172A">
-                    Caseload Trend
-                  </Title>
-                </Stack>
-                <Group gap="sm">
-                  <Group gap={6}>
-                    <Box w={10} h={10} bg="#FF3B5C" style={{ borderRadius: 3 }} />
-                    <Text fz={12} c="#64748B" fw={600}>
-                      Overdue
-                    </Text>
-                  </Group>
-                  <Group gap={6}>
-                    <Box w={10} h={10} bg="#10B981" style={{ borderRadius: 3 }} />
-                    <Text fz={12} c="#64748B" fw={600}>
-                      On track
-                    </Text>
-                  </Group>
-                  <Group gap={6}>
-                    <Box w={10} h={10} bg="#1E7CFF" style={{ borderRadius: 3 }} />
-                    <Text fz={12} c="#64748B" fw={600}>
-                      Completed
-                    </Text>
-                  </Group>
-                </Group>
-              </Flex>
-              <LineChart
-                h={300}
-                data={trendData}
-                dataKey="weekLabel"
-                series={[
-                  { name: 'overdue', color: 'coral.6', label: 'Overdue' },
-                  { name: 'onTrack', color: 'emerald.6', label: 'On track' },
-                  { name: 'completed', color: 'cobalt.6', label: 'Completed' },
-                ]}
-                curveType="natural"
-                strokeWidth={2.5}
-                withDots
-                dotProps={{ r: 3 }}
-                gridAxis="xy"
-                yAxisProps={{ fontSize: 11 }}
-                xAxisProps={{ fontSize: 11 }}
-                tooltipAnimationDuration={150}
-              />
-            </Paper>
-          </Grid.Col>
+        {/* Caseload Trend chart — full width, explicit height to kill the width(-1) warning */}
+        <Paper p="lg" mb="lg" style={{ background: '#FFFFFF' }}>
+          <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="md">
+            <Stack gap={2}>
+              <Text
+                fz={11}
+                fw={700}
+                c="#64748B"
+                tt="uppercase"
+                style={{ letterSpacing: '0.06em' }}
+              >
+                Last 12 Weeks
+              </Text>
+              <Title order={3} fz={18} fw={700} c="#0F172A">
+                Caseload Trend
+              </Title>
+            </Stack>
+            <Group gap="sm">
+              <Group gap={6}>
+                <Box w={10} h={10} bg="#FF3B5C" style={{ borderRadius: 3 }} />
+                <Text fz={12} c="#64748B" fw={600}>Overdue</Text>
+              </Group>
+              <Group gap={6}>
+                <Box w={10} h={10} bg="#10B981" style={{ borderRadius: 3 }} />
+                <Text fz={12} c="#64748B" fw={600}>On track</Text>
+              </Group>
+              <Group gap={6}>
+                <Box w={10} h={10} bg="#1E7CFF" style={{ borderRadius: 3 }} />
+                <Text fz={12} c="#64748B" fw={600}>Completed</Text>
+              </Group>
+            </Group>
+          </Flex>
+          <Box style={{ width: '100%', height: 320, minWidth: 0 }}>
+            <LineChart
+              h={320}
+              w="100%"
+              data={trendData}
+              dataKey="weekLabel"
+              series={[
+                { name: 'overdue', color: 'coral.6', label: 'Overdue' },
+                { name: 'onTrack', color: 'emerald.6', label: 'On track' },
+                { name: 'completed', color: 'cobalt.6', label: 'Completed' },
+              ]}
+              curveType="natural"
+              strokeWidth={2.5}
+              withDots
+              dotProps={{ r: 3 }}
+              gridAxis="xy"
+              yAxisProps={{ fontSize: 11 }}
+              xAxisProps={{ fontSize: 11 }}
+              tooltipAnimationDuration={150}
+            />
+          </Box>
+        </Paper>
 
-          <Grid.Col span={{ base: 12, lg: 4 }}>
-            <Paper p="lg" style={{ background: '#FFFFFF', minHeight: 380 }}>
-              <Flex justify="space-between" align="center" mb="md">
-                <Stack gap={2}>
-                  <Text
-                    fz={11}
-                    fw={700}
-                    c="#64748B"
-                    tt="uppercase"
-                    style={{ letterSpacing: '0.06em' }}
-                  >
-                    By Team
-                  </Text>
-                  <Title order={3} fz={18} fw={700} c="#0F172A">
-                    Team Overview
-                  </Title>
-                </Stack>
-                <UnstyledButton>
-                  <Text fz={12} fw={600} c="cobalt.6">
-                    View all
-                  </Text>
-                </UnstyledButton>
-              </Flex>
-              <Stack gap={8}>
-                {teams.map((team) => (
-                  <TeamRow key={team.id} team={team} />
-                ))}
-              </Stack>
-            </Paper>
-          </Grid.Col>
-        </Grid>
-
-        {/* Attention feed */}
-        <Paper p="lg" style={{ background: '#FFFFFF' }}>
+        {/* Team Overview — full-width stacked rows */}
+        <Paper p="lg" mb="lg" style={{ background: '#FFFFFF' }}>
           <Flex justify="space-between" align="center" mb="md">
             <Stack gap={2}>
               <Text
@@ -599,24 +707,78 @@ export default function SupervisorDashboardV2Client({
                 tt="uppercase"
                 style={{ letterSpacing: '0.06em' }}
               >
-                Needs Your Eyes
+                By Team
               </Text>
               <Title order={3} fz={18} fw={700} c="#0F172A">
-                Attention Feed
+                Team Overview
               </Title>
             </Stack>
-            <Badge variant="light" color="coral" size="lg">
-              {attentionItems.filter((i) => i.severity === 'critical').length} critical
-            </Badge>
+            <UnstyledButton>
+              <Text fz={12} fw={600} c="cobalt.6">View all</Text>
+            </UnstyledButton>
           </Flex>
-          <Grid gap="sm">
-            {attentionItems.map((item) => (
-              <Grid.Col key={item.id} span={{ base: 12, md: 6 }}>
-                <AttentionRow item={item} />
-              </Grid.Col>
+          <Stack gap={8}>
+            {teams.map((team) => (
+              <TeamRow key={team.id} team={team} />
             ))}
-          </Grid>
+          </Stack>
         </Paper>
+
+        {/* Bottom 2-col: Attention Feed (single-col stacked) + Team Tools sidebar */}
+        <Grid gap="md">
+          <Grid.Col span={{ base: 12, lg: 8 }}>
+            <Paper p="lg" style={{ background: '#FFFFFF' }}>
+              <Flex justify="space-between" align="center" mb="md">
+                <Stack gap={2}>
+                  <Text
+                    fz={11}
+                    fw={700}
+                    c="#64748B"
+                    tt="uppercase"
+                    style={{ letterSpacing: '0.06em' }}
+                  >
+                    Needs Your Eyes
+                  </Text>
+                  <Title order={3} fz={18} fw={700} c="#0F172A">
+                    Attention Feed
+                  </Title>
+                </Stack>
+                <Badge variant="light" color="coral" size="lg">
+                  {attentionItems.filter((i) => i.severity === 'critical').length} critical
+                </Badge>
+              </Flex>
+              <Stack gap={8}>
+                {attentionItems.map((item) => (
+                  <AttentionRow key={item.id} item={item} />
+                ))}
+              </Stack>
+            </Paper>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, lg: 4 }}>
+            <Paper p="lg" style={{ background: '#FFFFFF' }}>
+              <Stack gap={2} mb="md">
+                <Text
+                  fz={11}
+                  fw={700}
+                  c="#64748B"
+                  tt="uppercase"
+                  style={{ letterSpacing: '0.06em' }}
+                >
+                  Manager Actions
+                </Text>
+                <Title order={3} fz={18} fw={700} c="#0F172A">
+                  Team Tools
+                </Title>
+              </Stack>
+              <Stack gap={8}>
+                {teamTools.map((tool) => (
+                  <TeamToolRow key={tool.id} tool={tool} />
+                ))}
+              </Stack>
+            </Paper>
+          </Grid.Col>
+        </Grid>
 
         <Text fz={11} c="#94A3B8" ta="center" mt="xl">
           CaseSync v2 · north-star preview · data is mocked · /dashboard-v2
