@@ -212,7 +212,7 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
       flexWrap: 'wrap',
       alignItems: 'center',
     }}>
-      <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF3B5C', flexShrink: 0, boxShadow: '0 0 6px rgba(255,69,58,0.5)' }} />
+      <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff453a', flexShrink: 0, boxShadow: '0 0 6px rgba(255,69,58,0.5)' }} />
       <span style={{ fontSize: 12, color: 'rgba(255,150,150,0.7)', fontWeight: 600, letterSpacing: '0.02em' }}>Needs attention:</span>
       {overdue > 0 && (
         <button
@@ -220,7 +220,7 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
           style={{
             background: activeAlert === 'overdue' ? 'rgba(255,69,58,0.2)' : 'rgba(255,69,58,0.1)',
             border: activeAlert === 'overdue' ? '1px solid rgba(255,69,58,0.4)' : '1px solid rgba(255,69,58,0.2)',
-            borderRadius: 10, color: '#DC2D4E', fontSize: 12, fontWeight: 700,
+            borderRadius: 10, color: '#ff6b6b', fontSize: 12, fontWeight: 700,
             padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
@@ -233,7 +233,7 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
           style={{
             background: activeAlert === 'due_this_week' ? 'rgba(255,159,10,0.2)' : 'rgba(255,159,10,0.08)',
             border: activeAlert === 'due_this_week' ? '1px solid rgba(255,159,10,0.4)' : '1px solid rgba(255,159,10,0.15)',
-            borderRadius: 10, color: '#D97706', fontSize: 12, fontWeight: 700,
+            borderRadius: 10, color: '#ffb340', fontSize: 12, fontWeight: 700,
             padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
@@ -246,7 +246,7 @@ function AlertBanner({ overdue, dueThisWeek, eligibilitySoon, activeAlert, onAle
           style={{
             background: activeAlert === 'eligibility_ending_soon' ? 'rgba(0,122,255,0.15)' : 'rgba(0,122,255,0.08)',
             border: activeAlert === 'eligibility_ending_soon' ? '1px solid rgba(0,122,255,0.3)' : '1px solid rgba(0,122,255,0.15)',
-            borderRadius: 10, color: 'var(--accent)', fontSize: 12, fontWeight: 700,
+            borderRadius: 10, color: '#5ac8fa', fontSize: 12, fontWeight: 700,
             padding: '5px 14px', cursor: 'pointer', transition: 'all 0.2s',
           }}
         >
@@ -347,23 +347,19 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
       borderRadius: 22,
       padding: '24px 28px',
       background: allCurrent
-        ? 'linear-gradient(135deg, #10C97A 0%, #14D685 50%, #0BA46B 100%)'
-        : 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)',
-      border: allCurrent ? '1px solid rgba(16,201,122,0.3)' : '1px solid rgba(30,124,255,0.3)',
-      boxShadow: allCurrent
-        ? '0 10px 30px -10px rgba(16,201,122,0.4), 0 4px 12px rgba(16,201,122,0.15)'
-        : '0 10px 30px -10px rgba(30,124,255,0.4), 0 4px 12px rgba(30,124,255,0.15)',
+        ? 'linear-gradient(160deg, #0c2a1a 0%, #142e20 40%, #0e2418 100%)'
+        : 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
+      border: allCurrent ? '1px solid rgba(48,209,88,0.15)' : '1px solid rgba(100,140,255,0.12)',
       position: 'relative',
       overflow: 'hidden',
-      color: '#fff',
     }}>
       {showConfetti && <Confetti onDone={onDismissConfetti} />}
 
       {/* Decorative orb */}
-      <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: allCurrent ? 'radial-gradient(circle, rgba(48,209,88,0.08) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       {/* Date */}
-      <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 500, color: allCurrent ? 'rgba(100,220,140,0.5)' : 'rgba(160,180,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
       </div>
 
@@ -386,7 +382,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.12)',
                 border: activeFilter === 'overdue' ? '1px solid rgba(255,69,58,0.5)' : '1px solid rgba(255,69,58,0.25)',
-                borderRadius: 12, color: '#DC2D4E', fontSize: 13, fontWeight: 700,
+                borderRadius: 12, color: '#ff6b6b', fontSize: 13, fontWeight: 700,
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
@@ -399,7 +395,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.1)',
                 border: activeFilter === 'due_this_week' ? '1px solid rgba(255,159,10,0.5)' : '1px solid rgba(255,159,10,0.2)',
-                borderRadius: 12, color: '#D97706', fontSize: 13, fontWeight: 700,
+                borderRadius: 12, color: '#ffb340', fontSize: 13, fontWeight: 700,
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
@@ -412,7 +408,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.2)' : 'rgba(255,214,10,0.08)',
                 border: activeFilter === 'no_contact_7' ? '1px solid rgba(255,214,10,0.4)' : '1px solid rgba(255,214,10,0.15)',
-                borderRadius: 12, color: '#A16207', fontSize: 13, fontWeight: 700,
+                borderRadius: 12, color: '#ffe066', fontSize: 13, fontWeight: 700,
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
@@ -463,7 +459,7 @@ function SupervisorOverviewStrip({
         <StatCard label="Unassigned Planners" value={unassignedPlanners} color={unassignedPlanners > 0 ? 'var(--orange)' : 'var(--green)'} />
       </div>
       <div className="card" style={{ background: 'linear-gradient(135deg, rgba(88,86,214,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(88,86,214,0.18)' }}>
-        <div style={{ fontSize: 12, color: '#fff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: '#b7a7ff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
           Supervisor Overview
         </div>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
@@ -812,9 +808,8 @@ function NextBestMoveCard({ profile, stats, onFilter }: {
   return (
     <div style={{
       marginBottom: 16, borderRadius: 18, padding: '20px 24px',
-      background: 'linear-gradient(135deg, #FFA940 0%, #FFB85C 50%, #F59E0B 100%)',
-        border: '1px solid rgba(245,158,11,0.3)',
-        boxShadow: '0 10px 30px -10px rgba(245,158,11,0.35), 0 4px 12px rgba(245,158,11,0.12)',
+      background: 'linear-gradient(160deg, #1a1230 0%, #251845 40%, #1c1035 100%)',
+      border: '1px solid rgba(138,100,255,0.15)',
       position: 'relative', overflow: 'hidden',
     }}>
       <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(138,100,255,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
@@ -831,7 +826,7 @@ function NextBestMoveCard({ profile, stats, onFilter }: {
         style={{
           fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 10,
           background: 'rgba(138,100,255,0.15)', border: '1px solid rgba(138,100,255,0.3)',
-          color: '#fff', cursor: 'pointer', transition: 'all 0.2s',
+          color: '#b7a7ff', cursor: 'pointer', transition: 'all 0.2s',
         }}
         onClick={() => onFilter(ctaFilter)}
       >
@@ -917,9 +912,9 @@ function ClientOpsTable({
           <span style={{ fontSize: 12, color: 'var(--text)' }}>{activeFilterLabel}</span>
           {searchLabel ? <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Search: “{searchLabel}”</span> : null}
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pageStart}-{pageEnd} of {total}</span>
-          <span style={{ fontSize: 11, color: '#10C97A', background: 'rgba(48,209,88,0.12)', border: '1px solid rgba(48,209,88,0.2)', borderRadius: 999, padding: '3px 8px' }}>Assigned {sorted.filter(client => Boolean(client.assigned_to)).length}</span>
-          <span style={{ fontSize: 11, color: '#FF8C3E', background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.2)', borderRadius: 999, padding: '3px 8px' }}>Unassigned {sorted.filter(client => !client.assigned_to).length}</span>
-          <span style={{ fontSize: 11, color: '#FF3B5C', background: 'rgba(255,69,58,0.12)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: 999, padding: '3px 8px' }}>Overdue {sorted.filter(client => getOverdueCount(client) > 0).length}</span>
+          <span style={{ fontSize: 11, color: '#30d158', background: 'rgba(48,209,88,0.12)', border: '1px solid rgba(48,209,88,0.2)', borderRadius: 999, padding: '3px 8px' }}>Assigned {sorted.filter(client => Boolean(client.assigned_to)).length}</span>
+          <span style={{ fontSize: 11, color: '#ff9f0a', background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.2)', borderRadius: 999, padding: '3px 8px' }}>Unassigned {sorted.filter(client => !client.assigned_to).length}</span>
+          <span style={{ fontSize: 11, color: '#ff453a', background: 'rgba(255,69,58,0.12)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: 999, padding: '3px 8px' }}>Overdue {sorted.filter(client => getOverdueCount(client) > 0).length}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sort:</span>
@@ -1007,7 +1002,7 @@ function ClientOpsTable({
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 12px', color: client.profiles?.full_name ? 'var(--text-secondary)' : '#FF8C3E', fontWeight: client.profiles?.full_name ? 500 : 700 }}>{client.profiles?.full_name ?? 'Unassigned'}</td>
+                  <td style={{ padding: '10px 12px', color: client.profiles?.full_name ? 'var(--text-secondary)' : '#ff9f0a', fontWeight: client.profiles?.full_name ? 500 : 700 }}>{client.profiles?.full_name ?? 'Unassigned'}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <span style={{
                       display: 'inline-flex',
@@ -1019,7 +1014,7 @@ function ClientOpsTable({
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
                       background: client.client_classification === 'test' ? 'rgba(191,90,242,0.14)' : client.client_classification === 'trial' ? 'rgba(255,159,10,0.14)' : 'rgba(48,209,88,0.14)',
-                      color: client.client_classification === 'test' ? '#bf5af2' : client.client_classification === 'trial' ? '#FF8C3E' : '#10C97A',
+                      color: client.client_classification === 'test' ? '#bf5af2' : client.client_classification === 'trial' ? '#ff9f0a' : '#30d158',
                     }}>
                       {client.client_classification ?? 'real'}
                     </span>
@@ -1604,11 +1599,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
         <div className="card" style={{
           marginBottom: 16, padding: '14px 20px', borderRadius: 16,
           background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
-          border: '1px solid var(--border)',
+          border: '1px solid rgba(255,255,255,0.05)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(160,180,255,0.5)' }}>
               View mode
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
@@ -1644,7 +1639,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {isTeamManager && !fullMode && (
         <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, rgba(255,159,10,0.08) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(255,159,10,0.18)' }}>
-          <div style={{ fontSize: 12, color: '#D97706', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: '#ffb340', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Team Manager Focus
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
@@ -1704,11 +1699,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
       <div className="card" style={{
         marginBottom: 16, padding: '16px 20px', borderRadius: 16,
         background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)',
-        border: '1px solid var(--border)',
+        border: '1px solid rgba(255,255,255,0.05)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(160,180,255,0.5)' }}>
               Manage current view
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
@@ -2125,7 +2120,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 1100,
-            background: '#10C97A',
+            background: '#30d158',
             color: '#fff',
             padding: '10px 20px',
             borderRadius: 10,
