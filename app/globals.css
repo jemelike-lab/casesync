@@ -38,14 +38,15 @@
 }
 
 [data-theme="light"] header {
-  background: #3b2a1a !important;
-  border-bottom-color: #2a1e10 !important;
+  background: linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%) !important;
+  border-bottom-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 4px 16px rgba(30,124,255,0.18) !important;
 }
 
 [data-theme="light"] header span,
 [data-theme="light"] header a,
 [data-theme="light"] header button {
-  color: #f5ede3 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="light"] .card {
