@@ -15,7 +15,8 @@ export interface TeamSummary {
   teamName: string;
   leadName: string;
   leadRole: TeamLeadRole;
-  leadInitials: string;
+  leadInitials: string; // fallback when badge fails to load
+  badgeSlug: string; // filename (no extension) under /public/teams/ — eg 'blue-giants'
   accentColor: string; // hex; used for the team color dot / left-bar
   spCount: number; // number of Support Planners on this team
   clientCount: number;
@@ -74,6 +75,7 @@ export const teams: TeamSummary[] = [
     leadName: 'TahTeona',
     leadRole: 'supervisor',
     leadInitials: 'TT',
+    badgeSlug: 'indigo-gladiators',
     accentColor: '#1E7CFF', // cobalt
     spCount: 7,
     clientCount: 842,
@@ -89,6 +91,7 @@ export const teams: TeamSummary[] = [
     leadName: 'Sarah Abbott',
     leadRole: 'supervisor',
     leadInitials: 'SA',
+    badgeSlug: 'emerald-guardians',
     accentColor: '#10B981', // emerald
     spCount: 6,
     clientCount: 731,
@@ -104,6 +107,7 @@ export const teams: TeamSummary[] = [
     leadName: 'Mercedes Jones',
     leadRole: 'supervisor',
     leadInitials: 'MJ',
+    badgeSlug: 'maroon-musketeers',
     accentColor: '#FFA940', // amber
     spCount: 8,
     clientCount: 967,
@@ -119,6 +123,7 @@ export const teams: TeamSummary[] = [
     leadName: 'Kelly Sanchez',
     leadRole: 'supervisor',
     leadInitials: 'KS',
+    badgeSlug: 'purple-penguins',
     accentColor: '#B968FF', // soft purple (not in primary palette but useful for differentiation)
     spCount: 7,
     clientCount: 824,
@@ -134,6 +139,7 @@ export const teams: TeamSummary[] = [
     leadName: 'Rosabel Corion-Brown',
     leadRole: 'team_manager',
     leadInitials: 'RC',
+    badgeSlug: 'blue-giants',
     accentColor: '#3D8FFF', // lighter cobalt to differentiate from TahTeona
     spCount: 6,
     clientCount: 718,
@@ -149,6 +155,7 @@ export const teams: TeamSummary[] = [
     leadName: 'Mariama Jalloh',
     leadRole: 'team_manager',
     leadInitials: 'MJ',
+    badgeSlug: 'gold-giants',
     accentColor: '#F59E0B', // deeper amber to differentiate from Mercedes
     spCount: 6,
     clientCount: 765,

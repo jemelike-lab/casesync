@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {
   Anchor,
   Avatar,
@@ -416,13 +417,29 @@ function TeamRow({ team }: { team: TeamSummary }) {
     >
       <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
         <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-          <Avatar
-            radius="md"
-            size="md"
-            style={{ background: team.accentColor, color: '#fff', fontWeight: 700, fontSize: 13 }}
+          <Box
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: '#FFFFFF',
+              padding: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 2px 8px ${team.accentColor}26, inset 0 0 0 1.5px ${team.accentColor}33`,
+              flexShrink: 0,
+            }}
           >
-            {team.leadInitials}
-          </Avatar>
+            <Image
+              src={`/teams/${team.badgeSlug}.svg`}
+              alt={team.teamName}
+              width={38}
+              height={38}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              unoptimized
+            />
+          </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Text fz={14} fw={700} c="#0F172A" truncate>
               {team.teamName}
