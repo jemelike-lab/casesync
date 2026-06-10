@@ -731,7 +731,7 @@ export default function SupervisorDashboardV2Client({
             Using Flex with explicit grow ratios instead of Grid responsive cols —
             the Grid lg-breakpoint variant wasn't applying in this nested context. */}
         <Flex
-          direction={{ base: 'column', lg: 'row' }}
+          direction={{ base: 'column', md: 'row' }}
           gap="md"
           align="flex-start"
         >
