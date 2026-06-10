@@ -219,7 +219,7 @@ export default function ProfileClient({
             {/* layer 3: mouse spotlight (positioned via CSS vars from useMouseSpotlight) */}
             <div className="wp-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/profile.svg" alt="" aria-hidden="true" style={{ position: "absolute", right: "8%", top: "50%", transform: "translateY(-50%)", height: "75%", zIndex: 0, opacity: 0.45, pointerEvents: "none" }} />
+            <img src="/heroes/profile.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
             {/* layer 4: SVG grain texture for the "expensive" feel */}
             <svg className="wp-hero-grain" aria-hidden>
               <filter id="wp-grain">
