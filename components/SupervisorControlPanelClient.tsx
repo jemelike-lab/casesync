@@ -225,19 +225,20 @@ interface KpiTileProps {
   icon: React.ReactNode
   gradient: string
   shadowColor: string
+  subtitle?: string
 }
 
-function KpiTile({ label, value, icon, gradient, shadowColor }: KpiTileProps) {
+function KpiTile({ label, value, icon, gradient, shadowColor, subtitle }: KpiTileProps) {
   return (
     <Paper
       p="lg"
       style={{
         background: gradient,
-        boxShadow: `0 10px 30px -10px ${shadowColor}, 0 4px 12px rgba(15,23,42,0.06)`,
+        boxShadow: `0 12px 32px -10px ${shadowColor}, 0 4px 12px rgba(15,23,42,0.06)`,
         color: '#fff',
         overflow: 'hidden',
         position: 'relative',
-        minHeight: 130,
+        minHeight: 140,
       }}
     >
       <Group justify="space-between" align="flex-start" wrap="nowrap">
@@ -245,14 +246,19 @@ function KpiTile({ label, value, icon, gradient, shadowColor }: KpiTileProps) {
           <Text
             fz={12}
             fw={600}
-            c="rgba(255,255,255,0.85)"
+            c="rgba(255,255,255,0.92)"
             style={{ letterSpacing: '0.06em', textTransform: 'uppercase' }}
           >
             {label}
           </Text>
-          <Text fz={32} fw={800} lh={1.1} c="#fff">
+          <Text fz={36} fw={800} lh={1.05} c="#fff" style={{ letterSpacing: '-0.02em' }}>
             {value.toLocaleString()}
           </Text>
+          {subtitle && (
+            <Text fz={12} fw={500} c="rgba(255,255,255,0.82)" mt={4}>
+              {subtitle}
+            </Text>
+          )}
         </Stack>
         <Box
           style={{
@@ -533,7 +539,17 @@ function SupervisorControlPanelInner({
   })
 
   return (
-    <Container size={1280} px={0} pb={80}>
+    <Box
+      style={{
+        background:
+          'linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%)',
+        margin: '-24px',
+        padding: '24px',
+        width: 'calc(100% + 48px)',
+        minHeight: 'calc(100dvh - 100px)',
+      }}
+    >
+      <Container size={1280} px={0} pb={80}>
       {/* ─────────── Greeting block ─────────── */}
       <Paper
         p="xl"
@@ -584,6 +600,7 @@ function SupervisorControlPanelInner({
           <KpiTile
             label="Active Clients"
             value={scopedSummary.total_clients}
+            subtitle={`across ${derivedTeams.length} teams`}
             icon={<Users size={20} color="#fff" />}
             gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
             shadowColor="rgba(30,124,255,0.35)"
@@ -593,6 +610,7 @@ function SupervisorControlPanelInner({
           <KpiTile
             label="Overdue"
             value={scopedSummary.overdue_clients}
+            subtitle="needs follow-up"
             icon={<AlertTriangle size={20} color="#fff" />}
             gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
             shadowColor="rgba(255,59,92,0.35)"
@@ -602,6 +620,7 @@ function SupervisorControlPanelInner({
           <KpiTile
             label="Due This Week"
             value={scopedSummary.due_this_week_clients}
+            subtitle="in next 7 days"
             icon={<Clock size={20} color="#fff" />}
             gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
             shadowColor="rgba(255,169,64,0.35)"
@@ -611,6 +630,7 @@ function SupervisorControlPanelInner({
           <KpiTile
             label="No Contact 7+ Days"
             value={scopedSummary.no_contact_7_days_clients}
+            subtitle="in last 7 days"
             icon={<PhoneOff size={20} color="#fff" />}
             gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
             shadowColor="rgba(16,185,129,0.35)"
@@ -660,12 +680,13 @@ function SupervisorControlPanelInner({
       </Paper>
 
       {/* ─────────── Section placeholders for P1.2–P1.5 ─────────── */}
-      <Stack gap="lg">
-        <LoadingSection title="Team Health" lines={4} hint="bar chart · P1.2" />
-        <LoadingSection title="Client Drill-down" lines={5} hint="filtered list · P1.3" />
-        <LoadingSection title="Planner Workload" lines={4} hint="per-planner cards · P1.4" />
-        <LoadingSection title="Team Roster" lines={3} hint="filter chips + cards · P1.4" />
-      </Stack>
-    </Container>
+        <Stack gap="lg">
+          <LoadingSection title="Team Health" lines={4} hint="bar chart · P1.2" />
+          <LoadingSection title="Client Drill-down" lines={5} hint="filtered list · P1.3" />
+          <LoadingSection title="Planner Workload" lines={4} hint="per-planner cards · P1.4" />
+          <LoadingSection title="Team Roster" lines={3} hint="filter chips + cards · P1.4" />
+        </Stack>
+      </Container>
+    </Box>
   )
 }
