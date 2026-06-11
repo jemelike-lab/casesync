@@ -24,12 +24,12 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
       href={href}
       style={{
         fontSize: 13,
-        fontWeight: 500,
-        color: active ? 'var(--text)' : 'var(--text-secondary)',
+        fontWeight: 600,
+        color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
         textDecoration: 'none',
         padding: '6px 12px',
         borderRadius: 6,
-        background: active ? 'var(--surface-2)' : 'transparent',
+        background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
         transition: 'all 0.15s',
         minHeight: 44,
         display: 'flex',
@@ -73,8 +73,9 @@ export default function Header({ user, profile }: Props) {
   return (
     <>
       <header style={{
-        background: theme === 'light' ? '#3b2a1a' : 'var(--surface)',
-        borderBottom: theme === 'light' ? '1px solid #2a1e10' : '1px solid var(--border)',
+        background: 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 4px 16px rgba(30,124,255,0.18)',
         padding: '0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right))',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         width: '100%',
@@ -94,7 +95,7 @@ export default function Header({ user, profile }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
             <img src="/logo.png" alt="BLH" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-            <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: 'nowrap' }}>CaseSync</span>
+            <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: 'nowrap', color: '#FFFFFF', letterSpacing: '-0.01em' }}>CaseSync</span>
           </div>
 
           {/* Nav links - desktop only */}
@@ -148,8 +149,8 @@ export default function Header({ user, profile }: Props) {
           <button
             onClick={() => setShowTour(true)}
             style={{
-              background: theme === 'light' ? 'rgba(255,255,255,0.18)' : 'var(--surface-2)',
-              border: theme === 'light' ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--border)',
+              background: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.4)',
               borderRadius: 8,
               cursor: 'pointer',
               fontSize: 12,
@@ -159,7 +160,7 @@ export default function Header({ user, profile }: Props) {
               display: 'flex',
               alignItems: 'center',
               gap: 5,
-              color: theme === 'light' ? '#ffffff' : 'var(--text-secondary)',
+              color: '#ffffff',
               transition: 'all 0.2s',
               flexShrink: 0,
               whiteSpace: 'nowrap',
@@ -176,8 +177,8 @@ export default function Header({ user, profile }: Props) {
           <button
             onClick={toggle}
             style={{
-              background: theme === 'light' ? 'rgba(255,255,255,0.18)' : 'var(--surface-2)',
-              border: theme === 'light' ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--border)',
+              background: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.4)',
               borderRadius: 8,
               cursor: 'pointer',
               fontSize: 16,
@@ -199,15 +200,20 @@ export default function Header({ user, profile }: Props) {
             {user.id && <NotificationBell userId={user.id} />}
           </div>
           <div className="header-user-meta" style={{ textAlign: 'right', minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: theme === 'light' ? '#ffffff' : 'var(--text)' }}>{profile?.full_name ?? user.email}</div>
-            <div style={{ fontSize: 11, color: theme === 'light' ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#ffffff' }}>{profile?.full_name ?? user.email}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {roleName}
             </div>
           </div>
           <button
             onClick={handleLogout}
             className="btn-secondary header-signout"
-            style={{ fontSize: 12 }}
+            style={{
+              fontSize: 12,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.4)',
+              color: '#FFFFFF',
+            }}
             aria-label="Sign out"
             title="Sign out"
           >

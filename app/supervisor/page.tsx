@@ -28,6 +28,7 @@ export default async function SupervisorPage() {
       teamManagers={(teamManagers as Profile[]) ?? []}
       summaryByAssignee={Object.fromEntries(summaryMap)}
       globalSummary={globalSummary}
+      profile={profile ?? null}
     />
   )
 }
