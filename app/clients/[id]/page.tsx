@@ -30,6 +30,25 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     notFound()
   }
 
+  // Defense-in-depth: explicit application-layer scope check that mirrors
+  // the RLS policy on public.clients. Even though RLS already restricts
+  // these rows, an explicit check here makes the access rule visible
+  // alongside the page logic and guards against future policy regressions.
+  const callerRole = profile?.role
+  if (callerRole === 'supports_planner') {
+    if (client.assigned_to !== user.id) notFound()
+  } else if (callerRole === 'team_manager') {
+    const { data: teamPlanners } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('team_manager_id', user.id)
+      .eq('role', 'supports_planner')
+    const teamPlannerIds = new Set((teamPlanners ?? []).map((p) => p.id))
+    if (!client.assigned_to || !teamPlannerIds.has(client.assigned_to)) notFound()
+  } else if (callerRole !== 'supervisor' && callerRole !== 'it') {
+    notFound()
+  }
+
   // Fetch all supports planners for reassignment (team_manager and supervisor only)
   let planners: Profile[] = []
   if (isSupervisorLike(profile?.role) || profile?.role === 'team_manager') {
