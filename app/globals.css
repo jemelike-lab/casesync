@@ -1062,3 +1062,51 @@ input[type="time"] {
     gap: 8px !important;
   }
 }
+
+/* ============================================================
+   v2 cascade tokens — Phase 0
+   light: lavender canvas + cool slate ink
+   dark : deep navy canvas + off-white ink
+   Legacy --bg/--surface/--text above remain untouched and continue
+   to drive ClientEditForm and other pre-v2 surfaces.
+   ============================================================ */
+:root {
+  /* dark defaults */
+  --v2-canvas: linear-gradient(160deg, #0a0d1f 0%, #131831 60%, #1a1140 100%);
+  --v2-surface: #1a1f3a;
+  --v2-surface-elevated: #232847;
+  --v2-surface-tint: #131831;
+  --v2-text: #f0f0fa;
+  --v2-text-strong: #ffffff;
+  --v2-text-muted: #9ea0c5;
+  --v2-text-label: #b8b8d8;
+  --v2-border-soft: rgba(240, 240, 250, 0.10);
+  --v2-border-rail: #4a5070;
+  --v2-shadow-soft: 0 1px 3px rgba(0,0,0,0.30), 0 6px 24px rgba(0,0,0,0.25);
+  --v2-shadow-kpi: 0 4px 20px -6px rgba(0,0,0,0.40);
+
+  /* saturated brand gradients — identical in light & dark */
+  --v2-cobalt-grad:  linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%);
+  --v2-coral-grad:   linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%);
+  --v2-amber-grad:   linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%);
+  --v2-emerald-grad: linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%);
+  --v2-cobalt-shadow:  rgba(30,124,255,0.32);
+  --v2-coral-shadow:   rgba(255,59,92,0.32);
+  --v2-amber-shadow:   rgba(255,169,64,0.32);
+  --v2-emerald-shadow: rgba(16,185,129,0.32);
+}
+
+[data-theme="light"] {
+  --v2-canvas: linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%);
+  --v2-surface: #FFFFFF;
+  --v2-surface-elevated: #FFFFFF;
+  --v2-surface-tint: #F1F5F9;
+  --v2-text: #0F172A;
+  --v2-text-strong: #1a1140;
+  --v2-text-muted: #64748B;
+  --v2-text-label: #7969a5;
+  --v2-border-soft: #E5E7EB;
+  --v2-border-rail: #94A3B8;
+  --v2-shadow-soft: 0 1px 3px rgba(43,30,107,0.06), 0 6px 24px rgba(43,30,107,0.08);
+  --v2-shadow-kpi: 0 4px 20px -6px rgba(43,30,107,0.10);
+}
