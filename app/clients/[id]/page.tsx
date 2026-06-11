@@ -1,7 +1,7 @@
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/server'
 import { Client, Profile } from '@/lib/types'
-import ClientEditForm from '@/components/ClientEditForm'
+import ClientDetailV2Wrapper from '@/components/ClientDetailV2Wrapper'
 import { notFound } from 'next/navigation'
 import { getPlanners } from '@/lib/queries'
 
@@ -56,7 +56,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <ClientEditForm
+    <ClientDetailV2Wrapper
       client={client as Client}
       currentUserId={user.id}
       currentProfile={profile as Profile}
