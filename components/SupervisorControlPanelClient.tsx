@@ -579,7 +579,7 @@ function SupervisorControlPanelInner({
       </Paper>
 
       {/* ─────────── KPI tiles ─────────── */}
-      <Grid gutter="md" mb="lg">
+      <Grid gap="md" mb="lg">
         <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
           <KpiTile
             label="Active Clients"
