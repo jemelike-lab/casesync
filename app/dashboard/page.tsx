@@ -3,6 +3,7 @@ import { Profile, SavedViewRecord } from '@/lib/types'
 import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
 import TeamManagerControlPanelClient from '@/components/TeamManagerControlPanelClient'
+import SupportPlannerControlPanelClient from '@/components/SupportPlannerControlPanelClient'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
@@ -66,6 +67,30 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         profile={profile as Profile}
         planners={myPlanners}
         summaryByAssignee={Object.fromEntries(summaryMap)}
+      />
+    )
+  }
+
+  if (profile?.role === 'supports_planner' && profile && full !== '1') {
+    // Look up the SP's team manager (if assigned)
+    let myTeamManager: Profile | null = null
+    if (profile.team_manager_id) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profile.team_manager_id)
+        .single()
+      myTeamManager = (data as Profile | null) ?? null
+    }
+
+    const summaryMap = await getAssigneeSummaryMap([profile.id])
+    const mySummary = summaryMap.get(profile.id) ?? null
+
+    return (
+      <SupportPlannerControlPanelClient
+        profile={profile as Profile}
+        myTeamManager={myTeamManager}
+        mySummary={mySummary}
       />
     )
   }
