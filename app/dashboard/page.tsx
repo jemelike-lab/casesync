@@ -2,6 +2,7 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { Profile, SavedViewRecord } from '@/lib/types'
 import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
+import TeamManagerControlPanelClient from '@/components/TeamManagerControlPanelClient'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
@@ -52,6 +53,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         summaryByAssignee={Object.fromEntries(summaryMap)}
         globalSummary={globalSummary}
         profile={profile ?? null}
+      />
+    )
+  }
+
+  if (profile?.role === 'team_manager' && profile && full !== '1') {
+    const myPlanners = planners.filter((p) => p.team_manager_id === profile.id)
+    const summaryMap = await getAssigneeSummaryMap(myPlanners.map((p) => p.id))
+
+    return (
+      <TeamManagerControlPanelClient
+        profile={profile as Profile}
+        planners={myPlanners}
+        summaryByAssignee={Object.fromEntries(summaryMap)}
       />
     )
   }

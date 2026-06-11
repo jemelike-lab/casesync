@@ -49,7 +49,6 @@ import {
 import { DonutChart } from '@mantine/charts'
 import {
   AlertTriangle,
-  CheckCircle2,
   ChevronRight,
   Clock,
   Filter,
@@ -389,11 +388,13 @@ function SectionPaper({
   eyebrow,
   title,
   rightSlot,
+  heroSrc,
   children,
 }: {
   eyebrow: string
   title: string
   rightSlot?: React.ReactNode
+  heroSrc?: string
   children: React.ReactNode
 }) {
   return (
@@ -403,20 +404,48 @@ function SectionPaper({
         background: '#FFFFFF',
         border: '1px solid #E5E7EB',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
-        <Stack gap={2}>
-          <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
-            {eyebrow}
-          </Text>
-          <Title order={2} fz={18} fw={700} c="#0F172A">
-            {title}
-          </Title>
-        </Stack>
-        {rightSlot}
-      </Flex>
-      {children}
+      {/* Decorative section-hero SVG anchored to the upper-right corner, low-opacity watermark */}
+      {heroSrc && (
+        <Box
+          style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 140,
+            height: 140,
+            opacity: 0.1,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        >
+          <Image
+            src={heroSrc}
+            alt=""
+            width={140}
+            height={140}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            unoptimized
+          />
+        </Box>
+      )}
+      <Box style={{ position: 'relative', zIndex: 1 }}>
+        <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
+          <Stack gap={2}>
+            <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+              {eyebrow}
+            </Text>
+            <Title order={2} fz={18} fw={700} c="#0F172A">
+              {title}
+            </Title>
+          </Stack>
+          {rightSlot}
+        </Flex>
+        {children}
+      </Box>
     </Paper>
   )
 }
@@ -464,6 +493,7 @@ function TeamHealthSection({
     <SectionPaper
       eyebrow="P1.2"
       title="Team Health Snapshot"
+      heroSrc="/heroes/evaluations.svg"
       rightSlot={
         <Badge size="sm" variant="light" color="emerald">
           live · {scopedSummary.total_clients} clients
@@ -647,6 +677,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
     <SectionPaper
       eyebrow="P1.3"
       title="Client Drill-down"
+      heroSrc="/heroes/tickets.svg"
       rightSlot={
         <Group gap="xs" wrap="nowrap">
           <Badge size="sm" variant="light" color="cobalt">
@@ -679,7 +710,16 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
             border: '1px dashed #E5E7EB',
           }}
         >
-          <CheckCircle2 size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
+          <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
+            <Image
+              src="/heroes/empty-tickets.svg"
+              alt=""
+              width={96}
+              height={96}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              unoptimized
+            />
+          </Box>
           <Text fz={14} fw={600} c="#0F172A">
             {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
           </Text>
@@ -787,6 +827,7 @@ function PlannerWorkloadSection({
     <SectionPaper
       eyebrow="P1.4"
       title="Planner Workload"
+      heroSrc="/heroes/tasks.svg"
       rightSlot={
         <Badge size="sm" variant="light" color="cobalt">
           {planners.length} Support Planner{planners.length === 1 ? '' : 's'}
@@ -908,6 +949,7 @@ function TeamRosterSection({
     <SectionPaper
       eyebrow="P1.4"
       title="Team Roster"
+      heroSrc="/heroes/profile.svg"
       rightSlot={
         <Group gap={6} wrap="nowrap">
           <Badge size="sm" variant="light" color="cobalt">
