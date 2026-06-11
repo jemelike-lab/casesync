@@ -1,5 +1,6 @@
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { Profile, SavedViewRecord } from '@/lib/types'
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
 import TeamManagerControlPanelClient from '@/components/TeamManagerControlPanelClient'
@@ -72,10 +73,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }
 
   if (profile?.role === 'supports_planner' && profile && full !== '1') {
-    // Look up the SP's team manager (if assigned)
+    // Resolve the SP's team manager.
+    //
+    // Fix 2026-06-11: use the service-role admin client for this single
+    // profile lookup. The user-session-scoped supabase client is subject to
+    // RLS, which prevents an SP from reading other profile rows — including
+    // their own TM — so the previous implementation always returned null and
+    // the My TM card fell to the "Not yet assigned" empty state even when
+    // team_manager_id was set. Mirrors the /api/clients pattern: trusted
+    // server-side lookup of a single known-id row via the service role.
     let myTeamManager: Profile | null = null
     if (profile.team_manager_id) {
-      const { data } = await supabase
+      const admin = createSupabaseJsClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      const { data } = await admin
         .from('profiles')
         .select('*')
         .eq('id', profile.team_manager_id)

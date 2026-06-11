@@ -7,10 +7,22 @@ import IdleTimeout from './IdleTimeout'
 /**
  * SessionGuard — security layer mounted in root layout for all routes.
  *
- *  1. IdleTimeout — 15min inactivity → warning → signout
+ *  1. IdleTimeout — 30min inactivity → warning → signout
  *  2. Auth event handling — SIGNED_OUT, TOKEN_REFRESHED
  *  3. Periodic freshness check — 60s getUser() poll
- *  4. Page close detection — sendBeacon signout on tab/app close
+ *  4. Background tab handling — visibilitychange + localStorage grace window
+ *
+ * Timing rationale (updated 2026-06-11):
+ *   - Idle timeout 30min: HIPAA-acceptable for ops dashboards, removes the
+ *     "signed out every 15min while editing in another app" friction that
+ *     bit us repeatedly during the v2 migration.
+ *   - Background grace 5min: matches typical "context-switched to terminal
+ *     or chat" pattern. The previous 30s was too aggressive — a single
+ *     30-second context switch in dev would force-log-out on tab return.
+ *     5min still reaps abandoned PWA sessions reliably.
+ *   - Both values are independent: idle measures activity inside the tab,
+ *     grace measures elapsed time the tab was hidden. They compose; the
+ *     stricter one wins for any given pattern.
  */
 export default function SessionGuard() {
   const [authed, setAuthed] = useState(false)
@@ -63,7 +75,13 @@ export default function SessionGuard() {
     //  - hidden  → record timestamp
     //  - visible → if elapsed > GRACE_MS, force logout
     // localStorage survives the suspend, so the check on resume is reliable.
-    const BACKGROUND_GRACE_MS = 30_000 // 30 seconds
+    //
+    // 2026-06-11: BACKGROUND_GRACE_MS bumped 30s → 5min. The 30s value
+    // force-logged-out on any context switch longer than half a minute
+    // (terminal use, brief Slack reply, walking to the kitchen). 5min
+    // is the sweet spot — abandoned PWA sessions still reap, but normal
+    // multi-tasking doesn't punish the user.
+    const BACKGROUND_GRACE_MS = 5 * 60 * 1000 // 5 minutes
     const HIDDEN_AT_KEY = 'cs_hidden_at'
 
     // Clear any stale hidden-timestamp from a previous browser session.
@@ -117,6 +135,7 @@ export default function SessionGuard() {
 
   if (!authed) return null
 
-  // 15-minute timeout, 2-minute warning
-  return <IdleTimeout timeoutMs={15 * 60 * 1000} warningMs={2 * 60 * 1000} />
+  // 30-minute idle timeout, 2-minute warning before signout.
+  // See timing rationale at the top of the file.
+  return <IdleTimeout timeoutMs={30 * 60 * 1000} warningMs={2 * 60 * 1000} />
 }
