@@ -672,7 +672,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
       {/* âââ HERO HEADER âââ */}
       <div style={{
         borderRadius: 22, overflow: 'hidden', marginBottom: 16,
-        background: 'linear-gradient(135deg, #0d1520 0%, #152238 50%, #0f1b2e 100%)',
+        background: 'var(--v2-cobalt-grad)',
         border: '1px solid rgba(100,150,255,0.08)', padding: '24px 28px 20px', position: 'relative',
       }}>
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,122,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
