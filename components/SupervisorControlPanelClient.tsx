@@ -470,7 +470,7 @@ function TeamHealthSection({
         </Badge>
       }
     >
-      <Grid gutter="lg">
+      <Grid gap="lg">
         {/* Donut + legend */}
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Stack align="center" gap="md">
@@ -800,7 +800,7 @@ function PlannerWorkloadSection({
           <Text fz={12} c="#64748B" mt={4}>Planners will appear here once they're added to the org.</Text>
         </Box>
       ) : (
-        <Grid gutter="md">
+        <Grid gap="md">
           {rows.map(({ planner, tm, caseload, overdue, dueWeek, quiet }) => {
             const initials = (planner.full_name ?? '?')
               .split(' ')
@@ -935,7 +935,7 @@ function TeamRosterSection({
           <Text fz={12} c="#64748B" mt={4}>Try a different filter.</Text>
         </Box>
       ) : (
-        <Grid gutter="sm">
+        <Grid gap="sm">
           {filteredRows.map(({ profile, kind }) => {
             const initials = (profile.full_name ?? '?')
               .split(' ')
