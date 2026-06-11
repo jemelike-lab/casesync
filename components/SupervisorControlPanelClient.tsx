@@ -27,9 +27,11 @@
  * globals.css, the Header, or any other component.
  * ────────────────────────────────────────────────────────────────────────── */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
+  Avatar,
   Badge,
   Box,
   Container,
@@ -37,20 +39,24 @@ import {
   Grid,
   Group,
   Paper,
+  Progress,
+  SegmentedControl,
   Stack,
   Text,
   Title,
   UnstyledButton,
 } from '@mantine/core'
+import { DonutChart } from '@mantine/charts'
 import {
   AlertTriangle,
+  CheckCircle2,
   ChevronRight,
   Clock,
-  Loader2,
+  Filter,
   PhoneOff,
   Users,
 } from 'lucide-react'
-import { Profile } from '@/lib/types'
+import { Profile, Client } from '@/lib/types'
 import type { AssigneeSummaryRow } from '@/lib/dashboard-summary'
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
 
@@ -375,50 +381,602 @@ function TeamRow({ team }: { team: DerivedTeam }) {
 }
 
 // ===========================================================================
-// LoadingSection — placeholder for sections deferred to P1.2-P1.5. Renders
-// shimmer-style bars so the page has visual rhythm before the real content
-// lands.
+// Shared section primitives — header strip + Paper shell. Every section uses
+// the same chrome so the page reads as a coherent grid.
 // ===========================================================================
 
-function LoadingSection({ title, lines = 3, hint }: { title: string; lines?: number; hint?: string }) {
+function SectionPaper({
+  eyebrow,
+  title,
+  rightSlot,
+  children,
+}: {
+  eyebrow: string
+  title: string
+  rightSlot?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <Paper
       p="lg"
       style={{
         background: '#FFFFFF',
         border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
+        boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
       }}
     >
-      <Group gap="xs" mb="md" wrap="nowrap">
-        <Loader2 size={14} color="#94A3B8" />
-        <Text
-          fz={13}
-          fw={700}
-          c="#64748B"
-          tt="uppercase"
-          style={{ letterSpacing: '0.06em' }}
-        >
-          {title}
-        </Text>
-        <Text fz={11} c="#94A3B8">
-          {hint ?? 'loading…'}
-        </Text>
-      </Group>
-      <Stack gap={8}>
-        {Array.from({ length: lines }).map((_, i) => (
-          <Box
-            key={i}
-            style={{
-              height: 14,
-              borderRadius: 6,
-              background: '#F1F5F9',
-              width: `${100 - i * 12}%`,
-            }}
-          />
-        ))}
-      </Stack>
+      <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
+        <Stack gap={2}>
+          <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+            {eyebrow}
+          </Text>
+          <Title order={2} fz={18} fw={700} c="#0F172A">
+            {title}
+          </Title>
+        </Stack>
+        {rightSlot}
+      </Flex>
+      {children}
     </Paper>
+  )
+}
+
+// ===========================================================================
+// TeamHealthSection — DonutChart of org status + per-team horizontal bars.
+// Replaces the P1.2 placeholder. Uses real scopedSummary + derivedTeams.
+// ===========================================================================
+
+interface ScopedSummary {
+  total_clients: number
+  overdue_clients: number
+  due_this_week_clients: number
+  eligibility_ending_soon_clients: number
+  no_contact_7_days_clients: number
+}
+
+function TeamHealthSection({
+  scopedSummary,
+  derivedTeams,
+}: {
+  scopedSummary: ScopedSummary
+  derivedTeams: DerivedTeam[]
+}) {
+  // Status breakdown for the donut. "Healthy" is the remainder when we treat
+  // overdue / due-week / no-contact as separate alert buckets. They can overlap
+  // in reality, so this is a visual snapshot rather than a strict partition.
+  const issuesSum =
+    scopedSummary.overdue_clients +
+    scopedSummary.due_this_week_clients +
+    scopedSummary.no_contact_7_days_clients
+  const healthy = Math.max(0, scopedSummary.total_clients - issuesSum)
+
+  const donutData = [
+    { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
+    { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
+    { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+    { name: 'Healthy', value: healthy, color: '#10B981' },
+  ].filter((d) => d.value > 0)
+
+  // Per-team caseload bars. Show every team; pending teams render as muted.
+  const maxCaseload = Math.max(1, ...derivedTeams.map((t) => t.clientCount))
+
+  return (
+    <SectionPaper
+      eyebrow="P1.2"
+      title="Team Health Snapshot"
+      rightSlot={
+        <Badge size="sm" variant="light" color="emerald">
+          live · {scopedSummary.total_clients} clients
+        </Badge>
+      }
+    >
+      <Grid gutter="lg">
+        {/* Donut + legend */}
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Stack align="center" gap="md">
+            <Box style={{ position: 'relative', width: 200, height: 200 }}>
+              <DonutChart
+                data={donutData.length > 0 ? donutData : [{ name: 'No data', value: 1, color: '#E5E7EB' }]}
+                size={200}
+                thickness={28}
+                withLabels={false}
+                withTooltip
+                paddingAngle={2}
+              />
+              <Stack
+                gap={0}
+                align="center"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                <Text fz={28} fw={800} c="#0F172A" lh={1}>
+                  {scopedSummary.total_clients.toLocaleString()}
+                </Text>
+                <Text fz={11} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                  active
+                </Text>
+              </Stack>
+            </Box>
+            <Stack gap={6} w="100%">
+              {[
+                { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
+                { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
+                { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+                { name: 'Healthy', value: healthy, color: '#10B981' },
+              ].map((row) => (
+                <Group key={row.name} gap={8} wrap="nowrap" justify="space-between">
+                  <Group gap={8} wrap="nowrap">
+                    <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
+                    <Text fz={12} c="#475569" fw={500}>
+                      {row.name}
+                    </Text>
+                  </Group>
+                  <Text fz={12} fw={700} c="#0F172A">
+                    {row.value.toLocaleString()}
+                  </Text>
+                </Group>
+              ))}
+            </Stack>
+          </Stack>
+        </Grid.Col>
+
+        {/* Per-team horizontal bars */}
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Text fz={12} fw={600} c="#64748B" tt="uppercase" mb="sm" style={{ letterSpacing: '0.06em' }}>
+            Caseload by Team
+          </Text>
+          <Stack gap={10}>
+            {derivedTeams.map((team) => {
+              const pct = team.pending ? 0 : (team.clientCount / maxCaseload) * 100
+              return (
+                <Group key={team.cfg.id} gap="sm" wrap="nowrap">
+                  <Box style={{ width: 28, height: 28, flexShrink: 0 }}>
+                    <Image
+                      src={`/teams/${team.cfg.badgeSlug}.svg`}
+                      alt={team.cfg.teamName}
+                      width={28}
+                      height={28}
+                      style={{ width: '100%', height: '100%' }}
+                      unoptimized
+                    />
+                  </Box>
+                  <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                    <Group justify="space-between" gap={6}>
+                      <Text fz={12} fw={600} c="#0F172A" truncate>
+                        {team.cfg.teamName}
+                      </Text>
+                      <Text fz={11} fw={700} c={team.pending ? '#94A3B8' : '#0F172A'}>
+                        {team.pending ? '—' : team.clientCount.toLocaleString()}
+                      </Text>
+                    </Group>
+                    <Box
+                      style={{
+                        height: 8,
+                        borderRadius: 4,
+                        background: team.pending ? '#F1F5F9' : `${team.cfg.accentColor}15`,
+                        overflow: 'hidden',
+                        position: 'relative',
+                      }}
+                    >
+                      {!team.pending && pct > 0 && (
+                        <Box
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: `${Math.max(2, pct)}%`,
+                            background: `linear-gradient(90deg, ${team.cfg.accentColor} 0%, ${team.cfg.accentColor}cc 100%)`,
+                            borderRadius: 4,
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Stack>
+                </Group>
+              )
+            })}
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </SectionPaper>
+  )
+}
+
+// ===========================================================================
+// ClientDrillDownSection — filter chips + fetched client list.
+// Replaces the P1.3 placeholder. Fetches /api/clients on filter change with
+// AbortController (preserves legacy behavior).
+// ===========================================================================
+
+type ClientFilter = 'all' | 'overdue' | 'due_this_week' | 'no_contact_7'
+
+const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = [
+  { value: 'all', label: 'All', color: '#0F172A' },
+  { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
+  { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
+  { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
+]
+
+function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
+  const [clientFilter, setClientFilter] = useState<ClientFilter>('all')
+  const [clients, setClients] = useState<Client[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const params = new URLSearchParams()
+    params.set('page', '0')
+    params.set('limit', '8')
+    params.set('filter', clientFilter)
+    params.set('sortField', 'name')
+    params.set('sortDir', 'asc')
+
+    setLoading(true)
+    fetch(`/api/clients?${params.toString()}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to load clients (${res.status})`)
+        return res.json() as Promise<{ clients: Client[]; total: number }>
+      })
+      .then((payload) => {
+        setClients(payload.clients ?? [])
+        setTotal(payload.total ?? 0)
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return
+        console.error('Client drill-down load failed:', err)
+        setClients([])
+        setTotal(0)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [clientFilter])
+
+  const filterMeta = CLIENT_FILTERS.find((f) => f.value === clientFilter)!
+  const fullHref = `/team?full=1&filter=${clientFilter}`
+
+  return (
+    <SectionPaper
+      eyebrow="P1.3"
+      title="Client Drill-down"
+      rightSlot={
+        <Group gap="xs" wrap="nowrap">
+          <Badge size="sm" variant="light" color="cobalt">
+            {loading ? 'loading…' : `${total.toLocaleString()} matching`}
+          </Badge>
+          <Link href={fullHref} style={{ textDecoration: 'none' }}>
+            <Text fz={12} fw={600} c="#1E7CFF">
+              View all →
+            </Text>
+          </Link>
+        </Group>
+      }
+    >
+      <SegmentedControl
+        value={clientFilter}
+        onChange={(v) => setClientFilter(v as ClientFilter)}
+        data={CLIENT_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+        size="sm"
+        fullWidth
+        mb="md"
+        color="cobalt"
+      />
+      {clients.length === 0 ? (
+        <Box
+          py="xl"
+          style={{
+            textAlign: 'center',
+            background: '#F8FAFC',
+            borderRadius: 12,
+            border: '1px dashed #E5E7EB',
+          }}
+        >
+          <CheckCircle2 size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="#0F172A">
+            {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
+          </Text>
+          <Text fz={12} c="#64748B" mt={4}>
+            {loading ? 'Just a moment…' : 'Try a different filter or check back later.'}
+          </Text>
+        </Box>
+      ) : (
+        <Stack gap={8}>
+          {clients.map((client) => {
+            const planner = planners.find((p) => p.id === client.assigned_to)
+            const fullName =
+              [client.first_name, client.last_name].filter(Boolean).join(' ') || client.client_id
+            return (
+              <Link
+                key={client.id}
+                href={`/clients/${client.id}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <Box
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: `${filterMeta.color}08`,
+                    borderLeft: `3px solid ${filterMeta.color}`,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
+                    <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                      <Avatar
+                        size="sm"
+                        radius="xl"
+                        style={{ background: `${filterMeta.color}22`, color: filterMeta.color, fontSize: 11, fontWeight: 700 }}
+                      >
+                        {fullName
+                          .split(' ')
+                          .slice(0, 2)
+                          .map((p) => p[0])
+                          .join('')
+                          .toUpperCase()}
+                      </Avatar>
+                      <Stack gap={2} style={{ minWidth: 0 }}>
+                        <Text fz={13} fw={700} c="#0F172A" truncate>
+                          {fullName}
+                        </Text>
+                        <Text fz={11} c="#64748B" truncate>
+                          {planner?.full_name ?? 'Unassigned'} · {client.category?.toUpperCase() ?? '—'}
+                        </Text>
+                      </Stack>
+                    </Group>
+                    <Badge size="xs" variant="light" style={{ background: `${filterMeta.color}1A`, color: filterMeta.color }}>
+                      {filterMeta.label}
+                    </Badge>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </Flex>
+                </Box>
+              </Link>
+            )
+          })}
+        </Stack>
+      )}
+    </SectionPaper>
+  )
+}
+
+// ===========================================================================
+// PlannerWorkloadSection — per-planner cards in a Grid.
+// Replaces the P1.4 placeholder (planners side). Uses real summaryByAssignee.
+// Sorted by overdue desc so the most-pressured planners surface first.
+// ===========================================================================
+
+function PlannerWorkloadSection({
+  planners,
+  teamManagers,
+  summaryByAssignee,
+}: {
+  planners: Profile[]
+  teamManagers: Profile[]
+  summaryByAssignee?: Record<string, AssigneeSummaryRow>
+}) {
+  const rows = useMemo(() => {
+    return planners
+      .map((planner) => {
+        const tm = teamManagers.find((t) => t.id === planner.team_manager_id)
+        const s = summaryByAssignee?.[planner.id]
+        return {
+          planner,
+          tm,
+          caseload: s?.total_clients ?? 0,
+          overdue: s?.overdue_clients ?? 0,
+          dueWeek: s?.due_this_week_clients ?? 0,
+          quiet: s?.no_contact_7_days_clients ?? 0,
+        }
+      })
+      .sort((a, b) => {
+        if (b.overdue !== a.overdue) return b.overdue - a.overdue
+        return b.caseload - a.caseload
+      })
+  }, [planners, teamManagers, summaryByAssignee])
+
+  const maxCaseload = Math.max(1, ...rows.map((r) => r.caseload))
+
+  return (
+    <SectionPaper
+      eyebrow="P1.4"
+      title="Planner Workload"
+      rightSlot={
+        <Badge size="sm" variant="light" color="cobalt">
+          {planners.length} Support Planner{planners.length === 1 ? '' : 's'}
+        </Badge>
+      }
+    >
+      {rows.length === 0 ? (
+        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
+          <Users size={32} color="#94A3B8" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="#0F172A">No Support Planners loaded</Text>
+          <Text fz={12} c="#64748B" mt={4}>Planners will appear here once they're added to the org.</Text>
+        </Box>
+      ) : (
+        <Grid gutter="md">
+          {rows.map(({ planner, tm, caseload, overdue, dueWeek, quiet }) => {
+            const initials = (planner.full_name ?? '?')
+              .split(' ')
+              .slice(0, 2)
+              .map((p) => p[0])
+              .join('')
+              .toUpperCase()
+            const pressurePct = maxCaseload > 0 ? (caseload / maxCaseload) * 100 : 0
+            const pressureColor = overdue >= 5 ? '#FF3B5C' : overdue >= 2 ? '#FFA940' : '#10B981'
+            return (
+              <Grid.Col key={planner.id} span={{ base: 12, sm: 6, lg: 4 }}>
+                <Box
+                  style={{
+                    padding: 14,
+                    borderRadius: 12,
+                    background: '#FFFFFF',
+                    border: '1px solid #E5E7EB',
+                    borderLeft: `4px solid ${pressureColor}`,
+                  }}
+                >
+                  <Group gap="sm" wrap="nowrap" mb="sm">
+                    <Avatar size="md" radius="xl" style={{ background: '#1E7CFF', color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                      {initials}
+                    </Avatar>
+                    <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                      <Text fz={13} fw={700} c="#0F172A" truncate>
+                        {planner.full_name ?? 'Unnamed'}
+                      </Text>
+                      <Text fz={11} c="#64748B" truncate>
+                        {tm ? `${tm.full_name} · TM` : 'Unassigned'}
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Group justify="space-between" gap={4} mb={6}>
+                    <Stack gap={0}>
+                      <Text fz={20} fw={800} c="#0F172A" lh={1}>{caseload}</Text>
+                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
+                    </Stack>
+                    <Stack gap={0} align="center">
+                      <Text fz={20} fw={800} c="#FF3B5C" lh={1}>{overdue}</Text>
+                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
+                    </Stack>
+                    <Stack gap={0} align="center">
+                      <Text fz={20} fw={800} c="#FFA940" lh={1}>{dueWeek}</Text>
+                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
+                    </Stack>
+                    <Stack gap={0} align="flex-end">
+                      <Text fz={20} fw={800} c="#1E7CFF" lh={1}>{quiet}</Text>
+                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
+                    </Stack>
+                  </Group>
+                  <Progress value={pressurePct} size="xs" color={pressureColor === '#FF3B5C' ? 'coral' : pressureColor === '#FFA940' ? 'amber' : 'emerald'} mt={4} />
+                </Box>
+              </Grid.Col>
+            )
+          })}
+        </Grid>
+      )}
+    </SectionPaper>
+  )
+}
+
+// ===========================================================================
+// TeamRosterSection — filter chips + roster cards.
+// Replaces the P1.4 placeholder (roster side). Uses planners + teamManagers.
+// ===========================================================================
+
+type RosterFilter = 'all' | 'planners' | 'team_managers' | 'unassigned_planners'
+
+const ROSTER_FILTERS: { value: RosterFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'team_managers', label: 'Team Managers' },
+  { value: 'planners', label: 'Support Planners' },
+  { value: 'unassigned_planners', label: 'Unassigned' },
+]
+
+function TeamRosterSection({
+  planners,
+  teamManagers,
+}: {
+  planners: Profile[]
+  teamManagers: Profile[]
+}) {
+  const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all')
+
+  const filteredRows = useMemo(() => {
+    if (rosterFilter === 'team_managers') {
+      return teamManagers.map((p) => ({ profile: p, kind: 'tm' as const }))
+    }
+    if (rosterFilter === 'planners') {
+      return planners.map((p) => ({ profile: p, kind: 'sp' as const }))
+    }
+    if (rosterFilter === 'unassigned_planners') {
+      return planners
+        .filter((p) => !p.team_manager_id)
+        .map((p) => ({ profile: p, kind: 'sp' as const }))
+    }
+    return [
+      ...teamManagers.map((p) => ({ profile: p, kind: 'tm' as const })),
+      ...planners.map((p) => ({ profile: p, kind: 'sp' as const })),
+    ]
+  }, [planners, teamManagers, rosterFilter])
+
+  return (
+    <SectionPaper
+      eyebrow="P1.4"
+      title="Team Roster"
+      rightSlot={
+        <Group gap={6} wrap="nowrap">
+          <Badge size="sm" variant="light" color="cobalt">
+            {teamManagers.length} TM{teamManagers.length === 1 ? '' : 's'}
+          </Badge>
+          <Badge size="sm" variant="light" color="emerald">
+            {planners.length} SP{planners.length === 1 ? '' : 's'}
+          </Badge>
+        </Group>
+      }
+    >
+      <SegmentedControl
+        value={rosterFilter}
+        onChange={(v) => setRosterFilter(v as RosterFilter)}
+        data={ROSTER_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+        size="sm"
+        fullWidth
+        mb="md"
+        color="cobalt"
+      />
+      {filteredRows.length === 0 ? (
+        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
+          <Filter size={32} color="#94A3B8" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="#0F172A">No one in this slice</Text>
+          <Text fz={12} c="#64748B" mt={4}>Try a different filter.</Text>
+        </Box>
+      ) : (
+        <Grid gutter="sm">
+          {filteredRows.map(({ profile, kind }) => {
+            const initials = (profile.full_name ?? '?')
+              .split(' ')
+              .slice(0, 2)
+              .map((p) => p[0])
+              .join('')
+              .toUpperCase()
+            const isTM = kind === 'tm'
+            const accent = isTM ? '#1E7CFF' : '#10B981'
+            const label = isTM ? 'Team Manager' : 'Support Planner'
+            return (
+              <Grid.Col key={profile.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
+                <Group
+                  gap="sm"
+                  wrap="nowrap"
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: '#FFFFFF',
+                    border: '1px solid #E5E7EB',
+                    borderLeft: `3px solid ${accent}`,
+                  }}
+                >
+                  <Avatar size="sm" radius="xl" style={{ background: accent, color: '#fff', fontWeight: 700, fontSize: 11 }}>
+                    {initials}
+                  </Avatar>
+                  <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
+                    <Text fz={12} fw={700} c="#0F172A" truncate>
+                      {profile.full_name ?? 'Unnamed'}
+                    </Text>
+                    <Text fz={10} c="#64748B" truncate>
+                      {label}
+                    </Text>
+                  </Stack>
+                </Group>
+              </Grid.Col>
+            )
+          })}
+        </Grid>
+      )}
+    </SectionPaper>
   )
 }
 
@@ -681,10 +1239,14 @@ function SupervisorControlPanelInner({
 
       {/* ─────────── Section placeholders for P1.2–P1.5 ─────────── */}
         <Stack gap="lg">
-          <LoadingSection title="Team Health" lines={4} hint="bar chart · P1.2" />
-          <LoadingSection title="Client Drill-down" lines={5} hint="filtered list · P1.3" />
-          <LoadingSection title="Planner Workload" lines={4} hint="per-planner cards · P1.4" />
-          <LoadingSection title="Team Roster" lines={3} hint="filter chips + cards · P1.4" />
+          <TeamHealthSection scopedSummary={scopedSummary} derivedTeams={derivedTeams} />
+          <ClientDrillDownSection planners={planners} />
+          <PlannerWorkloadSection
+            planners={planners}
+            teamManagers={teamManagers}
+            summaryByAssignee={summaryByAssignee}
+          />
+          <TeamRosterSection planners={planners} teamManagers={teamManagers} />
         </Stack>
       </Container>
     </Box>
