@@ -33,10 +33,10 @@ interface ClientDetailV2WrapperProps {
 // ---------------------------------------------------------------------
 // Palette (locked — do not drift)
 // ---------------------------------------------------------------------
-const COBALT  = { gradient: 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)', shadow: 'rgba(30,124,255,0.32)' }
-const CORAL   = { gradient: 'linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)', shadow: 'rgba(255,59,92,0.32)' }
-const AMBER   = { gradient: 'linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)', shadow: 'rgba(255,169,64,0.32)' }
-const EMERALD = { gradient: 'linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)', shadow: 'rgba(16,185,129,0.32)' }
+const COBALT  = { gradient: 'var(--v2-cobalt-grad)',  shadow: 'var(--v2-cobalt-shadow)' }
+const CORAL   = { gradient: 'var(--v2-coral-grad)',   shadow: 'var(--v2-coral-shadow)' }
+const AMBER   = { gradient: 'var(--v2-amber-grad)',   shadow: 'var(--v2-amber-shadow)' }
+const EMERALD = { gradient: 'var(--v2-emerald-grad)', shadow: 'var(--v2-emerald-shadow)' }
 
 // ---------------------------------------------------------------------
 // KpiTile (pattern from SupportPlannerControlPanelClient.tsx)
@@ -160,7 +160,7 @@ function IdentityStrip({ client }: { client: Client }) {
       radius={20}
       p="lg"
       mb="lg"
-      style={{ background: '#fff', boxShadow: '0 4px 20px -6px rgba(43,30,107,0.10)' }}
+      style={{ background: 'var(--v2-surface)', boxShadow: 'var(--v2-shadow-kpi)' }}
     >
       <Group justify="space-between" align="center" wrap="nowrap">
         <Group gap="md" align="center" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
@@ -175,10 +175,10 @@ function IdentityStrip({ client }: { client: Client }) {
             {initials || '—'}
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fz={22} fw={700} c="#1a1140" style={{ letterSpacing: '-0.01em' }}>
+            <Text fz={22} fw={700} c="var(--v2-text-strong)" style={{ letterSpacing: '-0.01em' }}>
               {client.first_name} {client.last_name}
             </Text>
-            <Text fz={13} fw={500} c="#7969a5">
+            <Text fz={13} fw={500} c="var(--v2-text-label)">
               {client.client_id ?? '—'}
               {client.eligibility_code ? ` • ${client.eligibility_code}` : ''}
               {client.category ? ` • ${client.category}` : ''}
@@ -260,7 +260,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
     <CaseSyncV2MantineProvider>
       <Box
         style={{
-          background: 'linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%)',
+          background: 'var(--v2-canvas)',
           margin: '-24px',
           padding: '24px',
           width: 'calc(100% + 48px)',
