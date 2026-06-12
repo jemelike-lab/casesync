@@ -28,6 +28,10 @@ interface ClientEditFormProps {
   planners?: Profile[]
   /** When true, suppresses the legacy KEY DEADLINES block so the v2 Deadlines section can render in its place. */
   hideDeadlines?: boolean
+  /** When true, suppresses the legacy Contact & Visit Details block. */
+  hideContactDetails?: boolean
+  /** When true, suppresses the legacy Plans & Assessments block. */
+  hidePlansAssessments?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -498,7 +502,7 @@ function ActivitySection({ clientId }: { clientId: string }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 
-export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [], hideDeadlines = false }: ClientEditFormProps) {
+export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [], hideDeadlines = false, hideContactDetails = false, hidePlansAssessments = false }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -742,14 +746,17 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           </div>
           )}
 
-          {/* Contact & Visits details */}
+          {/* Contact & Visits details — v2 hides this block when extracted */}
+          {!hideContactDetails && (
           <CollapsibleSection title="Contact & Visit Details" icon={<Phone size={14} />} accentColor="#30d158" defaultOpen={true}>
             <InlineField label="Last Contact Type" field="last_contact_type" value={f.last_contact_type} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={CONTACT_TYPE_OPTIONS} />
             <InlineField label="Drop-in Visit Date" field="drop_in_visit_date" value={f.drop_in_visit_date} type="date" editing={editing} onChange={handleChange} />
             <InlineField label="3-Month Visit Date" field="three_month_visit_date" value={f.three_month_visit_date} type="date" editing={editing} onChange={handleChange} />
           </CollapsibleSection>
+          )}
 
-          {/* Plans & Assessments */}
+          {/* Plans & Assessments — v2 hides this block when extracted */}
+          {!hidePlansAssessments && (
           <CollapsibleSection title="Plans & Assessments" icon={<Clock size={14} />} accentColor="#ff453a" defaultOpen={true}>
             <InlineField label="POC Date" field="poc_date" value={f.poc_date} type="date" editing={editing} onChange={handleChange} />
             <InlineField label="LOC Date" field="loc_date" value={f.loc_date} type="date" editing={editing} onChange={handleChange} />
@@ -757,6 +764,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <InlineField label="SPM Completed" field="spm_completed" value={f.spm_completed} type="boolean" editing={editing} onChange={handleChange} extra={spmNote} />
             {editing && <InlineField label="Goal Progress (%)" field="goal_pct" value={f.goal_pct} type="number" editing={editing} onChange={handleChange} />}
           </CollapsibleSection>
+          )}
 
           {/* CO Details */}
           <CollapsibleSection title="CO Details" icon={<FileText size={14} />} accentColor="#ff9f0a">

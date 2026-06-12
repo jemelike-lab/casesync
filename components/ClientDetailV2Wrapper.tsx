@@ -27,6 +27,8 @@ import { ArrowLeft } from 'lucide-react'
 
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
 import Deadlines from '@/components/casesync-v2/sections/Deadlines'
+import ContactDetails from '@/components/casesync-v2/sections/ContactDetails'
+import PlansAssessments from '@/components/casesync-v2/sections/PlansAssessments'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
 
@@ -295,7 +297,9 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <Breadcrumb    client={props.client} />
           <IdentityStrip client={props.client} />
           <StatusRow     client={props.client} />
-          <Deadlines     client={props.client} />
+          <Deadlines        client={props.client} />
+          <ContactDetails   client={props.client} />
+          <PlansAssessments client={props.client} />
 
           {/*
             Legacy ClientEditForm preserved below with hideDeadlines=true.
@@ -303,7 +307,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             Documents, Reassignment the same way until the legacy form
             is empty and can be removed.
           */}
-          <ClientEditForm {...props} hideDeadlines />
+          <ClientEditForm {...props} hideDeadlines hideContactDetails hidePlansAssessments />
         </Container>
       </Box>
     </CaseSyncV2MantineProvider>
