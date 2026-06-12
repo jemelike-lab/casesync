@@ -1109,7 +1109,7 @@ input[type="time"] {
 }
 
 [data-theme="light"] {
-  --v2-canvas: linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%);
+  --v2-canvas: #F1F5F9; /* slate-100, CaseFox aesthetic (was lavender gradient) */
   --v2-surface: #FFFFFF;
   --v2-surface-elevated: #FFFFFF;
   --v2-surface-tint: #F1F5F9;

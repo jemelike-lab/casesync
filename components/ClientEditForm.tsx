@@ -26,6 +26,8 @@ interface ClientEditFormProps {
   currentUserId: string
   currentProfile: Profile
   planners?: Profile[]
+  /** When true, suppresses the legacy KEY DEADLINES block so the v2 Deadlines section can render in its place. */
+  hideDeadlines?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -496,7 +498,7 @@ function ActivitySection({ clientId }: { clientId: string }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 
-export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [] }: ClientEditFormProps) {
+export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [], hideDeadlines = false }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -717,7 +719,8 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
 
         {/* ── LEFT COLUMN: Deadline tiles + data sections ── */}
         <div>
-          {/* Key Deadlines — grid of interactive date tiles */}
+          {/* Key Deadlines — v2 hides this block when extracted */}
+          {!hideDeadlines && (
           <div style={{ ...glassCard, padding: '16px 18px', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <AlertTriangle size={16} style={{ color: '#ff453a' }} />
@@ -737,6 +740,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
               <DateTile label="Last Contact" field="last_contact_date" date={f.last_contact_date} editing={editing} onChange={handleChange} highlighted={highlightedField === 'last_contact_date'} icon={<Phone size={13} />} />
             </div>
           </div>
+          )}
 
           {/* Contact & Visits details */}
           <CollapsibleSection title="Contact & Visit Details" icon={<Phone size={14} />} accentColor="#30d158" defaultOpen={true}>
