@@ -56,6 +56,14 @@
   color: var(--text-secondary) !important;
 }
 
+/* Search-modal dropdown is rendered as a sibling of the trigger button inside <header>,
+   so the `[data-theme="light"] header *` cream-text rule clobbers everything inside it.
+   Exempt the dropdown subtree by forcing var(--text). */
+[data-theme="light"] header [aria-label="Open global search"] ~ div,
+[data-theme="light"] header [aria-label="Open global search"] ~ div * {
+  color: var(--text) !important;
+}
+
 [data-theme="light"] .card {
   background: #ffffff !important;
   border: 1.5px solid #c9b89a !important;
