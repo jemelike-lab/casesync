@@ -96,7 +96,7 @@ const TEAMS: TeamConfig[] = [
   { id: 'maroon-musketeers', teamName: 'Maroon Musketeers', leadName: 'TahTeona Hall', leadTitle: 'Audit Supervisor', program: 'CFC', badgeSlug: 'maroon-musketeers', accentColor: '#9F1239' },
   { id: 'purple-penguins', teamName: 'Purple Penguins', leadName: 'Emma Wojnovich', leadTitle: 'Lead', program: 'CFC', badgeSlug: 'purple-penguins', accentColor: '#9333EA' },
   { id: 'sage-sharks', teamName: 'Sage Sharks', leadName: 'Breanna Shears', leadTitle: 'Lead', program: 'CFC', badgeSlug: 'sage-sharks', accentColor: '#65A30D' },
-  { id: 'silver-titans', teamName: 'Silver Titans', leadName: 'Mercedes Jones', leadTitle: 'Supervisor', program: 'CFC', badgeSlug: 'silver-titans', accentColor: '#64748B' },
+  { id: 'silver-titans', teamName: 'Silver Titans', leadName: 'Mercedes Jones', leadTitle: 'Supervisor', program: 'CFC', badgeSlug: 'silver-titans', accentColor: 'var(--v2-text-muted)' },
   { id: 'indigo-gladiators', teamName: 'Indigo Gladiators', leadName: 'Jai Mbenga Sanneh', leadTitle: 'Agency Liaison', program: 'DDA', badgeSlug: 'indigo-gladiators', accentColor: '#6366F1' },
   { id: 'white-diamonds', teamName: 'White Diamonds', leadName: 'Gabriela Jannuzzio', leadTitle: 'Program Supervisor', program: 'Leadership', badgeSlug: 'white-diamonds', accentColor: '#A78BFA' },
 ]
@@ -181,7 +181,7 @@ function SectionPaper({
     <Paper
       p="lg"
       style={{
-        background: '#FFFFFF',
+        background: 'var(--v2-surface)',
         border: '1px solid #E5E7EB',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
         position: 'relative',
@@ -214,10 +214,10 @@ function SectionPaper({
       <Box style={{ position: 'relative', zIndex: 1 }}>
         <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
           <Stack gap={2}>
-            <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+            <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
               {eyebrow}
             </Text>
-            <Title order={2} fz={18} fw={700} c="#0F172A">
+            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
               {title}
             </Title>
           </Stack>
@@ -254,7 +254,7 @@ function MyTeamCard({
     <Paper
       p="lg"
       style={{
-        background: '#FFFFFF',
+        background: 'var(--v2-surface)',
         border: '1px solid #E5E7EB',
         borderLeft: `4px solid ${accent}`,
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
@@ -268,7 +268,7 @@ function MyTeamCard({
                 width: 64,
                 height: 64,
                 borderRadius: 16,
-                background: '#FFFFFF',
+                background: 'var(--v2-surface)',
                 padding: 4,
                 display: 'flex',
                 alignItems: 'center',
@@ -298,25 +298,25 @@ function MyTeamCard({
           )}
           <Stack gap={4} style={{ minWidth: 0 }}>
             <Group gap={6} wrap="nowrap">
-              <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+              <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
                 My Team
               </Text>
               <Badge size="xs" variant="light" color={program === 'CFC' ? 'cobalt' : program === 'DDA' ? 'amber' : 'mauve'}>
                 {program}
               </Badge>
             </Group>
-            <Title order={2} fz={22} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
+            <Title order={2} fz={22} fw={800} c="var(--v2-text)" style={{ letterSpacing: '-0.02em' }}>
               {teamName}
             </Title>
-            <Text fz={13} c="#64748B">
+            <Text fz={13} c="var(--v2-text-muted)">
               {profile.full_name ?? 'Lead'} · Team Manager · {spCount} Support Planner{spCount === 1 ? '' : 's'}
             </Text>
           </Stack>
         </Group>
         <Group gap="lg" wrap="nowrap" visibleFrom="sm">
           <Stack gap={0} align="flex-end">
-            <Text fz={11} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
-            <Text fz={22} fw={800} c="#0F172A">{scopedSummary.total_clients.toLocaleString()}</Text>
+            <Text fz={11} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
+            <Text fz={22} fw={800} c="var(--v2-text)">{scopedSummary.total_clients.toLocaleString()}</Text>
           </Stack>
           <Stack gap={0} align="flex-end">
             <Text fz={11} c="#FF3B5C" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
@@ -378,7 +378,7 @@ function TeamHealthSection({
           <Stack align="center" gap="md">
             <Box style={{ position: 'relative', width: 200, height: 200 }}>
               <DonutChart
-                data={donutData.length > 0 ? donutData : [{ name: 'No data', value: 1, color: '#E5E7EB' }]}
+                data={donutData.length > 0 ? donutData : [{ name: 'No data', value: 1, color: 'var(--v2-border-soft)' }]}
                 size={200}
                 thickness={28}
                 withLabels={false}
@@ -395,10 +395,10 @@ function TeamHealthSection({
                   pointerEvents: 'none',
                 }}
               >
-                <Text fz={28} fw={800} c="#0F172A" lh={1}>
+                <Text fz={28} fw={800} c="var(--v2-text)" lh={1}>
                   {scopedSummary.total_clients.toLocaleString()}
                 </Text>
-                <Text fz={11} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                <Text fz={11} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
                   active
                 </Text>
               </Stack>
@@ -415,18 +415,18 @@ function TeamHealthSection({
                     <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
                     <Text fz={12} c="#475569" fw={500}>{row.name}</Text>
                   </Group>
-                  <Text fz={12} fw={700} c="#0F172A">{row.value.toLocaleString()}</Text>
+                  <Text fz={12} fw={700} c="var(--v2-text)">{row.value.toLocaleString()}</Text>
                 </Group>
               ))}
             </Stack>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 7 }}>
-          <Text fz={12} fw={600} c="#64748B" tt="uppercase" mb="sm" style={{ letterSpacing: '0.06em' }}>
+          <Text fz={12} fw={600} c="var(--v2-text-muted)" tt="uppercase" mb="sm" style={{ letterSpacing: '0.06em' }}>
             Caseload by Support Planner
           </Text>
           {plannerRows.length === 0 ? (
-            <Text fz={13} c="#94A3B8" fs="italic">No support planners assigned to this team yet.</Text>
+            <Text fz={13} c="var(--v2-border-rail)" fs="italic">No support planners assigned to this team yet.</Text>
           ) : (
             <Stack gap={10}>
               {plannerRows.map(({ planner, caseload, overdue }) => {
@@ -441,8 +441,8 @@ function TeamHealthSection({
                     </Avatar>
                     <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                       <Group justify="space-between" gap={6}>
-                        <Text fz={12} fw={600} c="#0F172A" truncate>{planner.full_name ?? 'Unnamed'}</Text>
-                        <Text fz={11} fw={700} c="#0F172A">{caseload.toLocaleString()}</Text>
+                        <Text fz={12} fw={600} c="var(--v2-text)" truncate>{planner.full_name ?? 'Unnamed'}</Text>
+                        <Text fz={11} fw={700} c="var(--v2-text)">{caseload.toLocaleString()}</Text>
                       </Group>
                       <Box style={{ height: 8, borderRadius: 4, background: `${barColor}15`, overflow: 'hidden', position: 'relative' }}>
                         <Box
@@ -478,7 +478,7 @@ function TeamHealthSection({
 type ClientFilter = 'all' | 'overdue' | 'due_this_week' | 'no_contact_7'
 
 const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = [
-  { value: 'all', label: 'All', color: '#0F172A' },
+  { value: 'all', label: 'All', color: 'var(--v2-text)' },
   { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
   { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
   { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
@@ -570,10 +570,10 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
               unoptimized
             />
           </Box>
-          <Text fz={14} fw={600} c="#0F172A">
+          <Text fz={14} fw={600} c="var(--v2-text)">
             {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
           </Text>
-          <Text fz={12} c="#64748B" mt={4}>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>
             {loading ? 'Just a moment…' : 'Try a different filter or check back later.'}
           </Text>
         </Box>
@@ -608,8 +608,8 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
                         {fullName.split(' ').slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
                       </Avatar>
                       <Stack gap={2} style={{ minWidth: 0 }}>
-                        <Text fz={13} fw={700} c="#0F172A" truncate>{fullName}</Text>
-                        <Text fz={11} c="#64748B" truncate>
+                        <Text fz={13} fw={700} c="var(--v2-text)" truncate>{fullName}</Text>
+                        <Text fz={11} c="var(--v2-text-muted)" truncate>
                           {planner?.full_name ?? 'Unassigned'} · {client.category?.toUpperCase() ?? '—'}
                         </Text>
                       </Stack>
@@ -617,7 +617,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
                     <Badge size="xs" variant="light" style={{ background: `${filterMeta.color}1A`, color: filterMeta.color }}>
                       {filterMeta.label}
                     </Badge>
-                    <ChevronRight size={14} color="#94A3B8" />
+                    <ChevronRight size={14} color="var(--v2-border-rail)" />
                   </Flex>
                 </Box>
               </Link>
@@ -686,8 +686,8 @@ function PlannerWorkloadSection({
               unoptimized
             />
           </Box>
-          <Text fz={14} fw={600} c="#0F172A">No Support Planners assigned</Text>
-          <Text fz={12} c="#64748B" mt={4}>
+          <Text fz={14} fw={600} c="var(--v2-text)">No Support Planners assigned</Text>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>
             Reach out to your supervisor to add SPs to {profile.full_name ?? 'your team'}.
           </Text>
         </Box>
@@ -703,7 +703,7 @@ function PlannerWorkloadSection({
                   style={{
                     padding: 14,
                     borderRadius: 12,
-                    background: '#FFFFFF',
+                    background: 'var(--v2-surface)',
                     border: '1px solid #E5E7EB',
                     borderLeft: `4px solid ${pressureColor}`,
                   }}
@@ -713,26 +713,26 @@ function PlannerWorkloadSection({
                       {initials}
                     </Avatar>
                     <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-                      <Text fz={13} fw={700} c="#0F172A" truncate>{planner.full_name ?? 'Unnamed'}</Text>
-                      <Text fz={11} c="#64748B" truncate>Support Planner</Text>
+                      <Text fz={13} fw={700} c="var(--v2-text)" truncate>{planner.full_name ?? 'Unnamed'}</Text>
+                      <Text fz={11} c="var(--v2-text-muted)" truncate>Support Planner</Text>
                     </Stack>
                   </Group>
                   <Group justify="space-between" gap={4} mb={6}>
                     <Stack gap={0}>
-                      <Text fz={20} fw={800} c="#0F172A" lh={1}>{caseload}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
+                      <Text fz={20} fw={800} c="var(--v2-text)" lh={1}>{caseload}</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
                     </Stack>
                     <Stack gap={0} align="center">
                       <Text fz={20} fw={800} c="#FF3B5C" lh={1}>{overdue}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
                     </Stack>
                     <Stack gap={0} align="center">
                       <Text fz={20} fw={800} c="#FFA940" lh={1}>{dueWeek}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
                     </Stack>
                     <Stack gap={0} align="flex-end">
                       <Text fz={20} fw={800} c="#1E7CFF" lh={1}>{quiet}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
                     </Stack>
                   </Group>
                   <Progress value={pressurePct} size="xs" color={pressureColor === '#FF3B5C' ? 'coral' : pressureColor === '#FFA940' ? 'amber' : 'emerald'} mt={4} />
@@ -806,9 +806,9 @@ function TeamRosterSection({
       />
       {rows.length === 0 ? (
         <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
-          <Filter size={32} color="#94A3B8" style={{ margin: '0 auto 8px' }} />
-          <Text fz={14} fw={600} c="#0F172A">No one in this slice</Text>
-          <Text fz={12} c="#64748B" mt={4}>Try a different filter.</Text>
+          <Filter size={32} color="var(--v2-border-rail)" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="var(--v2-text)">No one in this slice</Text>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>Try a different filter.</Text>
         </Box>
       ) : (
         <Grid gap="sm">
@@ -825,7 +825,7 @@ function TeamRosterSection({
                   style={{
                     padding: '10px 12px',
                     borderRadius: 10,
-                    background: '#FFFFFF',
+                    background: 'var(--v2-surface)',
                     border: '1px solid #E5E7EB',
                     borderLeft: `3px solid ${accent}`,
                   }}
@@ -834,11 +834,11 @@ function TeamRosterSection({
                     {initials}
                   </Avatar>
                   <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-                    <Text fz={12} fw={700} c="#0F172A" truncate>
+                    <Text fz={12} fw={700} c="var(--v2-text)" truncate>
                       {p.full_name ?? 'Unnamed'}
                       {isTM && p.id === profile.id ? ' (you)' : ''}
                     </Text>
-                    <Text fz={10} c="#64748B" truncate>{label}</Text>
+                    <Text fz={10} c="var(--v2-text-muted)" truncate>{label}</Text>
                   </Stack>
                 </Group>
               </Grid.Col>
@@ -899,7 +899,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
   return (
     <Box
       style={{
-        background: 'linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%)',
+        background: 'var(--v2-canvas)',
         margin: '-24px',
         padding: '24px',
         width: 'calc(100% + 48px)',
@@ -921,13 +921,13 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
         >
           <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
             <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
-              <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+              <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
                 {dateLabel}
               </Text>
-              <Title order={1} fz={28} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
+              <Title order={1} fz={28} fw={800} c="var(--v2-text)" style={{ letterSpacing: '-0.02em' }}>
                 {greeting}, {firstName}
               </Title>
-              <Text fz={14} c="#64748B">
+              <Text fz={14} c="var(--v2-text-muted)">
                 {scopedSummary.total_clients.toLocaleString()} active client
                 {scopedSummary.total_clients === 1 ? '' : 's'} across {planners.length} Support Planner
                 {planners.length === 1 ? '' : 's'}.
