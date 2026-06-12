@@ -165,7 +165,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background 0.3s, color 0.3s;
 }
@@ -1115,8 +1115,8 @@ input[type="time"] {
   --v2-surface-tint: #F1F5F9;
   --v2-text: #0F172A;
   --v2-text-strong: #1a1140;
-  --v2-text-muted: #64748B;
-  --v2-text-label: #7969a5;
+  --v2-text-muted: #475569; /* slate-600, darker for better readability on slate canvas */
+  --v2-text-label: #475569; /* slate-600 (was washed-out lavender) */
   --v2-border-soft: #E5E7EB;
   --v2-border-rail: #94A3B8;
   --v2-shadow-soft: 0 1px 3px rgba(43,30,107,0.06), 0 6px 24px rgba(43,30,107,0.08);

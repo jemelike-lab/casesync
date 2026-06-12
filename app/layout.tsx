@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Geist } from 'next/font/google'
 import './globals.css'
 import './workryn.css'
 import './workryn-timeclock.css'
@@ -11,7 +11,7 @@ import SessionGuard from '@/components/SessionGuard'
 import { ThemeProvider } from '@/components/workryn/ThemeProvider'
 import { Analytics } from '@vercel/analytics/next'
 
-const inter = Inter({ subsets: ['latin'] })
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'CaseSync',
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={geistSans.variable}>
       <head>
         {/*
           Early theme-init: runs synchronously before any paint so the
@@ -72,7 +72,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/splash-ipad-pro-11.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
         <link rel="apple-touch-startup-image" href="/splash/splash-ipad-pro-12.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
-      <body className={inter.className} style={{ minHeight: '100dvh' }}>
+      <body className={geistSans.className} style={{ minHeight: '100dvh' }}>
         <ThemeProvider>
           {children}
           {/* SessionGuard: mounts IdleTimeout for all authenticated routes */}
