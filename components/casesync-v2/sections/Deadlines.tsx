@@ -1,16 +1,14 @@
 'use client'
 
 // =========================================================================
-// Deadlines — Phase A section
+// Deadlines — Phase A section (colorized iteration)
 //
-// Replaces the legacy DateTile grid in ClientEditForm with a table-style
-// SectionPaper layout. Per-row hover popover preserved from the legacy
-// (dark gradient bubble with CRITICAL/DUE SOON/ON TRACK label, big days
-// count, label · formatted date, and a red "Action needed" line when
-// the deadline is overdue).
+// Each tracked deadline has its own saturated identity color applied to
+// its icon and label. Label weight is bumped to 600 for visual pop while
+// staying readable. Chip stays as the per-row status indicator (overdue
+// /soon/ontrack) so urgency is still encoded separately from identity.
 //
-// Filters out deadlines with no date set so the section only shows what
-// has actually been entered for this client.
+// Hover popover preserved exactly from the legacy DateTile.
 // =========================================================================
 
 import { useState } from 'react'
@@ -30,8 +28,8 @@ import {
 } from '@/lib/types'
 
 // -------------------------------------------------------------------------
-// Chip palette — soft fill + dark text from the same hue family.
-// These don't flip in dark mode; status meaning is uniform across modes.
+// Status chip palette (soft fill + dark text from the same hue family).
+// Encodes "how urgent" — independent of the row's identity color.
 // -------------------------------------------------------------------------
 const CHIP: Record<StatusLevel, { bg: string; fg: string }> = {
   critical: { bg: '#FCEBEB', fg: '#791F1F' },
@@ -43,27 +41,33 @@ const CHIP: Record<StatusLevel, { bg: string; fg: string }> = {
 }
 
 // -------------------------------------------------------------------------
-// Tracked deadlines (CFC). Order = visual order. Each gets an icon
-// hint so the row reads at a glance.
+// Per-row identity colors. Each tracked deadline gets a saturated 600-level
+// hue (Tailwind palette references) so it reads bold and clear on white.
+// Hues chosen to be visually distinct neighbor-to-neighbor.
 // -------------------------------------------------------------------------
-const FIELDS: Array<{ field: keyof Client; label: string; Icon: LucideIcon }> = [
-  { field: 'eligibility_end_date',    label: 'Eligibility ends',   Icon: Shield },
-  { field: 'three_month_visit_due',   label: '3-month visit',      Icon: Calendar },
-  { field: 'quarterly_waiver_date',   label: 'Quarterly waiver',   Icon: FileText },
-  { field: 'med_tech_redet_date',     label: 'Med-tech redet.',    Icon: Clock },
-  { field: 'pos_deadline',            label: 'POS deadline',       Icon: FileText },
-  { field: 'assessment_due',          label: 'Assessment due',     Icon: FileCheck },
-  { field: 'doc_mdh_date',            label: 'Doc to MDH (45d)',   Icon: FileText },
-  { field: 'spm_next_due',            label: 'SPM next due',       Icon: Calendar },
-  { field: 'thirty_day_letter_date',  label: '30-day letter',      Icon: FileText },
-  { field: 'last_contact_date',       label: 'Last contact',       Icon: Phone },
-  { field: 'co_financial_redet_date', label: 'CO financial redet.', Icon: Briefcase },
-  { field: 'co_app_date',             label: 'CO application',     Icon: Briefcase },
-  { field: 'mfp_consent_date',        label: 'MFP consent',        Icon: FileText },
-  { field: 'two57_date',              label: '257 form',           Icon: FileText },
-  { field: 'poc_date',                label: 'POC',                Icon: FileText },
-  { field: 'loc_date',                label: 'LOC',                Icon: FileText },
-  { field: 'drop_in_visit_date',      label: 'Drop-in visit',      Icon: Calendar },
+const FIELDS: Array<{
+  field: keyof Client
+  label: string
+  Icon: LucideIcon
+  color: string
+}> = [
+  { field: 'eligibility_end_date',    label: 'Eligibility ends',    Icon: Shield,     color: '#2563EB' }, // blue-600
+  { field: 'three_month_visit_due',   label: '3-month visit',       Icon: Calendar,   color: '#7C3AED' }, // violet-600
+  { field: 'quarterly_waiver_date',   label: 'Quarterly waiver',    Icon: FileText,   color: '#0891B2' }, // cyan-600
+  { field: 'med_tech_redet_date',     label: 'Med-tech redet.',     Icon: Clock,      color: '#0D9488' }, // teal-600
+  { field: 'pos_deadline',            label: 'POS deadline',        Icon: FileText,   color: '#D97706' }, // amber-600
+  { field: 'assessment_due',          label: 'Assessment due',      Icon: FileCheck,  color: '#059669' }, // emerald-600
+  { field: 'doc_mdh_date',            label: 'Doc to MDH (45d)',    Icon: FileText,   color: '#4F46E5' }, // indigo-600
+  { field: 'spm_next_due',            label: 'SPM next due',        Icon: Calendar,   color: '#DB2777' }, // pink-600
+  { field: 'thirty_day_letter_date',  label: '30-day letter',       Icon: FileText,   color: '#DC2626' }, // red-600
+  { field: 'last_contact_date',       label: 'Last contact',        Icon: Phone,      color: '#16A34A' }, // green-600
+  { field: 'co_financial_redet_date', label: 'CO financial redet.', Icon: Briefcase,  color: '#EA580C' }, // orange-600
+  { field: 'co_app_date',             label: 'CO application',      Icon: Briefcase,  color: '#C026D3' }, // fuchsia-600
+  { field: 'mfp_consent_date',        label: 'MFP consent',         Icon: FileText,   color: '#0284C7' }, // sky-600
+  { field: 'two57_date',              label: '257 form',            Icon: FileText,   color: '#BE185D' }, // pink-700
+  { field: 'poc_date',                label: 'POC',                 Icon: FileText,   color: '#9333EA' }, // purple-600
+  { field: 'loc_date',                label: 'LOC',                 Icon: FileText,   color: '#0E7490' }, // cyan-700
+  { field: 'drop_in_visit_date',      label: 'Drop-in visit',       Icon: Calendar,   color: '#4338CA' }, // indigo-700
 ]
 
 function daysFromToday(dateStr: string): number {
@@ -86,17 +90,15 @@ function shortDaysText(n: number): string {
   return `${n}d left`
 }
 
-// -------------------------------------------------------------------------
-// DeadlineRow — one row in the table. Hovering shows the dark popover.
-// -------------------------------------------------------------------------
 interface DeadlineRowProps {
   label: string
   date: string
   Icon: LucideIcon
+  color: string
   isLast: boolean
 }
 
-function DeadlineRow({ label, date, Icon, isLast }: DeadlineRowProps) {
+function DeadlineRow({ label, date, Icon, color, isLast }: DeadlineRowProps) {
   const [hovered, setHovered] = useState(false)
   const status = getDateStatus(date)
   const chip = CHIP[status]
@@ -109,17 +111,17 @@ function DeadlineRow({ label, date, Icon, isLast }: DeadlineRowProps) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'grid',
-        gridTemplateColumns: '18px 1fr auto auto',
+        gridTemplateColumns: '20px 1fr auto auto',
         gap: 12,
         alignItems: 'center',
-        padding: '10px 0',
+        padding: '12px 0',
         borderBottom: isLast ? 'none' : '0.5px solid var(--v2-border-soft)',
         position: 'relative',
       }}
     >
-      <Icon size={14} style={{ color: 'var(--v2-text-muted)' }} />
-      <Text fz={13} c="var(--v2-text)">{label}</Text>
-      <Text fz={12} c="var(--v2-text-muted)" style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
+      <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
+      <Text fz={12} fw={500} c="var(--v2-text-muted)" style={{ fontVariantNumeric: 'tabular-nums' }}>
         {formatDate(date.split('T')[0])}
       </Text>
       <Box
@@ -127,12 +129,13 @@ function DeadlineRow({ label, date, Icon, isLast }: DeadlineRowProps) {
           background: chip.bg,
           color: chip.fg,
           fontSize: 10,
-          fontWeight: 500,
-          padding: '2px 7px',
+          fontWeight: 600,
+          padding: '3px 8px',
           borderRadius: 4,
-          minWidth: 62,
+          minWidth: 64,
           textAlign: 'center',
           fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '0.01em',
         }}
       >
         {shortDaysText(days)}
@@ -169,20 +172,20 @@ function DeadlineRow({ label, date, Icon, isLast }: DeadlineRowProps) {
           }} />
           <Text
             fz={11}
-            fw={500}
+            fw={600}
             c={`rgb(${URGENCY_COLORS_RGB[status]})`}
             style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}
           >
             {URGENCY_LABELS[status]}
           </Text>
-          <Text fz={20} fw={500} c="#fff" style={{ letterSpacing: '-0.02em' }}>
+          <Text fz={20} fw={600} c="#fff" style={{ letterSpacing: '-0.02em' }}>
             {longDaysText(days)}
           </Text>
           <Text fz={11} c="rgba(200,210,230,0.5)" mt={4}>
             {label} {'·'} {formatDate(date.split('T')[0])}
           </Text>
           {isOverdue && (
-            <Text fz={11} c="#ff453a" fw={500} mt={8}>
+            <Text fz={11} c="#ff453a" fw={600} mt={8}>
               {'⚡'} Action needed — update this date
             </Text>
           )}
@@ -192,9 +195,6 @@ function DeadlineRow({ label, date, Icon, isLast }: DeadlineRowProps) {
   )
 }
 
-// -------------------------------------------------------------------------
-// Public section
-// -------------------------------------------------------------------------
 export default function Deadlines({ client }: { client: Client }) {
   const rows = FIELDS
     .map(f => ({ ...f, date: client[f.field] as string | null | undefined }))
@@ -223,6 +223,7 @@ export default function Deadlines({ client }: { client: Client }) {
               label={r.label}
               date={r.date}
               Icon={r.Icon}
+              color={r.color}
               isLast={i === rows.length - 1}
             />
           ))}
