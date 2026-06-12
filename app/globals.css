@@ -443,11 +443,8 @@ input[type="time"] {
   color: #1a1108;
 }
 
-/* Override any inline var(--text-secondary) that might be too light */
-[data-theme="light"] [style*="color: var(--text-secondary)"],
-[data-theme="light"] [style*="color:var(--text-secondary)"] {
-  color: #5c4a35;
-}
+/* Removed: band-aid hardcoded #5c4a35 over inline var(--text-secondary).
+   Token is now the correct dark value (#3d2f1f); inline style resolves correctly. */
 
 /* Status dots text labels */
 [data-theme="light"] [style*="color: var(--red)"] { color: #c0001a !important; }
