@@ -50,8 +50,9 @@
 }
 
 /* Search trigger is a header button but has its own cream bg -- exempt from the white-text rule */
-[data-theme="light"] header [aria-label="Open global search"],
-[data-theme="light"] header [aria-label="Open global search"] span {
+/* Specificity boosted past the [style*=background] band-aid rules elsewhere in this file */
+[data-theme="light"] header button[aria-label="Open global search"][style*="background"],
+[data-theme="light"] header button[aria-label="Open global search"][style*="background"] > span {
   color: var(--text-secondary) !important;
 }
 
