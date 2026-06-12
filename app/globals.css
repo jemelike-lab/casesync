@@ -49,6 +49,12 @@
   color: #ffffff !important;
 }
 
+/* Search trigger is a header button but has its own cream bg -- exempt from the white-text rule */
+[data-theme="light"] header [aria-label="Open global search"],
+[data-theme="light"] header [aria-label="Open global search"] span {
+  color: var(--text-secondary) !important;
+}
+
 [data-theme="light"] .card {
   background: #ffffff !important;
   border: 1.5px solid #c9b89a !important;
