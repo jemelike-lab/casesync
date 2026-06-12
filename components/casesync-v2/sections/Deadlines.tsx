@@ -121,7 +121,20 @@ function DeadlineRow({ label, date, Icon, color, isLast }: DeadlineRowProps) {
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
-      <Text fz={12} fw={500} c="var(--v2-text-muted)" style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <Text
+        fz={12}
+        fw={600}
+        style={{
+          // Two-color date readout: urgent (overdue or due within 7d) -> red-600,
+          // safe (further out, or no urgency) -> green-600. Bolder weight so the
+          // color carries on a white card.
+          color:
+            status === 'critical' || status === 'red' || status === 'orange'
+              ? '#DC2626'
+              : '#16A34A',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
         {formatDate(date.split('T')[0])}
       </Text>
       <Box
