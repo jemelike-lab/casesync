@@ -47,6 +47,8 @@ interface ClientEditFormProps {
   hideClientInfo?: boolean
   /** When true, suppresses the legacy SharePoint Documents card. */
   hideClientDocuments?: boolean
+  /** When true, suppresses the legacy Client Files card (v2 owns it). */
+  hideClientFiles?: boolean
   /** When true, suppresses the legacy NotesSection (v2 owns it). */
   hideNotes?: boolean
   /** When true, suppresses the legacy ActivitySection (v2 owns it). */
@@ -430,6 +432,7 @@ export default function ClientEditForm({
   hideReportingReviews = false,
   hideClientInfo = false,
   hideClientDocuments = false,
+  hideClientFiles = false,
   hideNotes = false,
   hideActivity = false,
   hideHero = false,
@@ -830,7 +833,9 @@ export default function ClientEditForm({
           )}
 
           {/* Files (new, Supabase-native, in-portal viewer) */}
+          {!hideClientFiles && (
           <ClientFiles clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
+          )}
 
           {/* Documents (legacy — SharePoint) — v2 hides until SharePoint workflow returns */}
           {!hideClientDocuments && (

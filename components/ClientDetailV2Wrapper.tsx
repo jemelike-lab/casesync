@@ -41,6 +41,7 @@ import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
 import ClientActions from '@/components/casesync-v2/sections/ClientActions'
 import ClientAIRail from '@/components/casesync-v2/sections/ClientAIRail'
 import ClientEditForm from '@/components/ClientEditForm'
+import ClientFiles from '@/components/ClientFiles'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
 
@@ -363,6 +364,12 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <Notes             client={props.client} currentUserId={props.currentUserId} />
           <Activity          client={props.client} />
 
+          <ClientFiles
+            clientId={props.client.id}
+            currentUserId={props.currentUserId}
+            currentProfile={props.currentProfile}
+          />
+
           {/*
             Legacy ClientEditForm preserved below with hide* props that
             suppress every section extracted so far. As Notes, Activity,
@@ -386,6 +393,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideActivity
             hideHero
             hideStatusActions
+            hideClientFiles
             onExitEdit={exitEdit}
             hideAiPanel
           />
