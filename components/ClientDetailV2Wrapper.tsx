@@ -36,6 +36,7 @@ import Authorizations from '@/components/casesync-v2/sections/Authorizations'
 import ReportingReviews from '@/components/casesync-v2/sections/ReportingReviews'
 import Notes from '@/components/casesync-v2/sections/Notes'
 import Activity from '@/components/casesync-v2/sections/Activity'
+import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
@@ -308,7 +309,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
       >
         <Container size={1280} px={0} pb={80}>
           <Breadcrumb    client={props.client} />
-          <IdentityStrip client={props.client} />
+          <IdentityHero  client={props.client} />
           <StatusRow     client={props.client} />
           <Deadlines         client={props.client} />
           <ContactDetails    client={props.client} />
@@ -342,6 +343,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideClientDocuments
             hideNotes
             hideActivity
+            hideHero
           />
         </Container>
       </Box>

@@ -50,6 +50,8 @@ interface ClientEditFormProps {
   hideNotes?: boolean
   /** When true, suppresses the legacy ActivitySection (v2 owns it). */
   hideActivity?: boolean
+  /** When true, suppresses the legacy Back/Print row + blue-gradient hero. */
+  hideHero?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -537,6 +539,7 @@ export default function ClientEditForm({
   hideClientDocuments = false,
   hideNotes = false,
   hideActivity = false,
+  hideHero = false,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -704,13 +707,16 @@ export default function ClientEditForm({
       {/* Popover animation */}
       <style>{`@keyframes popIn{from{opacity:0;transform:translateX(-50%) translateY(-4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
 
-      {/* Back */}
+      {/* Back — v2 hides this row (Breadcrumb covers ← Dashboard) */}
+      {!hideHero && (
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
         <Link href="/dashboard" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>← Dashboard</Link>
         <Link href={`/clients/${client.id}/print`} target="_blank" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 12, padding: '4px 10px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}><Printer size={12} style={{ marginRight: 4 }} />Print</Link>
       </div>
+      )}
 
-      {/* ═══ HERO HEADER ═══ */}
+      {/* ═══ HERO HEADER ═══ — v2 IdentityHero owns this when hideHero is set */}
+      {!hideHero && (
       <div style={{
         borderRadius: 22, overflow: 'hidden', marginBottom: 16,
         background: 'var(--v2-cobalt-grad)',
@@ -752,6 +758,7 @@ export default function ClientEditForm({
           </div>
         </div>
       </div>
+      )}
 
       {/* ═══ TWO-COLUMN LAYOUT ═══ */}
       <div className="client-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, alignItems: 'start' }}>
