@@ -19,7 +19,11 @@ const ALLOWED_MIME = new Set<string>([
 ])
 const ALLOWED_CATEGORIES = new Set<string>([
   'general', 'consent_form', 'assessment', 'letter', 'authorization',
-  'intake', 'plan', 'correspondence', 'medical', 'financial', 'other',
+  'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
+  // Batch 3: folder-aligned values, mirrored from the bot upload route so the
+  // human upload modal's CO / Forms & Signatures / Reporting & Reviews picks
+  // round-trip to their own folders instead of being coerced into Other.
+  'co', 'forms_signatures', 'reporting_review',
 ])
 
 const BUCKET = 'client-documents'
@@ -104,9 +108,21 @@ export const POST = withAuth(async (req: NextRequest, ctx, routeCtx) => {
     )
   }
 
-  // Validate category
-  const categoryRaw = String(form.get('category') ?? 'general').toLowerCase()
-  const category = ALLOWED_CATEGORIES.has(categoryRaw) ? categoryRaw : 'general'
+  // Validate category -- reject missing/unknown rather than silently filing
+  // under 'general' (-> Other). The upload modal always sends a valid value;
+  // a 400 here only fires on a malformed or direct (non-modal) call, which we
+  // reject so categorization data stays clean.
+  const categoryRaw = String(form.get('category') ?? '').toLowerCase()
+  if (!categoryRaw) {
+    return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+  }
+  if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
+    return NextResponse.json(
+      { error: `Unknown category: ${categoryRaw}` },
+      { status: 400 }
+    )
+  }
+  const category = categoryRaw
 
   // Optional expiry
   const expiresAtRaw = form.get('expiresAt')
