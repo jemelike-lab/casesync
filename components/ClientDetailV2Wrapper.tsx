@@ -34,6 +34,8 @@ import MedTech from '@/components/casesync-v2/sections/MedTech'
 import FormsSignatures from '@/components/casesync-v2/sections/FormsSignatures'
 import Authorizations from '@/components/casesync-v2/sections/Authorizations'
 import ReportingReviews from '@/components/casesync-v2/sections/ReportingReviews'
+import Notes from '@/components/casesync-v2/sections/Notes'
+import Activity from '@/components/casesync-v2/sections/Activity'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
@@ -316,6 +318,8 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <FormsSignatures   client={props.client} />
           <Authorizations    client={props.client} />
           <ReportingReviews  client={props.client} />
+          <Notes             client={props.client} currentUserId={props.currentUserId} />
+          <Activity          client={props.client} />
 
           {/*
             Legacy ClientEditForm preserved below with hide* props that
@@ -336,6 +340,8 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideReportingReviews
             hideClientInfo
             hideClientDocuments
+            hideNotes
+            hideActivity
           />
         </Container>
       </Box>

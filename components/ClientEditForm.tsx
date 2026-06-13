@@ -46,6 +46,10 @@ interface ClientEditFormProps {
   hideClientInfo?: boolean
   /** When true, suppresses the legacy SharePoint Documents card. */
   hideClientDocuments?: boolean
+  /** When true, suppresses the legacy NotesSection (v2 owns it). */
+  hideNotes?: boolean
+  /** When true, suppresses the legacy ActivitySection (v2 owns it). */
+  hideActivity?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -531,6 +535,8 @@ export default function ClientEditForm({
   hideReportingReviews = false,
   hideClientInfo = false,
   hideClientDocuments = false,
+  hideNotes = false,
+  hideActivity = false,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -809,11 +815,15 @@ export default function ClientEditForm({
           </CollapsibleSection>
           )}
 
-          {/* Notes — full width in left column */}
+          {/* Notes — v2 hides this block when extracted */}
+          {!hideNotes && (
           <NotesSection clientId={client.id} currentUserId={currentUserId} />
+          )}
 
-          {/* Activity */}
+          {/* Activity — v2 hides this block when extracted */}
+          {!hideActivity && (
           <ActivitySection clientId={client.id} />
+          )}
         </div>
 
         {/* ── SIDEBAR ROW: side-by-side cards under main column ── */}
