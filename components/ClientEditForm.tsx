@@ -42,6 +42,8 @@ interface ClientEditFormProps {
   hideAuthorizations?: boolean
   /** When true, suppresses the legacy Reporting & Reviews block. */
   hideReportingReviews?: boolean
+  /** When true, suppresses the legacy Client Info + Reassign sidebar card. */
+  hideClientInfo?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -525,6 +527,7 @@ export default function ClientEditForm({
   hideFormsSignatures = false,
   hideAuthorizations = false,
   hideReportingReviews = false,
+  hideClientInfo = false,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -824,7 +827,8 @@ export default function ClientEditForm({
             </div>
           )}
 
-          {/* Client Info */}
+          {/* Client Info — v2 hides this card (Reassign returns in Batch 3 as Actions) */}
+          {!hideClientInfo && (
           <div style={{ ...glassCard, padding: '14px 16px', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <Users size={14} style={{ color: '#007aff' }} />
@@ -869,6 +873,7 @@ export default function ClientEditForm({
               </div>
             )}
           </div>
+          )}
 
           {/* Med Tech — v2 hides this block when extracted */}
           {!hideMedTech && (

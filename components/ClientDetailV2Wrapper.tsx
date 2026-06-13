@@ -334,6 +334,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideFormsSignatures
             hideAuthorizations
             hideReportingReviews
+            hideClientInfo
           />
         </Container>
       </Box>
