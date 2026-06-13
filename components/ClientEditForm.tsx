@@ -745,7 +745,7 @@ export default function ClientEditForm({
       </div>
 
       {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-      <div className="client-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
+      <div className="client-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, alignItems: 'start' }}>
 
         {/* ── LEFT COLUMN: Deadline tiles + data sections ── */}
         <div>
@@ -813,8 +813,8 @@ export default function ClientEditForm({
           <ActivitySection clientId={client.id} />
         </div>
 
-        {/* ── RIGHT COLUMN: Sidebar ── */}
-        <div>
+        {/* ── SIDEBAR ROW: side-by-side cards under main column ── */}
+        <div className="client-detail-sidebar-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, alignItems: 'start' }}>
           {/* AI Intelligence */}
           {!editing && (
             <div style={{ ...glassCard, padding: '14px 16px', marginBottom: 12, borderColor: 'rgba(191,90,242,0.1)' }}>
