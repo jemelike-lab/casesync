@@ -39,6 +39,7 @@ import Notes from '@/components/casesync-v2/sections/Notes'
 import Activity from '@/components/casesync-v2/sections/Activity'
 import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
 import ClientActions from '@/components/casesync-v2/sections/ClientActions'
+import ClientAIRail from '@/components/casesync-v2/sections/ClientAIRail'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
@@ -337,6 +338,8 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
       >
         <Container size={1280} px={0} pb={80}>
           <Breadcrumb    client={props.client} />
+          <div className="cs-detail-grid">
+          <div className="cs-detail-main">
           <IdentityHero
             client={props.client}
             headerActions={
@@ -384,7 +387,11 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideHero
             hideStatusActions
             onExitEdit={exitEdit}
+            hideAiPanel
           />
+          </div>
+          <ClientAIRail clientId={props.client.id} />
+          </div>
         </Container>
       </Box>
     </CaseSyncV2MantineProvider>

@@ -8,6 +8,7 @@ import StatusDot from '@/components/StatusDot'
 import Link from 'next/link'
 import ClientDocuments from '@/components/ClientDocuments'
 import ClientFiles from '@/components/ClientFiles'
+import { AIAskClient, AISummary } from '@/components/AIIntelligencePanel'
 import { useSearchParams } from 'next/navigation'
 import { sendAssignmentEmail } from '@/app/actions/notifications'
 import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
@@ -16,7 +17,7 @@ import HealthScoreRing from '@/components/HealthScoreRing'
 import {
   AlertTriangle, Clock, FileText, Phone, Edit3, Printer, Save, X,
   ChevronDown, ChevronRight, MessageCircle, Activity, Shield, Users,
-  Zap, Brain, RefreshCw, Send, Calendar, Info, ExternalLink,
+  Brain, Send, Calendar, Info, ExternalLink,
 } from 'lucide-react'
 
 type EditableClient = Omit<Client, 'id' | 'client_id' | 'last_name' | 'first_name' | 'category' | 'assigned_to' | 'created_at' | 'updated_at' | 'profiles'>
@@ -53,6 +54,7 @@ interface ClientEditFormProps {
   /** When true, suppresses the legacy Back/Print row + blue-gradient hero. */
   hideHero?: boolean
   hideStatusActions?: boolean
+  hideAiPanel?: boolean
   onExitEdit?: () => void
 }
 
@@ -301,118 +303,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false, accent
    AI SECTION
    ═══════════════════════════════════════════════════════════════════ */
 
-function AIAskClient({ clientId }: { clientId: string }) {
-  const [question, setQuestion] = useState('')
-  const [answer, setAnswer] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const ask = async () => {
-    if (!question.trim()) return
-    setLoading(true); setError(null); setAnswer(null)
-    try {
-      let res = await fetch('/api/blhbot/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ id: clientId, question: question.trim() }),
-      })
-
-      // Auto-retry on 401: refresh the session token and try once more
-      if (res.status === 401) {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        const { error: refreshErr } = await supabase.auth.refreshSession()
-        if (!refreshErr) {
-          res = await fetch('/api/blhbot/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ id: clientId, question: question.trim() }),
-          })
-        }
-      }
-
-      if (res.status === 401) {
-        throw new Error('Session expired \u2014 please refresh the page and sign in again')
-      }
-
-      if (res.status === 429) {
-        throw new Error('BLH Bot is busy \u2014 please wait a moment and try again')
-      }
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed')
-      setAnswer(data.answer)
-    } catch (err: any) { setError(err.message) } finally { setLoading(false) }
-  }
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask() }}
-          placeholder="Ask about this client…" style={{ ...inputStyle, flex: 1, fontSize: 12, borderColor: 'rgba(191,90,242,0.2)' }} />
-        <button onClick={ask} disabled={loading || !question.trim()} style={{
-          background: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.2)', borderRadius: 10,
-          color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1, whiteSpace: 'nowrap',
-        }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> …</> : <><Brain size={12} /> Ask</>}</button>
-      </div>
-      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
-      {answer && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{answer}</div>}
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-}
-
-function AISummary({ clientId }: { clientId: string }) {
-  const [summary, setSummary] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const generate = async () => {
-    setLoading(true); setError(null); setSummary(null)
-    try {
-      let res = await fetch('/api/client-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ clientId }),
-      })
-
-      // Auto-retry on 401: refresh the session token and try once more
-      if (res.status === 401) {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        const { error: refreshErr } = await supabase.auth.refreshSession()
-        if (!refreshErr) {
-          res = await fetch('/api/client-summary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ clientId }),
-          })
-        }
-      }
-
-      if (res.status === 401) {
-        throw new Error('Session expired \u2014 please refresh the page and sign in again')
-      }
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed')
-      setSummary(data.summary)
-    } catch (err: any) { setError(err.message) } finally { setLoading(false) }
-  }
-  return (
-    <div style={{ marginTop: 8 }}>
-      <button onClick={generate} disabled={loading} style={{
-        background: 'rgba(191,90,242,0.08)', border: '1px solid rgba(191,90,242,0.15)', borderRadius: 8,
-        color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1,
-      }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> …</> : <><Zap size={12} /> AI Summary</>}</button>
-      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
-      {summary && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, lineHeight: 1.6, color: 'var(--text)' }}>{summary}</div>}
-    </div>
-  )
-}
+/* AIAskClient + AISummary moved to components/AIIntelligencePanel.tsx (Batch 3d) */
 
 /* ═══════════════════════════════════════════════════════════════════
    NOTES — Chat-bubble style
@@ -543,6 +434,7 @@ export default function ClientEditForm({
   hideActivity = false,
   hideHero = false,
   hideStatusActions = false,
+  hideAiPanel = false,
   onExitEdit,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
@@ -842,7 +734,7 @@ export default function ClientEditForm({
         {/* ── SIDEBAR ROW: side-by-side cards under main column ── */}
         <div className="client-detail-sidebar-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, alignItems: 'start' }}>
           {/* AI Intelligence */}
-          {!editing && (
+          {!editing && !hideAiPanel && (
             <div style={{ ...glassCard, padding: '14px 16px', marginBottom: 12, borderColor: 'rgba(191,90,242,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <Brain size={14} style={{ color: '#bf5af2' }} />
