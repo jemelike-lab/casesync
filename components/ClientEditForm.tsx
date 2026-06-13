@@ -32,6 +32,16 @@ interface ClientEditFormProps {
   hideContactDetails?: boolean
   /** When true, suppresses the legacy Plans & Assessments block. */
   hidePlansAssessments?: boolean
+  /** When true, suppresses the legacy CO Details block. */
+  hideCoDetails?: boolean
+  /** When true, suppresses the legacy Med Tech block. */
+  hideMedTech?: boolean
+  /** When true, suppresses the legacy Forms & Signatures block. */
+  hideFormsSignatures?: boolean
+  /** When true, suppresses the legacy Authorizations block. */
+  hideAuthorizations?: boolean
+  /** When true, suppresses the legacy Reporting & Reviews block. */
+  hideReportingReviews?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -502,7 +512,20 @@ function ActivitySection({ clientId }: { clientId: string }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 
-export default function ClientEditForm({ client, currentUserId, currentProfile, planners = [], hideDeadlines = false, hideContactDetails = false, hidePlansAssessments = false }: ClientEditFormProps) {
+export default function ClientEditForm({
+  client,
+  currentUserId,
+  currentProfile,
+  planners = [],
+  hideDeadlines = false,
+  hideContactDetails = false,
+  hidePlansAssessments = false,
+  hideCoDetails = false,
+  hideMedTech = false,
+  hideFormsSignatures = false,
+  hideAuthorizations = false,
+  hideReportingReviews = false,
+}: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -766,7 +789,8 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
           </CollapsibleSection>
           )}
 
-          {/* CO Details */}
+          {/* CO Details — v2 hides this block when extracted */}
+          {!hideCoDetails && (
           <CollapsibleSection title="CO Details" icon={<FileText size={14} />} accentColor="#ff9f0a">
             <DateTile label="CO Financial Redet" field="co_financial_redet_date" date={f.co_financial_redet_date} editing={editing} onChange={handleChange} highlighted={highlightedField === 'co_financial_redet_date'} />
             <div style={{ height: 6 }} />
@@ -777,6 +801,7 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             <DateTile label="257 Date" field="two57_date" date={f.two57_date} editing={editing} onChange={handleChange} highlighted={highlightedField === 'two57_date'} />
             <InlineField label="Request Letter" field="request_letter" value={f.request_letter} type="text" editing={editing} onChange={handleChange} />
           </CollapsibleSection>
+          )}
 
           {/* Notes — full width in left column */}
           <NotesSection clientId={client.id} currentUserId={currentUserId} />
@@ -845,33 +870,41 @@ export default function ClientEditForm({ client, currentUserId, currentProfile, 
             )}
           </div>
 
-          {/* Med Tech */}
+          {/* Med Tech — v2 hides this block when extracted */}
+          {!hideMedTech && (
           <CollapsibleSection title="Med Tech" icon={<Shield size={14} />} accentColor="#ff9f0a">
             <InlineField label="Med/Tech Status" field="med_tech_status" value={f.med_tech_status} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={MED_TECH_STATUS_OPTIONS} />
           </CollapsibleSection>
+          )}
 
-          {/* Forms & Signatures */}
+          {/* Forms & Signatures — v2 hides this block when extracted */}
+          {!hideFormsSignatures && (
           <CollapsibleSection title="Forms & Signatures" icon={<FileText size={14} />} accentColor="#ffd60a">
             <InlineField label="FOC" field="foc" value={f.foc} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Provider Forms" field="provider_forms" value={f.provider_forms} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Signatures Needed" field="signatures_needed" value={f.signatures_needed} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Schedule Docs" field="schedule_docs" value={f.schedule_docs} type="boolean" editing={editing} onChange={handleChange} />
           </CollapsibleSection>
+          )}
 
-          {/* Authorizations */}
+          {/* Authorizations — v2 hides this block when extracted */}
+          {!hideAuthorizations && (
           <CollapsibleSection title="Authorizations" icon={<Shield size={14} />} accentColor="#bf5af2">
             <InlineField label="ATP" field="atp" value={f.atp} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={ATP_OPTIONS} />
             <InlineField label="SNFs" field="snfs" value={f.snfs} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Lease" field="lease" value={f.lease} type="text" editing={editing} onChange={handleChange} />
           </CollapsibleSection>
+          )}
 
-          {/* Reporting */}
+          {/* Reporting & Reviews — v2 hides this block when extracted */}
+          {!hideReportingReviews && (
           <CollapsibleSection title="Reporting & Reviews" icon={<AlertTriangle size={14} />} accentColor="#ffd60a">
             <InlineField label="Reportable Events" field="reportable_events" value={f.reportable_events} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Appeals" field="appeals" value={f.appeals} type="text" editing={editing} onChange={handleChange} />
             <InlineField label="Audit Review" field="audit_review" value={f.audit_review} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={AUDIT_OPTIONS} />
             <InlineField label="QA Review" field="qa_review" value={f.qa_review} type={editing ? 'select' : 'text'} editing={editing} onChange={handleChange} selectOptions={QA_OPTIONS} />
           </CollapsibleSection>
+          )}
 
           {/* Files (new, Supabase-native, in-portal viewer) */}
           <ClientFiles clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />

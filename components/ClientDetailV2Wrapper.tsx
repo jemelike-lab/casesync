@@ -29,8 +29,14 @@ import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2Mantin
 import Deadlines from '@/components/casesync-v2/sections/Deadlines'
 import ContactDetails from '@/components/casesync-v2/sections/ContactDetails'
 import PlansAssessments from '@/components/casesync-v2/sections/PlansAssessments'
+import CoDetails from '@/components/casesync-v2/sections/CoDetails'
+import MedTech from '@/components/casesync-v2/sections/MedTech'
+import FormsSignatures from '@/components/casesync-v2/sections/FormsSignatures'
+import Authorizations from '@/components/casesync-v2/sections/Authorizations'
+import ReportingReviews from '@/components/casesync-v2/sections/ReportingReviews'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
+import { getEligibilityDescription } from '@/lib/eligibility-codes'
 
 interface ClientDetailV2WrapperProps {
   client: Client
@@ -254,6 +260,11 @@ function IdentityStrip({ client }: { client: Client }) {
               {(client as { assigned_planner_id?: string | null }).assigned_planner_id ? 'Assigned' : 'Unassigned'}
             </Text>
           </Group>
+          {client.eligibility_code && getEligibilityDescription(client.eligibility_code) && (
+            <Text fz={11} c="var(--v2-text-muted)" style={{ fontStyle: 'italic', letterSpacing: '-0.005em' }}>
+              {getEligibilityDescription(client.eligibility_code)}
+            </Text>
+          )}
         </Stack>
       </Group>
     </Paper>
@@ -297,17 +308,33 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <Breadcrumb    client={props.client} />
           <IdentityStrip client={props.client} />
           <StatusRow     client={props.client} />
-          <Deadlines        client={props.client} />
-          <ContactDetails   client={props.client} />
-          <PlansAssessments client={props.client} />
+          <Deadlines         client={props.client} />
+          <ContactDetails    client={props.client} />
+          <PlansAssessments  client={props.client} />
+          <CoDetails         client={props.client} />
+          <MedTech           client={props.client} />
+          <FormsSignatures   client={props.client} />
+          <Authorizations    client={props.client} />
+          <ReportingReviews  client={props.client} />
 
           {/*
-            Legacy ClientEditForm preserved below with hideDeadlines=true.
-            Subsequent Phase A commits will extract Notes, Activity,
-            Documents, Reassignment the same way until the legacy form
-            is empty and can be removed.
+            Legacy ClientEditForm preserved below with hide* props that
+            suppress every section extracted so far. As Notes, Activity,
+            Documents, Reassignment, etc. are extracted in subsequent
+            batches, additional hide* props will be added here until the
+            legacy form is empty and can be removed.
           */}
-          <ClientEditForm {...props} hideDeadlines hideContactDetails hidePlansAssessments />
+          <ClientEditForm
+            {...props}
+            hideDeadlines
+            hideContactDetails
+            hidePlansAssessments
+            hideCoDetails
+            hideMedTech
+            hideFormsSignatures
+            hideAuthorizations
+            hideReportingReviews
+          />
         </Container>
       </Box>
     </CaseSyncV2MantineProvider>
