@@ -645,7 +645,15 @@ export default function ClientEditForm({
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
-            <HealthScoreRing score={f.goal_pct as number ?? 0} size={64} strokeWidth={5} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(200,210,230,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                Goal progress
+              </span>
+              <HealthScoreRing score={f.goal_pct as number ?? 0} size={64} strokeWidth={5} trackColor="#ffffff" />
+              <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', color: ((f.goal_pct as number ?? 0) >= 80 ? '#30d158' : (f.goal_pct as number ?? 0) >= 50 ? '#ff9f0a' : '#ff453a') }}>
+                {(f.goal_pct as number ?? 0) >= 80 ? 'On track' : (f.goal_pct as number ?? 0) >= 50 ? 'Mid range' : 'Needs attention'}
+              </span>
+            </div>
             <div style={{ display: 'flex', gap: 6 }}>
               {editing ? (
                 <>

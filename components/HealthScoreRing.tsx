@@ -6,6 +6,7 @@ interface Props {
   score: number
   size?: number
   strokeWidth?: number
+  trackColor?: string
 }
 
 function getScoreColor(score: number): string {
@@ -15,7 +16,7 @@ function getScoreColor(score: number): string {
   return '#ff453a'
 }
 
-export default function HealthScoreRing({ score, size = 44, strokeWidth = 4 }: Props) {
+export default function HealthScoreRing({ score, size = 44, strokeWidth = 4, trackColor = '#2c2c2e' }: Props) {
   const circleRef = useRef<SVGCircleElement>(null)
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
@@ -49,7 +50,7 @@ export default function HealthScoreRing({ score, size = 44, strokeWidth = 4 }: P
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#2c2c2e"
+        stroke={trackColor}
         strokeWidth={strokeWidth}
       />
       {/* Progress circle */}

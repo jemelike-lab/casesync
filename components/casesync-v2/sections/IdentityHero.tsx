@@ -232,7 +232,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
             <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(200,210,230,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
               Goal progress
             </span>
-            <HealthScoreRing score={goalPct} size={56} strokeWidth={5} />
+            <HealthScoreRing score={goalPct} size={56} strokeWidth={5} trackColor="#ffffff" />
             <span style={{ fontSize: 10, fontWeight: 600, color: goalStateColor, whiteSpace: 'nowrap' }}>
               {goalStateLabel}
             </span>
