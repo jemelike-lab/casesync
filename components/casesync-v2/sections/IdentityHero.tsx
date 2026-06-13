@@ -74,7 +74,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
   const goalPct = (client as { goal_pct?: number }).goal_pct ?? 0
   // 3-tier qualitative label matching StatusRow thresholds, not HealthScoreRing's 4-tier
   const goalStateLabel = goalPct >= 80 ? 'On track' : goalPct >= 50 ? 'Mid range' : 'Needs attention'
-  const goalStateColor = goalPct >= 80 ? '#30d158' : goalPct >= 50 ? '#ff9f0a' : '#ff453a'
+  const goalStateColor = goalPct >= 80 ? '#30d158' : goalPct >= 50 ? '#ff9f0a' : '#ff9e94'
   const lastContactType = (client as { last_contact_type?: string | null }).last_contact_type
 
   return (
@@ -232,7 +232,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
             <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(200,210,230,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
               Goal progress
             </span>
-            <HealthScoreRing score={goalPct} size={56} strokeWidth={5} trackColor="#ffffff" />
+            <HealthScoreRing score={goalPct} size={56} strokeWidth={5} trackColor="#ffffff" textColor="#ffffff" />
             <span style={{ fontSize: 10, fontWeight: 600, color: goalStateColor, whiteSpace: 'nowrap' }}>
               {goalStateLabel}
             </span>

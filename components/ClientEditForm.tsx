@@ -645,12 +645,12 @@ export default function ClientEditForm({
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '12px 16px' }}>
               <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(200,210,230,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                 Goal progress
               </span>
-              <HealthScoreRing score={f.goal_pct as number ?? 0} size={64} strokeWidth={5} trackColor="#ffffff" />
-              <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', color: ((f.goal_pct as number ?? 0) >= 80 ? '#30d158' : (f.goal_pct as number ?? 0) >= 50 ? '#ff9f0a' : '#ff453a') }}>
+              <HealthScoreRing score={f.goal_pct as number ?? 0} size={64} strokeWidth={5} trackColor="#ffffff" textColor="#ffffff" />
+              <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', color: ((f.goal_pct as number ?? 0) >= 80 ? '#30d158' : (f.goal_pct as number ?? 0) >= 50 ? '#ff9f0a' : '#ff9e94') }}>
                 {(f.goal_pct as number ?? 0) >= 80 ? 'On track' : (f.goal_pct as number ?? 0) >= 50 ? 'Mid range' : 'Needs attention'}
               </span>
             </div>

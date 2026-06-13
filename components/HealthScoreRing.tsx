@@ -7,6 +7,7 @@ interface Props {
   size?: number
   strokeWidth?: number
   trackColor?: string
+  textColor?: string
 }
 
 function getScoreColor(score: number): string {
@@ -16,7 +17,7 @@ function getScoreColor(score: number): string {
   return '#ff453a'
 }
 
-export default function HealthScoreRing({ score, size = 44, strokeWidth = 4, trackColor = '#2c2c2e' }: Props) {
+export default function HealthScoreRing({ score, size = 44, strokeWidth = 4, trackColor = '#2c2c2e', textColor }: Props) {
   const circleRef = useRef<SVGCircleElement>(null)
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
@@ -74,7 +75,7 @@ export default function HealthScoreRing({ score, size = 44, strokeWidth = 4, tra
         y={size / 2}
         textAnchor="middle"
         dominantBaseline="central"
-        fill={color}
+        fill={textColor ?? color}
         fontSize={size <= 32 ? 10 : 13}
         fontWeight="bold"
         fontFamily="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
