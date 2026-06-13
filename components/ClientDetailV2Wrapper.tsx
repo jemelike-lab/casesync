@@ -22,6 +22,7 @@
 // Documents, Reassignment the same way until ClientEditForm is empty.
 // =====================================================================
 
+import { useState, useEffect } from 'react'
 import { Box, Container, Group, Paper, Stack, Text } from '@mantine/core'
 import { ArrowLeft } from 'lucide-react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
@@ -306,6 +307,15 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
   const editing = searchParams.get('edit') === '1'
   const exitEdit = () => { router.replace(pathname); router.refresh() }
 
+  const [createdToast, setCreatedToast] = useState(false)
+  useEffect(() => {
+    if (searchParams.get('created') === '1') {
+      setCreatedToast(true)
+      const t = setTimeout(() => setCreatedToast(false), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [])
+
   if (editing) {
     return (
       <CaseSyncV2MantineProvider>
@@ -338,6 +348,9 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
         }}
       >
         <Container size={1280} px={0} pb={80}>
+          {createdToast && (
+            <div className="slide-in-up" style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, background: 'rgba(48,209,88,0.12)', border: '1px solid rgba(48,209,88,0.3)', borderRadius: 14, padding: '10px 16px', color: '#30d158', fontSize: 13, fontWeight: 600, backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>✓ Client created!</div>
+          )}
           <Breadcrumb    client={props.client} />
           <div className="cs-detail-grid">
           <div className="cs-detail-main">
@@ -370,33 +383,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             currentProfile={props.currentProfile}
           />
 
-          {/*
-            Legacy ClientEditForm preserved below with hide* props that
-            suppress every section extracted so far. As Notes, Activity,
-            Documents, Reassignment, etc. are extracted in subsequent
-            batches, additional hide* props will be added here until the
-            legacy form is empty and can be removed.
-          */}
-          <ClientEditForm
-            {...props}
-            hideDeadlines
-            hideContactDetails
-            hidePlansAssessments
-            hideCoDetails
-            hideMedTech
-            hideFormsSignatures
-            hideAuthorizations
-            hideReportingReviews
-            hideClientInfo
-            hideClientDocuments
-            hideNotes
-            hideActivity
-            hideHero
-            hideStatusActions
-            hideClientFiles
-            onExitEdit={exitEdit}
-            hideAiPanel
-          />
+          {/* Legacy ClientEditForm fully retired from view mode (Phase A R2) */}
           </div>
           <ClientAIRail clientId={props.client.id} />
           </div>
