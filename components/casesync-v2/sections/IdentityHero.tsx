@@ -70,6 +70,9 @@ export default function IdentityHero({ client }: Props) {
   const dSince = daysSinceContact(client.last_contact_date)
   const noContact = dSince === null || dSince >= 30
   const goalPct = (client as { goal_pct?: number }).goal_pct ?? 0
+  // 3-tier qualitative label matching StatusRow thresholds, not HealthScoreRing's 4-tier
+  const goalStateLabel = goalPct >= 80 ? 'on track' : goalPct >= 50 ? 'mid range' : 'needs attention'
+  const goalStateColor = goalPct >= 80 ? '#30d158' : goalPct >= 50 ? '#ff9f0a' : '#ff453a'
   const lastContactType = (client as { last_contact_type?: string | null }).last_contact_type
 
   return (
@@ -208,17 +211,40 @@ export default function IdentityHero({ client }: Props) {
           </div>
         </div>
 
-        {/* Right: health ring */}
+        {/* Right: labeled goal-progress ring */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: 10,
+            alignItems: 'center',
+            gap: 6,
             flexShrink: 0,
+            minWidth: 96,
           }}
         >
-          <HealthScoreRing score={goalPct} size={64} strokeWidth={5} />
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: 'rgba(200,210,230,0.55)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Goal progress
+          </span>
+          <HealthScoreRing score={goalPct} size={56} strokeWidth={5} />
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: goalStateColor,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {goalStateLabel}
+          </span>
         </div>
       </div>
     </Box>
