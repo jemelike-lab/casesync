@@ -17,6 +17,8 @@ const ALLOWED_MIME = new Set<string>([
 const ALLOWED_CATEGORIES = new Set<string>([
   'general', 'consent_form', 'assessment', 'letter', 'authorization',
   'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
+  // Batch 3: folder-aligned values, additive so existing bot writes keep working.
+  'co', 'forms_signatures', 'reporting_review',
 ])
 
 // ---------------------------------------------------------------------------

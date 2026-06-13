@@ -25,18 +25,36 @@ interface Props {
   currentProfile: Profile
 }
 
-const CATEGORIES = [
-  { value: 'general',        label: 'General' },
-  { value: 'intake',         label: 'Intake' },
-  { value: 'plan',           label: 'Plan' },
-  { value: 'assessment',     label: 'Assessment' },
-  { value: 'consent_form',   label: 'Consent Form' },
-  { value: 'letter',         label: 'Letter' },
-  { value: 'authorization',  label: 'Authorization' },
-  { value: 'correspondence', label: 'Correspondence' },
-  { value: 'medical',        label: 'Medical' },
-  { value: 'financial',      label: 'Financial' },
-  { value: 'other',          label: 'Other' },
+// Display labels for every category value that may appear on a row — legacy
+// human values, the bot's `ltss`, and the new folder-aligned values. Existing
+// rows keep their original granular label; only the upload picker is narrowed.
+const CATEGORY_LABELS: Record<string, string> = {
+  general: 'General',
+  intake: 'Intake',
+  plan: 'Plan',
+  assessment: 'Assessment',
+  consent_form: 'Consent Form',
+  letter: 'Letter',
+  authorization: 'Authorization',
+  correspondence: 'Correspondence',
+  medical: 'Medical',
+  financial: 'Financial',
+  other: 'Other',
+  ltss: 'LTSS',
+  co: 'CO',
+  forms_signatures: 'Forms & Signatures',
+  reporting_review: 'Reporting & Reviews',
+}
+
+// Options the upload picker offers — 1:1 with the seven file folders.
+const UPLOAD_CATEGORIES = [
+  { value: 'intake',           label: 'Intake' },
+  { value: 'co',               label: 'CO' },
+  { value: 'plan',             label: 'Plans' },
+  { value: 'forms_signatures', label: 'Forms & Signatures' },
+  { value: 'authorization',    label: 'Authorizations' },
+  { value: 'reporting_review', label: 'Reporting & Reviews' },
+  { value: 'other',            label: 'Other' },
 ]
 
 function formatFileSize(bytes: number | null): string {
@@ -347,7 +365,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
-  const [category, setCategory] = useState('general')
+  const [category, setCategory] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
   const [error, setError] = useState('')
 
@@ -385,6 +403,11 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!category) {
+      setError('Please choose a category before uploading.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
     setUploading(true)
     setError('')
     try {
@@ -402,7 +425,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
         throw new Error(j.error ?? `Upload failed (${res.status})`)
       }
       setShowUpload(false)
-      setCategory('general')
+      setCategory('')
       setExpiresAt('')
       if (fileInputRef.current) fileInputRef.current.value = ''
       await fetchFiles()
@@ -483,7 +506,8 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
               <div>
                 <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Category</label>
                 <select value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  <option value="" disabled>Select a category…</option>
+                  {UPLOAD_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </div>
               <div>
@@ -496,9 +520,14 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
               type="file"
               accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xlsx,.xls"
               onChange={handleUpload}
-              disabled={uploading}
-              style={{ ...inputStyle, cursor: 'pointer' }}
+              disabled={uploading || !category}
+              style={{ ...inputStyle, cursor: category ? 'pointer' : 'not-allowed', opacity: category ? 1 : 0.5 }}
             />
+            {!category && (
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
+                Choose a category to enable file selection.
+              </div>
+            )}
             {uploading && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Uploading…</div>}
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8, opacity: 0.7 }}>
               Max 50 MB. PDF, images, Word, Excel.
@@ -543,7 +572,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ background: 'var(--surface)', borderRadius: 4, padding: '1px 5px' }}>
-                        {CATEGORIES.find(c => c.value === f.category)?.label ?? f.category}
+                        {CATEGORY_LABELS[f.category] ?? f.category}
                       </span>
                       <span>{formatFileSize(f.file_size)}</span>
                       <span>by {f.profiles?.full_name ?? 'Unknown'}</span>
