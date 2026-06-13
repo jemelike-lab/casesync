@@ -44,6 +44,8 @@ interface ClientEditFormProps {
   hideReportingReviews?: boolean
   /** When true, suppresses the legacy Client Info + Reassign sidebar card. */
   hideClientInfo?: boolean
+  /** When true, suppresses the legacy SharePoint Documents card. */
+  hideClientDocuments?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -528,6 +530,7 @@ export default function ClientEditForm({
   hideAuthorizations = false,
   hideReportingReviews = false,
   hideClientInfo = false,
+  hideClientDocuments = false,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -914,8 +917,10 @@ export default function ClientEditForm({
           {/* Files (new, Supabase-native, in-portal viewer) */}
           <ClientFiles clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
 
-          {/* Documents (legacy — SharePoint + Supabase combined view) */}
+          {/* Documents (legacy — SharePoint) — v2 hides until SharePoint workflow returns */}
+          {!hideClientDocuments && (
           <ClientDocuments clientId={client.id} currentUserId={currentUserId} currentProfile={currentProfile} />
+          )}
         </div>
       </div>
 
