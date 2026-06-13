@@ -24,6 +24,7 @@
 
 import { Box, Container, Group, Paper, Stack, Text } from '@mantine/core'
 import { ArrowLeft } from 'lucide-react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
 import Deadlines from '@/components/casesync-v2/sections/Deadlines'
@@ -37,6 +38,7 @@ import ReportingReviews from '@/components/casesync-v2/sections/ReportingReviews
 import Notes from '@/components/casesync-v2/sections/Notes'
 import Activity from '@/components/casesync-v2/sections/Activity'
 import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
+import ClientActions from '@/components/casesync-v2/sections/ClientActions'
 import ClientEditForm from '@/components/ClientEditForm'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
@@ -296,6 +298,32 @@ function Breadcrumb({ client }: { client: Client }) {
 // Main wrapper
 // ---------------------------------------------------------------------
 export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const editing = searchParams.get('edit') === '1'
+  const exitEdit = () => { router.replace(pathname); router.refresh() }
+
+  if (editing) {
+    return (
+      <CaseSyncV2MantineProvider>
+        <Box
+          style={{
+            background: 'var(--v2-canvas)',
+            margin: '-24px',
+            padding: '24px',
+            width: 'calc(100% + 48px)',
+            minHeight: 'calc(100dvh - 100px)',
+          }}
+        >
+          <Container size={1280} px={0} pb={80}>
+            <ClientEditForm {...props} onExitEdit={exitEdit} />
+          </Container>
+        </Box>
+      </CaseSyncV2MantineProvider>
+    )
+  }
+
   return (
     <CaseSyncV2MantineProvider>
       <Box
@@ -309,7 +337,17 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
       >
         <Container size={1280} px={0} pb={80}>
           <Breadcrumb    client={props.client} />
-          <IdentityHero  client={props.client} />
+          <IdentityHero
+            client={props.client}
+            headerActions={
+              <ClientActions
+                client={props.client}
+                currentUserId={props.currentUserId}
+                currentProfile={props.currentProfile}
+                planners={props.planners ?? []}
+              />
+            }
+          />
           <StatusRow     client={props.client} />
           <Deadlines         client={props.client} />
           <ContactDetails    client={props.client} />
@@ -344,6 +382,8 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             hideNotes
             hideActivity
             hideHero
+            hideStatusActions
+            onExitEdit={exitEdit}
           />
         </Container>
       </Box>

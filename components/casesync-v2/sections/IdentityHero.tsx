@@ -10,11 +10,13 @@
 // Batch 3 "Actions" surface (alongside Reassign and Mark as Deceased).
 
 import { Box } from '@mantine/core'
+import type { ReactNode } from 'react'
 import type { Client } from '@/lib/types'
 import HealthScoreRing from '@/components/HealthScoreRing'
 
 interface Props {
   client: Client
+  headerActions?: ReactNode
 }
 
 // Deadline fields we walk to compute overdue / due-soon chip counts.
@@ -65,7 +67,7 @@ function countUrgency(client: Client): { overdue: number; dueSoon: number } {
   return { overdue, dueSoon }
 }
 
-export default function IdentityHero({ client }: Props) {
+export default function IdentityHero({ client, headerActions }: Props) {
   const { overdue, dueSoon } = countUrgency(client)
   const dSince = daysSinceContact(client.last_contact_date)
   const noContact = dSince === null || dSince >= 30
@@ -211,44 +213,30 @@ export default function IdentityHero({ client }: Props) {
           </div>
         </div>
 
-        {/* Right: labeled goal-progress ring on its own dark backdrop for legibility */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6,
-            flexShrink: 0,
-            minWidth: 104,
-            background: 'rgba(0, 0, 0, 0.22)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 14,
-            padding: '12px 16px',
-          }}
-        >
-          <span
+        {/* Right: actions cluster (Batch 3) stacked above the goal-progress ring */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+          {headerActions}
+          <div
             style={{
-              fontSize: 9,
-              fontWeight: 700,
-              color: 'rgba(200,210,230,0.55)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              whiteSpace: 'nowrap',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+              minWidth: 104,
+              background: 'rgba(0, 0, 0, 0.22)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '12px 16px',
             }}
           >
-            Goal progress
-          </span>
-          <HealthScoreRing score={goalPct} size={56} strokeWidth={5} />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: goalStateColor,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {goalStateLabel}
-          </span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(200,210,230,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+              Goal progress
+            </span>
+            <HealthScoreRing score={goalPct} size={56} strokeWidth={5} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: goalStateColor, whiteSpace: 'nowrap' }}>
+              {goalStateLabel}
+            </span>
+          </div>
         </div>
       </div>
     </Box>

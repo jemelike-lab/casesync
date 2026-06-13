@@ -52,6 +52,8 @@ interface ClientEditFormProps {
   hideActivity?: boolean
   /** When true, suppresses the legacy Back/Print row + blue-gradient hero. */
   hideHero?: boolean
+  hideStatusActions?: boolean
+  onExitEdit?: () => void
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -540,6 +542,8 @@ export default function ClientEditForm({
   hideNotes = false,
   hideActivity = false,
   hideHero = false,
+  hideStatusActions = false,
+  onExitEdit,
 }: ClientEditFormProps) {
   const searchParams = useSearchParams()
   const [editing, setEditing] = useState(false)
@@ -553,6 +557,7 @@ export default function ClientEditForm({
   const [deactivating, setDeactivating] = useState(false)
 
   useEffect(() => { if (searchParams.get('created') === '1') { setToast({ type: 'success', message: 'Client created!' }); setTimeout(() => setToast(null), 4000) } }, [])
+  useEffect(() => { if (searchParams.get('edit') === '1') setEditing(true) }, [])
 
   const [formData, setFormData] = useState<Partial<EditableClient>>({
     eligibility_code: client.eligibility_code, eligibility_end_date: client.eligibility_end_date,
@@ -596,7 +601,7 @@ export default function ClientEditForm({
       const { error } = await supabase.from('clients').update(formData).eq('id', client.id)
       if (error) throw error
       if (changes.length > 0) await supabase.from('activity_log').insert(changes.map(c => ({ client_id: client.id, user_id: currentUserId, action: `Changed ${c.field.replace(/_/g, ' ')}`, field_name: c.field, old_value: c.old, new_value: c.new })))
-      setEditing(false); setToast({ type: 'success', message: 'Saved!' }); setTimeout(() => setToast(null), 3000)
+      setEditing(false); onExitEdit?.(); setToast({ type: 'success', message: 'Saved!' }); setTimeout(() => setToast(null), 3000)
     } catch (err: any) { setToast({ type: 'error', message: err?.message || 'Failed.' }) } finally { setSaving(false) }
   }
 
@@ -618,6 +623,7 @@ export default function ClientEditForm({
       audit_review: client.audit_review, qa_review: client.qa_review, goal_pct: client.goal_pct,
     })
     setEditing(false)
+    onExitEdit?.()
   }
 
   const handleReassign = async () => {
@@ -942,7 +948,7 @@ export default function ClientEditForm({
       </div>
 
       {/* Status Actions (full width below grid) */}
-      {(isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager') && (client.is_active ?? true) && !editing && (
+      {(isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager') && !hideStatusActions && (client.is_active ?? true) && !editing && (
         <div style={{ marginTop: 14, borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(255,69,58,0.1)', background: 'rgba(255,69,58,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div>
