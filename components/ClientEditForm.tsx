@@ -234,8 +234,8 @@ function InlineField({ label, field, value, type, editing, onChange, selectOptio
   else displayValue = String(value)
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-      <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: '0 0 auto' }}>{label}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', gap: 10, borderBottom: '1px solid var(--v2-border-soft)' }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: '0 0 auto' }}>{label}</span>
       {editing ? (
         <div style={{ flex: 1, maxWidth: 200 }}>
           {type === 'text' && <input type="text" value={value != null ? String(value) : ''} onChange={e => onChange(field, e.target.value || null)} style={{ ...inputStyle, fontSize: 12 }} />}
