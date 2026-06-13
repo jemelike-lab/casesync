@@ -57,6 +57,42 @@ const UPLOAD_CATEGORIES = [
   { value: 'other',            label: 'Other' },
 ]
 
+// File folders shown in the Client Files accordion, in display order. Every
+// category value (legacy, bot-written, or folder-aligned) resolves to exactly
+// one folder via folderOf(); anything unmapped falls through to Other.
+const FILE_FOLDERS: { key: string; label: string }[] = [
+  { key: 'intake',           label: 'Intake' },
+  { key: 'co',               label: 'CO' },
+  { key: 'plan',             label: 'Plans' },
+  { key: 'forms_signatures', label: 'Forms & Signatures' },
+  { key: 'authorization',    label: 'Authorizations' },
+  { key: 'reporting_review', label: 'Reporting & Reviews' },
+  { key: 'other',            label: 'Other' },
+]
+
+// category value -> folder key (mirrors the approved Batch 3 mapping)
+const CATEGORY_TO_FOLDER: Record<string, string> = {
+  intake: 'intake',
+  co: 'co',
+  plan: 'plan',
+  assessment: 'plan',
+  forms_signatures: 'forms_signatures',
+  consent_form: 'forms_signatures',
+  authorization: 'authorization',
+  reporting_review: 'reporting_review',
+  correspondence: 'reporting_review',
+  letter: 'reporting_review',
+  other: 'other',
+  general: 'other',
+  medical: 'other',
+  financial: 'other',
+  ltss: 'other',
+}
+
+function folderOf(category: string): string {
+  return CATEGORY_TO_FOLDER[category] ?? 'other'
+}
+
 function formatFileSize(bytes: number | null): string {
   if (!bytes) return '—'
   if (bytes < 1024) return `${bytes} B`
@@ -369,6 +405,11 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   const [expiresAt, setExpiresAt] = useState('')
   const [error, setError] = useState('')
 
+  // Folder accordion + toolbar state
+  const [fileQuery, setFileQuery] = useState('')
+  const [sortMode, setSortMode] = useState<'category' | 'newest'>('category')
+  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({})
+
   // Viewer state
   const [viewing, setViewing] = useState<{ file: ClientFile; url: string } | null>(null)
   const [loadingView, setLoadingView] = useState<string | null>(null)
@@ -479,6 +520,67 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   const canDelete = (f: ClientFile) =>
     elevated || f.uploaded_by === currentUserId
 
+  const renderRow = (f: ClientFile) => {
+    const previewable = canPreviewInline(f.mime_type, f.file_name)
+    const isLoadingThis = loadingView === f.id
+    return (
+                <div key={f.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'var(--surface-2)', borderRadius: 8, padding: '10px 14px',
+                }}>
+                  <span style={{ fontSize: 20 }}>{getDocIcon(f.mime_type, f.file_name)}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13, fontWeight: 500,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        cursor: previewable ? 'pointer' : 'default',
+                      }}
+                      onClick={previewable ? () => handleView(f) : undefined}
+                      title={previewable ? 'Click to preview' : undefined}
+                    >
+                      {f.file_name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ background: 'var(--surface)', borderRadius: 4, padding: '1px 5px' }}>
+                        {CATEGORY_LABELS[f.category] ?? f.category}
+                      </span>
+                      <span>{formatFileSize(f.file_size)}</span>
+                      <span>by {f.profiles?.full_name ?? 'Unknown'}</span>
+                      <span>{formatDate(f.created_at)}</span>
+                      <ExpiryBadge expiresAt={f.expires_at} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleView(f)}
+                      disabled={isLoadingThis}
+                      style={{
+                        background: 'var(--surface)', border: '1px solid var(--border)',
+                        borderRadius: 6, padding: '5px 10px', fontSize: 12,
+                        color: 'var(--text)', cursor: 'pointer',
+                        opacity: isLoadingThis ? 0.5 : 1,
+                      }}
+                    >
+                      {isLoadingThis ? '…' : previewable ? '👁 View' : '↓ Open'}
+                    </button>
+                    {canDelete(f) && (
+                      <button
+                        onClick={() => handleDelete(f)}
+                        style={{
+                          background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)',
+                          borderRadius: 6, padding: '5px 10px', fontSize: 12,
+                          color: '#ff453a', cursor: 'pointer',
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+    )
+  }
+
   return (
     <>
       <div className="card" style={{ marginBottom: 16 }}>
@@ -548,68 +650,97 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
             No files in CaseSync yet
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {files.map(f => {
-              const previewable = canPreviewInline(f.mime_type, f.file_name)
-              const isLoadingThis = loadingView === f.id
-              return (
-                <div key={f.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  background: 'var(--surface-2)', borderRadius: 8, padding: '10px 14px',
-                }}>
-                  <span style={{ fontSize: 20 }}>{getDocIcon(f.mime_type, f.file_name)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13, fontWeight: 500,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        cursor: previewable ? 'pointer' : 'default',
-                      }}
-                      onClick={previewable ? () => handleView(f) : undefined}
-                      title={previewable ? 'Click to preview' : undefined}
-                    >
-                      {f.file_name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <span style={{ background: 'var(--surface)', borderRadius: 4, padding: '1px 5px' }}>
-                        {CATEGORY_LABELS[f.category] ?? f.category}
-                      </span>
-                      <span>{formatFileSize(f.file_size)}</span>
-                      <span>by {f.profiles?.full_name ?? 'Unknown'}</span>
-                      <span>{formatDate(f.created_at)}</span>
-                      <ExpiryBadge expiresAt={f.expires_at} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+          (() => {
+            const q = fileQuery.trim().toLowerCase()
+            const visible = q
+              ? files.filter(f => f.file_name.toLowerCase().includes(q))
+              : files
+            const toolbar = (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+                <input
+                  value={fileQuery}
+                  onChange={e => setFileQuery(e.target.value)}
+                  placeholder="Search files by name…"
+                  style={{ flex: 1, minWidth: 160, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', padding: '6px 10px', fontSize: 13 }}
+                />
+                <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                  {([['category', 'By category'], ['newest', 'Newest first']] as const).map(([mode, label]) => (
                     <button
-                      onClick={() => handleView(f)}
-                      disabled={isLoadingThis}
+                      key={mode}
+                      onClick={() => setSortMode(mode)}
                       style={{
-                        background: 'var(--surface)', border: '1px solid var(--border)',
-                        borderRadius: 6, padding: '5px 10px', fontSize: 12,
-                        color: 'var(--text)', cursor: 'pointer',
-                        opacity: isLoadingThis ? 0.5 : 1,
+                        fontSize: 12, padding: '6px 12px', border: 'none', cursor: 'pointer',
+                        background: sortMode === mode ? 'var(--accent, #2563eb)' : 'var(--surface-2)',
+                        color: sortMode === mode ? '#fff' : 'var(--text-secondary)',
                       }}
                     >
-                      {isLoadingThis ? '…' : previewable ? '👁 View' : '↓ Open'}
+                      {label}
                     </button>
-                    {canDelete(f) && (
-                      <button
-                        onClick={() => handleDelete(f)}
-                        style={{
-                          background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)',
-                          borderRadius: 6, padding: '5px 10px', fontSize: 12,
-                          color: '#ff453a', cursor: 'pointer',
-                        }}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
+                  ))}
                 </div>
+              </div>
+            )
+            if (visible.length === 0) {
+              return (
+                <>
+                  {toolbar}
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '12px 0', textAlign: 'center' }}>
+                    No files match the search.
+                  </div>
+                </>
               )
-            })}
-          </div>
+            }
+            if (sortMode === 'newest') {
+              const sorted = [...visible].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+              return (
+                <>
+                  {toolbar}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {sorted.map(renderRow)}
+                  </div>
+                </>
+              )
+            }
+            const byFolder: Record<string, ClientFile[]> = {}
+            for (const f of visible) {
+              const k = folderOf(f.category)
+              ;(byFolder[k] ??= []).push(f)
+            }
+            const folders = FILE_FOLDERS.filter(fld => (byFolder[fld.key]?.length ?? 0) > 0)
+            return (
+              <>
+                {toolbar}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {folders.map(fld => {
+                    const rows = byFolder[fld.key]
+                    const isOpen = openFolders[fld.key] ?? true
+                    return (
+                      <div key={fld.key} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                        <button
+                          onClick={() => setOpenFolders(s => ({ ...s, [fld.key]: !isOpen }))}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                            background: 'var(--surface-2)', border: 'none', cursor: 'pointer',
+                            padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text)',
+                          }}
+                        >
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>▶</span>
+                          <span style={{ fontSize: 16 }}>📁</span>
+                          <span>{fld.label}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 10, padding: '1px 8px' }}>{rows.length}</span>
+                        </button>
+                        {isOpen && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 10px', background: 'var(--surface)' }}>
+                            {rows.map(renderRow)}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )
+          })()
         )}
       </div>
 
