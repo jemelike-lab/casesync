@@ -637,9 +637,9 @@ export default function ClientEditForm({
             </div>
             {/* Status chips */}
             <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-              {totalOverdue > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', color: '#ff453a' }}>🔴 {totalOverdue} overdue</span>}
-              {urgencyCounts.dueSoon > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.25)', color: '#ff9f0a' }}>🟠 {urgencyCounts.dueSoon} due soon</span>}
-              <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: noContact ? 'rgba(255,159,10,0.1)' : 'rgba(255,255,255,0.03)', border: noContact ? '1px solid rgba(255,159,10,0.2)' : '1px solid rgba(255,255,255,0.05)', color: noContact ? '#ff9f0a' : 'rgba(200,210,230,0.5)' }}>
+              {totalOverdue > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,69,58,0.15)', border: '1px solid rgba(255,69,58,0.3)', color: '#ff9e94' }}>🔴 {totalOverdue} overdue</span>}
+              {urgencyCounts.dueSoon > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,159,10,0.12)', border: '1px solid rgba(255,159,10,0.25)', color: '#ffc46b' }}>🟠 {urgencyCounts.dueSoon} due soon</span>}
+              <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: noContact ? 'rgba(255,159,10,0.1)' : 'rgba(255,255,255,0.03)', border: noContact ? '1px solid rgba(255,159,10,0.2)' : '1px solid rgba(255,255,255,0.05)', color: noContact ? '#ffc46b' : 'rgba(200,210,230,0.5)' }}>
                 {daysSince !== null ? `📞 ${daysSince}d ago` : 'No contact'}{f.last_contact_type ? ` · ${f.last_contact_type}` : ''}
               </span>
             </div>

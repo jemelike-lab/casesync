@@ -173,7 +173,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
                   borderRadius: 20,
                   background: 'rgba(255,69,58,0.15)',
                   border: '1px solid rgba(255,69,58,0.3)',
-                  color: '#ff453a',
+                  color: '#ff9e94',
                 }}
               >
                 🔴 {overdue} overdue
@@ -188,7 +188,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
                   borderRadius: 20,
                   background: 'rgba(255,159,10,0.12)',
                   border: '1px solid rgba(255,159,10,0.25)',
-                  color: '#ff9f0a',
+                  color: '#ffc46b',
                 }}
               >
                 🟠 {dueSoon} due soon
@@ -204,7 +204,7 @@ export default function IdentityHero({ client, headerActions }: Props) {
                 border: noContact
                   ? '1px solid rgba(255,159,10,0.2)'
                   : '1px solid rgba(255,255,255,0.05)',
-                color: noContact ? '#ff9f0a' : 'rgba(200,210,230,0.5)',
+                color: noContact ? '#ffc46b' : 'rgba(200,210,230,0.5)',
               }}
             >
               {dSince !== null ? `📞 ${dSince}d ago` : 'No contact'}
