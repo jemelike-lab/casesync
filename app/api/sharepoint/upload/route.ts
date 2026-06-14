@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/audit'
 
+// Allowed categories — mirrors the bot/human upload routes (7 folders + legacy).
+const ALLOWED_CATEGORIES = new Set<string>([
+  'general', 'consent_form', 'assessment', 'letter', 'authorization',
+  'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
+  'co', 'forms_signatures', 'reporting_review',
+])
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const rl = rateLimit(`sharepoint-upload:${ip}`, { limit: 20, windowMs: 60_000 })
@@ -15,7 +22,14 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const clientId = formData.get('clientId') as string | null
-    const category = (formData.get('category') as string) || 'general'
+    const categoryRaw = String(formData.get('category') ?? '').toLowerCase()
+    if (!categoryRaw) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+    }
+    if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
+      return NextResponse.json({ error: `Unknown category: ${categoryRaw}` }, { status: 400 })
+    }
+    const category = categoryRaw
     const expiresAt = formData.get('expiresAt') as string | null
 
     if (!file || !clientId) {
@@ -80,7 +94,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: itemId, name: file.name, webUrl })
     }
 
-    return NextResponse.json({ id: data.id, name: file.name, webUrl })
+    return NextResponse.json({ id: itemId, dbId: data.id, name: file.name, webUrl })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Upload failed'
     console.error('SharePoint upload error:', err)
