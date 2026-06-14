@@ -39,20 +39,27 @@ export async function GET(
       dbMap.set(doc.file_path, doc)
     }
 
-    // Merge SharePoint file list with Supabase metadata
-    const merged = spFiles.map((f) => {
+    // Normalize to the ClientFile shape the UI renders (matches the bucket route).
+    const files = spFiles.map((f) => {
       const meta = dbMap.get(f.id)
       return {
-        ...f,
-        dbId: meta?.id ?? null,
+        id: f.id,
+        client_id: clientId,
+        uploaded_by: meta?.uploaded_by ?? '',
+        file_name: f.name,
+        file_path: f.id,
+        file_size: f.size ?? null,
+        mime_type: f.mimeType ?? null,
         category: meta?.category ?? 'general',
-        expiresAt: meta?.expires_at ?? null,
-        uploadedBy: meta?.profiles?.full_name ?? f.createdBy,
-        storageProvider: 'sharepoint',
+        expires_at: meta?.expires_at ?? null,
+        created_at: f.createdAt,
+        storage_provider: 'sharepoint',
+        profiles: meta?.profiles ?? (f.createdBy ? { full_name: f.createdBy } : null),
+        dbId: meta?.id ?? null,
       }
     })
 
-    return NextResponse.json(merged)
+    return NextResponse.json({ files })
   } catch (err: any) {
     console.error('SharePoint list error:', err)
     return NextResponse.json(
