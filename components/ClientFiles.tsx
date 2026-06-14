@@ -211,7 +211,7 @@ function FileViewer({
 
     ;(async () => {
       try {
-        const res = await fetch(url)
+        const res = await fetch(`${url}?mode=proxy`)
         if (!res.ok) throw new Error(`Could not fetch file (${res.status})`)
         const buf = await res.arrayBuffer()
         if (cancelled) return

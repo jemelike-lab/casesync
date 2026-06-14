@@ -21,6 +21,23 @@ export async function GET(
 
     // Audit: log document download
     await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, action: 'client.view', resourceType: 'sharepoint_document', resourceId: itemId }).catch(() => {})
+    const mode = req.nextUrl.searchParams.get('mode')
+    if (mode === 'proxy') {
+      // Same-origin byte proxy for in-portal Office preview (mammoth/SheetJS read the
+      // arrayBuffer, which CORS would block on the cross-origin Graph signed URL).
+      const upstream = await fetch(url)
+      if (!upstream.ok || !upstream.body) {
+        return NextResponse.json({ error: 'Failed to fetch file' }, { status: 502 })
+      }
+      const headers = new Headers()
+      const ct = upstream.headers.get('content-type')
+      if (ct) headers.set('content-type', ct)
+      const cl = upstream.headers.get('content-length')
+      if (cl) headers.set('content-length', cl)
+      headers.set('cache-control', 'private, no-store')
+      return new NextResponse(upstream.body, { status: 200, headers })
+    }
+
     return NextResponse.redirect(url)
   } catch (err: any) {
     console.error('SharePoint download error:', err)
