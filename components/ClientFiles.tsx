@@ -424,13 +424,13 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   const fetchFiles = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/clients/${clientId}/files`, { cache: 'no-store' })
+      const res = await fetch(`/api/sharepoint/files/${clientId}`, { cache: 'no-store' })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
         throw new Error(j.error ?? `Failed to load files (${res.status})`)
       }
       const data = await res.json()
-      setFiles((data.files ?? []).filter((f: ClientFile) => f.storage_provider !== 'sharepoint'))
+      setFiles(data.files ?? [])
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load files'
       setError(msg)
@@ -454,10 +454,11 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
     try {
       const form = new FormData()
       form.append('file', file)
+      form.append('clientId', clientId)
       form.append('category', category)
       if (expiresAt) form.append('expiresAt', expiresAt)
 
-      const res = await fetch(`/api/clients/${clientId}/files`, {
+      const res = await fetch('/api/sharepoint/upload', {
         method: 'POST',
         body: form,
       })
@@ -482,13 +483,9 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
     setLoadingView(file.id)
     setError('')
     try {
-      const res = await fetch(`/api/clients/${clientId}/files/${file.id}/view-url`)
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        throw new Error(j.error ?? `Could not open file (${res.status})`)
-      }
-      const { url } = await res.json()
-      setViewing({ file, url })
+      // SharePoint: stream via our download route (redirects to a signed URL).
+      // PDFs/images render inline; full Office preview gets a same-origin proxy next.
+      setViewing({ file, url: `/api/sharepoint/download/${file.id}` })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not open file'
       setError(msg)
@@ -501,7 +498,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
     if (!confirm(`Permanently delete "${file.file_name}"?`)) return
     setError('')
     try {
-      const res = await fetch(`/api/clients/${clientId}/files/${file.id}`, {
+      const res = await fetch(`/api/sharepoint/delete/${file.id}`, {
         method: 'DELETE',
       })
       if (!res.ok) {
