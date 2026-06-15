@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     let error: any = null
     if (isAzureConfigured()) {
       try {
-        const rows: any[] = await withRlsContext(userId, (sql: any) => sql`
+        const rows: any[] = await withRlsContext(authData.user.id, (sql: any) => sql`
           SELECT c.id, c.client_id, c.first_name, c.last_name, c.category, c.eligibility_end_date,
                  c.pos_deadline, c.pos_status, c.assessment_due, c.three_month_visit_due,
                  c.thirty_day_letter_date, c.co_financial_redet_date, c.spm_next_due,
