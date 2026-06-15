@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { validateUUID } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
@@ -33,11 +34,35 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data: client, error } = await supabase
-      .from('clients')
-      .select('id, client_id, first_name, last_name, category, eligibility_end_date, pos_deadline, pos_status, assessment_due, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, spm_next_due, last_contact_date, last_contact_type, goal_pct, profiles!clients_assigned_to_fkey(full_name)')
-      .eq('id', clientId)
-      .single()
+    let client: any = null
+    let error: any = null
+    if (isAzureConfigured()) {
+      try {
+        const rows: any[] = await withRlsContext(userId, (sql: any) => sql`
+          SELECT c.id, c.client_id, c.first_name, c.last_name, c.category, c.eligibility_end_date,
+                 c.pos_deadline, c.pos_status, c.assessment_due, c.three_month_visit_due,
+                 c.thirty_day_letter_date, c.co_financial_redet_date, c.spm_next_due,
+                 c.last_contact_date, c.last_contact_type, c.goal_pct,
+                 p.full_name AS planner_full_name
+          FROM clients c
+          LEFT JOIN profiles p ON p.id = c.assigned_to
+          WHERE c.id = ${clientId}
+          LIMIT 1
+        `)
+        const row: any = rows[0]
+        client = row
+          ? { ...row, profiles: row.planner_full_name ? { full_name: row.planner_full_name } : null }
+          : null
+      } catch (e) { error = e }
+    } else {
+      const res = await supabase
+        .from('clients')
+        .select('id, client_id, first_name, last_name, category, eligibility_end_date, pos_deadline, pos_status, assessment_due, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, spm_next_due, last_contact_date, last_contact_type, goal_pct, profiles!clients_assigned_to_fkey(full_name)')
+        .eq('id', clientId)
+        .single()
+      client = res.data
+      error = res.error
+    }
 
     if (error || !client) {
       console.error('client-summary lookup error:', error)
