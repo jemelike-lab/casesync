@@ -36,6 +36,19 @@ function getSql(): postgres.Sql {
       connect_timeout: 10,
       ssl: 'require',
       prepare: false,
+      // porsager returns date/timestamp columns as JS Date objects by default,
+      // whereas PostgREST (the Supabase path) returns them as strings and the
+      // helpers in @/lib/types call .split('-') on them. Parse the date/time OIDs
+      // as the raw wire string so the Azure path is drop-in compatible
+      // (a `date` column -> 'YYYY-MM-DD', exactly matching PostgREST).
+      types: {
+        date: {
+          to: 1184,
+          from: [1082, 1083, 1114, 1184],
+          serialize: (v: string) => v,
+          parse: (v: string) => v,
+        },
+      },
     })
   }
   return _sql
