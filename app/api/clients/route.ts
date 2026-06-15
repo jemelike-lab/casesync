@@ -5,6 +5,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact, Client } from '@/lib/types'
 import { auditBulkAccess } from '@/lib/audit'
 import { sanitizeSearchParam } from '@/lib/validation'
+import { isAzureConfigured } from '@/lib/db/azure'
+import { handleClientsViaAzure } from '@/lib/db/clients-azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +32,15 @@ export async function GET(req: NextRequest) {
   const sortField = SORT_FIELDS.has(_sortFieldRaw) ? _sortFieldRaw : 'name'
     const sortDir = (searchParams.get('sortDir') ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc'
     const deadlineDate = searchParams.get('deadlineDate') ?? ''
+
+    // Phase 3 (Azure slice): when CASESYNC_DATABASE_URL is set (Preview), route the
+    // common reads through the Azure data path. Only category filters with no specific
+    // deadlineDate are handled there; deadline-derived filters stay on Supabase below.
+    // Production has no such env var, so this guard is inert and Supabase is unchanged.
+    const AZURE_FILTERS = new Set(['all', 'co', 'cfc', 'cpas'])
+    if (isAzureConfigured() && !deadlineDate && AZURE_FILTERS.has(filter)) {
+      return await handleClientsViaAzure(req)
+    }
 
     const supabase = await createServerClient()
     const { data: authData, error: authErr } = await supabase.auth.getUser()
