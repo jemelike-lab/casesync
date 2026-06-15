@@ -76,7 +76,7 @@ export async function GET(req: Request) {
           scope = sql`AND c.assigned_to = ${userId}`
         } else if (role === 'team_manager') {
           const planners = await sql`SELECT id FROM profiles WHERE role = 'supports_planner' AND team_manager_id = ${userId}`
-          const plannerIds = (planners as Array<{ id: string }>).map((pl) => pl.id).filter(Boolean)
+          const plannerIds = (planners as unknown as Array<{ id: string }>).map((pl) => pl.id).filter(Boolean)
           if (assignedTo) {
             scope = sql`AND c.assigned_to = ${assignedTo}`
           } else if (plannerIds.length > 0) {
