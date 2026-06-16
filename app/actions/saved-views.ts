@@ -10,6 +10,7 @@ import {
   validateSavedViewFilterForRole,
 } from '@/lib/saved-views'
 import type { SavedViewFilter, SavedViewSortDefinition, SavedViewVisibilityType } from '@/lib/types'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 interface SavedViewActionInput {
   name: string
@@ -49,19 +50,34 @@ export async function createSavedView(input: SavedViewActionInput) {
 
   const filterDefinition = validateSavedViewFilterForRole(profile.role, normalized.filterDefinition)
 
-  const { data, error } = await supabase
-    .from('saved_views')
-    .insert({
-      name: normalized.name,
-      description: normalized.description,
-      owner_user_id: user.id,
-      visibility_type: 'personal',
-      entity_type: 'clients',
-      filter_definition: filterDefinition,
-      sort_definition: normalized.sortDefinition,
-    })
-    .select('id')
-    .single()
+  let data: { id: string } | null = null
+  let error: { code?: string | null; message?: string | null } | null = null
+  if (isAzureConfigured()) {
+    try {
+      data = await withRlsContext(user.id, async (sql) => {
+        const rows = await sql`INSERT INTO saved_views (name, description, owner_user_id, visibility_type, entity_type, filter_definition, sort_definition) VALUES (${normalized.name}, ${normalized.description}, ${user.id}, 'personal', 'clients', ${sql.json(filterDefinition as object)}, ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as object) : null}) RETURNING id`
+        return (rows[0] ?? null) as unknown as { id: string } | null
+      })
+    } catch (e) {
+      error = { code: (e as { code?: string }).code ?? null, message: (e as Error).message ?? null }
+    }
+  } else {
+    const res = await supabase
+      .from('saved_views')
+      .insert({
+        name: normalized.name,
+        description: normalized.description,
+        owner_user_id: user.id,
+        visibility_type: 'personal',
+        entity_type: 'clients',
+        filter_definition: filterDefinition,
+        sort_definition: normalized.sortDefinition,
+      })
+      .select('id')
+      .single()
+    data = res.data
+    error = res.error
+  }
 
   if (error) mapSavedViewActionError(error)
   if (!data?.id) throw new Error('Saved view creation returned no id')
@@ -77,16 +93,26 @@ export async function updateSavedView(savedViewId: string, input: SavedViewActio
   const context = await getCurrentSavedViewContext()
   const filterDefinition = validateSavedViewFilterForRole(context.profile.role, normalized.filterDefinition)
 
-  const { error } = await supabase
-    .from('saved_views')
-    .update({
-      name: normalized.name,
-      description: normalized.description,
-      filter_definition: filterDefinition,
-      sort_definition: normalized.sortDefinition,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', view.id)
+  let error: { code?: string | null; message?: string | null } | null = null
+  if (isAzureConfigured()) {
+    try {
+      await withRlsContext(context.user.id, (sql) => sql`UPDATE saved_views SET name = ${normalized.name}, description = ${normalized.description}, filter_definition = ${sql.json(filterDefinition as object)}, sort_definition = ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as object) : null}, updated_at = ${new Date().toISOString()} WHERE id = ${view.id}`)
+    } catch (e) {
+      error = { code: (e as { code?: string }).code ?? null, message: (e as Error).message ?? null }
+    }
+  } else {
+    const res = await supabase
+      .from('saved_views')
+      .update({
+        name: normalized.name,
+        description: normalized.description,
+        filter_definition: filterDefinition,
+        sort_definition: normalized.sortDefinition,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', view.id)
+    error = res.error
+  }
 
   if (error) mapSavedViewActionError(error)
 
@@ -96,12 +122,22 @@ export async function updateSavedView(savedViewId: string, input: SavedViewActio
 }
 
 export async function deleteSavedView(savedViewId: string) {
-  const { supabase, view } = await assertSavedViewEditable(savedViewId)
+  const { supabase, user, view } = await assertSavedViewEditable(savedViewId)
 
-  const { error } = await supabase
-    .from('saved_views')
-    .delete()
-    .eq('id', view.id)
+  let error: { code?: string | null; message?: string | null } | null = null
+  if (isAzureConfigured()) {
+    try {
+      await withRlsContext(user.id, (sql) => sql`DELETE FROM saved_views WHERE id = ${view.id}`)
+    } catch (e) {
+      error = { code: (e as { code?: string }).code ?? null, message: (e as Error).message ?? null }
+    }
+  } else {
+    const res = await supabase
+      .from('saved_views')
+      .delete()
+      .eq('id', view.id)
+    error = res.error
+  }
 
   if (error) mapSavedViewActionError(error)
 

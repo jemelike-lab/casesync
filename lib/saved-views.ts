@@ -7,6 +7,7 @@ import type {
   SavedViewVisibilityType,
 } from '@/lib/types'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { isSupervisorLike } from '@/lib/roles'
 
 const SAVED_VIEW_FIELDS = `
@@ -23,6 +24,8 @@ const SAVED_VIEW_FIELDS = `
   created_at,
   updated_at
 `
+
+const SAVED_VIEW_COLS = SAVED_VIEW_FIELDS.split(',').map((c) => c.trim()).filter(Boolean)
 
 const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 'visibility_type' | 'allowed_roles' | 'entity_type' | 'filter_definition' | 'sort_definition' | 'is_favorite_default'>> = [
   {
@@ -212,20 +215,44 @@ export async function listSavedViewsForCurrentUser() {
   const user = auth.user
   if (!user) return { profile: null, views: [] as SavedViewRecord[] }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, role, team_manager_id')
-    .eq('id', user.id)
-    .single()
+  let profile: { id: string; role: string | null; team_manager_id: string | null } | null = null
+  if (isAzureConfigured()) {
+    profile = await withRlsContext(user.id, async (sql) => {
+      const rows = await sql`SELECT id, role, team_manager_id FROM profiles WHERE id = ${user.id} LIMIT 1`
+      return (rows[0] ?? null) as unknown as { id: string; role: string | null; team_manager_id: string | null } | null
+    })
+  } else {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, role, team_manager_id')
+      .eq('id', user.id)
+      .single()
+    profile = data
+  }
 
   if (!profile?.role) return { profile: null, views: [] as SavedViewRecord[] }
 
-  const { data, error } = await supabase
-    .from('saved_views')
-    .select(SAVED_VIEW_FIELDS)
-    .eq('entity_type', 'clients')
-    .order('is_favorite_default', { ascending: false })
-    .order('name', { ascending: true })
+  let data: SavedViewRecord[] | null = null
+  let error: { code?: string | null; message?: string | null } | null = null
+  if (isAzureConfigured()) {
+    try {
+      data = await withRlsContext(user.id, async (sql) => {
+        const rows = await sql`SELECT ${sql(SAVED_VIEW_COLS)} FROM saved_views WHERE entity_type = 'clients' ORDER BY is_favorite_default DESC, name ASC`
+        return rows as unknown as SavedViewRecord[]
+      })
+    } catch (e) {
+      error = { code: (e as { code?: string }).code ?? null, message: (e as Error).message ?? null }
+    }
+  } else {
+    const res = await supabase
+      .from('saved_views')
+      .select(SAVED_VIEW_FIELDS)
+      .eq('entity_type', 'clients')
+      .order('is_favorite_default', { ascending: false })
+      .order('name', { ascending: true })
+    data = res.data as SavedViewRecord[] | null
+    error = res.error
+  }
 
   if (error) {
     if (isSavedViewsUnavailableError(error)) {
@@ -258,11 +285,20 @@ export async function getCurrentSavedViewContext() {
   const user = auth.user
   if (!user) throw new Error('Unauthorized')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, role, team_manager_id')
-    .eq('id', user.id)
-    .single()
+  let profile: { id: string; role: string | null; team_manager_id: string | null } | null = null
+  if (isAzureConfigured()) {
+    profile = await withRlsContext(user.id, async (sql) => {
+      const rows = await sql`SELECT id, role, team_manager_id FROM profiles WHERE id = ${user.id} LIMIT 1`
+      return (rows[0] ?? null) as unknown as { id: string; role: string | null; team_manager_id: string | null } | null
+    })
+  } else {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, role, team_manager_id')
+      .eq('id', user.id)
+      .single()
+    profile = data
+  }
 
   if (!profile?.role) throw new Error('Profile not found')
 
@@ -271,15 +307,24 @@ export async function getCurrentSavedViewContext() {
 
 export async function assertSavedViewEditable(savedViewId: string) {
   const { supabase, user } = await getCurrentSavedViewContext()
-  const { data, error } = await supabase
-    .from('saved_views')
-    .select(SAVED_VIEW_FIELDS)
-    .eq('id', savedViewId)
-    .eq('owner_user_id', user.id)
-    .eq('visibility_type', 'personal')
-    .single()
+  let data: SavedViewRecord | null = null
+  if (isAzureConfigured()) {
+    data = await withRlsContext(user.id, async (sql) => {
+      const rows = await sql`SELECT ${sql(SAVED_VIEW_COLS)} FROM saved_views WHERE id = ${savedViewId} AND owner_user_id = ${user.id} AND visibility_type = 'personal' LIMIT 1`
+      return (rows[0] ?? null) as unknown as SavedViewRecord | null
+    })
+  } else {
+    const res = await supabase
+      .from('saved_views')
+      .select(SAVED_VIEW_FIELDS)
+      .eq('id', savedViewId)
+      .eq('owner_user_id', user.id)
+      .eq('visibility_type', 'personal')
+      .single()
+    data = res.data as SavedViewRecord | null
+  }
 
-  if (error || !data) throw new Error('Saved view not found or not editable')
+  if (!data) throw new Error('Saved view not found or not editable')
 
   return { supabase, user, view: data as SavedViewRecord }
 }
