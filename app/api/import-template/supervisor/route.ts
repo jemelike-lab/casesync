@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { canManageTeam } from '@/lib/roles'
 
 const HEADER: (string | Date | number)[] = [
@@ -43,11 +44,20 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let profile: { role: string } | null = null
+  if (isAzureConfigured()) {
+    profile = await withRlsContext(user.id, async (sql) => {
+      const rows = await sql`SELECT role FROM profiles WHERE id = ${user.id} LIMIT 1`
+      return (rows[0] ?? null) as unknown as { role: string } | null
+    })
+  } else {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    profile = data
+  }
 
   if (!canManageTeam(profile?.role)) {
     redirect('/dashboard')
