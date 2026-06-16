@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateUUID } from '@/lib/validation'
 import { isSupervisorLike } from '@/lib/roles'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,11 +32,20 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('id', userId)
-      .single()
+    let profile: { id: string; role: string } | null = null
+    if (isAzureConfigured()) {
+      profile = await withRlsContext(userId, async (sql) => {
+        const rows = await sql`SELECT id, role FROM profiles WHERE id = ${userId} LIMIT 1`
+        return (rows[0] ?? null) as unknown as { id: string; role: string } | null
+      })
+    } else {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', userId)
+        .single()
+      profile = data
+    }
 
     if (!profile) {
       return Response.json({ error: 'Profile not found' }, { status: 403 })
@@ -76,28 +86,45 @@ export async function POST(req: NextRequest) {
     let scopedIds = clientIds
     if (!canSeeAll) {
       // Fetch assigned clients for this planner to verify ownership
-      const { data: owned } = await supabase
-        .from('clients')
-        .select('id')
-        .in('id', clientIds)
-        .eq('assigned_to', userId)
-        .eq('is_active', true)
-
-      scopedIds = (owned ?? []).map((c: { id: string }) => c.id)
+      if (isAzureConfigured()) {
+        const owned = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT id FROM clients WHERE id = ANY(${clientIds}::uuid[]) AND assigned_to = ${userId} AND is_active = true`
+          return rows as unknown as { id: string }[]
+        })
+        scopedIds = owned.map((c) => c.id)
+      } else {
+        const { data: owned } = await supabase
+          .from('clients')
+          .select('id')
+          .in('id', clientIds)
+          .eq('assigned_to', userId)
+          .eq('is_active', true)
+        scopedIds = (owned ?? []).map((c: { id: string }) => c.id)
+      }
       if (scopedIds.length === 0) {
         return Response.json({ error: 'No matching assigned clients found' }, { status: 403 })
       }
     }
 
     // Bulk update last_contact_date and last_contact_type
-    const { error: updateErr } = await supabase
-      .from('clients')
-      .update({
-        last_contact_date: date,
-        last_contact_type: type,
-      })
-      .in('id', scopedIds)
-      .eq('is_active', true)
+    let updateErr: unknown = null
+    if (isAzureConfigured()) {
+      try {
+        await withRlsContext(userId, (sql) => sql`UPDATE clients SET last_contact_date = ${date}, last_contact_type = ${type} WHERE id = ANY(${scopedIds}::uuid[]) AND is_active = true`)
+      } catch (e) {
+        updateErr = e
+      }
+    } else {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          last_contact_date: date,
+          last_contact_type: type,
+        })
+        .in('id', scopedIds)
+        .eq('is_active', true)
+      updateErr = error
+    }
 
     if (updateErr) {
       console.error('Bulk contact update error:', updateErr)
@@ -114,7 +141,11 @@ export async function POST(req: NextRequest) {
       new_value: date,
     }))
 
-    await supabase.from('activity_log').insert(logEntries)
+    if (isAzureConfigured()) {
+      await withRlsContext(userId, (sql) => sql`INSERT INTO activity_log ${sql(logEntries, 'client_id', 'user_id', 'action', 'field_name', 'old_value', 'new_value')}`)
+    } else {
+      await supabase.from('activity_log').insert(logEntries)
+    }
 
     return Response.json({ updated: scopedIds.length })
   } catch (err) {

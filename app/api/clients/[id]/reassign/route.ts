@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-auth'
 import { auditLog } from '@/lib/audit'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,19 +43,38 @@ export const POST = withAuth(
     }
 
     // Capture the old planner before the swap so we can audit it
-    const { data: before } = await ctx.admin
-      .from('clients')
-      .select('assigned_to, first_name, last_name')
-      .eq('id', clientId)
-      .single()
+    let before: { assigned_to?: string | null; first_name?: string | null; last_name?: string | null } | null = null
+    if (isAzureConfigured()) {
+      before = await withRlsContext(ctx.user.id, async (sql) => {
+        const rows = await sql`SELECT assigned_to, first_name, last_name FROM clients WHERE id = ${clientId} LIMIT 1`
+        return (rows[0] ?? null) as unknown as { assigned_to?: string | null; first_name?: string | null; last_name?: string | null } | null
+      })
+    } else {
+      const { data } = await ctx.admin
+        .from('clients')
+        .select('assigned_to, first_name, last_name')
+        .eq('id', clientId)
+        .single()
+      before = data
+    }
 
     // Call the RPC via the user's session so auth.uid() resolves correctly
     // and the RPC's role check fires.
-    const { error: rpcErr } = await ctx.supabase.rpc('reassign_client', {
-      _client_id: clientId,
-      _new_planner_id: newPlannerId,
-      _reason: reason,
-    })
+    let rpcErr: { message: string } | null = null
+    if (isAzureConfigured()) {
+      try {
+        await withRlsContext(ctx.user.id, (sql) => sql`SELECT reassign_client(${clientId}, ${newPlannerId}, ${reason})`)
+      } catch (e) {
+        rpcErr = { message: (e as Error).message }
+      }
+    } else {
+      const { error } = await ctx.supabase.rpc('reassign_client', {
+        _client_id: clientId,
+        _new_planner_id: newPlannerId,
+        _reason: reason,
+      })
+      rpcErr = error
+    }
 
     if (rpcErr) {
       await auditLog(req, {
