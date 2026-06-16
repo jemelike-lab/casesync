@@ -3,6 +3,7 @@ import { deleteSharePointFile } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
 import { auditLog } from '@/lib/audit'
 import { isSupervisorLike } from '@/lib/roles'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 /**
  * DELETE /api/sharepoint/delete/[itemId]
@@ -31,11 +32,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('id', user.id)
-      .single()
+    let profile: { id: string; role: string } | null = null
+    if (isAzureConfigured()) {
+      profile = await withRlsContext(user.id, async (sql) => {
+        const rows = await sql`SELECT id, role FROM profiles WHERE id = ${user.id} LIMIT 1`
+        return (rows[0] ?? null) as unknown as { id: string; role: string } | null
+      })
+    } else {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', user.id)
+        .single()
+      profile = data
+    }
 
     if (!profile || !isSupervisorLike(profile.role)) {
       // Audit attempted privilege escalation
@@ -55,11 +65,15 @@ export async function DELETE(
     await deleteSharePointFile(itemId)
 
     // Remove from Supabase (file_path stores the SharePoint item ID)
-    await supabase
-      .from('client_documents')
-      .delete()
-      .eq('file_path', itemId)
-      .eq('storage_provider', 'sharepoint')
+    if (isAzureConfigured()) {
+      await withRlsContext(user.id, (sql) => sql`DELETE FROM client_documents WHERE file_path = ${itemId} AND storage_provider = 'sharepoint'`)
+    } else {
+      await supabase
+        .from('client_documents')
+        .delete()
+        .eq('file_path', itemId)
+        .eq('storage_provider', 'sharepoint')
+    }
 
     // Audit: log document deletion
     await auditLog(req, {

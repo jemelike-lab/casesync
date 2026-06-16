@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { listClientFiles } from '@/lib/sharepoint'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export async function GET(
   req: NextRequest,
@@ -16,22 +17,43 @@ export async function GET(
     }
 
     // Resolve the human client_id text for SharePoint folder naming (must match upload route)
-    const { data: clientRow } = await supabase
-      .from('clients')
-      .select('client_id')
-      .eq('id', clientId)
-      .single()
+    let clientRow: { client_id: string } | null = null
+    if (isAzureConfigured()) {
+      clientRow = await withRlsContext(user.id, async (sql) => {
+        const rows = await sql`SELECT client_id FROM clients WHERE id = ${clientId} LIMIT 1`
+        return (rows[0] ?? null) as unknown as { client_id: string } | null
+      })
+    } else {
+      const { data } = await supabase
+        .from('clients')
+        .select('client_id')
+        .eq('id', clientId)
+        .single()
+      clientRow = data
+    }
 
     const clientFolder = clientRow?.client_id || clientId
 
     const spFiles = await listClientFiles(clientFolder)
 
     // Get metadata from Supabase for SharePoint files
-    const { data: dbDocs } = await supabase
-      .from('client_documents')
-      .select('*, profiles!client_documents_uploaded_by_fkey(full_name)')
-      .eq('client_id', clientId)
-      .eq('storage_provider', 'sharepoint')
+    let dbDocs: any[] | null = null
+    if (isAzureConfigured()) {
+      dbDocs = await withRlsContext(user.id, async (sql) => {
+        const rows = await sql`SELECT cd.*, p.full_name AS p_full_name FROM client_documents cd LEFT JOIN profiles p ON p.id = cd.uploaded_by WHERE cd.client_id = ${clientId} AND cd.storage_provider = 'sharepoint'`
+        return (rows as unknown as any[]).map((r) => {
+          const { p_full_name, ...rest } = r
+          return { ...rest, profiles: p_full_name != null ? { full_name: p_full_name } : null }
+        })
+      })
+    } else {
+      const { data } = await supabase
+        .from('client_documents')
+        .select('*, profiles!client_documents_uploaded_by_fkey(full_name)')
+        .eq('client_id', clientId)
+        .eq('storage_provider', 'sharepoint')
+      dbDocs = data
+    }
 
     // Build a map: itemId → db record
     const dbMap = new Map<string, any>()
