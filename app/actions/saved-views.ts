@@ -55,7 +55,7 @@ export async function createSavedView(input: SavedViewActionInput) {
   if (isAzureConfigured()) {
     try {
       data = await withRlsContext(user.id, async (sql) => {
-        const rows = await sql`INSERT INTO saved_views (name, description, owner_user_id, visibility_type, entity_type, filter_definition, sort_definition) VALUES (${normalized.name}, ${normalized.description}, ${user.id}, 'personal', 'clients', ${sql.json(filterDefinition as object)}, ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as object) : null}) RETURNING id`
+        const rows = await sql`INSERT INTO saved_views (name, description, owner_user_id, visibility_type, entity_type, filter_definition, sort_definition) VALUES (${normalized.name}, ${normalized.description}, ${user.id}, 'personal', 'clients', ${sql.json(filterDefinition as unknown as Parameters<typeof sql.json>[0])}, ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as unknown as Parameters<typeof sql.json>[0]) : null}) RETURNING id`
         return (rows[0] ?? null) as unknown as { id: string } | null
       })
     } catch (e) {
@@ -96,7 +96,7 @@ export async function updateSavedView(savedViewId: string, input: SavedViewActio
   let error: { code?: string | null; message?: string | null } | null = null
   if (isAzureConfigured()) {
     try {
-      await withRlsContext(context.user.id, (sql) => sql`UPDATE saved_views SET name = ${normalized.name}, description = ${normalized.description}, filter_definition = ${sql.json(filterDefinition as object)}, sort_definition = ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as object) : null}, updated_at = ${new Date().toISOString()} WHERE id = ${view.id}`)
+      await withRlsContext(context.user.id, (sql) => sql`UPDATE saved_views SET name = ${normalized.name}, description = ${normalized.description}, filter_definition = ${sql.json(filterDefinition as unknown as Parameters<typeof sql.json>[0])}, sort_definition = ${normalized.sortDefinition ? sql.json(normalized.sortDefinition as unknown as Parameters<typeof sql.json>[0]) : null}, updated_at = ${new Date().toISOString()} WHERE id = ${view.id}`)
     } catch (e) {
       error = { code: (e as { code?: string }).code ?? null, message: (e as Error).message ?? null }
     }

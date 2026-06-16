@@ -25,8 +25,6 @@ const SAVED_VIEW_FIELDS = `
   updated_at
 `
 
-const SAVED_VIEW_COLS = SAVED_VIEW_FIELDS.split(',').map((c) => c.trim()).filter(Boolean)
-
 const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 'visibility_type' | 'allowed_roles' | 'entity_type' | 'filter_definition' | 'sort_definition' | 'is_favorite_default'>> = [
   {
     name: 'My Clients',
@@ -237,7 +235,7 @@ export async function listSavedViewsForCurrentUser() {
   if (isAzureConfigured()) {
     try {
       data = await withRlsContext(user.id, async (sql) => {
-        const rows = await sql`SELECT ${sql(SAVED_VIEW_COLS)} FROM saved_views WHERE entity_type = 'clients' ORDER BY is_favorite_default DESC, name ASC`
+        const rows = await sql`SELECT id, name, description, owner_user_id, visibility_type, allowed_roles, entity_type, filter_definition, sort_definition, is_favorite_default, created_at, updated_at FROM saved_views WHERE entity_type = 'clients' ORDER BY is_favorite_default DESC, name ASC`
         return rows as unknown as SavedViewRecord[]
       })
     } catch (e) {
@@ -310,7 +308,7 @@ export async function assertSavedViewEditable(savedViewId: string) {
   let data: SavedViewRecord | null = null
   if (isAzureConfigured()) {
     data = await withRlsContext(user.id, async (sql) => {
-      const rows = await sql`SELECT ${sql(SAVED_VIEW_COLS)} FROM saved_views WHERE id = ${savedViewId} AND owner_user_id = ${user.id} AND visibility_type = 'personal' LIMIT 1`
+      const rows = await sql`SELECT id, name, description, owner_user_id, visibility_type, allowed_roles, entity_type, filter_definition, sort_definition, is_favorite_default, created_at, updated_at FROM saved_views WHERE id = ${savedViewId} AND owner_user_id = ${user.id} AND visibility_type = 'personal' LIMIT 1`
       return (rows[0] ?? null) as unknown as SavedViewRecord | null
     })
   } else {
