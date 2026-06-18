@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { Brain, X, Calendar, User } from 'lucide-react'
-import AIIntelligencePanel from '@/components/AIIntelligencePanel'
+import { AIAskClient, AISummary } from '@/components/AIIntelligencePanel'
 import type { Client, Profile } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ function RailBody({ client, planners }: { client: Client; planners: Profile[] })
             {active ? 'Active' : 'Inactive'}
           </span>
         </SnapRow>
-        <SnapRow label="Program">{String(client.category)}</SnapRow>
+        <SnapRow label="Program">{String(client.category).toUpperCase()}</SnapRow>
         <SnapRow label="Assigned to">{assignedTo}</SnapRow>
         <SnapRow label="Eligibility">{client.eligibility_code ?? '\u2014'}</SnapRow>
         {goal !== null && (
@@ -139,7 +139,8 @@ function RailBody({ client, planners }: { client: Client; planners: Profile[] })
       </Card>
 
       <Card accent={PURPLE} label="AI Intelligence" icon={<Brain size={14} />}>
-        <AIIntelligencePanel clientId={client.id} />
+        <AIAskClient clientId={client.id} />
+        <AISummary clientId={client.id} />
       </Card>
     </>
   )
@@ -161,7 +162,8 @@ export default function ClientAIRail({ client, planners = [] }: { client: Client
               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--v2-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Client AI</span>
               <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--v2-text-muted)', cursor: 'pointer', display: 'flex' }}><X size={16} /></button>
             </div>
-            <AIIntelligencePanel clientId={client.id} />
+            <AIAskClient clientId={client.id} />
+        <AISummary clientId={client.id} />
           </div>
         )}
         <button aria-label="AI intelligence for this client" onClick={() => setOpen(o => !o)} className="cs-ai-fab">
