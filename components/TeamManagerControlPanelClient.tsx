@@ -182,7 +182,7 @@ function SectionPaper({
       p="lg"
       style={{
         background: 'var(--v2-surface)',
-        border: '1px solid #E5E7EB',
+        border: '1px solid var(--v2-border-soft)',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
         position: 'relative',
         overflow: 'hidden',
@@ -255,7 +255,7 @@ function MyTeamCard({
       p="lg"
       style={{
         background: 'var(--v2-surface)',
-        border: '1px solid #E5E7EB',
+        border: '1px solid var(--v2-border-soft)',
         borderLeft: `4px solid ${accent}`,
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
       }}
@@ -413,7 +413,7 @@ function TeamHealthSection({
                 <Group key={row.name} gap={8} wrap="nowrap" justify="space-between">
                   <Group gap={8} wrap="nowrap">
                     <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
-                    <Text fz={12} c="#475569" fw={500}>{row.name}</Text>
+                    <Text fz={12} c="var(--v2-text-muted)" fw={500}>{row.name}</Text>
                   </Group>
                   <Text fz={12} fw={700} c="var(--v2-text)">{row.value.toLocaleString()}</Text>
                 </Group>
@@ -555,9 +555,9 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
           py="xl"
           style={{
             textAlign: 'center',
-            background: '#F8FAFC',
+            background: 'var(--v2-surface-tint)',
             borderRadius: 12,
-            border: '1px dashed #E5E7EB',
+            border: '1px dashed var(--v2-border-soft)',
           }}
         >
           <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
@@ -675,7 +675,7 @@ function PlannerWorkloadSection({
       }
     >
       {rows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
+        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
           <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
             <Image
               src="/heroes/empty-tasks.svg"
@@ -704,7 +704,7 @@ function PlannerWorkloadSection({
                     padding: 14,
                     borderRadius: 12,
                     background: 'var(--v2-surface)',
-                    border: '1px solid #E5E7EB',
+                    border: '1px solid var(--v2-border-soft)',
                     borderLeft: `4px solid ${pressureColor}`,
                   }}
                 >
@@ -805,7 +805,7 @@ function TeamRosterSection({
         color="cobalt"
       />
       {rows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
+        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
           <Filter size={32} color="var(--v2-border-rail)" style={{ margin: '0 auto 8px' }} />
           <Text fz={14} fw={600} c="var(--v2-text)">No one in this slice</Text>
           <Text fz={12} c="var(--v2-text-muted)" mt={4}>Try a different filter.</Text>
@@ -826,7 +826,7 @@ function TeamRosterSection({
                     padding: '10px 12px',
                     borderRadius: 10,
                     background: 'var(--v2-surface)',
-                    border: '1px solid #E5E7EB',
+                    border: '1px solid var(--v2-border-soft)',
                     borderLeft: `3px solid ${accent}`,
                   }}
                 >
@@ -912,8 +912,8 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           p="xl"
           mb="lg"
           style={{
-            background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 60%)',
-            border: '1px solid #E5E7EB',
+            background: 'linear-gradient(135deg, rgba(30,124,255,0.06) 0%, var(--v2-surface) 60%)',
+            border: '1px solid var(--v2-border-soft)',
             boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
             position: 'relative',
             overflow: 'hidden',

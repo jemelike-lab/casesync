@@ -148,7 +148,7 @@ function SectionPaper({
       p="lg"
       style={{
         background: 'var(--v2-surface)',
-        border: '1px solid #E5E7EB',
+        border: '1px solid var(--v2-border-soft)',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
         position: 'relative',
         overflow: 'hidden',
@@ -207,8 +207,8 @@ function MyTeamManagerCard({ tm }: { tm: Profile | null }) {
         p="lg"
         style={{
           background: 'var(--v2-surface)',
-          border: '1px solid #E5E7EB',
-          borderLeft: '4px solid #94A3B8',
+          border: '1px solid var(--v2-border-soft)',
+          borderLeft: '4px solid var(--v2-text-muted)',
           boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
         }}
       >
@@ -255,7 +255,7 @@ function MyTeamManagerCard({ tm }: { tm: Profile | null }) {
       p="lg"
       style={{
         background: 'var(--v2-surface)',
-        border: '1px solid #E5E7EB',
+        border: '1px solid var(--v2-border-soft)',
         borderLeft: '4px solid #1E7CFF',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
       }}
@@ -501,9 +501,9 @@ function ClientDrillDownSection() {
           py="xl"
           style={{
             textAlign: 'center',
-            background: '#F8FAFC',
+            background: 'var(--v2-surface-tint)',
             borderRadius: 12,
-            border: '1px dashed #E5E7EB',
+            border: '1px dashed var(--v2-border-soft)',
           }}
         >
           <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
@@ -633,8 +633,8 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
           p="xl"
           mb="lg"
           style={{
-            background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 60%)',
-            border: '1px solid #E5E7EB',
+            background: 'linear-gradient(135deg, rgba(30,124,255,0.06) 0%, var(--v2-surface) 60%)',
+            border: '1px solid var(--v2-border-soft)',
             boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
             position: 'relative',
             overflow: 'hidden',
