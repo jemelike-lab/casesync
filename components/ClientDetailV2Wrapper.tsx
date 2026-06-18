@@ -385,7 +385,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
 
           {/* Legacy ClientEditForm fully retired from view mode (Phase A R2) */}
           </div>
-          <ClientAIRail clientId={props.client.id} />
+          <ClientAIRail client={props.client} planners={props.planners ?? []} />
           </div>
         </Container>
       </Box>
