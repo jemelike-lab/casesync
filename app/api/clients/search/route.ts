@@ -2,6 +2,7 @@ import { isSupervisorLike } from '@/lib/roles'
 import { getStarterViewNamesForRole, listSavedViewsForCurrentUser } from '@/lib/saved-views'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { sanitizeSearchParam } from '@/lib/validation'
 
 const QUEUE_RESULTS = [
@@ -61,47 +62,100 @@ export async function GET(req: Request) {
     const qSafe = sanitizeSearchParam(q)
     const qLower = q.toLowerCase()
 
-    const admin = createSupabaseJsClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    let clients: any[] = []
+    let rawStaff: Array<{ id: string; full_name: string; role: string; team_manager_id: string | null }> = []
+    let savedViewsResult: Awaited<ReturnType<typeof listSavedViewsForCurrentUser>>
 
-    let clientQuery = admin
-      .from('clients')
-      .select('id, client_id, last_name, first_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role, team_manager_id)')
-      .eq('is_active', true)
-      .or(`last_name.ilike.%${qSafe}%,first_name.ilike.%${qSafe}%,client_id.ilike.%${qSafe}%`)
-      .order('last_name')
-      .limit(limit)
+    if (isAzureConfigured()) {
+      const pat = `%${qSafe}%`
+      const staffRoles = role === 'supports_planner'
+        ? ['team_manager', 'supervisor', 'it']
+        : ['supports_planner', 'team_manager', 'supervisor', 'it']
+      const [azure, saved] = await Promise.all([
+        withRlsContext(userId, async (sql) => {
+          let scope = sql``
+          if (role === 'supports_planner') {
+            scope = sql`AND c.assigned_to = ${userId}`
+          } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
+            scope = sql`AND c.assigned_to = ${assignedTo}`
+          }
+          const clientRows = await sql`
+            SELECT c.id, c.client_id, c.last_name, c.first_name, c.assigned_to,
+                   p.id AS p_id, p.full_name AS p_full_name, p.role AS p_role, p.team_manager_id AS p_team_manager_id
+            FROM clients c
+            LEFT JOIN profiles p ON p.id = c.assigned_to
+            WHERE c.is_active = true
+              AND (c.last_name ILIKE ${pat} OR c.first_name ILIKE ${pat} OR c.client_id ILIKE ${pat})
+              ${scope}
+            ORDER BY c.last_name
+            LIMIT ${limit}`
+          const staffRows = await sql`
+            SELECT id, full_name, role, team_manager_id
+            FROM profiles
+            WHERE full_name ILIKE ${pat} AND role = ANY(${staffRoles}::text[])
+            ORDER BY full_name
+            LIMIT ${limit}`
+          return { clientRows, staffRows }
+        }),
+        listSavedViewsForCurrentUser(),
+      ])
+      clients = azure.clientRows.map((r: any) => ({
+        id: r.id,
+        client_id: r.client_id,
+        last_name: r.last_name,
+        first_name: r.first_name,
+        assigned_to: r.assigned_to,
+        profiles: r.p_id
+          ? { id: r.p_id, full_name: r.p_full_name, role: r.p_role, team_manager_id: r.p_team_manager_id }
+          : null,
+      }))
+      rawStaff = azure.staffRows as unknown as typeof rawStaff
+      savedViewsResult = saved
+    } else {
+      const admin = createSupabaseJsClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
 
-    if (role === 'supports_planner') {
-      clientQuery = clientQuery.eq('assigned_to', userId)
-    } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
-      clientQuery = clientQuery.eq('assigned_to', assignedTo)
-    }
+      let clientQuery = admin
+        .from('clients')
+        .select('id, client_id, last_name, first_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role, team_manager_id)')
+        .eq('is_active', true)
+        .or(`last_name.ilike.%${qSafe}%,first_name.ilike.%${qSafe}%,client_id.ilike.%${qSafe}%`)
+        .order('last_name')
+        .limit(limit)
 
-    const [
-      { data: clients, error: clientError },
-      { data: rawStaff, error: staffError },
-      savedViewsResult,
-    ] = await Promise.all([
-      clientQuery,
-      admin
-        .from('profiles')
-        .select('id, full_name, role, team_manager_id')
-        .or(`full_name.ilike.%${qSafe}%`)
-        .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it'] : ['supports_planner', 'team_manager', 'supervisor', 'it'])
-        .order('full_name')
-        .limit(limit),
-      listSavedViewsForCurrentUser(),
-    ])
+      if (role === 'supports_planner') {
+        clientQuery = clientQuery.eq('assigned_to', userId)
+      } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
+        clientQuery = clientQuery.eq('assigned_to', assignedTo)
+      }
 
-    if (clientError) {
-      return new Response(JSON.stringify({ error: clientError.message }), { status: 500 })
-    }
+      const [
+        { data: clientsData, error: clientError },
+        { data: rawStaffData, error: staffError },
+        saved,
+      ] = await Promise.all([
+        clientQuery,
+        admin
+          .from('profiles')
+          .select('id, full_name, role, team_manager_id')
+          .or(`full_name.ilike.%${qSafe}%`)
+          .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it'] : ['supports_planner', 'team_manager', 'supervisor', 'it'])
+          .order('full_name')
+          .limit(limit),
+        listSavedViewsForCurrentUser(),
+      ])
 
-    if (staffError) {
-      return new Response(JSON.stringify({ error: staffError.message }), { status: 500 })
+      if (clientError) {
+        return new Response(JSON.stringify({ error: clientError.message }), { status: 500 })
+      }
+      if (staffError) {
+        return new Response(JSON.stringify({ error: staffError.message }), { status: 500 })
+      }
+      clients = (clientsData ?? []) as any[]
+      rawStaff = (rawStaffData ?? []) as unknown as typeof rawStaff
+      savedViewsResult = saved
     }
 
     const staff = (rawStaff ?? []).filter((person) => {

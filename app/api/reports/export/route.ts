@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { auditLog } from '@/lib/audit'
 import { sanitizeSearchParam } from '@/lib/validation'
 import {
@@ -67,73 +68,131 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const { createClient: createServiceClient } = await import('@supabase/supabase-js')
-  const serviceSupabase = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  let clients: any[] = []
+  if (isAzureConfigured()) {
+    const today = new Date().toISOString().split('T')[0]
+    const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    try {
+      clients = await withRlsContext(user.id, async (sql) => {
+        const cols = canSeePhi
+          ? sql`c.id, c.client_id, c.first_name, c.last_name, c.category, c.eligibility_code, c.eligibility_end_date, c.assigned_to, c.last_contact_date, c.last_contact_type, c.goal_pct, c.pos_status, c.assessment_due, c.spm_next_due, c.three_month_visit_due, c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline, c.thirty_day_letter_date, c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date, c.loc_date, c.drop_in_visit_date, c.is_active, c.client_classification`
+          : sql`c.id, c.category, c.eligibility_end_date, c.assigned_to, c.last_contact_date, c.last_contact_type, c.goal_pct, c.pos_status, c.assessment_due, c.spm_next_due, c.three_month_visit_due, c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline, c.thirty_day_letter_date, c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date, c.loc_date, c.drop_in_visit_date, c.is_active, c.client_classification`
+        let scope = sql``
+        if (profile.role === 'supports_planner') {
+          scope = sql`AND c.assigned_to = ${user.id}`
+        } else if (profile.role === 'team_manager') {
+          scope = sql`AND (c.assigned_to = ${user.id} OR c.assigned_to IN (SELECT id FROM profiles WHERE team_manager_id = ${user.id}))`
+        }
+        let assignedFrag = sql``
+        if (assignedTo) {
+          assignedFrag = sql`AND c.assigned_to = ${assignedTo}`
+        }
+        let searchFrag = sql``
+        if (search && canSeePhi) {
+          const ss = sanitizeSearchParam(search)
+          if (ss) {
+            const pat = `%${ss}%`
+            searchFrag = sql`AND (c.last_name ILIKE ${pat} OR c.first_name ILIKE ${pat} OR c.client_id ILIKE ${pat})`
+          }
+        } else if (search) {
+          const ss = sanitizeSearchParam(search)
+          if (ss) {
+            const pat = `%${ss}%`
+            searchFrag = sql`AND c.category ILIKE ${pat}`
+          }
+        }
+        let filt = sql``
+        if (filter === 'overdue') {
+          filt = sql`AND (c.eligibility_end_date < ${today} OR c.three_month_visit_due < ${today} OR c.quarterly_waiver_date < ${today} OR c.med_tech_redet_date < ${today} OR c.pos_deadline < ${today} OR c.assessment_due < ${today} OR c.thirty_day_letter_date < ${today} OR c.co_financial_redet_date < ${today} OR c.co_app_date < ${today} OR c.mfp_consent_date < ${today} OR c.two57_date < ${today} OR c.doc_mdh_date < ${today} OR c.spm_next_due < ${today})`
+        } else if (filter === 'due_this_week') {
+          filt = sql`AND ((c.eligibility_end_date >= ${today} AND c.eligibility_end_date <= ${weekFromNow}) OR (c.three_month_visit_due >= ${today} AND c.three_month_visit_due <= ${weekFromNow}) OR (c.quarterly_waiver_date >= ${today} AND c.quarterly_waiver_date <= ${weekFromNow}) OR (c.med_tech_redet_date >= ${today} AND c.med_tech_redet_date <= ${weekFromNow}) OR (c.pos_deadline >= ${today} AND c.pos_deadline <= ${weekFromNow}) OR (c.assessment_due >= ${today} AND c.assessment_due <= ${weekFromNow}) OR (c.thirty_day_letter_date >= ${today} AND c.thirty_day_letter_date <= ${weekFromNow}) OR (c.co_financial_redet_date >= ${today} AND c.co_financial_redet_date <= ${weekFromNow}) OR (c.co_app_date >= ${today} AND c.co_app_date <= ${weekFromNow}) OR (c.mfp_consent_date >= ${today} AND c.mfp_consent_date <= ${weekFromNow}) OR (c.two57_date >= ${today} AND c.two57_date <= ${weekFromNow}) OR (c.doc_mdh_date >= ${today} AND c.doc_mdh_date <= ${weekFromNow}) OR (c.spm_next_due >= ${today} AND c.spm_next_due <= ${weekFromNow}))`
+        } else if (filter === 'no_contact_7') {
+          filt = sql`AND (c.last_contact_date IS NULL OR c.last_contact_date < ${sevenDaysAgo})`
+        }
+        const rows = await sql`
+          SELECT ${cols}, p.full_name AS p_full_name
+          FROM clients c
+          LEFT JOIN profiles p ON p.id = c.assigned_to
+          WHERE c.is_active = true AND c.client_classification = 'real' ${scope} ${assignedFrag} ${searchFrag} ${filt}
+          ORDER BY c.category ASC
+        `
+        return (rows as unknown as Array<Record<string, any>>).map((r) => ({ ...r, profiles: { full_name: r.p_full_name } }))
+      })
+    } catch (e: any) {
+      console.error('[reports/export] DB error:', e?.message)
+      return NextResponse.json({ error: 'Export failed' }, { status: 500 })
+    }
+  } else {
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-  const selectString = canSeePhi ? PHI_EXPORT_SELECT : SAFE_EXPORT_SELECT
+    const selectString = canSeePhi ? PHI_EXPORT_SELECT : SAFE_EXPORT_SELECT
 
-  let query = serviceSupabase
-    .from('clients')
-    .select(selectString)
-    .eq('is_active', true)
-    .eq('client_classification', 'real')
-    .order('category', { ascending: true })
+    let query = serviceSupabase
+      .from('clients')
+      .select(selectString)
+      .eq('is_active', true)
+      .eq('client_classification', 'real')
+      .order('category', { ascending: true })
 
-  // Role-based scoping
-  if (profile.role === 'supports_planner') {
-    query = query.eq('assigned_to', user.id)
-  } else if (profile.role === 'team_manager') {
-    const { data: planners } = await serviceSupabase
-      .from('profiles')
-      .select('id')
-      .eq('team_manager_id', user.id)
-    const plannerIds = planners?.map(p => p.id) ?? []
-    plannerIds.push(user.id)
-    query = query.in('assigned_to', plannerIds)
-  }
+    // Role-based scoping
+    if (profile.role === 'supports_planner') {
+      query = query.eq('assigned_to', user.id)
+    } else if (profile.role === 'team_manager') {
+      const { data: planners } = await serviceSupabase
+        .from('profiles')
+        .select('id')
+        .eq('team_manager_id', user.id)
+      const plannerIds = planners?.map(p => p.id) ?? []
+      plannerIds.push(user.id)
+      query = query.in('assigned_to', plannerIds)
+    }
 
-  if (assignedTo) {
-    query = query.eq('assigned_to', assignedTo)
-  }
+    if (assignedTo) {
+      query = query.eq('assigned_to', assignedTo)
+    }
 
-  if (search && canSeePhi) {
-    const s = sanitizeSearchParam(search)
-    if (s) query = query.or(`last_name.ilike.%${s}%,first_name.ilike.%${s}%,client_id.ilike.%${s}%`)
-  } else if (search) {
-    const s = sanitizeSearchParam(search)
-    if (s) query = query.ilike('category', `%${s}%`)
-  }
+    if (search && canSeePhi) {
+      const s = sanitizeSearchParam(search)
+      if (s) query = query.or(`last_name.ilike.%${s}%,first_name.ilike.%${s}%,client_id.ilike.%${s}%`)
+    } else if (search) {
+      const s = sanitizeSearchParam(search)
+      if (s) query = query.ilike('category', `%${s}%`)
+    }
 
-  const today = new Date().toISOString().split('T')[0]
-  const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
-  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
+    const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
 
-  // Must match the 13 deadline fields in lib/types.ts isOverdue/isDueThisWeek.
-  // Fix 2026-05-22: spm_next_due was missing — caused export filter counts
-  // to disagree with dashboard counts. See AUDIT_2026-05-22.md §5A.
-  const deadlineFields = [
-    'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
-    'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
-    'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
-    'doc_mdh_date', 'spm_next_due',
-  ]
+    // Must match the 13 deadline fields in lib/types.ts isOverdue/isDueThisWeek.
+    // Fix 2026-05-22: spm_next_due was missing — caused export filter counts
+    // to disagree with dashboard counts. See AUDIT_2026-05-22.md §5A.
+    const deadlineFields = [
+      'eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date',
+      'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date',
+      'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date',
+      'doc_mdh_date', 'spm_next_due',
+    ]
 
-  if (filter === 'overdue') {
-    query = query.or(deadlineFields.map(f => `${f}.lt.${today}`).join(','))
-  } else if (filter === 'due_this_week') {
-    query = query.or(deadlineFields.map(f => `and(${f}.gte.${today},${f}.lte.${weekFromNow})`).join(','))
-  } else if (filter === 'no_contact_7') {
-    query = query.or(`last_contact_date.is.null,last_contact_date.lt.${sevenDaysAgo}`)
-  }
+    if (filter === 'overdue') {
+      query = query.or(deadlineFields.map(f => `${f}.lt.${today}`).join(','))
+    } else if (filter === 'due_this_week') {
+      query = query.or(deadlineFields.map(f => `and(${f}.gte.${today},${f}.lte.${weekFromNow})`).join(','))
+    } else if (filter === 'no_contact_7') {
+      query = query.or(`last_contact_date.is.null,last_contact_date.lt.${sevenDaysAgo}`)
+    }
 
-  const { data: clients, error } = await query
+    const { data: clientsData, error } = await query
 
-  if (error) {
-    console.error('[reports/export] DB error:', error.message)
-    return NextResponse.json({ error: 'Export failed' }, { status: 500 })
+    if (error) {
+      console.error('[reports/export] DB error:', error.message)
+      return NextResponse.json({ error: 'Export failed' }, { status: 500 })
+    }
+    clients = clientsData ?? []
   }
 
   const rows = clients ?? []
@@ -169,12 +228,23 @@ export async function GET(req: NextRequest) {
   const csv = csvRows.join('\n')
 
   // Audit trail
-  await serviceSupabase.from('audit_exports').insert({
-    user_id: user.id,
-    export_type: canSeePhi ? 'clients_csv_phi' : 'clients_csv',
-    filter_params: { filter, assignedTo, search, includePhi: canSeePhi },
-    row_count: rows.length,
-  })
+  const auditType = canSeePhi ? 'clients_csv_phi' : 'clients_csv'
+  const auditParams = { filter, assignedTo, search, includePhi: canSeePhi }
+  if (isAzureConfigured()) {
+    await withRlsContext(user.id, (sql) => sql`INSERT INTO audit_exports (user_id, export_type, filter_params, row_count) VALUES (${user.id}, ${auditType}, ${sql.json(auditParams)}, ${rows.length})`).catch(() => {})
+  } else {
+    const { createClient: createAuditClient } = await import('@supabase/supabase-js')
+    const auditClient = createAuditClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    await auditClient.from('audit_exports').insert({
+      user_id: user.id,
+      export_type: auditType,
+      filter_params: auditParams,
+      row_count: rows.length,
+    })
+  }
 
   // Audit: log CSV export
   await auditLog(req, { userId: user.id, userEmail: user.email ?? undefined, userRole: profile?.role, action: 'report.export', resourceType: 'clients', details: { row_count: rows.length, format: 'csv' } }).catch(() => {})

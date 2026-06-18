@@ -5,6 +5,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { validateUUID } from '@/lib/validation'
 import { auditLog } from '@/lib/audit'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Allow up to 60s for multi-tool bot conversations
@@ -1032,6 +1033,58 @@ async function executeSearchClients(
   userId: string
 ) {
   const limit = Math.min(Number(input.limit) || 20, 50);
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND assigned_to = ANY(${ids}::uuid[])`
+      }
+      let eligFrag = sql``
+      if (input.eligibility_ending_within_days) {
+        const today = new Date();
+        const future = new Date(today);
+        future.setDate(future.getDate() + Number(input.eligibility_ending_within_days));
+        eligFrag = sql`AND eligibility_end_date >= ${today.toISOString().split('T')[0]} AND eligibility_end_date <= ${future.toISOString().split('T')[0]}`
+      }
+      let catFrag = sql``
+      if (input.category) {
+        catFrag = sql`AND category ILIKE ${String(input.category)}`
+      }
+      let nameFrag = sql``
+      if (input.name_search) {
+        const search = String(input.name_search).replace(/[%_]/g, '');
+        nameFrag = sql`AND (first_name ILIKE ${'%' + search + '%'} OR last_name ILIKE ${'%' + search + '%'})`
+      }
+      let overdueFrag = sql``
+      if (input.overdue_field) {
+        const validFields = new Set([
+          'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
+          'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
+          'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date',
+          'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date'
+        ]);
+        const field = String(input.overdue_field);
+        if (validFields.has(field)) {
+          overdueFrag = sql`AND ${sql(field)} < ${new Date().toISOString().split('T')[0]} AND ${sql(field)} IS NOT NULL`
+        }
+      }
+      let assignedFrag = sql``
+      if (input.assigned_to_id) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(String(input.assigned_to_id))) {
+          assignedFrag = sql`AND assigned_to = ${String(input.assigned_to_id)}`
+        }
+      }
+      const azRows = await sql`SELECT id, client_id, first_name, last_name, category, is_active, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, goal_pct, pos_status, last_contact_date FROM clients WHERE is_active = true AND client_classification = 'real' ${scope} ${eligFrag} ${catFrag} ${nameFrag} ${overdueFrag} ${assignedFrag} ORDER BY eligibility_end_date ASC LIMIT ${limit}`
+      const results = azRows as unknown as Record<string, unknown>[]
+      return JSON.stringify({ count: results.length, results });
+    });
+  }
   let query = supabase.from('clients').select(
     'id, client_id, first_name, last_name, category, is_active, assigned_to, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, goal_pct, pos_status, last_contact_date'
   ).eq('is_active', true).eq('client_classification', 'real');
@@ -1099,33 +1152,52 @@ async function executeCaseloadStats(
   userRole: string,
   userId: string
 ) {
-  // Pre-fetch team IDs if needed (can't do async inside query builder fn)
-  let teamIds: string[] | null = null
-  if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
-    const { data: teamMembers } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('team_manager_id', userId);
-    teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
-    teamIds!.push(userId);
-  }
-
   let rows: Record<string, unknown>[];
-  try {
-    rows = await fetchAllRows(() => {
-      let q = supabase.from('clients').select(
-        'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active'
-      ).eq('is_active', true).eq('client_classification', 'real');
+  if (isAzureConfigured()) {
+    try {
+      rows = await withRlsContext(userId, async (sql) => {
+        let scope = sql``
+        if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+          scope = sql`AND assigned_to = ${userId}`
+        } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+          const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+          const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+          ids.push(userId)
+          scope = sql`AND assigned_to = ANY(${ids}::uuid[])`
+        }
+        const r = await sql`SELECT id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active FROM clients WHERE is_active = true AND client_classification = 'real' ${scope}`
+        return r as unknown as Record<string, unknown>[]
+      })
+    } catch (fetchErr) {
+      return JSON.stringify({ error: (fetchErr as Error).message });
+    }
+  } else {
+    // Pre-fetch team IDs if needed (can't do async inside query builder fn)
+    let teamIds: string[] | null = null
+    if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+      const { data: teamMembers } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('team_manager_id', userId);
+      teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+      teamIds!.push(userId);
+    }
+    try {
+      rows = await fetchAllRows(() => {
+        let q = supabase.from('clients').select(
+          'id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active'
+        ).eq('is_active', true).eq('client_classification', 'real');
 
-      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
-        q = q.eq('assigned_to', userId);
-      } else if (teamIds) {
-        q = q.in('assigned_to', teamIds);
-      }
-      return q;
-    });
-  } catch (fetchErr) {
-    return JSON.stringify({ error: (fetchErr as Error).message });
+        if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+          q = q.eq('assigned_to', userId);
+        } else if (teamIds) {
+          q = q.in('assigned_to', teamIds);
+        }
+        return q;
+      });
+    } catch (fetchErr) {
+      return JSON.stringify({ error: (fetchErr as Error).message });
+    }
   }
   const today = new Date().toISOString().split('T')[0];
   const d30 = new Date(); d30.setDate(d30.getDate() + 30);
@@ -1203,11 +1275,20 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .single()
+    let profile: { full_name?: string | null; role?: string | null } | null = null
+    if (isAzureConfigured()) {
+      profile = await withRlsContext(userId, async (sql) => {
+        const rows = await sql`SELECT id, full_name, role FROM profiles WHERE id = ${userId} LIMIT 1`
+        return (rows[0] ?? null) as unknown as { full_name?: string | null; role?: string | null } | null
+      })
+    } else {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single()
+      profile = data
+    }
 
     const userName = profile?.full_name ?? 'User'
     const userRole = profile?.role ?? 'unknown'
@@ -1230,35 +1311,58 @@ export async function POST(req: NextRequest) {
 
     if (isPlannerRole) {
       // Supports planner: load only their assigned clients
-      const { data: myClients } = await supabase
-        .from('clients')
-        .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
-        .eq('assigned_to', userId)
-        .eq('is_active', true)
-        .eq('client_classification', 'real')
-      allClients = (myClients as Record<string, unknown>[]) ?? []
+      if (isAzureConfigured()) {
+        allClients = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs FROM clients WHERE assigned_to = ${userId} AND is_active = true AND client_classification = 'real'`
+          return rows as unknown as Record<string, unknown>[]
+        })
+      } else {
+        const { data: myClients } = await supabase
+          .from('clients')
+          .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
+          .eq('assigned_to', userId)
+          .eq('is_active', true)
+          .eq('client_classification', 'real')
+        allClients = (myClients as Record<string, unknown>[]) ?? []
+      }
       plannerContext = `You are assisting a Supports Planner with their own caseload of ${allClients.length} active clients.`
 
     } else if (isManagerRole) {
       // Team manager: load their team's planners and those planners' clients
-      const { data: teamPlanners } = await supabase
-        .from('profiles')
-        .select('id, full_name, team_manager_id')
-        .eq('role', 'supports_planner')
-        .eq('team_manager_id', userId)
-        .order('full_name')
+      let teamPlanners: Record<string, unknown>[] | null = null
+      if (isAzureConfigured()) {
+        teamPlanners = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT id, full_name, team_manager_id FROM profiles WHERE role = 'supports_planner' AND team_manager_id = ${userId} ORDER BY full_name`
+          return rows as unknown as Record<string, unknown>[]
+        })
+      } else {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, team_manager_id')
+          .eq('role', 'supports_planner')
+          .eq('team_manager_id', userId)
+          .order('full_name')
+        teamPlanners = data
+      }
       const teamPlannerIds = (teamPlanners ?? []).map((p: Record<string, unknown>) => p.id as string)
 
       if (teamPlannerIds.length > 0) {
-        allClients = await fetchAllRows(() =>
-          supabase
-            .from('clients')
-            .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
-            .in('assigned_to', teamPlannerIds)
-            .eq('is_active', true)
-            .eq('client_classification', 'real')
-            .order('last_name')
-        )
+        if (isAzureConfigured()) {
+          allClients = await withRlsContext(userId, async (sql) => {
+            const rows = await sql`SELECT id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs FROM clients WHERE assigned_to = ANY(${teamPlannerIds}::uuid[]) AND is_active = true AND client_classification = 'real' ORDER BY last_name`
+            return rows as unknown as Record<string, unknown>[]
+          })
+        } else {
+          allClients = await fetchAllRows(() =>
+            supabase
+              .from('clients')
+              .select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, loc_date, spm_completed, med_tech_status, appeals, atp, foc, poc_date, provider_forms, reportable_events, schedule_docs, signatures_needed, snfs, profiles!clients_assigned_to_fkey(full_name)')
+              .in('assigned_to', teamPlannerIds)
+              .eq('is_active', true)
+              .eq('client_classification', 'real')
+              .order('last_name')
+          )
+        }
       }
 
       const plannerOpsSummary = getPlannerOpsSummary(allClients, (teamPlanners ?? []) as Record<string, unknown>[])
@@ -1270,21 +1374,37 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
     } else if (isSupervisorRole) {
       // Supervisor/IT: load summary stats only — NOT individual rows.
       // Full row loading of thousands of clients is too expensive per-request.
-      const { data: allPlanners } = await supabase
-        .from('profiles')
-        .select('id, full_name, team_manager_id')
-        .eq('role', 'supports_planner')
-        .order('full_name')
+      let allPlanners: Record<string, unknown>[] | null = null
+      if (isAzureConfigured()) {
+        allPlanners = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT id, full_name, team_manager_id FROM profiles WHERE role = 'supports_planner' ORDER BY full_name`
+          return rows as unknown as Record<string, unknown>[]
+        })
+      } else {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, team_manager_id')
+          .eq('role', 'supports_planner')
+          .order('full_name')
+        allPlanners = data
+      }
 
       // Load clients but only the fields needed for ops snapshot (not full records)
-      allClients = await fetchAllRows(() =>
-        supabase
-          .from('clients')
-          .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
-          .eq('is_active', true)
-          .eq('client_classification', 'real')
-          .order('id')
-      )
+      if (isAzureConfigured()) {
+        allClients = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name FROM clients WHERE is_active = true AND client_classification = 'real' ORDER BY id`
+          return rows as unknown as Record<string, unknown>[]
+        })
+      } else {
+        allClients = await fetchAllRows(() =>
+          supabase
+            .from('clients')
+            .select('id, assigned_to, goal_pct, last_contact_date, spm_next_due, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, pos_status, client_id, first_name, last_name')
+            .eq('is_active', true)
+            .eq('client_classification', 'real')
+            .order('id')
+        )
+      }
 
       const plannerOpsSummary = getPlannerOpsSummary(allClients, (allPlanners ?? []) as Record<string, unknown>[])
       const plannerStats = plannerOpsSummary.plannerRows.map((row) => `${row.plannerName}: ${row.clientCount} clients, ${row.overdue} overdue, pressure ${row.pressureScore}`)
@@ -1299,12 +1419,23 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
 
     if (clientId) {
       // Always fetch the specific client when one is provided — but verify access
-      let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
-      // For planners, enforce they can only ask about their own clients
-      if (isPlannerRole) {
-        clientQuery = clientQuery.eq('assigned_to', userId)
+      let client: Record<string, unknown> | null = null
+      if (isAzureConfigured()) {
+        client = await withRlsContext(userId, async (sql) => {
+          let scope = sql``
+          if (isPlannerRole) scope = sql`AND assigned_to = ${userId}`
+          const rows = await sql`SELECT id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs FROM clients WHERE id = ${clientId} ${scope} LIMIT 1`
+          return (rows[0] ?? null) as unknown as Record<string, unknown> | null
+        })
+      } else {
+        let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
+        // For planners, enforce they can only ask about their own clients
+        if (isPlannerRole) {
+          clientQuery = clientQuery.eq('assigned_to', userId)
+        }
+        const { data } = await clientQuery.single()
+        client = data
       }
-      const { data: client } = await clientQuery.single()
 
       if (client) {
         clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\n${formatClientSummary(client as Record<string, unknown>)}\n=== END CLIENT CONTEXT ===`

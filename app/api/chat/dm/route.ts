@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -9,6 +10,30 @@ export async function POST(request: Request) {
 
     const { targetUserId } = await request.json()
     if (!targetUserId) return NextResponse.json({ error: 'targetUserId required' }, { status: 400 })
+
+    if (isAzureConfigured()) {
+      return await withRlsContext(user.id, async (sql) => {
+        const mine = await sql`SELECT channel_id FROM chat_members WHERE user_id = ${user.id}`
+        const myChannelIds = mine.map((m) => m.channel_id as string)
+        if (myChannelIds.length > 0) {
+          const shared = await sql`SELECT channel_id FROM chat_members WHERE user_id = ${targetUserId} AND channel_id = ANY(${myChannelIds}::uuid[])`
+          const sharedIds = shared.map((m) => m.channel_id as string)
+          if (sharedIds.length > 0) {
+            const direct = await sql`SELECT id FROM chat_channels WHERE kind = 'direct' AND id = ANY(${sharedIds}::uuid[]) LIMIT 1`
+            if (direct.length > 0) {
+              return NextResponse.json({ channelId: direct[0].id })
+            }
+          }
+        }
+        const created = await sql`INSERT INTO chat_channels (name, kind, created_by) VALUES (${null}, 'direct', ${user.id}) RETURNING id`
+        const channelId = created[0]?.id as string | undefined
+        if (!channelId) {
+          return NextResponse.json({ error: 'Failed to create channel' }, { status: 500 })
+        }
+        await sql`INSERT INTO chat_members (channel_id, user_id) VALUES (${channelId}, ${user.id}), (${channelId}, ${targetUserId})`
+        return NextResponse.json({ channelId })
+      })
+    }
 
     // Find channels where current user is a member
     const { data: myMemberships } = await supabase

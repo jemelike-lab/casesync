@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 const HEADER: (string | Date | number)[] = [
   'client_id','first_name','last_name','category','eligibility_code','eligibility_end_date','last_contact_date','last_contact_type','three_month_visit_date','three_month_visit_due','quarterly_waiver_date','drop_in_visit_date','poc_date','loc_date','med_tech_redet_date','med_tech_status','pos_deadline','pos_status','assessment_due','spm_completed','spm_next_due','foc','provider_forms','signatures_needed','schedule_docs','atp','snfs','lease','reportable_events','appeals','thirty_day_letter_date','co_financial_redet_date','co_app_date','request_letter','mfp_consent_date','two57_date','doc_mdh_date','goal_pct','client_classification','notes'
@@ -42,11 +43,20 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let profile: { role: string } | null = null
+  if (isAzureConfigured()) {
+    profile = await withRlsContext(user.id, async (sql) => {
+      const rows = await sql`SELECT role FROM profiles WHERE id = ${user.id} LIMIT 1`
+      return (rows[0] ?? null) as unknown as { role: string } | null
+    })
+  } else {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    profile = data
+  }
 
   if (profile?.role !== 'supports_planner') {
     redirect('/dashboard')

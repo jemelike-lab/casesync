@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 /**
@@ -16,11 +17,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let profile: { role?: string } | null = null
+  if (isAzureConfigured()) {
+    const rows = await withRlsContext(user.id, (sql) => sql`SELECT role FROM profiles WHERE id = ${user.id} LIMIT 1`)
+    profile = (rows[0] as { role?: string }) ?? null
+  } else {
+    const res = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    profile = res.data
+  }
 
   if (!profile || !['supervisor', 'it'].includes(profile.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 })

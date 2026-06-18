@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { isAzureAuditConfigured, withAuditWriter } from '@/lib/db/audit-writer'
 
 export type AuditAction =
   | 'client.view' | 'client.create' | 'client.update' | 'client.delete'
@@ -38,8 +39,7 @@ export async function auditLog(
   payload: AuditPayload
 ): Promise<void> {
   try {
-    const admin = getAdminClient()
-    await admin.from('audit_logs').insert({
+    const row = {
       user_id:       payload.userId ?? null,
       user_email:    payload.userEmail ?? null,
       user_role:     payload.userRole ?? null,
@@ -49,7 +49,13 @@ export async function auditLog(
       details:       payload.details ?? null,
       ip_address:    getIp(req),
       user_agent:    req.headers.get('user-agent') ?? null,
-    })
+    }
+    if (isAzureAuditConfigured()) {
+      await withAuditWriter((sql) => sql`INSERT INTO audit_logs (user_id, user_email, user_role, action, resource_type, resource_id, details, ip_address, user_agent) VALUES (${row.user_id}, ${row.user_email}, ${row.user_role}, ${row.action}, ${row.resource_type}, ${row.resource_id}, ${row.details ? sql.json(row.details as unknown as Parameters<typeof sql.json>[0]) : null}, ${row.ip_address}, ${row.user_agent})`)
+    } else {
+      const admin = getAdminClient()
+      await admin.from('audit_logs').insert(row)
+    }
   } catch {
     console.error('[audit] Failed to write audit log for action:', payload.action)
   }
