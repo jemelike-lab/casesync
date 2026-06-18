@@ -147,7 +147,7 @@ export default function ClientDocuments({ clientId, currentUserId, currentProfil
       const res = await fetch(`/api/sharepoint/files/${clientId}`)
       if (res.ok) {
         const data = await res.json()
-        setSpDocs(data)
+        setSpDocs(Array.isArray(data) ? data : [])
       }
     } catch (e) {
       console.error('Failed to fetch SharePoint docs', e)
@@ -254,8 +254,8 @@ export default function ClientDocuments({ clientId, currentUserId, currentProfil
   }
 
   const allDocs: AnyDoc[] = [
-    ...spDocs,
-    ...docs,
+    ...(Array.isArray(spDocs) ? spDocs : []),
+    ...(Array.isArray(docs) ? docs : []),
   ]
 
   const isLoading = loading || spLoading
