@@ -310,7 +310,7 @@ function TeamRow({ team }: { team: DerivedTeam }) {
         width: '100%',
         padding: '14px 16px',
         borderRadius: 12,
-        background: '#FAFBFC',
+        background: 'var(--v2-surface-tint)',
         borderLeft: `4px solid ${team.cfg.accentColor}`,
         transition: 'all 0.15s ease',
       }}
@@ -322,7 +322,7 @@ function TeamRow({ team }: { team: DerivedTeam }) {
               width: 44,
               height: 44,
               borderRadius: 12,
-              background: '#FFFFFF',
+              background: 'var(--v2-surface)',
               padding: 3,
               display: 'flex',
               alignItems: 'center',
@@ -342,14 +342,14 @@ function TeamRow({ team }: { team: DerivedTeam }) {
           </Box>
           <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
             <Group gap={6} wrap="nowrap">
-              <Text fz={14} fw={700} c="#0F172A" truncate>
+              <Text fz={14} fw={700} c="var(--v2-text)" truncate>
                 {team.cfg.teamName}
               </Text>
               <Badge size="xs" variant="light" color={programColor}>
                 {team.cfg.program}
               </Badge>
             </Group>
-            <Text fz={11} c="#64748B" truncate>
+            <Text fz={11} c="var(--v2-text-muted)" truncate>
               {team.cfg.leadName} · {team.cfg.leadTitle}
               {!team.pending &&
                 ` · ${team.spCount} SP${team.spCount === 1 ? '' : 's'} · ${team.clientCount.toLocaleString()} clients`}
@@ -360,20 +360,20 @@ function TeamRow({ team }: { team: DerivedTeam }) {
         {!team.pending ? (
           <Group gap="lg" wrap="nowrap" visibleFrom="sm">
             <Stack gap={0} align="flex-end">
-              <Text fz={11} c="#64748B" fw={600}>OVERDUE</Text>
+              <Text fz={11} c="var(--v2-text-muted)" fw={600}>OVERDUE</Text>
               <Text fz={15} fw={700} c="#FF3B5C">{team.overdueCount}</Text>
             </Stack>
             <Stack gap={0} align="flex-end">
-              <Text fz={11} c="#64748B" fw={600}>DUE WK</Text>
+              <Text fz={11} c="var(--v2-text-muted)" fw={600}>DUE WK</Text>
               <Text fz={15} fw={700} c="#FFA940">{team.dueThisWeekCount}</Text>
             </Stack>
           </Group>
         ) : (
-          <Text fz={11} c="#94A3B8" fs="italic" visibleFrom="sm">
+          <Text fz={11} c="var(--v2-text-muted)" fs="italic" visibleFrom="sm">
             no data yet
           </Text>
         )}
-        <ChevronRight size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+        <ChevronRight size={16} color="var(--v2-text-muted)" style={{ flexShrink: 0 }} />
       </Flex>
     </UnstyledButton>
   )
@@ -401,8 +401,8 @@ function SectionPaper({
     <Paper
       p="lg"
       style={{
-        background: '#FFFFFF',
-        border: '1px solid #E5E7EB',
+        background: 'var(--v2-surface)',
+        border: '1px solid var(--v2-border-soft)',
         boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)',
         position: 'relative',
         overflow: 'hidden',
@@ -435,10 +435,10 @@ function SectionPaper({
       <Box style={{ position: 'relative', zIndex: 1 }}>
         <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
           <Stack gap={2}>
-            <Text fz={13} fw={600} c="#64748B" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+            <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
               {eyebrow}
             </Text>
-            <Title order={2} fz={18} fw={700} c="#0F172A">
+            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
               {title}
             </Title>
           </Stack>
@@ -523,10 +523,10 @@ function TeamHealthSection({
                   pointerEvents: 'none',
                 }}
               >
-                <Text fz={28} fw={800} c="#0F172A" lh={1}>
+                <Text fz={28} fw={800} c="var(--v2-text)" lh={1}>
                   {scopedSummary.total_clients.toLocaleString()}
                 </Text>
-                <Text fz={11} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                <Text fz={11} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
                   active
                 </Text>
               </Stack>
@@ -541,11 +541,11 @@ function TeamHealthSection({
                 <Group key={row.name} gap={8} wrap="nowrap" justify="space-between">
                   <Group gap={8} wrap="nowrap">
                     <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
-                    <Text fz={12} c="#475569" fw={500}>
+                    <Text fz={12} c="var(--v2-text-muted)" fw={500}>
                       {row.name}
                     </Text>
                   </Group>
-                  <Text fz={12} fw={700} c="#0F172A">
+                  <Text fz={12} fw={700} c="var(--v2-text)">
                     {row.value.toLocaleString()}
                   </Text>
                 </Group>
@@ -556,7 +556,7 @@ function TeamHealthSection({
 
         {/* Per-team horizontal bars */}
         <Grid.Col span={{ base: 12, md: 7 }}>
-          <Text fz={12} fw={600} c="#64748B" tt="uppercase" mb="sm" style={{ letterSpacing: '0.06em' }}>
+          <Text fz={12} fw={600} c="var(--v2-text-muted)" tt="uppercase" mb="sm" style={{ letterSpacing: '0.06em' }}>
             Caseload by Team
           </Text>
           <Stack gap={10}>
@@ -576,10 +576,10 @@ function TeamHealthSection({
                   </Box>
                   <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                     <Group justify="space-between" gap={6}>
-                      <Text fz={12} fw={600} c="#0F172A" truncate>
+                      <Text fz={12} fw={600} c="var(--v2-text)" truncate>
                         {team.cfg.teamName}
                       </Text>
-                      <Text fz={11} fw={700} c={team.pending ? '#94A3B8' : '#0F172A'}>
+                      <Text fz={11} fw={700} c={team.pending ? 'var(--v2-text-muted)' : 'var(--v2-text)'}>
                         {team.pending ? '—' : team.clientCount.toLocaleString()}
                       </Text>
                     </Group>
@@ -587,7 +587,7 @@ function TeamHealthSection({
                       style={{
                         height: 8,
                         borderRadius: 4,
-                        background: team.pending ? '#F1F5F9' : `${team.cfg.accentColor}15`,
+                        background: team.pending ? 'var(--v2-surface-tint)' : `${team.cfg.accentColor}15`,
                         overflow: 'hidden',
                         position: 'relative',
                       }}
@@ -626,7 +626,7 @@ function TeamHealthSection({
 type ClientFilter = 'all' | 'overdue' | 'due_this_week' | 'no_contact_7'
 
 const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = [
-  { value: 'all', label: 'All', color: '#0F172A' },
+  { value: 'all', label: 'All', color: '#64748B' },
   { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
   { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
   { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
@@ -705,9 +705,9 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
           py="xl"
           style={{
             textAlign: 'center',
-            background: '#F8FAFC',
+            background: 'var(--v2-surface-tint)',
             borderRadius: 12,
-            border: '1px dashed #E5E7EB',
+            border: '1px dashed var(--v2-border-soft)',
           }}
         >
           <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
@@ -720,10 +720,10 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
               unoptimized
             />
           </Box>
-          <Text fz={14} fw={600} c="#0F172A">
+          <Text fz={14} fw={600} c="var(--v2-text)">
             {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
           </Text>
-          <Text fz={12} c="#64748B" mt={4}>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>
             {loading ? 'Just a moment…' : 'Try a different filter or check back later.'}
           </Text>
         </Box>
@@ -763,10 +763,10 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
                           .toUpperCase()}
                       </Avatar>
                       <Stack gap={2} style={{ minWidth: 0 }}>
-                        <Text fz={13} fw={700} c="#0F172A" truncate>
+                        <Text fz={13} fw={700} c="var(--v2-text)" truncate>
                           {fullName}
                         </Text>
-                        <Text fz={11} c="#64748B" truncate>
+                        <Text fz={11} c="var(--v2-text-muted)" truncate>
                           {planner?.full_name ?? 'Unassigned'} · {client.category?.toUpperCase() ?? '—'}
                         </Text>
                       </Stack>
@@ -774,7 +774,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
                     <Badge size="xs" variant="light" style={{ background: `${filterMeta.color}1A`, color: filterMeta.color }}>
                       {filterMeta.label}
                     </Badge>
-                    <ChevronRight size={14} color="#94A3B8" />
+                    <ChevronRight size={14} color="var(--v2-text-muted)" />
                   </Flex>
                 </Box>
               </Link>
@@ -835,10 +835,10 @@ function PlannerWorkloadSection({
       }
     >
       {rows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
-          <Users size={32} color="#94A3B8" style={{ margin: '0 auto 8px' }} />
-          <Text fz={14} fw={600} c="#0F172A">No Support Planners loaded</Text>
-          <Text fz={12} c="#64748B" mt={4}>Planners will appear here once they're added to the org.</Text>
+        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
+          <Users size={32} color="var(--v2-text-muted)" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="var(--v2-text)">No Support Planners loaded</Text>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>Planners will appear here once they're added to the org.</Text>
         </Box>
       ) : (
         <Grid gap="md">
@@ -857,8 +857,8 @@ function PlannerWorkloadSection({
                   style={{
                     padding: 14,
                     borderRadius: 12,
-                    background: '#FFFFFF',
-                    border: '1px solid #E5E7EB',
+                    background: 'var(--v2-surface)',
+                    border: '1px solid var(--v2-border-soft)',
                     borderLeft: `4px solid ${pressureColor}`,
                   }}
                 >
@@ -867,30 +867,30 @@ function PlannerWorkloadSection({
                       {initials}
                     </Avatar>
                     <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-                      <Text fz={13} fw={700} c="#0F172A" truncate>
+                      <Text fz={13} fw={700} c="var(--v2-text)" truncate>
                         {planner.full_name ?? 'Unnamed'}
                       </Text>
-                      <Text fz={11} c="#64748B" truncate>
+                      <Text fz={11} c="var(--v2-text-muted)" truncate>
                         {tm ? `${tm.full_name} · TM` : 'Unassigned'}
                       </Text>
                     </Stack>
                   </Group>
                   <Group justify="space-between" gap={4} mb={6}>
                     <Stack gap={0}>
-                      <Text fz={20} fw={800} c="#0F172A" lh={1}>{caseload}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
+                      <Text fz={20} fw={800} c="var(--v2-text)" lh={1}>{caseload}</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
                     </Stack>
                     <Stack gap={0} align="center">
                       <Text fz={20} fw={800} c="#FF3B5C" lh={1}>{overdue}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
                     </Stack>
                     <Stack gap={0} align="center">
                       <Text fz={20} fw={800} c="#FFA940" lh={1}>{dueWeek}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
                     </Stack>
                     <Stack gap={0} align="flex-end">
                       <Text fz={20} fw={800} c="#1E7CFF" lh={1}>{quiet}</Text>
-                      <Text fz={10} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
+                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
                     </Stack>
                   </Group>
                   <Progress value={pressurePct} size="xs" color={pressureColor === '#FF3B5C' ? 'coral' : pressureColor === '#FFA940' ? 'amber' : 'emerald'} mt={4} />
@@ -971,10 +971,10 @@ function TeamRosterSection({
         color="cobalt"
       />
       {filteredRows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #E5E7EB' }}>
-          <Filter size={32} color="#94A3B8" style={{ margin: '0 auto 8px' }} />
-          <Text fz={14} fw={600} c="#0F172A">No one in this slice</Text>
-          <Text fz={12} c="#64748B" mt={4}>Try a different filter.</Text>
+        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
+          <Filter size={32} color="var(--v2-text-muted)" style={{ margin: '0 auto 8px' }} />
+          <Text fz={14} fw={600} c="var(--v2-text)">No one in this slice</Text>
+          <Text fz={12} c="var(--v2-text-muted)" mt={4}>Try a different filter.</Text>
         </Box>
       ) : (
         <Grid gap="sm">
@@ -996,8 +996,8 @@ function TeamRosterSection({
                   style={{
                     padding: '10px 12px',
                     borderRadius: 10,
-                    background: '#FFFFFF',
-                    border: '1px solid #E5E7EB',
+                    background: 'var(--v2-surface)',
+                    border: '1px solid var(--v2-border-soft)',
                     borderLeft: `3px solid ${accent}`,
                   }}
                 >
@@ -1005,10 +1005,10 @@ function TeamRosterSection({
                     {initials}
                   </Avatar>
                   <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-                    <Text fz={12} fw={700} c="#0F172A" truncate>
+                    <Text fz={12} fw={700} c="var(--v2-text)" truncate>
                       {profile.full_name ?? 'Unnamed'}
                     </Text>
-                    <Text fz={10} c="#64748B" truncate>
+                    <Text fz={10} c="var(--v2-text-muted)" truncate>
                       {label}
                     </Text>
                   </Stack>
@@ -1142,7 +1142,7 @@ function SupervisorControlPanelInner({
     <Box
       style={{
         background:
-          'linear-gradient(160deg, #EEF2FC 0%, #F4ECFB 60%, #EDE9FB 100%)',
+          'var(--v2-canvas)',
         margin: '-24px',
         padding: '24px',
         width: 'calc(100% + 48px)',
@@ -1155,8 +1155,8 @@ function SupervisorControlPanelInner({
         p="xl"
         mb="lg"
         style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 60%)',
-          border: '1px solid #E5E7EB',
+          background: 'linear-gradient(135deg, rgba(30,124,255,0.06) 0%, var(--v2-surface) 60%)',
+          border: '1px solid var(--v2-border-soft)',
           boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
           position: 'relative',
           overflow: 'hidden',
@@ -1167,16 +1167,16 @@ function SupervisorControlPanelInner({
             <Text
               fz={13}
               fw={600}
-              c="#64748B"
+              c="var(--v2-text-muted)"
               tt="uppercase"
               style={{ letterSpacing: '0.06em' }}
             >
               {dateLabel}
             </Text>
-            <Title order={1} fz={28} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
+            <Title order={1} fz={28} fw={800} c="var(--v2-text)" style={{ letterSpacing: '-0.02em' }}>
               {greeting}, {firstName}
             </Title>
-            <Text fz={14} c="#64748B">
+            <Text fz={14} c="var(--v2-text-muted)">
               {scopedSummary.total_clients.toLocaleString()} active clients across {derivedTeams.length} teams
               {activeTeamCount > 0 && ` · ${activeTeamCount} with live data`}.
             </Text>
@@ -1243,8 +1243,8 @@ function SupervisorControlPanelInner({
         p="lg"
         mb="lg"
         style={{
-          background: '#FFFFFF',
-          border: '1px solid #E5E7EB',
+          background: 'var(--v2-surface)',
+          border: '1px solid var(--v2-border-soft)',
           boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
         }}
       >
@@ -1253,13 +1253,13 @@ function SupervisorControlPanelInner({
             <Text
               fz={13}
               fw={600}
-              c="#64748B"
+              c="var(--v2-text-muted)"
               tt="uppercase"
               style={{ letterSpacing: '0.06em' }}
             >
               Org Overview
             </Text>
-            <Title order={2} fz={18} fw={700} c="#0F172A">
+            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
               Team Overview · {derivedTeams.length} teams
             </Title>
           </Stack>

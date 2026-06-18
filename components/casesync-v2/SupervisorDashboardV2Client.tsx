@@ -78,8 +78,8 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
   return (
     <Box
       style={{
-        background: '#FFFFFF',
-        borderBottom: '1px solid #E5E7EB',
+        background: 'var(--v2-surface)',
+        borderBottom: '1px solid var(--v2-border-soft)',
         padding: '8px 12px',
       }}
     >
@@ -111,8 +111,8 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
                   borderRadius: 8,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: isActive ? '#0F172A' : '#475569',
-                  background: isActive ? '#F1F5F9' : 'transparent',
+                  color: isActive ? 'var(--v2-text)' : 'var(--v2-text-muted)',
+                  background: isActive ? 'var(--v2-surface-tint)' : 'transparent',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   transition: 'background 0.15s',
@@ -131,8 +131,8 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               borderRadius: 8,
               fontSize: 12,
               fontWeight: 600,
-              color: '#475569',
-              border: '1px solid #E5E7EB',
+              color: 'var(--v2-text-muted)',
+              border: '1px solid var(--v2-border-soft)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -158,13 +158,13 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
           </UnstyledButton>
           <UnstyledButton
             aria-label="Toggle theme"
-            style={{ padding: 8, borderRadius: 8, color: '#475569' }}
+            style={{ padding: 8, borderRadius: 8, color: 'var(--v2-text-muted)' }}
           >
             <Moon size={16} />
           </UnstyledButton>
           <UnstyledButton
             aria-label="Notifications"
-            style={{ padding: 8, borderRadius: 8, color: '#475569', position: 'relative' }}
+            style={{ padding: 8, borderRadius: 8, color: 'var(--v2-text-muted)', position: 'relative' }}
           >
             <Bell size={16} />
             <Box
@@ -176,7 +176,7 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
                 height: 7,
                 borderRadius: 4,
                 background: '#FF3B5C',
-                border: '1.5px solid #FFFFFF',
+                border: '1.5px solid var(--v2-surface)',
               }}
             />
           </UnstyledButton>
@@ -189,10 +189,10 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               {viewer.initials}
             </Avatar>
             <Stack gap={0}>
-              <Text fz={12} fw={600} c="#0F172A" lh={1.2}>
+              <Text fz={12} fw={600} c="var(--v2-text)" lh={1.2}>
                 {viewer.fullName.split(' ')[0]} {viewer.fullName.split(' ')[1]?.[0] ?? ''}
               </Text>
-              <Text fz={9} c="#94A3B8" lh={1.2} style={{ letterSpacing: '0.08em' }}>
+              <Text fz={9} c="var(--v2-text-muted)" lh={1.2} style={{ letterSpacing: '0.08em' }}>
                 {viewer.role.toUpperCase()}
               </Text>
             </Stack>
@@ -204,8 +204,8 @@ function AppNavRow({ viewer }: { viewer: ViewerProfile }) {
               borderRadius: 8,
               fontSize: 12,
               fontWeight: 600,
-              color: '#475569',
-              border: '1px solid #E5E7EB',
+              color: 'var(--v2-text-muted)',
+              border: '1px solid var(--v2-border-soft)',
               display: 'flex',
               alignItems: 'center',
               gap: 4,
@@ -410,7 +410,7 @@ function TeamRow({ team }: { team: TeamSummary }) {
         width: '100%',
         padding: '14px 16px',
         borderRadius: 12,
-        background: '#FAFBFC',
+        background: 'var(--v2-surface-tint)',
         borderLeft: `4px solid ${team.accentColor}`,
         transition: 'all 0.15s ease',
       }}
@@ -422,7 +422,7 @@ function TeamRow({ team }: { team: TeamSummary }) {
               width: 44,
               height: 44,
               borderRadius: 12,
-              background: '#FFFFFF',
+              background: 'var(--v2-surface)',
               padding: 3,
               display: 'flex',
               alignItems: 'center',
@@ -441,10 +441,10 @@ function TeamRow({ team }: { team: TeamSummary }) {
             />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fz={14} fw={700} c="#0F172A" truncate>
+            <Text fz={14} fw={700} c="var(--v2-text)" truncate>
               {team.teamName}
             </Text>
-            <Text fz={11} c="#64748B" truncate>
+            <Text fz={11} c="var(--v2-text-muted)" truncate>
               {team.leadName} ·{' '}
               {team.leadRole === 'supervisor' ? 'Supervisor' : 'Team Manager'} ·{' '}
               {team.spCount} SPs · {team.clientCount.toLocaleString()} clients
@@ -453,7 +453,7 @@ function TeamRow({ team }: { team: TeamSummary }) {
         </Group>
         <Group gap="lg" wrap="nowrap" visibleFrom="sm">
           <Stack gap={0} align="flex-end">
-            <Text fz={11} c="#64748B" fw={600}>OVERDUE</Text>
+            <Text fz={11} c="var(--v2-text-muted)" fw={600}>OVERDUE</Text>
             <Group gap={4} wrap="nowrap">
               <Text fz={15} fw={700} c="#FF3B5C">{team.overdueCount}</Text>
               {trendDown ? (
@@ -465,8 +465,8 @@ function TeamRow({ team }: { team: TeamSummary }) {
           </Stack>
           <Stack gap={0} align="flex-end" style={{ width: 90 }}>
             <Group justify="space-between" w="100%">
-              <Text fz={11} c="#64748B" fw={600}>ON-TIME</Text>
-              <Text fz={11} c="#0F172A" fw={700}>{team.completionRatePct}%</Text>
+              <Text fz={11} c="var(--v2-text-muted)" fw={600}>ON-TIME</Text>
+              <Text fz={11} c="var(--v2-text)" fw={700}>{team.completionRatePct}%</Text>
             </Group>
             <Progress
               value={team.completionRatePct}
@@ -483,7 +483,7 @@ function TeamRow({ team }: { team: TeamSummary }) {
             />
           </Stack>
         </Group>
-        <ChevronRight size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+        <ChevronRight size={16} color="var(--v2-text-muted)" style={{ flexShrink: 0 }} />
       </Flex>
     </UnstyledButton>
   );
@@ -537,10 +537,10 @@ function AttentionRow({ item }: { item: AttentionItem }) {
             <Icon size={16} />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fz={14} fw={700} c="#0F172A" truncate>
+            <Text fz={14} fw={700} c="var(--v2-text)" truncate>
               {item.clientName}
             </Text>
-            <Text fz={11} c="#64748B" truncate>
+            <Text fz={11} c="var(--v2-text-muted)" truncate>
               {issueLabels[item.issue]} · {item.assignedSp} · {item.team}
             </Text>
           </Stack>
@@ -576,8 +576,8 @@ function TeamToolRow({ tool }: { tool: TeamToolCard }) {
         width: '100%',
         padding: '14px 16px',
         borderRadius: 12,
-        background: '#FAFBFC',
-        border: '1px solid #E5E7EB',
+        background: 'var(--v2-surface-tint)',
+        border: '1px solid var(--v2-border-soft)',
         transition: 'all 0.15s ease',
         textDecoration: 'none',
       }}
@@ -587,11 +587,11 @@ function TeamToolRow({ tool }: { tool: TeamToolCard }) {
           <Text fz={16} component="span" style={{ lineHeight: 1, flexShrink: 0 }}>
             {tool.icon}
           </Text>
-          <Text fz={14} fw={700} c="#0F172A">
+          <Text fz={14} fw={700} c="var(--v2-text)">
             {tool.title}
           </Text>
         </Group>
-        <Text fz={12} c="#64748B" lh={1.4}>
+        <Text fz={12} c="var(--v2-text-muted)" lh={1.4}>
           {tool.description}
         </Text>
       </Stack>
@@ -620,13 +620,13 @@ export default function SupervisorDashboardV2Client({
             text-only greeting with no horizontal squeeze. */}
         <Flex justify="space-between" align="center" gap="lg" mb="lg" wrap="nowrap">
           <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-            <Text fz={13} c="#64748B" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+            <Text fz={13} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
               Program Overview
             </Text>
-            <Title order={1} fz={28} fw={800} c="#0F172A" style={{ letterSpacing: '-0.02em' }}>
+            <Title order={1} fz={28} fw={800} c="var(--v2-text)" style={{ letterSpacing: '-0.02em' }}>
               Good morning, {viewer.fullName.split(' ')[0]}.
             </Title>
-            <Text fz={14} c="#64748B" mt={2}>
+            <Text fz={14} c="var(--v2-text-muted)" mt={2}>
               Org-wide caseload snapshot · {teams.length} teams ·{' '}
               {teams.reduce((sum, t) => sum + t.spCount, 0)} Support Planners
             </Text>
@@ -692,34 +692,34 @@ export default function SupervisorDashboardV2Client({
         </Grid>
 
         {/* Caseload Trend chart — full width, explicit height to kill the width(-1) warning */}
-        <Paper p="lg" mb="lg" style={{ background: '#FFFFFF' }}>
+        <Paper p="lg" mb="lg" style={{ background: 'var(--v2-surface)' }}>
           <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="md">
             <Stack gap={2}>
               <Text
                 fz={11}
                 fw={700}
-                c="#64748B"
+                c="var(--v2-text-muted)"
                 tt="uppercase"
                 style={{ letterSpacing: '0.06em' }}
               >
                 Last 12 Weeks
               </Text>
-              <Title order={3} fz={18} fw={700} c="#0F172A">
+              <Title order={3} fz={18} fw={700} c="var(--v2-text)">
                 Caseload Trend
               </Title>
             </Stack>
             <Group gap="sm">
               <Group gap={6}>
                 <Box w={10} h={10} bg="#FF3B5C" style={{ borderRadius: 3 }} />
-                <Text fz={12} c="#64748B" fw={600}>Overdue</Text>
+                <Text fz={12} c="var(--v2-text-muted)" fw={600}>Overdue</Text>
               </Group>
               <Group gap={6}>
                 <Box w={10} h={10} bg="#10B981" style={{ borderRadius: 3 }} />
-                <Text fz={12} c="#64748B" fw={600}>On track</Text>
+                <Text fz={12} c="var(--v2-text-muted)" fw={600}>On track</Text>
               </Group>
               <Group gap={6}>
                 <Box w={10} h={10} bg="#1E7CFF" style={{ borderRadius: 3 }} />
-                <Text fz={12} c="#64748B" fw={600}>Completed</Text>
+                <Text fz={12} c="var(--v2-text-muted)" fw={600}>Completed</Text>
               </Group>
             </Group>
           </Flex>
@@ -747,19 +747,19 @@ export default function SupervisorDashboardV2Client({
         </Paper>
 
         {/* Team Overview — full-width stacked rows */}
-        <Paper p="lg" mb="lg" style={{ background: '#FFFFFF' }}>
+        <Paper p="lg" mb="lg" style={{ background: 'var(--v2-surface)' }}>
           <Flex justify="space-between" align="center" mb="md">
             <Stack gap={2}>
               <Text
                 fz={11}
                 fw={700}
-                c="#64748B"
+                c="var(--v2-text-muted)"
                 tt="uppercase"
                 style={{ letterSpacing: '0.06em' }}
               >
                 By Team
               </Text>
-              <Title order={3} fz={18} fw={700} c="#0F172A">
+              <Title order={3} fz={18} fw={700} c="var(--v2-text)">
                 Team Overview
               </Title>
             </Stack>
@@ -783,19 +783,19 @@ export default function SupervisorDashboardV2Client({
           align="flex-start"
         >
           <Box style={{ flex: 2, minWidth: 0, width: '100%' }}>
-            <Paper p="lg" style={{ background: '#FFFFFF' }}>
+            <Paper p="lg" style={{ background: 'var(--v2-surface)' }}>
               <Flex justify="space-between" align="center" mb="md">
                 <Stack gap={2}>
                   <Text
                     fz={11}
                     fw={700}
-                    c="#64748B"
+                    c="var(--v2-text-muted)"
                     tt="uppercase"
                     style={{ letterSpacing: '0.06em' }}
                   >
                     Needs Your Eyes
                   </Text>
-                  <Title order={3} fz={18} fw={700} c="#0F172A">
+                  <Title order={3} fz={18} fw={700} c="var(--v2-text)">
                     Attention Feed
                   </Title>
                 </Stack>
@@ -812,18 +812,18 @@ export default function SupervisorDashboardV2Client({
           </Box>
 
           <Box style={{ flex: 1, minWidth: 0, width: '100%' }}>
-            <Paper p="lg" style={{ background: '#FFFFFF' }}>
+            <Paper p="lg" style={{ background: 'var(--v2-surface)' }}>
               <Stack gap={2} mb="md">
                 <Text
                   fz={11}
                   fw={700}
-                  c="#64748B"
+                  c="var(--v2-text-muted)"
                   tt="uppercase"
                   style={{ letterSpacing: '0.06em' }}
                 >
                   Manager Actions
                 </Text>
-                <Title order={3} fz={18} fw={700} c="#0F172A">
+                <Title order={3} fz={18} fw={700} c="var(--v2-text)">
                   Team Tools
                 </Title>
               </Stack>
@@ -836,7 +836,7 @@ export default function SupervisorDashboardV2Client({
           </Box>
         </Flex>
 
-        <Text fz={11} c="#94A3B8" ta="center" mt="xl">
+        <Text fz={11} c="var(--v2-text-muted)" ta="center" mt="xl">
           CaseSync v2 · north-star preview · data is mocked · /dashboard-v2
         </Text>
       </Container>
