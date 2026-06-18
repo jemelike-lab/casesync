@@ -154,12 +154,12 @@ export default function NotificationBell({ userId }: Props) {
           bottom: isMobileViewport ? 0 : 'auto',
           width: isMobileViewport ? '100vw' : 340,
           maxHeight: isMobileViewport ? '100dvh' : 420,
-          background: 'var(--surface)', border: isMobileViewport ? 'none' : '1px solid var(--border)', borderRadius: isMobileViewport ? 0 : 12,
+          background: 'var(--v2-surface, var(--surface))', color: 'var(--v2-text, var(--text))', border: isMobileViewport ? 'none' : '1px solid var(--border)', borderRadius: isMobileViewport ? 0 : 12,
           boxShadow: isMobileViewport ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', zIndex: 8999, overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
         }}>
           <div style={{ padding: isMobileViewport ? '16px 16px 12px' : '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>Notifications</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--v2-text, var(--text))' }}>Notifications</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {unreadCount > 0 && (
                 <button
@@ -172,7 +172,7 @@ export default function NotificationBell({ userId }: Props) {
               {isMobileViewport && (
                 <button
                   onClick={() => setOpen(false)}
-                  style={{ fontSize: 13, color: 'var(--text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 700 }}
+                  style={{ fontSize: 13, color: 'var(--v2-text, var(--text))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 700 }}
                 >
                   Close
                 </button>
@@ -181,7 +181,7 @@ export default function NotificationBell({ userId }: Props) {
           </div>
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {notifications.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)' }}>
+              <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--v2-text-muted, var(--text-secondary))' }}>
                 {unreadCount === 0 ? 'All caught up 🎉' : 'Loading…'}
               </div>
             ) : (
@@ -205,11 +205,11 @@ export default function NotificationBell({ userId }: Props) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
-                      {n.body && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{n.body}</div>}
+                      {n.body && <div style={{ fontSize: 12, color: 'var(--v2-text-muted, var(--text-secondary))', marginTop: 2 }}>{n.body}</div>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', flexShrink: 0 }} />}
-                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{timeAgo(n.created_at)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--v2-text-muted, var(--text-secondary))', whiteSpace: 'nowrap' }}>{timeAgo(n.created_at)}</span>
                     </div>
                   </div>
                 </div>
