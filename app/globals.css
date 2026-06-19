@@ -475,7 +475,7 @@ input[type="time"] {
 /* Alert banner pills */
 [data-theme="light"] [style*="background: rgba(255, 69"] { 
   color: #B91C1C !important; 
-  background: rgba(192, 0, 26, 0.12) !important;
+  background: rgba(220, 38, 38, 0.12) !important;
 }
 [data-theme="light"] [style*="background: rgba(255, 149"] { 
   color: #C2410C !important;
@@ -486,8 +486,8 @@ input[type="time"] {
   background: rgba(202,138,4, 0.12) !important;
 }
 [data-theme="light"] [style*="background: rgba(52, 199"] { 
-  color: #0d4a1c !important;
-  background: rgba(26, 110, 46, 0.12) !important;
+  color: #15803d !important;
+  background: rgba(22, 163, 74, 0.12) !important;
 }
 
 /* Week strip day cells */
