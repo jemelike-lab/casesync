@@ -44,17 +44,17 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
       background: lt
         ? 'linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(248,242,232,0.99) 100%)'
         : 'linear-gradient(160deg, rgba(20,26,56,0.98) 0%, rgba(12,16,38,0.99) 100%)',
-      border: lt ? '1px solid rgba(60,30,0,0.15)' : '1px solid rgba(100,140,255,0.2)',
+      border: lt ? '1px solid rgba(15,23,42,0.15)' : '1px solid rgba(100,140,255,0.2)',
       borderRadius: 16,
       padding: '14px 16px',
       boxShadow: lt
-        ? '0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(60,30,0,0.06)'
+        ? '0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(15,23,42,0.06)'
         : '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,140,255,0.08)',
       backdropFilter: 'blur(20px)',
       pointerEvents: 'none',
     }}>
       {/* Header */}
-      <div style={{ fontSize: 10, fontWeight: 700, color: lt ? 'rgba(90,60,30,0.5)' : 'rgba(160,180,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: lt ? 'rgba(100,116,139,0.85)' : 'rgba(160,180,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
         {events.length} deadline{events.length !== 1 ? 's' : ''} · {byClient.size} client{byClient.size !== 1 ? 's' : ''}
       </div>
 
@@ -75,7 +75,7 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
             }}>
               {/* Client name + urgency badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: lt ? '#1a1108' : '#e0e8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: lt ? '#0F172A' : '#e0e8ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {first.clientName}
                 </span>
                 <span style={{
@@ -92,13 +92,13 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
                 {clientEvents.map((evt, j) => (
                   <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: UC[evt.urgency], flexShrink: 0, boxShadow: `0 0 4px ${UC[evt.urgency]}60` }} />
-                    <span style={{ color: lt ? '#5c4a35' : '#a0b4e0' }}>{evt.label}</span>
+                    <span style={{ color: lt ? '#64748B' : '#a0b4e0' }}>{evt.label}</span>
                   </div>
                 ))}
               </div>
 
               {/* Planner + ID */}
-              <div style={{ fontSize: 10, color: lt ? '#9c8470' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
+              <div style={{ fontSize: 10, color: lt ? '#94A3B8' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
                 <span>ID {first.client_id}</span>
                 {first.plannerName && (
                   <>
@@ -330,7 +330,7 @@ export default function CalendarView({ assignedTo }: Props) {
               {DAYS.map(d=>(
                 <div key={d} className="cal-header-cell" style={{
                   padding:'14px 4px', textAlign:'center', fontSize:12, fontWeight:800,
-                  color: lt ? '#5c4a35' : '#a0b4e0', letterSpacing:'0.12em', textTransform:'uppercase',
+                  color: lt ? '#64748B' : '#a0b4e0', letterSpacing:'0.12em', textTransform:'uppercase',
                   background: lt
                     ? 'linear-gradient(180deg, #f0e4d4 0%, #e8dcc8 100%)'
                     : 'linear-gradient(180deg, rgba(35,45,90,0.9) 0%, rgba(25,32,70,0.9) 100%)',
@@ -354,9 +354,9 @@ export default function CalendarView({ assignedTo }: Props) {
 
                 let bg = lt ? 'var(--surface)' : 'rgba(14,18,40,0.6)'
                 if (isSel) bg = lt ? 'rgba(0,113,227,0.1)' : 'rgba(0,122,255,0.18)'
-                else if (hasOD) bg = lt ? 'rgba(192,0,26,0.06)' : 'rgba(255,69,58,0.08)'
-                else if (hasTW) bg = lt ? 'rgba(109,76,0,0.05)' : 'rgba(255,214,10,0.06)'
-                else if (hasFut) bg = lt ? 'rgba(26,110,46,0.04)' : 'rgba(48,209,88,0.05)'
+                else if (hasOD) bg = lt ? 'rgba(220,38,38,0.06)' : 'rgba(255,69,58,0.08)'
+                else if (hasTW) bg = lt ? 'rgba(202,138,4,0.05)' : 'rgba(255,214,10,0.06)'
+                else if (hasFut) bg = lt ? 'rgba(22,163,74,0.04)' : 'rgba(48,209,88,0.05)'
                 else if (isT) bg = lt ? 'rgba(0,113,227,0.06)' : 'rgba(0,122,255,0.08)'
 
                 const cellClass = `cal-cell${hasOD?' cal-has-overdue':''}${hasTW&&!hasOD?' cal-has-week':''}${hasFut&&!hasOD&&!hasTW?' cal-has-future':''}`
@@ -387,8 +387,8 @@ export default function CalendarView({ assignedTo }: Props) {
                           {hasEv && (
                             <span style={{
                               fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:10,
-                              background: hasOD ? (lt ? 'rgba(192,0,26,0.12)' : 'rgba(255,69,58,0.2)') : hasTW ? (lt ? 'rgba(109,76,0,0.1)' : 'rgba(255,214,10,0.15)') : (lt ? 'rgba(26,110,46,0.1)' : 'rgba(48,209,88,0.15)'),
-                              color: hasOD ? (lt ? '#c0001a' : '#ff6b6b') : hasTW ? (lt ? '#6d4c00' : '#ffe066') : (lt ? '#1a6e2e' : '#4ade80'),
+                              background: hasOD ? (lt ? 'rgba(220,38,38,0.12)' : 'rgba(255,69,58,0.2)') : hasTW ? (lt ? 'rgba(202,138,4,0.1)' : 'rgba(255,214,10,0.15)') : (lt ? 'rgba(22,163,74,0.1)' : 'rgba(48,209,88,0.15)'),
+                              color: hasOD ? (lt ? '#DC2626' : '#ff6b6b') : hasTW ? (lt ? '#CA8A04' : '#ffe066') : (lt ? '#16A34A' : '#4ade80'),
                             }}>
                               {ce.length}
                             </span>
@@ -404,7 +404,7 @@ export default function CalendarView({ assignedTo }: Props) {
                         ) : (
                           <span style={{
                             fontSize:14, fontWeight:hasEv?700:400,
-                            color:isSel ? (lt ? '#0071e3' : '#fff') : hasEv ? (lt ? '#1a1108' : '#d0daf0') : (lt ? '#9c8470' : '#4a5a7a'),
+                            color:isSel ? (lt ? '#0071e3' : '#fff') : hasEv ? (lt ? '#0F172A' : '#d0daf0') : (lt ? '#94A3B8' : '#4a5a7a'),
                           }}>{day}</span>
                         )}
                       </div>
@@ -424,7 +424,7 @@ export default function CalendarView({ assignedTo }: Props) {
                               {evt.clientName.split(',')[0]}
                             </div>
                           ))}
-                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#9c8470' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
+                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#94A3B8' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
                         </div>
                       )}
 

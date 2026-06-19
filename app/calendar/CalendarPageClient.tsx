@@ -28,13 +28,13 @@ export default function CalendarPageClient({ userId, profile, canSeeAll }: Props
         <div style={{
           marginBottom: 24, borderRadius: 22, padding: '28px 28px 24px',
           background: lt
-            ? 'linear-gradient(160deg, #3b2a1a 0%, #4a3524 40%, #2a1e10 100%)'
+            ? 'linear-gradient(160deg, #1E7CFF 0%, #2D6FE0 55%, #1A5FD0 100%)'
             : 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
-          border: lt ? '1px solid rgba(60,30,0,0.15)' : '1px solid rgba(100,140,255,0.12)',
+          border: lt ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(100,140,255,0.12)',
           position: 'relative', overflow: 'hidden',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
         }}>
-          <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: lt ? 'radial-gradient(circle, rgba(255,220,160,0.12) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: lt ? 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: lt ? 'rgba(255,235,205,0.6)' : 'rgba(160,180,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
               Deadline Calendar
