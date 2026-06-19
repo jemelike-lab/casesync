@@ -587,7 +587,7 @@ function TeamHealthSection({
                       style={{
                         height: 8,
                         borderRadius: 4,
-                        background: team.pending ? 'var(--v2-surface-tint)' : `${team.cfg.accentColor}15`,
+                        background: team.pending ? 'var(--v2-surface-tint)' : `${team.cfg.accentColor}2E`,
                         overflow: 'hidden',
                         position: 'relative',
                       }}
@@ -600,7 +600,7 @@ function TeamHealthSection({
                             top: 0,
                             bottom: 0,
                             width: `${Math.max(2, pct)}%`,
-                            background: `linear-gradient(90deg, ${team.cfg.accentColor} 0%, ${team.cfg.accentColor}cc 100%)`,
+                            background: `${team.cfg.accentColor}`,
                             borderRadius: 4,
                           }}
                         />

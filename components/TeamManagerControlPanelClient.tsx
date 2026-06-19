@@ -444,7 +444,7 @@ function TeamHealthSection({
                         <Text fz={12} fw={600} c="var(--v2-text)" truncate>{planner.full_name ?? 'Unnamed'}</Text>
                         <Text fz={11} fw={700} c="var(--v2-text)">{caseload.toLocaleString()}</Text>
                       </Group>
-                      <Box style={{ height: 8, borderRadius: 4, background: `${barColor}15`, overflow: 'hidden', position: 'relative' }}>
+                      <Box style={{ height: 8, borderRadius: 4, background: `${barColor}2E`, overflow: 'hidden', position: 'relative' }}>
                         <Box
                           style={{
                             position: 'absolute',
@@ -452,7 +452,7 @@ function TeamHealthSection({
                             top: 0,
                             bottom: 0,
                             width: `${Math.max(2, pct)}%`,
-                            background: `linear-gradient(90deg, ${barColor} 0%, ${barColor}cc 100%)`,
+                            background: `${barColor}`,
                             borderRadius: 4,
                           }}
                         />

@@ -385,7 +385,7 @@ function CaseloadSnapshotSection({ scopedSummary }: { scopedSummary: ScopedSumma
                     style={{
                       height: 6,
                       borderRadius: 3,
-                      background: `${row.color}15`,
+                      background: `${row.color}2E`,
                       overflow: 'hidden',
                       position: 'relative',
                     }}
@@ -398,7 +398,7 @@ function CaseloadSnapshotSection({ scopedSummary }: { scopedSummary: ScopedSumma
                           top: 0,
                           bottom: 0,
                           width: `${Math.max(2, pct)}%`,
-                          background: `linear-gradient(90deg, ${row.color} 0%, ${row.color}cc 100%)`,
+                          background: `${row.color}`,
                           borderRadius: 3,
                         }}
                       />
