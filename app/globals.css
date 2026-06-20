@@ -99,17 +99,17 @@
 /* Bottom mobile nav */
 [data-theme="light"] .mobile-nav {
   background: #0F172A !important;
-  border-top-color: #1b1209 !important;
+  border-top-color: #E2E8F0 !important;
   box-shadow: 0 -6px 20px rgba(0,0,0,0.18) !important;
 }
 
 [data-theme="light"] .mobile-nav a,
 [data-theme="light"] .mobile-nav button {
-  color: #2f2418 !important;
+  color: #0F172A !important;
 }
 
 [data-theme="light"] .mobile-nav span {
-  color: #2f2418 !important;
+  color: #0F172A !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
@@ -121,26 +121,26 @@
 
 [data-theme="light"] .mobile-nav a[aria-current="page"],
 [data-theme="light"] .mobile-nav a[aria-current="page"] span {
-  color: #1b1209 !important;
+  color: #0F172A !important;
 }
 
 /* Stat cards */
 [data-theme="light"] .stat-card {
   background: #ffffff;
-  border-color: #e0cdb8;
+  border-color: #E5E7EB;
 }
 
 /* Alert banner */
 [data-theme="light"] .alert-banner {
-  background: #fff5e6;
-  border-color: #f0d9b5;
+  background: #F1F5F9;
+  border-color: #E5E7EB;
   color: #0F172A;
 }
 
 /* Filter buttons */
 [data-theme="light"] .filter-btn {
   background: #E2E8F0;
-  border-color: #e0cdb8;
+  border-color: #E5E7EB;
   color: #0F172A;
 }
 
@@ -154,7 +154,7 @@
 [data-theme="light"] .week-strip-day {
   color: #0F172A !important;
   background: #E2E8F0 !important;
-  border-color: #e0cdb8 !important;
+  border-color: #E5E7EB !important;
 }
 
 
@@ -464,7 +464,7 @@ input[type="time"] {
 /* Nav active state */
 [data-theme="light"] nav a[style*="background: var(--surface-2)"] {
   color: #0F172A;
-  background: #e8d5c0 !important;
+  background: #E2E8F0 !important;
 }
 
 /* Greeting card */
@@ -670,7 +670,7 @@ input[type="time"] {
 
 /* All nav links white */
 [data-theme="light"] header nav a {
-  color: #f0e6d8 !important;
+  color: #FFFFFF !important;
 }
 
 [data-theme="light"] header nav a:hover {
