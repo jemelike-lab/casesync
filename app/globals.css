@@ -105,11 +105,11 @@
 
 [data-theme="light"] .mobile-nav a,
 [data-theme="light"] .mobile-nav button {
-  color: #0F172A !important;
+  color: #E2E8F0 !important;
 }
 
 [data-theme="light"] .mobile-nav span {
-  color: #0F172A !important;
+  color: #E2E8F0 !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
