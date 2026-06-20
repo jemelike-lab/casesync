@@ -321,6 +321,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       )}
 
       <PremiumStatGrid
+        brightGradients
         totalClients={totalStats.clients}
         overdue={totalStats.overdue}
         dueThisWeek={totalStats.dueThisWeek}
