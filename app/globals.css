@@ -1128,3 +1128,9 @@ input[type="time"] {
 [data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.9)"] { color: rgba(255,255,255,0.9) !important; }
 [data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.75)"] { color: rgba(255,255,255,0.75) !important; }
 [data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.5)"] { color: rgba(255,255,255,0.5) !important; }
+
+/* Mobile nav is a dark dock in light mode: re-assert its dark background over
+   the [style*="background: var..."] remap (which otherwise whitens it at equal
+   specificity). The light inactive text and the active pill both rely on this
+   bar staying dark. */
+[data-theme="light"] .mobile-nav.mobile-nav { background: #0F172A !important; }
