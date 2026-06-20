@@ -56,8 +56,6 @@ interface HeroCardProps {
 }
 
 function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, onClick, subtitle, delay = 0 }: HeroCardProps) {
-  const { theme } = useTheme();
-  const lt = theme === 'light';
   const animated = useCountUp(value, 1000)
   const [hovered, setHovered] = useState(false)
   const [entered, setEntered] = useState(false)
@@ -120,18 +118,18 @@ function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, 
             background: 'rgba(255,255,255,0.15)',
             backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: lt ? '#0F172A' : '#fff',
+            color: '#fff',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)',
           }}>
             {icon}
           </div>
           {total && total > 0 && pct > 0 && (
             <div style={{ position: 'relative' }}>
-              <ProgressArc pct={pct} color={lt ? '#94A3B8' : 'rgba(255,255,255,0.9)'} size={48} />
+              <ProgressArc pct={pct} color="rgba(255,255,255,0.9)" size={48} />
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 800, color: lt ? '#475569' : 'rgba(255,255,255,0.9)',
+                fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.9)',
               }}>
                 {pct}%
               </div>
@@ -143,7 +141,7 @@ function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, 
         <div style={{
           fontSize: 44,
           fontWeight: 900,
-          color: lt ? '#0F172A' : '#fff',
+          color: '#fff',
           lineHeight: 1,
           letterSpacing: '-0.03em',
           fontVariantNumeric: 'tabular-nums',
@@ -156,7 +154,7 @@ function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, 
         <div style={{
           fontSize: 13,
           fontWeight: 600,
-          color: lt ? '#475569' : 'rgba(255,255,255,0.75)',
+          color: 'rgba(255,255,255,0.75)',
           marginTop: 6,
           letterSpacing: '0.01em',
         }}>
@@ -165,7 +163,7 @@ function HeroStatCard({ label, value, total, icon, gradient, glowColor, active, 
         {subtitle && (
           <div style={{
             fontSize: 11,
-            color: lt ? '#64748B' : 'rgba(255,255,255,0.5)',
+            color: 'rgba(255,255,255,0.5)',
             marginTop: 2,
             fontWeight: 500,
           }}>
