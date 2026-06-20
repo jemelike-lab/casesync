@@ -55,7 +55,7 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') window.history.replaceState({}, document.title, '/login')
       if (type === 'recovery') router.push('/reset-password')
       else if (profile && profile.onboarded === false) router.push('/onboarding')
-      else if (type === 'invite' || type === 'magiclink') router.push('/w/dashboard')
+      else if (type === 'invite' || type === 'magiclink') router.push('/dashboard')
       router.refresh()
     }
     handleInviteLanding()
@@ -95,7 +95,7 @@ export default function LoginPage() {
         setLoading(false); return
       }
       const { data: profile } = await supabase.from('profiles').select('onboarded').eq('id', data.user.id).single()
-      router.push(profile && profile.onboarded === false ? '/onboarding' : '/w/dashboard')
+      router.push(profile && profile.onboarded === false ? '/onboarding' : '/dashboard')
       router.refresh()
     }
   }
