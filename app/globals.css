@@ -1122,3 +1122,9 @@ input[type="time"] {
   --v2-shadow-soft: 0 1px 3px rgba(43,30,107,0.06), 0 6px 24px rgba(43,30,107,0.08);
   --v2-shadow-kpi: 0 4px 20px -6px rgba(43,30,107,0.10);
 }
+
+/* Hero stat cards stay colored in light mode, so their inline white text must
+   survive the [style*="color:rgba(255,255,255,0..."] remap above. */
+[data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.9)"] { color: rgba(255,255,255,0.9) !important; }
+[data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.75)"] { color: rgba(255,255,255,0.75) !important; }
+[data-theme="light"] .premium-stat-card [style*="color:rgba(255,255,255,0.5)"] { color: rgba(255,255,255,0.5) !important; }
