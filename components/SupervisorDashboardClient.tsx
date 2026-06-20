@@ -264,29 +264,29 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       {/* Premium Header */}
       <div style={{
         marginBottom: 24, borderRadius: 22, padding: '24px 28px',
-        background: 'linear-gradient(160deg, #0c1a3a 0%, #142244 40%, #0e1630 100%)',
-        border: '1px solid rgba(100,140,255,0.12)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         position: 'relative', overflow: 'hidden',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
       }}>
         <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(160,180,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             {mode === 'supervisor' ? 'Supervisor Overview' : 'Team Manager Overview'}
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#fff' }}>{title}</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: 'var(--text)' }}>{title}</h1>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           {mode === 'supervisor' && (
             <>
               <Link href="/team?view=transfer" style={{
                 fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-secondary)',
                 transition: 'all 0.2s',
               }}>Transfer Board →</Link>
               <Link href="/team?view=assign-planners" style={{
                 fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-secondary)',
                 transition: 'all 0.2s',
               }}>Team Manager Board →</Link>
             </>
@@ -506,12 +506,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
 
       <div style={{
         marginBottom: 16, borderRadius: 18, padding: '20px 24px',
-        background: 'linear-gradient(160deg, #1a1230 0%, #251845 40%, #1c1035 100%)',
-        border: '1px solid rgba(138,100,255,0.15)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, right: -30, width: 90, height: 90, borderRadius: '50%', background: 'radial-gradient(circle, rgba(138,100,255,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
           Workload + rebalance readout
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10 }}>
@@ -534,12 +534,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link href="/team?view=transfer" style={{
             fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.25)', color: 'var(--accent)',
             transition: 'all 0.2s',
           }}>Open Transfer Board →</Link>
           <Link href="/team?full=1&filter=overdue" style={{
             fontSize: 12, fontWeight: 700, textDecoration: 'none', padding: '8px 16px', borderRadius: 10,
-            background: 'rgba(138,100,255,0.12)', border: '1px solid rgba(138,100,255,0.25)', color: '#b7a7ff',
+            background: 'rgba(0,122,255,0.1)', border: '1px solid rgba(0,122,255,0.25)', color: 'var(--accent)',
             transition: 'all 0.2s',
           }}>Review Overdue Queue →</Link>
         </div>
