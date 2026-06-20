@@ -1133,4 +1133,4 @@ input[type="time"] {
    the [style*="background: var..."] remap (which otherwise whitens it at equal
    specificity). The light inactive text and the active pill both rely on this
    bar staying dark. */
-[data-theme="light"] .mobile-nav.mobile-nav { background: #0F172A !important; }
+[data-theme="light"] .mobile-nav.mobile-nav { background: linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%) !important; }
