@@ -402,7 +402,7 @@ export default function TimeClockClient({
 
         {/* =========================== HERO =========================== */}
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
-          <Paper radius="lg" p="xl" className="tca-hero">
+          <Paper radius="lg" p="xl" className="tca-hero" style={{ minHeight: 260 }}>
             <div className="tca-hero-mesh" aria-hidden />
             <div className="tca-hero-orbs" aria-hidden>
               <span className="tca-orb tca-orb-1" />
@@ -414,12 +414,16 @@ export default function TimeClockClient({
             {bannerUrl ? (
               <>
                 <img src={bannerUrl} alt="" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, pointerEvents: "none" }} />
-                <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(90deg, rgba(13,16,38,0.86) 0%, rgba(13,16,38,0.66) 42%, rgba(13,16,38,0.34) 100%)" }} />
+                <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(0deg, rgba(8,10,24,0.82) 0%, rgba(8,10,24,0.30) 38%, rgba(8,10,24,0.06) 66%, transparent 100%)" }} />
+                <div style={{ position: "absolute", left: 32, bottom: 26, zIndex: 2 }}>
+                  <Title order={1} style={{ color: "#fff", fontSize: 34, fontWeight: 800, letterSpacing: "-0.01em", textShadow: "0 2px 18px rgba(0,0,0,0.55)" }}>Time Clock</Title>
+                </div>
               </>
             ) : (
               <img src="/heroes/time-clock.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
             )}
 
+            {!bannerUrl && (
             <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
               <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
                 <Group gap={8} align="center">
@@ -465,6 +469,7 @@ export default function TimeClockClient({
                 )}
               </Paper>
             </Group>
+            )}
           </Paper>
         </div>
 
