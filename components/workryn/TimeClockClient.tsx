@@ -93,6 +93,7 @@ interface Props {
   initialWeekEntries: TimeEntry[]
   initialWeekStart: string
   userName: string
+  bannerUrl?: string | null
 }
 
 const LIMIT = 10
@@ -242,6 +243,7 @@ export default function TimeClockClient({
   initialWeekEntries,
   initialWeekStart,
   userName,
+  bannerUrl,
 }: Props) {
   const [status, setStatus] = useState<StatusResponse | null>(null)
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(initialCurrentEntry)
@@ -409,7 +411,14 @@ export default function TimeClockClient({
             </div>
             <div className="tca-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/time-clock.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
+            {bannerUrl ? (
+              <>
+                <img src={bannerUrl} alt="" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, pointerEvents: "none" }} />
+                <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(90deg, rgba(13,16,38,0.86) 0%, rgba(13,16,38,0.66) 42%, rgba(13,16,38,0.34) 100%)" }} />
+              </>
+            ) : (
+              <img src="/heroes/time-clock.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
+            )}
 
             <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
               <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>

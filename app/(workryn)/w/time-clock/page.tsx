@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
 import TimeClockClient from '@/components/workryn/TimeClockClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Time Clock' }
@@ -41,12 +42,15 @@ export default async function TimeClockPage() {
     }),
   ])
 
+  const bannerUrl = await getPageBannerUrl('time-clock')
+
   return (
     <TimeClockClient
       initialCurrentEntry={JSON.parse(JSON.stringify(currentEntry))}
       initialWeekEntries={JSON.parse(JSON.stringify(weekEntries))}
       initialWeekStart={weekStart.toISOString()}
       userName={session.user.name ?? ''}
+      bannerUrl={bannerUrl}
     />
   )
 }
