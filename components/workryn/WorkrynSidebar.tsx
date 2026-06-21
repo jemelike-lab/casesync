@@ -98,7 +98,6 @@ interface WorkrynSidebarProps {
 export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
   const [notifFromTopbar, setNotifFromTopbar] = useState(false)
@@ -169,6 +168,9 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
     try {
       await fetch('/api/auth/signout', { method: 'POST' })
     } catch {
+      // Build the browser client lazily, client-side only — never at
+      // render time, where Supabase's auth init reads document.cookie during SSR.
+      const supabase = createClient()
       await supabase.auth.signOut()
     }
     window.location.href = '/login?reason=signed_out'

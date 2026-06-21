@@ -18,7 +18,13 @@ function startOfWeek(d = new Date()): Date {
 }
 
 export default async function DashboardPage() {
-  const session = await getWorkrynSession()
+  let session: Awaited<ReturnType<typeof getWorkrynSession>>
+  try {
+    session = await getWorkrynSession()
+  } catch (err) {
+    console.error('[Workryn Dashboard] getWorkrynSession failed:', err)
+    redirect('/dashboard')
+  }
 
   if (!session) {
     // No Workryn user record linked yet — redirect to CaseSync dashboard
