@@ -44,17 +44,21 @@ export default async function WorkrynLayout({ children }: { children: React.Reac
   // Enforce MFA for all roles (HIPAA compliance)
   await enforceMfa()
 
-  let session = await getWorkrynSession()
+  // Wrap the session lookup + auto-provision in one guard so any DB hiccup
+  // degrades to the fallback user below instead of crashing the layout (which
+  // would 500 every /w/* route before the page's own guard could run).
+  let session: Awaited<ReturnType<typeof getWorkrynSession>> = null
+  try {
+    session = await getWorkrynSession()
 
-  // Auto-provision: create w_user from CaseSync profile if missing
-  if (!session) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // Auto-provision: create w_user from CaseSync profile if missing
+    if (!session) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
 
-    try {
       await db.user.upsert({
         where: { supabaseId: user.id },
         create: {
@@ -72,10 +76,9 @@ export default async function WorkrynLayout({ children }: { children: React.Reac
         },
       })
       session = await getWorkrynSession()
-    } catch (err) {
-      console.error('[Workryn Layout] Auto-provision failed:', err)
-      session = await getWorkrynSession()
     }
+  } catch (err) {
+    console.error('[Workryn Layout] session/auto-provision failed:', err)
   }
 
   const workrynUser = session?.user ?? {
