@@ -245,11 +245,30 @@ const CSS = `
 
   @media(max-width:760px){.b2-hero{grid-template-columns:1fr}.b2-hero-art{display:none}.b2-hl{grid-template-columns:1fr}.b2-fgrid{grid-template-columns:1fr}.b2-steps{grid-template-columns:1fr}.b2-trip{grid-template-columns:1fr 1fr}.b2-hero h1{font-size:30px}}
 
-  /* typography tune */
+  /* typography tune: stronger labels/body to match the numbers */
   :root[data-theme="light"] #ben2-app{ --dim:#454f68; --faint:#5f6a84; }
   #ben2-app .b2-summary .row span{ color:var(--text); font-weight:600; }
   #ben2-app .b2-card p, #ben2-app .b2-list li, #ben2-app .b2-deflist dd, #ben2-app .b2-head .sub{ font-weight:500; }
   #ben2-app .b2-spectitle{ color:var(--text); }
+
+  /* rich form cards — accent bar + icon-badge header (matches the b2-card look) */
+  #ben2-app .b2-richform{ overflow:hidden; }
+  #ben2-app .b2-richform::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--rose); }
+  #ben2-app .b2-formtitle{ display:flex; align-items:center; gap:11px; }
+  #ben2-app .b2-formico{ width:40px; height:40px; border-radius:11px; display:grid; place-items:center; flex:0 0 auto; background:color-mix(in srgb,var(--rose) 16%,transparent); color:var(--rose); }
+  #ben2-app .b2-formico svg{ width:22px; height:22px; }
+  /* colorful choice tiles with icon badges */
+  #ben2-app .b2-choice-rich{ align-items:center; gap:12px; }
+  #ben2-app .b2-choiceico{ width:40px; height:40px; border-radius:11px; display:grid; place-items:center; flex:0 0 auto; background:color-mix(in srgb,var(--c,var(--rose)) 16%,transparent); color:var(--c,var(--rose)); }
+  #ben2-app .b2-choiceico svg{ width:21px; height:21px; }
+  #ben2-app .b2-choicetxt{ flex:1; min-width:0; }
+  #ben2-app .b2-choice-rich .ck{ margin-left:auto; }
+  #ben2-app .b2-choice-rich:hover{ border-color:var(--c,var(--rose)); }
+  #ben2-app .b2-choice-rich.sel{ border-color:var(--c,var(--rose)); box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--rose)) 20%,transparent); }
+  #ben2-app .b2-choice-rich.sel .ck{ border-color:var(--c,var(--rose)); background:var(--c,var(--rose)); }
+  #ben2-app .b2-choice-rich.sel .ck svg{ opacity:1; }
+  /* accent the numbered step labels for color */
+  #ben2-app .b2-richform .b2-seclabel{ color:var(--rose); }
 `
 
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -592,10 +611,10 @@ function Icon({ id, style }: { id: string; style?: React.CSSProperties }) {
 }
 
 const GYM_OPTIONS = [
-  { key: 'pf_option_1', title: 'Planet Fitness — Option 1', sub: 'Classic · home club · employee $11/mo' },
-  { key: 'pf_option_2', title: 'Planet Fitness — Option 2', sub: 'Black Card · all locations · employee $16/mo' },
-  { key: 'la_fitness', title: 'LA Fitness', sub: 'Single membership · employee $29.99/mo' },
-  { key: 'waive', title: 'Waive for now', sub: "I'll decline gym membership at this time" },
+  { key: 'pf_option_1', title: 'Planet Fitness — Option 1', sub: 'Classic · home club · employee $11/mo', icon: 'dumbbell', c: '#F43F5E' },
+  { key: 'pf_option_2', title: 'Planet Fitness — Option 2', sub: 'Black Card · all locations · employee $16/mo', icon: 'dumbbell', c: '#a855f7' },
+  { key: 'la_fitness', title: 'LA Fitness', sub: 'Single membership · employee $29.99/mo', icon: 'dumbbell', c: '#0ea5e9' },
+  { key: 'waive', title: 'Waive for now', sub: "I'll decline gym membership at this time", icon: 'x', c: '#94a3b8' },
 ]
 
 const GYM_LABEL: Record<string, string> = Object.fromEntries(GYM_OPTIONS.map((o) => [o.key, o.title]))
@@ -636,9 +655,9 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
   }
 
   return (
-    <div className="b2-form" id="gym-form" style={{ '--rose': ROSE } as React.CSSProperties}>
+    <div className="b2-form b2-richform" id="gym-form" style={{ '--rose': ROSE } as React.CSSProperties}>
       <div className="b2-form-head">
-        <h3>Your gym election</h3>
+        <div className="b2-formtitle"><span className="b2-formico"><Icon id="dumbbell" /></span><h3>Your gym election</h3></div>
         {saved && (
           <span className="b2-saved-badge" style={{ color: ROSE, background: 'rgba(244,63,94,.14)' }}>
             <Icon id="check" />
@@ -655,17 +674,16 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
         {GYM_OPTIONS.map((o) => (
           <div
             key={o.key}
-            className="b2-choice"
+            className={'b2-choice b2-choice-rich' + (selection === o.key ? ' sel' : '')}
             onClick={() => setSelection(o.key)}
-            style={selection === o.key ? { borderColor: ROSE } : undefined}
+            style={{ '--c': o.c } as React.CSSProperties}
           >
-            <span className="ck" style={{ '--rose': ROSE } as React.CSSProperties}>
-              <Icon id="check" />
-            </span>
-            <div>
+            <span className="b2-choiceico"><Icon id={o.icon} /></span>
+            <div className="b2-choicetxt">
               <b>{o.title}</b>
               <span>{o.sub}</span>
             </div>
+            <span className="ck"><Icon id="check" /></span>
           </div>
         ))}
       </div>
@@ -762,9 +780,9 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
   }
 
   return (
-    <div className="b2-form" id="retire-form" style={{ '--rose': '#818cf8' } as React.CSSProperties}>
+    <div className="b2-form b2-richform" id="retire-form" style={{ '--rose': '#818cf8' } as React.CSSProperties}>
       <div className="b2-form-head">
-        <h3>Your 401(k) election</h3>
+        <div className="b2-formtitle"><span className="b2-formico"><Icon id="sprout" /></span><h3>Your 401(k) election</h3></div>
         {saved && (
           <span className="b2-saved-badge" style={{ color: '#818cf8', background: 'rgba(129,140,248,.14)' }}>
             <Icon id="check" />
@@ -915,9 +933,9 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
   }
 
   return (
-    <div className="b2-form" id="mileage-form" style={{ '--rose': AMBER } as React.CSSProperties}>
+    <div className="b2-form b2-richform" id="mileage-form" style={{ '--rose': AMBER } as React.CSSProperties}>
       <div className="b2-form-head">
-        <h3>Submit a mileage trip</h3>
+        <div className="b2-formtitle"><span className="b2-formico"><Icon id="car" /></span><h3>Submit a mileage trip</h3></div>
         {ok && (
           <span className="b2-saved-badge" style={{ color: AMBER, background: 'rgba(217,119,6,.14)' }}>
             <Icon id="mail" />
@@ -971,8 +989,8 @@ function Rosters({ gym, retire }: { gym: GymRosterRow[]; retire: RetireRosterRow
         <div><h2>Election rosters</h2><div className="sub">Supervisor view · gym &amp; 401(k) elections</div></div>
       </div>
 
-      <div className="b2-form">
-        <div className="b2-form-head"><h3>Gym elections ({gym.length})</h3></div>
+      <div className="b2-form b2-richform" style={{ '--rose': ROSE } as React.CSSProperties}>
+        <div className="b2-form-head"><div className="b2-formtitle"><span className="b2-formico"><Icon id="dumbbell" /></span><h3>Gym elections ({gym.length})</h3></div></div>
         {gym.length === 0 ? <p className="b2-mininote">No gym elections yet.</p> : gym.map((r) => (
           <div className="b2-benrow" key={r.userId} style={{ gridTemplateColumns: '1.4fr 1.6fr 1fr 0.8fr' }}>
             <span><b>{r.userName}</b></span>
@@ -983,8 +1001,8 @@ function Rosters({ gym, retire }: { gym: GymRosterRow[]; retire: RetireRosterRow
         ))}
       </div>
 
-      <div className="b2-form" style={{ marginTop: '16px' }}>
-        <div className="b2-form-head"><h3>401(k) elections ({retire.length})</h3></div>
+      <div className="b2-form b2-richform" style={{ marginTop: '16px', '--rose': '#818cf8' } as React.CSSProperties}>
+        <div className="b2-form-head"><div className="b2-formtitle"><span className="b2-formico"><Icon id="sprout" /></span><h3>401(k) elections ({retire.length})</h3></div></div>
         {retire.length === 0 ? <p className="b2-mininote">No 401(k) elections yet.</p> : retire.map((r) => (
           <div className="b2-benrow" key={r.userId} style={{ gridTemplateColumns: '1.6fr 1fr 1fr 0.8fr' }}>
             <span><b>{r.userName}</b></span>
