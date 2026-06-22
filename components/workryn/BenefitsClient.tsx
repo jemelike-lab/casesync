@@ -269,6 +269,9 @@ const CSS = `
   #ben2-app .b2-choice-rich.sel .ck svg{ opacity:1; }
   /* accent the numbered step labels for color */
   #ben2-app .b2-richform .b2-seclabel{ color:var(--rose); }
+
+  /* stat-card frame around section headers */
+  #ben2-app .b2-head{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 20px; box-shadow:var(--shadow); }
 `
 
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
