@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
 import DepartmentsClient from '@/components/workryn/DepartmentsClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Departments' }
@@ -48,11 +49,14 @@ export default async function DepartmentsPage() {
     }),
   ])
 
+  const bannerUrl = await getPageBannerUrl('departments')
+
   return (
     <DepartmentsClient
       initialDepartments={JSON.parse(JSON.stringify(departments))}
       users={JSON.parse(JSON.stringify(users))}
       currentUserRole={session.user.role}
+      bannerUrl={bannerUrl}
     />
   )
 }

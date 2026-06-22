@@ -2,6 +2,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import TicketsClient from '@/components/workryn/TicketsClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Help Desk' }
@@ -31,12 +32,15 @@ export default async function TicketsPage() {
     }),
   ])
 
+  const bannerUrl = await getPageBannerUrl('tickets')
+
   return (
     <TicketsClient
       initialTickets={JSON.parse(JSON.stringify(tickets))}
       users={JSON.parse(JSON.stringify(users))}
       departments={JSON.parse(JSON.stringify(departments))}
       currentUser={{ id: session!.user.id, role: session!.user.role }}
+      bannerUrl={bannerUrl}
     />
   )
 }

@@ -23,6 +23,7 @@ import {
   Container, Group, Modal, Paper, SimpleGrid, Stack, Text, TextInput,
   Textarea, ThemeIcon, Title, Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useDisclosure } from '@mantine/hooks'
 import {
   Briefcase, Building2, CheckSquare, ChevronRight, Code, Crown,
@@ -90,7 +91,7 @@ export const DEPT_COLOR_SWATCHES = [
 // MAIN
 // =================================================================
 
-export default function DepartmentsClient({ initialDepartments, users, currentUserRole }: Props) {
+export default function DepartmentsClient({ initialDepartments, users, currentUserRole, bannerUrl }: Props & { bannerUrl?: string | null }) {
   const router = useRouter()
   const isAdmin = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN'
 
@@ -167,9 +168,19 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
 
   return (
     <>
-      <Container size="xl" py="lg" className="dpa-root">
+      <Container size="xl" py="lg" w="100%" className="dpa-root">
 
         {/* ============ HERO (stats baked in) ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="Departments" bannerUrl={bannerUrl} />
+            {isAdmin && (
+              <Group justify="flex-end" mb="lg">
+                <Button size="md" leftSection={<Plus size={16} />} onClick={openCreate} className="dpa-btn-primary">New Department</Button>
+              </Group>
+            )}
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="dpa-hero">
             <div className="dpa-hero-mesh" aria-hidden />
@@ -216,6 +227,7 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============ SEARCH BAR ============ */}
         <Card radius="lg" p="md" withBorder mb="md" className="dpa-panel">

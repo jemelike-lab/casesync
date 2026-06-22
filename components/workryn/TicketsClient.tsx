@@ -31,6 +31,7 @@ import {
   Group, Loader, Menu, Modal, Paper, Select, SimpleGrid,
   Stack, Text, TextInput, Textarea, ThemeIcon, Title, Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useDisclosure } from '@mantine/hooks'
 import {
   AlertTriangle, Archive, ArrowUpCircle, CheckCircle2, CheckSquare,
@@ -104,7 +105,7 @@ const STAT_THEMES = {
 // MAIN
 // =================================================================
 
-export default function TicketsClient({ initialTickets, users, departments, currentUser }: Props) {
+export default function TicketsClient({ initialTickets, users, departments, currentUser, bannerUrl }: Props & { bannerUrl?: string | null }) {
   const router = useRouter()
   const [tickets, setTickets] = useState<TicketItem[]>(initialTickets)
   const [archivedTickets, setArchivedTickets] = useState<TicketItem[] | null>(null)
@@ -262,9 +263,17 @@ export default function TicketsClient({ initialTickets, users, departments, curr
 
   return (
     <>
-      <Container size="xl" py="lg" className="tia-root">
+      <Container size="xl" py="lg" w="100%" className="tia-root">
 
         {/* ============ HERO ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="Tickets" bannerUrl={bannerUrl} />
+            <Group justify="flex-end" mb="lg">
+              <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="tia-btn-primary">New Ticket</Button>
+            </Group>
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="tia-hero">
             <div className="tia-hero-mesh" aria-hidden />
@@ -305,6 +314,7 @@ export default function TicketsClient({ initialTickets, users, departments, curr
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============ STAT CARDS ============ */}
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">
