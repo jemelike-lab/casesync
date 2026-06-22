@@ -19,7 +19,7 @@ const CSS = `
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
     color:var(--text);background:var(--bg);display:block;line-height:1.5;-webkit-font-smoothing:antialiased;
   }
-  #ben2-app[data-theme="light"]{
+  :root[data-theme="light"] #ben2-app{
     --bg:#f5f7fb;--surface:#fff;--surface-2:#f3f5fa;--surface-3:#eef1f8;--border:#e4e8f1;
     --text:#1d2536;--dim:#566081;--faint:#8893ab;--shadow:0 14px 34px -20px rgba(30,40,70,.3);
   }
@@ -40,7 +40,7 @@ const CSS = `
       radial-gradient(120% 160% at 98% 8%,rgba(167,77,247,.42),rgba(167,77,247,0) 50%),
       radial-gradient(150% 200% at 70% 130%,rgba(244,114,182,.5),rgba(244,114,182,0) 55%),
       linear-gradient(135deg,#27102e 0%,#3c1333 45%,#561740 100%)}
-  #ben2-app[data-theme="light"] .b2-hero{background:
+  :root[data-theme="light"] #ben2-app .b2-hero{background:
       radial-gradient(120% 150% at 8% 0%,rgba(251,113,133,.85),rgba(225,29,107,0) 55%),
       radial-gradient(120% 160% at 98% 8%,rgba(192,132,252,.7),rgba(192,132,252,0) 50%),
       radial-gradient(150% 200% at 70% 130%,rgba(244,114,182,.85),rgba(244,114,182,0) 55%),
