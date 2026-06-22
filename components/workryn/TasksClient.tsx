@@ -26,6 +26,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
+import PageBanner from '@/components/workryn/PageBanner'
 import {
   ActionIcon,
   Avatar,
@@ -90,6 +91,7 @@ interface Props {
   users: UserType[]
   departments: Department[]
   currentUserId: string
+  bannerUrl?: string | null
 }
 
 const COLUMNS = [
@@ -137,7 +139,7 @@ function ProgressRing({ percent, size = 100, stroke = 8 }: { percent: number; si
 // MAIN
 // =================================================================
 
-export default function TasksClient({ initialTasks, users, departments, currentUserId: _currentUserId }: Props) {
+export default function TasksClient({ initialTasks, users, departments, currentUserId: _currentUserId, bannerUrl }: Props) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState<string | null>(null)
@@ -256,9 +258,17 @@ export default function TasksClient({ initialTasks, users, departments, currentU
 
   return (
     <>
-      <Container size="xl" py="lg" className="tka-root">
+      <Container size="xl" py="lg" w="100%" className="tka-root">
 
         {/* ============ HERO ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="Tasks" bannerUrl={bannerUrl} />
+            <Group justify="flex-end" mb="lg">
+              <Button size="md" leftSection={<Plus size={16} />} onClick={openCreate} className="tka-btn-primary">New Task</Button>
+            </Group>
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="tka-hero">
             <div className="tka-hero-mesh" aria-hidden />
@@ -317,6 +327,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============ STAT CARDS ============ */}
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">

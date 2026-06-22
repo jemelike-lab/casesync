@@ -2,6 +2,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import TasksClient from '@/components/workryn/TasksClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Tasks' }
@@ -27,12 +28,15 @@ export default async function TasksPage() {
     db.department.findMany({ select: { id: true, name: true, color: true }, orderBy: { name: 'asc' } }),
   ])
 
+  const bannerUrl = await getPageBannerUrl('tasks')
+
   return (
     <TasksClient
       initialTasks={JSON.parse(JSON.stringify(tasks))}
       users={JSON.parse(JSON.stringify(users))}
       departments={JSON.parse(JSON.stringify(departments))}
       currentUserId={session!.user.id}
+      bannerUrl={bannerUrl}
     />
   )
 }
