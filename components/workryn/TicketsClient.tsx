@@ -268,7 +268,7 @@ export default function TicketsClient({ initialTickets, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner title="Tickets" bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="tia-btn-primary">New Ticket</Button>
             </Group>

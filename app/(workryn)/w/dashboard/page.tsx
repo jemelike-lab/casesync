@@ -3,6 +3,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/workryn/DashboardClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -188,6 +189,8 @@ export default async function DashboardPage() {
     // Non-fatal — renders with zero alerts
   }
 
+  const bannerUrl = await getPageBannerUrl('dashboard')
+
   return (
     <DashboardClient
       user={session.user}
@@ -199,6 +202,7 @@ export default async function DashboardPage() {
       todayShifts={todayShifts}
       csAlerts={csAlerts}
       csRole={csRole}
+      bannerUrl={bannerUrl}
     />
   )
 }

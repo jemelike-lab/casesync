@@ -204,7 +204,7 @@ export default function TrainingClient({
         {/* ============ WELCOME HERO (banner image + Aurora mint glow overlay) ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner title="Training" bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} />
             {canCreate && (
               <Group justify="flex-end" mb="lg">
                 <Button size="md" leftSection={<Plus size={16} />} onClick={createModal.open} className="tra-btn-primary">Create Course</Button>

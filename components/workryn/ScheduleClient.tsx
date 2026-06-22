@@ -255,7 +255,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner title="Schedule" bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} />
             <Group justify="space-between" align="center" wrap="wrap" gap="sm" mb="lg">
               <Group gap="sm" align="center">
                 <Group gap={4} align="center">

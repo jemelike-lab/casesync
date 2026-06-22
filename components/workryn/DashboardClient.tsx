@@ -44,6 +44,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -167,7 +168,8 @@ export default function DashboardClient({
   todayShifts,
   csAlerts,
   csRole,
-}: Props) {
+  bannerUrl,
+}: Props & { bannerUrl?: string | null }) {
   const productivity = totalTaskCount > 0 ? Math.round((completedCount / totalTaskCount) * 100) : 0
   const tip = TIPS[new Date().getDay() % TIPS.length]
   const streak = Math.min(completedCount, 30)
@@ -202,9 +204,17 @@ export default function DashboardClient({
 
   return (
     <>
-      <Container size="xl" py="lg" className="wd-aurora">
+      <Container size="xl" py="lg" w="100%" className="wd-aurora">
 
         {/* ============================== HERO ============================== */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title={greet(user.name ?? 'there')} bannerUrl={bannerUrl} />
+            <Group justify="flex-end" mb="lg">
+              <LiveClock />
+            </Group>
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="wd-hero">
             <div className="wd-hero-mesh" aria-hidden />
@@ -222,14 +232,12 @@ export default function DashboardClient({
                 <Title order={1} className="wd-hero-title">
                   {greet(user.name ?? 'there')}
                 </Title>
-                <Text size="md" c="dimmed">
-                  Here&apos;s what&apos;s happening in your workspace today.
-                </Text>
               </Stack>
               <LiveClock />
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============================== STATS ============================== */}
         <SimpleGrid cols={{ base: 2, sm: 2, md: 4 }} spacing="md" mb="lg">
