@@ -19,6 +19,7 @@ export type AuroraAccent =
   | 'indigo'
   | 'slate'
   | 'amber'
+  | 'rose'
 
 export const AURORA_ACCENTS: Record<
   AuroraAccent,
@@ -35,6 +36,7 @@ export const AURORA_ACCENTS: Record<
   indigo:  { hex: '#6366F1', rgb: '99,102,241',  soft: 'rgba(99,102,241,0.18)',  bar: 'linear-gradient(90deg, #a5b4fc, #6366F1)' },
   slate:   { hex: '#64748B', rgb: '100,116,139', soft: 'rgba(100,116,139,0.18)', bar: 'linear-gradient(90deg, #94a3b8, #64748B)' },
   amber:   { hex: '#F59E0B', rgb: '245,158,11',  soft: 'rgba(245,158,11,0.18)',  bar: 'linear-gradient(90deg, #fbbf24, #d97706)' },
+  rose:    { hex: '#F43F5E', rgb: '244,63,94',   soft: 'rgba(244,63,94,0.18)',   bar: 'linear-gradient(90deg, #fb7185, #F43F5E)' },
 }
 
 /**
@@ -55,6 +57,7 @@ export const ROUTE_ACCENT: Record<string, AuroraAccent> = {
   '/w/profile':     'violet',
   '/w/settings':    'slate',
   '/w/admin':       'amber',
+  '/w/benefits':    'rose',
 }
 
 export function accentForPath(pathname: string | null | undefined): AuroraAccent {

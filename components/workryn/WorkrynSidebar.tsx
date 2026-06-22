@@ -25,7 +25,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutGrid, Timer, ListChecks, MessageCircle, ClipboardCheck,
   CalendarDays, Umbrella, BookOpen, Settings, LogOut, Landmark, ShieldCheck,
-  Bell, Check, User, ArrowLeftRight, Menu, X,
+  Bell, Check, User, ArrowLeftRight, Menu, X, HeartHandshake,
 } from 'lucide-react'
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -60,6 +60,7 @@ const navItems: NavItem[] = [
   { href: '/w/evaluations', label: 'Evaluations', icon: ClipboardCheck,  accent: 'fuchsia' },
   { href: '/w/schedule',    label: 'Schedule',    icon: CalendarDays,    accent: 'sky' },
   { href: '/w/pto',         label: 'PTO',         icon: Umbrella,        accent: 'teal' },
+  { href: '/w/benefits',    label: 'Benefits',    icon: HeartHandshake,  accent: 'rose' },
   { href: '/w/training',    label: 'Training',    icon: BookOpen,        accent: 'mint' },
   { href: '/w/departments', label: 'Departments', icon: Landmark,        accent: 'indigo' },
   { href: '/w/profile',     label: 'Profile',     icon: User,            accent: 'violet' },

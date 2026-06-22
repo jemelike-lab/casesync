@@ -25,6 +25,7 @@ interface SendOptions {
   text?: string
   html?: string
   replyTo?: string
+  attachments?: Array<{ filename: string; content: Buffer | Uint8Array | string; contentType?: string }>
 }
 
 let _transporter: Transporter | null = null
@@ -61,6 +62,7 @@ export async function sendEmail(opts: SendOptions): Promise<{ ok: boolean; messa
       to: opts.to,
       subject: opts.subject,
       preview: (opts.text || opts.html || '').slice(0, 200),
+      attachments: opts.attachments?.length || 0,
     })
     return { ok: true, messageId: 'dev-noop' }
   }
@@ -73,6 +75,7 @@ export async function sendEmail(opts: SendOptions): Promise<{ ok: boolean; messa
       text: opts.text,
       html: opts.html,
       replyTo: opts.replyTo,
+      attachments: opts.attachments,
     })
     return { ok: true, messageId: result.messageId }
   } catch (err: any) {

@@ -82,6 +82,11 @@ model User {
   ptoReviewed        PtoRequest[]       @relation("PtoRequestReviewer")
   intuitEmployeeMap  IntuitEmployeeMap?
 
+  // ── Benefits ──
+  benefitGymSelection       BenefitGymSelection?
+  benefitRetirementElection BenefitRetirementElection?
+  benefitMileageSubmissions BenefitMileageSubmission[]
+
   @@schema("public")
   @@map("w_user")
 }
@@ -879,4 +884,63 @@ model IntuitConnection {
 
   @@schema("public")
   @@map("w_intuit_connection")
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// Benefits (Workryn) — see benefits_migration.sql. RLS lives in the DB.
+// ─────────────────────────────────────────────────────────────────────────
+model BenefitGymSelection {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  selection          String    // 'pf_option_1' | 'pf_option_2' | 'la_fitness' | 'waive'
+  preferredStartDate DateTime? @db.Date
+  authorizationAck   Boolean   @default(false)
+  signatureName      String
+  signedAt           DateTime  @default(now())
+  emailedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("w_benefit_gym_selection")
+  @@schema("public")
+}
+
+model BenefitRetirementElection {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  deferralType  String    // 'percent' | 'amount'
+  deferralValue Decimal   @db.Decimal(10, 2)
+  preTax        Boolean   @default(true)
+  allocations   Json      @default("{}") // { fundKey: wholePercent } summing to 100
+  beneficiaries Json      @default("[]") // [{ tier, name, relationship, percent }]
+  signatureName String
+  signedAt      DateTime  @default(now())
+  emailedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("w_benefit_retirement_election")
+  @@schema("public")
+}
+
+model BenefitMileageSubmission {
+  id          String    @id @default(cuid())
+  userId      String
+  tripDate    DateTime  @db.Date
+  miles       Decimal   @db.Decimal(8, 1)
+  purpose     String?
+  ratePerMile Decimal?  @db.Decimal(6, 3)
+  amount      Decimal?  @db.Decimal(10, 2)
+  submittedAt DateTime  @default(now())
+  emailedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, tripDate])
+  @@map("w_benefit_mileage_submission")
+  @@schema("public")
 }
