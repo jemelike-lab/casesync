@@ -244,6 +244,12 @@ const CSS = `
   .b2-compliance a{color:var(--faint)}
 
   @media(max-width:760px){.b2-hero{grid-template-columns:1fr}.b2-hero-art{display:none}.b2-hl{grid-template-columns:1fr}.b2-fgrid{grid-template-columns:1fr}.b2-steps{grid-template-columns:1fr}.b2-trip{grid-template-columns:1fr 1fr}.b2-hero h1{font-size:30px}}
+
+  /* typography tune */
+  :root[data-theme="light"] #ben2-app{ --dim:#454f68; --faint:#5f6a84; }
+  #ben2-app .b2-summary .row span{ color:var(--text); font-weight:600; }
+  #ben2-app .b2-card p, #ben2-app .b2-list li, #ben2-app .b2-deflist dd, #ben2-app .b2-head .sub{ font-weight:500; }
+  #ben2-app .b2-spectitle{ color:var(--text); }
 `
 
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
