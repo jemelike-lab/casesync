@@ -25,7 +25,7 @@ interface SendOptions {
   text?: string
   html?: string
   replyTo?: string
-  attachments?: Array<{ filename: string; content: Buffer | Uint8Array | string; contentType?: string }>
+  attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>
 }
 
 let _transporter: Transporter | null = null
