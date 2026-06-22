@@ -55,6 +55,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useDisclosure } from '@mantine/hooks'
 import {
   Calendar as CalendarIcon,
@@ -129,7 +130,7 @@ function addMonths(d: Date, n: number) { return new Date(d.getFullYear(), d.getM
 // MAIN
 // =================================================================
 
-export default function ScheduleClient({ initialShifts, users, departments, currentUser }: Props) {
+export default function ScheduleClient({ initialShifts, users, departments, currentUser, bannerUrl }: Props & { bannerUrl?: string | null }) {
   const [shifts, setShifts] = useState<Shift[]>(initialShifts)
   const [view, setView] = useState<ViewMode>('week')
   const [cursor, setCursor] = useState(new Date())
@@ -249,9 +250,41 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
 
   return (
     <>
-      <Container size="xl" py="lg" className="sca-root">
+      <Container size="xl" py="lg" w="100%" className="sca-root">
 
         {/* ============ HERO ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="Schedule" bannerUrl={bannerUrl} />
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm" mb="lg">
+              <Group gap="sm" align="center">
+                <Group gap={4} align="center">
+                  <Tooltip label="Previous" withArrow>
+                    <ActionIcon size="lg" radius="md" variant="default" onClick={prev} className="sca-nav-btn">
+                      <ChevronLeft size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Button size="sm" variant="default" onClick={goToday} className="sca-today-btn">Today</Button>
+                  <Tooltip label="Next" withArrow>
+                    <ActionIcon size="lg" radius="md" variant="default" onClick={next} className="sca-nav-btn">
+                      <ChevronRight size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                <Title order={3} style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{headerLabel()}</Title>
+              </Group>
+              <Group gap="sm" align="center">
+                {canSeeAll && users.length > 5 && (
+                  <Select size="sm" value={filterUserId} onChange={setFilterUserId} data={[{ value: '', label: 'All staff' }, ...users.map((u) => ({ value: u.id, label: u.name ?? 'Unnamed' }))]} placeholder="All staff" clearable searchable leftSection={<Users size={14} />} w={200} />
+                )}
+                <SegmentedControl size="sm" value={view} onChange={(v) => setView(v as ViewMode)} data={[{ value: 'month', label: 'Month' }, { value: 'week', label: 'Week' }, { value: 'day', label: 'Day' }]} className="sca-view-toggle" />
+                {isManager && (
+                  <Button size="md" leftSection={<Plus size={16} />} onClick={() => openNew(visibleUsers[0]?.id ?? '', cursor)} className="sca-btn-primary">New Shift</Button>
+                )}
+              </Group>
+            </Group>
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="sca-hero">
             <div className="sca-hero-mesh" aria-hidden />
@@ -340,6 +373,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
             </Stack>
           </Paper>
         </div>
+        )}
 
         {/* ============ CALENDAR PANEL ============ */}
         <Card radius="lg" p={0} withBorder className="sca-panel">

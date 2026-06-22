@@ -2,6 +2,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import ScheduleClient from '@/components/workryn/ScheduleClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Schedule' }
@@ -32,6 +33,8 @@ export default async function SchedulePage() {
     db.department.findMany({ select: { id: true, name: true, color: true }, orderBy: { name: 'asc' } }),
   ])
 
+  const bannerUrl = await getPageBannerUrl('schedule')
+
   return (
     <ScheduleClient
       initialShifts={JSON.parse(JSON.stringify(shifts))}
@@ -39,6 +42,7 @@ export default async function SchedulePage() {
       departments={JSON.parse(JSON.stringify(departments))}
       currentUser={{ id: session!.user.id, role: session!.user.role }}
       weekStart={from.toISOString()}
+      bannerUrl={bannerUrl}
     />
   )
 }

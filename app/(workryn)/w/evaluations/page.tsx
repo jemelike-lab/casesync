@@ -1,4 +1,5 @@
 import { getWorkrynSession } from '@/lib/workryn/auth'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
@@ -97,6 +98,8 @@ export default async function EvaluationsPage() {
 
   const serialized = JSON.parse(JSON.stringify({ evaluations, templates, users }))
 
+  const bannerUrl = await getPageBannerUrl('evaluations')
+
   return (
     <EvaluationsClient
       initialEvaluations={serialized.evaluations}
@@ -109,6 +112,7 @@ export default async function EvaluationsPage() {
         avatarColor: session.user.avatarColor,
         hireDate: session.user.createdAt ?? new Date().toISOString(),
       }}
+      bannerUrl={bannerUrl}
     />
   )
 }

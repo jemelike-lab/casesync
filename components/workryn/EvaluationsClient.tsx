@@ -16,6 +16,7 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
 import {
@@ -313,7 +314,8 @@ export default function EvaluationsClient({
   initialTemplates,
   users,
   currentUser,
-}: Props) {
+  bannerUrl,
+}: Props & { bannerUrl?: string | null }) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>(initialEvaluations)
   const [templates, setTemplates] = useState<Template[]>(initialTemplates)
   const isManager = isManagerOrAbove(currentUser.role)
@@ -429,8 +431,21 @@ export default function EvaluationsClient({
   const animTemplates   = useCountUp(activeTemplateCount, 800)
 
   return (
-    <Container size="xl" py="lg" className="eva-root">
+    <Container size="xl" py="lg" w="100%" className="eva-root">
       {/* ============ AURORA HERO ============ */}
+      {bannerUrl ? (
+        <>
+          <PageBanner title="Evaluations" bannerUrl={bannerUrl} />
+          <Group justify="flex-end" mb="lg">
+            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
+              <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>
+            )}
+            {isAdmin && tab === 'templates' && (
+              <Button size="md" leftSection={<Plus size={16} />} onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }} className="eva-btn-primary">New Template</Button>
+            )}
+          </Group>
+        </>
+      ) : (
       <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
         <Paper radius="lg" p="xl" className="eva-hero">
           <div className="eva-hero-mesh" aria-hidden />
@@ -485,6 +500,7 @@ export default function EvaluationsClient({
           </Group>
         </Paper>
       </div>
+      )}
 
       {/* ============ STAT CARDS ============ */}
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">
