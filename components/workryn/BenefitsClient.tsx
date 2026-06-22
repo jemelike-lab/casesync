@@ -272,6 +272,17 @@ const CSS = `
 
   /* stat-card frame around section headers */
   #ben2-app .b2-head{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 20px; box-shadow:var(--shadow); }
+
+  /* section-title colors */
+  :root[data-theme="light"] #ben2-app #health .b2-head h2{ color:#0d9488 !important; }
+  :root[data-theme="light"] #ben2-app #gym .b2-head h2{ color:#e11d48 !important; }
+  :root[data-theme="light"] #ben2-app #rec .b2-head h2{ color:#ea580c !important; }
+  :root[data-theme="light"] #ben2-app #retire .b2-head h2{ color:#4f46e5 !important; }
+  :root[data-theme="light"] #ben2-app #mileage .b2-head h2{ color:#d97706 !important; }
+  :root[data-theme="light"] #ben2-app #referral .b2-head h2{ color:#e11d48 !important; }
+  :root[data-theme="light"] #ben2-app #pto .b2-head h2{ color:#7c3aed !important; }
+  :root[data-theme="light"] #ben2-app #more .b2-head h2{ color:#475569 !important; }
+  :root[data-theme="light"] #ben2-app #rosters .b2-head h2{ color:#e11d48 !important; }
 `
 
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
