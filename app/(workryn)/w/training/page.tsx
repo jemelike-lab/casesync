@@ -3,6 +3,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
 import TrainingClient from '@/components/workryn/TrainingClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Training' }
@@ -52,6 +53,8 @@ export default async function TrainingPage() {
       : [],
   ])
 
+  const bannerUrl = await getPageBannerUrl('training')
+
   return (
     <TrainingClient
       initialCourses={JSON.parse(JSON.stringify(courses))}
@@ -59,6 +62,7 @@ export default async function TrainingPage() {
       currentUser={{ id: session.user.id, role }}
       users={JSON.parse(JSON.stringify(users))}
       departments={JSON.parse(JSON.stringify(departments))}
+      bannerUrl={bannerUrl}
     />
   )
 }

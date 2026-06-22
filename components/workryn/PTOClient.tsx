@@ -27,6 +27,7 @@ import {
   SimpleGrid, Stack, Tabs, Text, TextInput, Textarea, ThemeIcon,
   Title, Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useDisclosure } from '@mantine/hooks'
 import {
   AlertTriangle, ArrowUpDown, Calendar as CalendarIcon, CalendarDays,
@@ -97,7 +98,8 @@ export default function PTOClient({
   intuitMappings: initialMappings, isElevated,
   intuitConnected: initialIntuitConnected = false,
   intuitCompanyName: initialCompanyName = null,
-}: PTOClientProps) {
+  bannerUrl,
+}: PTOClientProps & { bannerUrl?: string | null }) {
 
   const spot = useMouseSpotlight()
 
@@ -285,7 +287,7 @@ export default function PTOClient({
 
   return (
     <>
-      <Container size="xl" py="lg" className="ptoa-root">
+      <Container size="xl" py="lg" w="100%" className="ptoa-root">
 
         {/* OAuth toast */}
         {oauthToast && (
@@ -302,6 +304,14 @@ export default function PTOClient({
         )}
 
         {/* ============ HERO ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="PTO" bannerUrl={bannerUrl} />
+            <Group justify="flex-end" mb="lg">
+              <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="ptoa-btn-primary">New Request</Button>
+            </Group>
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
           <Paper radius="lg" p="xl" className="ptoa-hero">
             <div className="ptoa-hero-mesh" aria-hidden />
@@ -344,6 +354,7 @@ export default function PTOClient({
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============ BALANCE WALLET CARDS ============ */}
         <div className="ptoa-balance-row">

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import PTOClient from '@/components/workryn/PTOClient'
+import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 
 const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
@@ -65,6 +66,8 @@ export default async function PTOPage() {
     createdAt: r.createdAt.toISOString(),
   }))
 
+  const bannerUrl = await getPageBannerUrl('pto')
+
   return (
     <PTOClient
       currentUser={{ id: user.id, name: user.name, role: user.role, avatarColor: user.avatarColor }}
@@ -77,6 +80,7 @@ export default async function PTOPage() {
       isElevated={isElevated}
       intuitConnected={!!intuitConnection}
       intuitCompanyName={(intuitConnection as any)?.companyName ?? null}
+      bannerUrl={bannerUrl}
     />
   )
 }

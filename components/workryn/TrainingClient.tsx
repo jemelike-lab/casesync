@@ -43,6 +43,7 @@ import {
   SimpleGrid, Stack, Tabs, Text, TextInput, Textarea, ThemeIcon,
   Title, Tooltip,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useDisclosure } from '@mantine/hooks'
 import {
   ArrowRight, BarChart3, Bell, BookMarked, BookOpen, Brain,
@@ -106,7 +107,8 @@ export const WELCOME_CONFIG = {
 
 export default function TrainingClient({
   initialCourses, initialEnrollments, currentUser, users = [], departments = [],
-}: Props) {
+  bannerUrl,
+}: Props & { bannerUrl?: string | null }) {
   const router = useRouter()
   const spot = useMouseSpotlight()
 
@@ -195,11 +197,21 @@ export default function TrainingClient({
 
   return (
     <>
-      <Container size="xl" py="lg" className="tra-root">
+      <Container size="xl" py="lg" w="100%" className="tra-root">
         {/* Background particles drift behind everything */}
         <Particles />
 
         {/* ============ WELCOME HERO (banner image + Aurora mint glow overlay) ============ */}
+        {bannerUrl ? (
+          <>
+            <PageBanner title="Training" bannerUrl={bannerUrl} />
+            {canCreate && (
+              <Group justify="flex-end" mb="lg">
+                <Button size="md" leftSection={<Plus size={16} />} onClick={createModal.open} className="tra-btn-primary">Create Course</Button>
+              </Group>
+            )}
+          </>
+        ) : (
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20, position: 'relative', zIndex: 1 }}>
           <Paper radius="lg" p={0} className="tra-hero">
             {/* Banner image sits at the back */}
@@ -253,6 +265,7 @@ export default function TrainingClient({
             </Group>
           </Paper>
         </div>
+        )}
 
         {/* ============ CHANNEL TILES ============ */}
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="md" style={{ position: 'relative', zIndex: 1 }}>
