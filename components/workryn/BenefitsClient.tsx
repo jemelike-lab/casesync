@@ -1034,8 +1034,12 @@ export default function BenefitsClient(props: Props) {
       <div style={{ display: 'none' }} dangerouslySetInnerHTML={{ __html: SPRITE }} />
 
       {props.bannerUrl && (
-        <div className="b2-banner" style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '18px' }}>
-          <img src={props.bannerUrl} alt="" style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+        <div className="b2-banner" style={{ position: 'relative', overflow: 'hidden', borderRadius: '18px', margin: '14px 14px 18px', minHeight: '260px' }}>
+          <img src={props.bannerUrl} alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, pointerEvents: 'none' }} />
+          <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', background: 'linear-gradient(0deg, rgba(8,10,24,0.82) 0%, rgba(8,10,24,0.30) 38%, rgba(8,10,24,0.06) 66%, transparent 100%)' }} />
+          <div style={{ position: 'absolute', left: '32px', bottom: '26px', zIndex: 2 }}>
+            <h1 style={{ margin: 0, fontSize: '34px', fontWeight: 800, letterSpacing: '-0.01em', color: '#fff', textShadow: '0 2px 18px rgba(0,0,0,0.55)' }}>Employee Benefits</h1>
+          </div>
         </div>
       )}
 

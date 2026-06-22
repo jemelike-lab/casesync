@@ -39,7 +39,7 @@ export default async function BenefitsPage() {
       : Promise.resolve([]),
   ])
 
-  const bannerUrl = await getPageBannerUrl('benefits')
+  const bannerUrl = await getPageBannerUrl('employee benefits')
 
   const ownGym = gym
     ? {
