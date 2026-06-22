@@ -398,7 +398,7 @@ export default function TimeClockClient({
 
   return (
     <>
-      <Container size="xl" py="lg" className="tca-root">
+      <Container size="xl" py="lg" w="100%" className="tca-root">
 
         {/* =========================== HERO =========================== */}
         <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
@@ -416,7 +416,7 @@ export default function TimeClockClient({
                 <img src={bannerUrl} alt="" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, pointerEvents: "none" }} />
                 <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(0deg, rgba(8,10,24,0.82) 0%, rgba(8,10,24,0.30) 38%, rgba(8,10,24,0.06) 66%, transparent 100%)" }} />
                 <div style={{ position: "absolute", left: 32, bottom: 26, zIndex: 2 }}>
-                  <Title order={1} style={{ color: "#fff", fontSize: 34, fontWeight: 800, letterSpacing: "-0.01em", textShadow: "0 2px 18px rgba(0,0,0,0.55)" }}>Time Clock</Title>
+                  <Title order={1} className="banner-heading" style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.01em", textShadow: "0 2px 18px rgba(0,0,0,0.55)" }}>Time Clock</Title>
                 </div>
               </>
             ) : (
