@@ -4,7 +4,7 @@ import {
   MapPin, CheckCircle2, ChevronDown, Send, Loader2, Star,
   AlertTriangle, Info, Home, Navigation, Plus, X,
 } from 'lucide-react'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canViewEvaluations } from '@/lib/workryn/permissions'
 
 interface Props {
   currentUser: { id: string; name: string; email: string; role: string; avatarColor: string }
@@ -60,7 +60,7 @@ function getRegionColor(county: string): string {
 }
 
 export default function CountyPreferenceClient({ currentUser }: Props) {
-  const isManager = isManagerOrAbove(currentUser.role)
+  const isManager = canViewEvaluations(currentUser.role)
 
   const [residence, setResidence] = useState<string>('')
   const [preferred, setPreferred] = useState<string[]>([])

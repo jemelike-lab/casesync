@@ -31,6 +31,7 @@
  */
 
 import { useState } from 'react'
+import { canMaintainSchedule, canSeeAllDepartments } from '@/lib/workryn/permissions'
 import {
   ActionIcon,
   Avatar,
@@ -98,10 +99,10 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 // ---------- Helpers ----------
 
 function canManageSchedule(role: string): boolean {
-  return ['ADMIN', 'MANAGER', 'OWNER', 'SUPERVISOR', 'TEAM_MANAGER'].includes(role)
+  return canMaintainSchedule(role)
 }
 function canViewAllStaff(role: string): boolean {
-  return ['ADMIN', 'MANAGER', 'OWNER', 'SUPERVISOR', 'TEAM_MANAGER'].includes(role)
+  return canSeeAllDepartments(role)
 }
 function getRoleLabel(role: string): string {
   const map: Record<string, string> = {

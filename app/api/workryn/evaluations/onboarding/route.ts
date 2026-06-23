@@ -3,7 +3,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createNotification } from '@/lib/workryn/notifications'
 import { sendEmail } from '@/lib/workryn/email'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canViewEvaluations } from '@/lib/workryn/permissions'
 
 const CALENDLY_URL = 'https://calendly.com/sabbott-9/evaluations'
 const COUNTY_FORM_URL = 'https://www.blhcasesync.com/w/county-preference'
@@ -119,7 +119,7 @@ function buildMilestoneEmailHtml(ms: MilestoneConfig, userName: string): string 
 export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isManagerOrAbove(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!canViewEvaluations(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
   const { userId, action = 'start' } = body
@@ -226,6 +226,6 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isManagerOrAbove(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!canViewEvaluations(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   return NextResponse.json({ message: 'Use /api/workryn/evaluations/milestones for dashboard data' })
 }

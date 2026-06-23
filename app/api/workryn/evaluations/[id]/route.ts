@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
 
 type ScoreInput = {
   criterionId?: string
@@ -35,13 +35,13 @@ async function canUserView(
   userId: string,
   role: string,
 ) {
-  if (isAdminOrAbove(role)) return true
+  if (canManageEvaluations(role)) return true
   if (evaluation.evaluatorId === userId) return true
   if (evaluation.agentId === userId) {
     // Agent can see their own unless marked private.
     return !evaluation.isPrivate
   }
-  if (isManagerOrAbove(role)) {
+  if (canViewEvaluations(role)) {
     // Manager can see STAFF evaluations within their department.
     const me = await db.user.findUnique({ where: { id: userId }, select: { departmentId: true } })
     if (me?.departmentId && evaluation.agent.departmentId === me.departmentId && evaluation.agent.role === 'STAFF') {
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!existing) return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 })
 
   const isCreator = existing.evaluatorId === session.user.id
-  const isAdmin = isAdminOrAbove(session.user.role)
+  const isAdmin = canManageEvaluations(session.user.role)
   if (!isCreator && !isAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -193,7 +193,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isAdminOrAbove(session.user.role)) {
+  if (!canManageEvaluations(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

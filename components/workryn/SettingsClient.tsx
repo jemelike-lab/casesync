@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { canManageSettings } from '@/lib/workryn/permissions'
 import Image from 'next/image'
 import {
   ActionIcon, Alert, Avatar, Badge, Box, Button, Card, ColorSwatch,
@@ -134,7 +135,7 @@ export default function SettingsClient({ profile: initialProfile, departments }:
 
   const [section, setSection] = useState<string>('profile')
   const [profile, setProfile] = useState(initialProfile)
-  const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
+  const isAdmin = canManageSettings(profile.role)
 
   // ---------- Profile form state ----------
   const [name, setName] = useState(profile.name ?? '')

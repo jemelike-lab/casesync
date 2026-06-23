@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   await db.$transaction(async (tx: any) => {
     await tx.user.update({ where: { id: target.id }, data: { role: 'OWNER' } })
     if (demoteSelf) {
-      await tx.user.update({ where: { id: session.user.id }, data: { role: 'ADMIN' } })
+      await tx.user.update({ where: { id: session.user.id }, data: { role: 'SUPERVISOR' } })
     }
   })
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       resourceType: 'USER',
       resourceId: target.id,
       details: demoteSelf
-        ? `Transferred ownership to ${target.name} (${target.email}); self demoted to ADMIN`
+        ? `Transferred ownership to ${target.name} (${target.email}); self demoted to SUPERVISOR`
         : `Promoted ${target.name} (${target.email}) to OWNER`,
     },
   })

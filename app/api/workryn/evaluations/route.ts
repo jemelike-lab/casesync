@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove, isManagerOrAbove, outranks } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations, outranks } from '@/lib/workryn/permissions'
 
 type ScoreInput = {
   criterionId?: string
@@ -26,9 +26,9 @@ export async function GET(req: NextRequest) {
   if (templateIdFilter) where.templateId = templateIdFilter
   if (evaluatorIdFilter) where.evaluatorId = evaluatorIdFilter
 
-  if (isAdminOrAbove(role)) {
+  if (canManageEvaluations(role)) {
     if (agentIdFilter) where.agentId = agentIdFilter
-  } else if (isManagerOrAbove(role)) {
+  } else if (canViewEvaluations(role)) {
     // MANAGER sees:
     //  - evaluations they wrote
     //  - OR evaluations of STAFF in their department
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   })
 
   // Extra belt-and-suspenders filter for STAFF against private rows.
-  const visible = isAdminOrAbove(role) || isManagerOrAbove(role)
+  const visible = canManageEvaluations(role) || canViewEvaluations(role)
     ? evaluations
     : evaluations.filter((e: any) => !(e.agentId === userId && e.isPrivate))
 
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isManagerOrAbove(session.user.role)) {
+  if (!canViewEvaluations(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

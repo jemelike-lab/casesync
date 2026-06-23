@@ -25,6 +25,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react'
+import { canManageTickets } from '@/lib/workryn/permissions'
 import { useRouter } from 'next/navigation'
 import {
   ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Container,
@@ -250,7 +251,7 @@ export default function TicketsClient({ initialTickets, users, departments, curr
     } finally { setBulkSaving(false) }
   }
 
-  const canArchive = currentUser.role === 'ADMIN' || currentUser.role === 'OWNER'
+  const canArchive = canManageTickets(currentUser.role)
   const allSelected = selectedIds.size > 0 && selectedIds.size === filtered.length
   const tabs: { id: FilterTab; label: string; count?: number; icon: React.ReactNode }[] = [
     { id: 'ALL',         label: 'All',         count: tickets.length, icon: <Inbox size={13} /> },

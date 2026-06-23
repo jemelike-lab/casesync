@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createNotification } from '@/lib/workryn/notifications'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canViewEvaluations } from '@/lib/workryn/permissions'
 
 /**
  * Self-Assessment flow:
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url)
   const targetUserId = url.searchParams.get('userId') ?? session.user.id
-  const isManager = isManagerOrAbove(session.user.role)
+  const isManager = canViewEvaluations(session.user.role)
 
   if (targetUserId !== session.user.id && !isManager) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

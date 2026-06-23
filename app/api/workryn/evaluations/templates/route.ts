@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
 
 type CriterionInput = {
   label?: string
@@ -15,7 +15,7 @@ export async function GET() {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   // Only evaluators (MANAGER and up) need to see templates.
-  if (!isManagerOrAbove(session.user.role)) {
+  if (!canViewEvaluations(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -54,7 +54,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isAdminOrAbove(session.user.role)) {
+  if (!canManageEvaluations(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

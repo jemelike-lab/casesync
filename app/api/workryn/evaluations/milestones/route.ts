@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canViewEvaluations } from '@/lib/workryn/permissions'
 
 /**
  * Returns all active STAFF users grouped by their onboarding milestone,
@@ -11,7 +11,7 @@ import { isManagerOrAbove } from '@/lib/workryn/permissions'
 export async function GET(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isManagerOrAbove(session.user.role)) {
+  if (!canViewEvaluations(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

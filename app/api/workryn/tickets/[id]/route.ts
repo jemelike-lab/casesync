@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove } from '@/lib/workryn/permissions'
+import { canManageTickets } from '@/lib/workryn/permissions'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getWorkrynSession()
@@ -161,7 +161,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!isAdminOrAbove(session.user.role)) {
+  if (!canManageTickets(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

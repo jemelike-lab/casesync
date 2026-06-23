@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canViewEvaluations } from '@/lib/workryn/permissions'
 import { sendEmail } from '@/lib/workryn/email'
 
 const SARAH_EMAIL = 'sarah.abbott@blhnurses.com'
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url)
   const targetUserId = url.searchParams.get('userId') ?? session.user.id
-  const isManager = isManagerOrAbove(session.user.role)
+  const isManager = canViewEvaluations(session.user.role)
 
   // Staff can only view their own
   if (targetUserId !== session.user.id && !isManager) {

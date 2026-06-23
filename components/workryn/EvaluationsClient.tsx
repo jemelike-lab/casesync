@@ -51,7 +51,7 @@ import {
   Send,
 } from 'lucide-react'
 import { formatDateTime, timeAgo, getInitials } from '@/lib/workryn/utils'
-import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -318,8 +318,8 @@ export default function EvaluationsClient({
 }: Props & { bannerUrl?: string | null }) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>(initialEvaluations)
   const [templates, setTemplates] = useState<Template[]>(initialTemplates)
-  const isManager = isManagerOrAbove(currentUser.role)
-  const isAdmin = isAdminOrAbove(currentUser.role)
+  const isManager = canViewEvaluations(currentUser.role)
+  const isAdmin = canManageEvaluations(currentUser.role)
   const spot = useMouseSpotlight()
 
   const [tab, setTab] = useState<Tab>(isManager ? 'given' : 'received')

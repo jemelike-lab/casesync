@@ -3,7 +3,7 @@ import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove, isManagerOrAbove } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
 import dynamic from 'next/dynamic'
 
 const EvaluationsClient = dynamic(
@@ -43,8 +43,8 @@ export default async function EvaluationsPage() {
 
   const role = session.user.role
   const userId = session.user.id
-  const isManager = isManagerOrAbove(role)
-  const isAdmin = isAdminOrAbove(role)
+  const isManager = canViewEvaluations(role)
+  const isAdmin = canManageEvaluations(role)
 
   // Determine which evaluations to fetch for the initial render.
   // The client may still refetch with filters/tabs.

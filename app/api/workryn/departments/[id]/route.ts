@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isAdminOrAbove } from '@/lib/workryn/permissions'
+import { canManageDepartments } from '@/lib/workryn/permissions'
 import { slugify } from '@/lib/workryn/utils'
 
 // Fields safe to expose to clients — deliberately excludes password, mfaSecret, emailVerified.
@@ -85,7 +85,7 @@ export async function PATCH(
 ) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isAdminOrAbove(session.user.role)) {
+  if (!canManageDepartments(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -235,7 +235,7 @@ export async function DELETE(
 ) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isAdminOrAbove(session.user.role)) {
+  if (!canManageDepartments(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
