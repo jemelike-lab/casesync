@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { isOwner } from '@/lib/workryn/permissions'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import BenefitsClient from '@/components/workryn/BenefitsClient'
 
@@ -15,7 +15,7 @@ export default async function BenefitsPage() {
   const session = await getWorkrynSession()
   if (!session) redirect('/login')
   const { user } = session
-  const elevated = isManagerOrAbove(user.role)
+  const elevated = isOwner(user.role)
 
   const [gym, retirement, mileage, gymRoster, retirementRoster] = await Promise.all([
     db.benefitGymSelection.findUnique({ where: { userId: user.id } }),
