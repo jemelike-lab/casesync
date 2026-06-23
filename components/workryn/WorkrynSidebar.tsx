@@ -39,15 +39,17 @@ function getRoleLabel(role: string): string {
     TEAM_MANAGER:    'Team Manager',
     SUPERVISOR:      'Supervisor',
     STAFF:           'Staff',
+    IT:              'IT',
     ADMIN:           'Admin',
+    ADMIN_ASSISTANT: 'Administrative Assistant',
     MANAGER:         'Manager',
-    OWNER:           'Owner',
+    OWNER:           'Owner / Administrator',
   }
   return map[role] ?? role
 }
 
 function hasElevatedAccess(role: string): boolean {
-  return ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER'].includes(role)
+  return ['OWNER', 'IT', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER'].includes(role)
 }
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }>; accent: AuroraAccent }
