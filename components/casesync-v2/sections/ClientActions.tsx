@@ -104,14 +104,17 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
     if (!canManage) return
     if (!confirm(`Mark ${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} as deceased?`)) return
     setDeactivating(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('clients').update({
-      is_active: false,
-      deactivation_reason: 'deceased',
-      deactivated_at: new Date().toISOString(),
-      deactivated_by: currentUserId,
-    }).eq('id', client.id)
-    if (!error) {
+    try {
+      const res = await fetch(`/api/clients/${client.id}/deactivate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'deceased' }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `Failed to mark deceased (${res.status})`)
+      }
+      const supabase = createClient()
       await supabase.from('activity_log').insert({
         client_id: client.id,
         user_id: currentUserId,
@@ -122,9 +125,10 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
       })
       window.location.href = '/dashboard'
       return
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Failed to mark deceased')
+      setDeactivating(false)
     }
-    showToast('error', error.message)
-    setDeactivating(false)
   }
 
   const editBtn: CSSProperties = {

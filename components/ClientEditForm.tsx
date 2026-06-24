@@ -566,10 +566,23 @@ export default function ClientEditForm({
     if (!(isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager')) return
     if (!confirm(`Mark ${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} as deceased?`)) return
     setDeactivating(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('clients').update({ is_active: false, deactivation_reason: 'deceased', deactivated_at: new Date().toISOString(), deactivated_by: currentUserId }).eq('id', client.id)
-    if (!error) { await supabase.from('activity_log').insert({ client_id: client.id, user_id: currentUserId, action: 'Deactivated client', field_name: 'deactivation_reason', old_value: null, new_value: 'deceased' }); window.location.href = '/dashboard'; return }
-    setToast({ type: 'error', message: error.message }); setTimeout(() => setToast(null), 3000); setDeactivating(false)
+    try {
+      const res = await fetch(`/api/clients/${client.id}/deactivate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'deceased' }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `Failed to mark deceased (${res.status})`)
+      }
+      const supabase = createClient()
+      await supabase.from('activity_log').insert({ client_id: client.id, user_id: currentUserId, action: 'Deactivated client', field_name: 'deactivation_reason', old_value: null, new_value: 'deceased' })
+      window.location.href = '/dashboard'
+      return
+    } catch (err) {
+      setToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to mark deceased' }); setTimeout(() => setToast(null), 4000); setDeactivating(false)
+    }
   }
 
   const f = formData
