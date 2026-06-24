@@ -17,6 +17,7 @@
 
 export type Role =
   | 'OWNER'
+  | 'ADMINISTRATOR'
   | 'SUPERVISOR'
   | 'IT'
   | 'ADMIN'
@@ -27,12 +28,13 @@ export type Role =
   | 'SUPPORT_PLANNER'
 
 export const ROLES: Role[] = [
-  'OWNER', 'SUPERVISOR', 'IT', 'ADMIN', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER'
+  'OWNER', 'ADMINISTRATOR', 'SUPERVISOR', 'IT', 'ADMIN', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER'
 ]
 
 /** Numeric weight — higher = more privileged */
 const ROLE_WEIGHT: Record<Role, number> = {
-  OWNER:           8,
+  OWNER:           9,
+  ADMINISTRATOR:   8,
   SUPERVISOR:      7,
   IT:              6,
   ADMIN:           5,
@@ -51,8 +53,12 @@ export function isOwner(role: string | undefined | null): boolean {
   return role === 'OWNER'
 }
 
+export function isAdministratorOrAbove(role: string | undefined | null): boolean {
+  return role === 'OWNER' || role === 'ADMINISTRATOR'
+}
+
 export function isSupervisorOrAbove(role: string | undefined | null): boolean {
-  return role === 'OWNER' || role === 'SUPERVISOR'
+  return role === 'OWNER' || role === 'ADMINISTRATOR' || role === 'SUPERVISOR'
 }
 
 export function isAdminOrAbove(role: string | undefined | null): boolean {
@@ -83,7 +89,9 @@ export function outranks(
 export function assignableRoles(actorRole: string | undefined | null): Role[] {
   switch (actorRole) {
     case 'OWNER':
-      return ['OWNER', 'SUPERVISOR', 'IT', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER']
+      return ['OWNER', 'ADMINISTRATOR', 'SUPERVISOR', 'IT', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER']
+    case 'ADMINISTRATOR':
+      return ['SUPERVISOR', 'IT', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER']
     case 'SUPERVISOR':
       return ['IT', 'TEAM_MANAGER', 'MANAGER', 'ADMIN_ASSISTANT', 'STAFF', 'SUPPORT_PLANNER']
     case 'IT':
@@ -110,7 +118,8 @@ export function canManageUser(
 ): boolean {
   if (!isRole(actorRole) || !isRole(targetRole)) return false
   if (actorRole === 'OWNER') return true
-  if (actorRole === 'SUPERVISOR') return targetRole !== 'OWNER'
+  if (actorRole === 'ADMINISTRATOR') return targetRole !== 'OWNER' && targetRole !== 'ADMINISTRATOR'
+  if (actorRole === 'SUPERVISOR') return targetRole !== 'OWNER' && targetRole !== 'ADMINISTRATOR'
   if (actorRole === 'IT' || actorRole === 'ADMIN') {
     return targetRole === 'TEAM_MANAGER'
       || targetRole === 'MANAGER'
@@ -149,11 +158,11 @@ export function canManageEvaluations(role: string | undefined | null): boolean {
 }
 
 export function canManageSettings(role: string | undefined | null): boolean {
-  return isOwner(role) || isIT(role)
+  return isAdministratorOrAbove(role) || isIT(role)
 }
 
 export function canManageTickets(role: string | undefined | null): boolean {
-  return isOwner(role) || isIT(role)
+  return isAdministratorOrAbove(role) || isIT(role)
 }
 
 export function canTriageTickets(role: string | undefined | null): boolean {
@@ -167,7 +176,8 @@ export function canMaintainSchedule(role: string | undefined | null): boolean {
 /** Human-readable label for a role */
 export function getRoleLabel(role: string | undefined | null): string {
   const map: Record<string, string> = {
-    OWNER:           'Owner / Administrator',
+    OWNER:           'Owner',
+    ADMINISTRATOR:   'Administrator',
     IT:              'IT',
     ADMIN_ASSISTANT: 'Administrative Assistant',
     SUPERVISOR:      'Supervisor',

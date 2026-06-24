@@ -6,11 +6,11 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { sanitizeSearchParam } from '@/lib/validation'
 
 const QUEUE_RESULTS = [
-  { id: 'queue:overdue', label: 'Overdue Queue', description: 'All overdue active clients', href: '/team?full=1&filter=overdue', roles: ['team_manager', 'supervisor', 'it'] },
-  { id: 'queue:due_today', label: 'Due Today Queue', description: 'Clients due today', href: '/team?full=1&filter=due_today', roles: ['team_manager', 'supervisor', 'it'] },
-  { id: 'queue:due_this_week', label: 'Due This Week Queue', description: 'Upcoming work due this week', href: '/team?full=1&filter=due_this_week', roles: ['team_manager', 'supervisor', 'it'] },
-  { id: 'queue:next_14_days', label: 'Next 14 Days Queue', description: 'Upcoming work in the next 14 days', href: '/team?full=1&filter=due_next_14_days', roles: ['team_manager', 'supervisor', 'it'] },
-  { id: 'queue:no_contact_7', label: 'No Contact 7+ Days', description: 'Clients without recent contact', href: '/team?full=1&filter=no_contact_7', roles: ['team_manager', 'supervisor', 'it'] },
+  { id: 'queue:overdue', label: 'Overdue Queue', description: 'All overdue active clients', href: '/team?full=1&filter=overdue', roles: ['team_manager', 'supervisor', 'it', 'administrator'] },
+  { id: 'queue:due_today', label: 'Due Today Queue', description: 'Clients due today', href: '/team?full=1&filter=due_today', roles: ['team_manager', 'supervisor', 'it', 'administrator'] },
+  { id: 'queue:due_this_week', label: 'Due This Week Queue', description: 'Upcoming work due this week', href: '/team?full=1&filter=due_this_week', roles: ['team_manager', 'supervisor', 'it', 'administrator'] },
+  { id: 'queue:next_14_days', label: 'Next 14 Days Queue', description: 'Upcoming work in the next 14 days', href: '/team?full=1&filter=due_next_14_days', roles: ['team_manager', 'supervisor', 'it', 'administrator'] },
+  { id: 'queue:no_contact_7', label: 'No Contact 7+ Days', description: 'Clients without recent contact', href: '/team?full=1&filter=no_contact_7', roles: ['team_manager', 'supervisor', 'it', 'administrator'] },
   { id: 'queue:my_overdue', label: 'My Overdue', description: 'Your overdue assigned clients', href: '/dashboard?filter=overdue', roles: ['supports_planner'] },
   { id: 'queue:my_due_this_week', label: 'My Due This Week', description: 'Your work due this week', href: '/dashboard?filter=due_this_week', roles: ['supports_planner'] },
   { id: 'queue:my_all', label: 'My Active Clients', description: 'All active clients on your caseload', href: '/dashboard?filter=all', roles: ['supports_planner'] },
@@ -69,8 +69,8 @@ export async function GET(req: Request) {
     if (isAzureConfigured()) {
       const pat = `%${qSafe}%`
       const staffRoles = role === 'supports_planner'
-        ? ['team_manager', 'supervisor', 'it']
-        : ['supports_planner', 'team_manager', 'supervisor', 'it']
+        ? ['team_manager', 'supervisor', 'it', 'administrator']
+        : ['supports_planner', 'team_manager', 'supervisor', 'it', 'administrator']
       const [azure, saved] = await Promise.all([
         withRlsContext(userId, async (sql) => {
           let scope = sql``
@@ -141,7 +141,7 @@ export async function GET(req: Request) {
           .from('profiles')
           .select('id, full_name, role, team_manager_id')
           .or(`full_name.ilike.%${qSafe}%`)
-          .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it'] : ['supports_planner', 'team_manager', 'supervisor', 'it'])
+          .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it', 'administrator'] : ['supports_planner', 'team_manager', 'supervisor', 'it', 'administrator'])
           .order('full_name')
           .limit(limit),
         listSavedViewsForCurrentUser(),

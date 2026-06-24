@@ -67,7 +67,7 @@ export async function GET() {
       const { data: supervisors } = await supabase
         .from('profiles')
         .select('id, full_name, role')
-        .in('role', ['supervisor', 'it'])
+        .in('role', ['supervisor', 'it', 'administrator'])
         .order('full_name')
 
       const combined = [...(planners ?? []), ...(supervisors ?? [])]
@@ -80,7 +80,7 @@ export async function GET() {
     const { data: supervisors } = await supabase
       .from('profiles')
       .select('id, full_name, role')
-      .in('role', ['supervisor', 'it'])
+      .in('role', ['supervisor', 'it', 'administrator'])
       .order('full_name')
 
     let managerProfiles: any[] = []

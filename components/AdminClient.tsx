@@ -23,11 +23,13 @@ interface Props {
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: 'supports_planner', label: 'Supports Planner' },
   { value: 'team_manager', label: 'Team Manager' },
+  { value: 'administrator', label: 'Administrator' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'it', label: 'IT' },
 ]
 
 const ROLE_COLORS: Record<Role, string> = {
+  administrator: '#ffd60a',
   supervisor: '#ff453a',
   team_manager: '#ff9f0a',
   supports_planner: '#30d158',

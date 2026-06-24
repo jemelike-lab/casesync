@@ -1,4 +1,4 @@
-export type Role = 'supports_planner' | 'team_manager' | 'supervisor' | 'it'
+export type Role = 'supports_planner' | 'team_manager' | 'supervisor' | 'it' | 'administrator'
 export type Category = 'co' | 'cfc' | 'cpas'
 
 export interface Profile {

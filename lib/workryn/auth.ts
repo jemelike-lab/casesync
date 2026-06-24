@@ -64,6 +64,7 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
         // CaseSync supervisors *less* privilege in Workryn than they should
         // have had. See AUDIT_2026-05-22.md §2B.
         const roleMap: Record<string, string> = {
+          administrator: 'ADMINISTRATOR',
           supervisor: 'SUPERVISOR',
           team_manager: 'MANAGER',
           supports_planner: 'STAFF',

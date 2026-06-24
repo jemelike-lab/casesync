@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 // Active CaseSync roles (legacy 'case_manager' removed — see migration 016).
-const MFA_REQUIRED_ROLES = ['supervisor', 'it', 'team_manager', 'supports_planner']
+const MFA_REQUIRED_ROLES = ['supervisor', 'it', 'team_manager', 'supports_planner', 'administrator']
 
 /**
  * Identifies a Next.js redirect() thrown from within a try/catch so we can

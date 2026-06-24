@@ -37,8 +37,9 @@ export type CaseSyncRole =
   | 'team_manager'
   | 'supervisor'
   | 'it'
+  | 'administrator'
 
-const ELEVATED_ROLES: CaseSyncRole[] = ['team_manager', 'supervisor', 'it']
+const ELEVATED_ROLES: CaseSyncRole[] = ['team_manager', 'supervisor', 'it', 'administrator']
 const ALL_ROLES: CaseSyncRole[] = ['supports_planner', ...ELEVATED_ROLES]
 
 export interface AuthContext {

@@ -95,5 +95,5 @@ export const POST = withAuth(
 
     return NextResponse.json({ ok: true })
   },
-  { roles: ['team_manager', 'supervisor', 'it'] }
+  { roles: ['team_manager', 'supervisor', 'it', 'administrator'] }
 )

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     profile = res.data
   }
 
-  if (!profile || !['supervisor', 'it'].includes(profile.role ?? '')) {
+  if (!profile || !['supervisor', 'it', 'administrator'].includes(profile.role ?? '')) {
     return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 })
   }
 

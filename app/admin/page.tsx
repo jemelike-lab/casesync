@@ -27,7 +27,7 @@ export default async function AdminPage() {
     .eq('id', user.id)
     .single()
 
-  if (!(profile?.role === 'supervisor' || profile?.role === 'it')) redirect('/dashboard')
+  if (!(profile?.role === 'supervisor' || profile?.role === 'it' || profile?.role === 'administrator')) redirect('/dashboard')
 
   const { data: users } = await supabase
     .from('profiles')
