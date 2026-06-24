@@ -43,3 +43,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch / backups / build artifacts
+*.bak
+*.statbak
+*.orig
+*.tar.gz
+*.tgz
+/apply_*.py
+/rollout_*.py
+/wire_*.py
+/fix_*.py
