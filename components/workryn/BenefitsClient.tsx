@@ -675,6 +675,7 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
 
   function submit() {
     setErr('')
+    if (!selection) { setErr('Please choose a gym option to continue.'); return }
     start_(async () => {
       const r = await saveGymSelection({
         selection,
@@ -750,7 +751,7 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
 
       {err && <p className="b2-mininote" style={{ color: '#f87171' }}>{err}</p>}
       <div className="b2-acts">
-        <button className="b2-btn b2-pri" style={{ background: ROSE }} disabled={pending || !selection} onClick={submit}>
+        <button className="b2-btn b2-pri" style={{ background: ROSE }} disabled={pending} onClick={submit}>
           {pending ? 'Saving…' : 'Save & email to Bianca'}
         </button>
       </div>
@@ -808,6 +809,13 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
 
   function submit() {
     setErr('')
+    const need: string[] = []
+    if (!(parseFloat(pct || '0') > 0)) need.push('a contribution amount (1–100%)')
+    if (total !== 100) need.push(`fund allocations totaling 100% (now ${total}%)`)
+    if (!p.name.trim()) need.push('a primary beneficiary name')
+    if (!sig.trim()) need.push('your signature')
+    if (!ack) need.push('the acknowledgment check')
+    if (need.length) { setErr('Still needed: ' + need.join('; ') + '.'); return }
     const allocations: Record<string, number> = {}
     for (const f of FUNDS) {
       const v = parseInt(alloc[f.key] || '0', 10) || 0
@@ -938,7 +946,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
         <button
           className="b2-btn b2-pri"
           style={{ background: IND }}
-          disabled={pending || !ack || total !== 100 || !p.name.trim() || !sig.trim() || !(parseFloat(pct || '0') > 0)}
+          disabled={pending}
           onClick={submit}
         >
           {pending ? 'Saving…' : 'Save & email to Bianca'}
@@ -966,6 +974,10 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
   function submit() {
     setErr('')
     setOk(false)
+    const need: string[] = []
+    if (!tripDate) need.push('a trip date')
+    if (!(parseFloat(miles || '0') > 0)) need.push('miles greater than 0')
+    if (need.length) { setErr('Still needed: ' + need.join(' and ') + '.'); return }
     start_(async () => {
       const r = await submitMileage({
         tripDate,
@@ -1014,7 +1026,7 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
 
       {err && <p className="b2-mininote" style={{ color: '#f87171' }}>{err}</p>}
       <div className="b2-acts">
-        <button className="b2-btn b2-pri" style={{ background: AMBER }} disabled={pending || !tripDate || !(parseFloat(miles) > 0)} onClick={submit}>
+        <button className="b2-btn b2-pri" style={{ background: AMBER }} disabled={pending} onClick={submit}>
           <Icon id="mail" />{pending ? 'Submitting…' : 'Submit to mileage@blhnurses.com'}
         </button>
       </div>
