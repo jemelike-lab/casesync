@@ -71,7 +71,7 @@ export const GET = withBotAuth(async (req, ctx, routeCtx) => {
 // ---------------------------------------------------------------------------
 // POST /api/bot/clients/[id]/files
 // Bots attach a file to a client — used by the LTSS routing flow.
-// Multipart with field `file` plus optional `category` and `expiresAt`.
+// Multipart with field `file` plus required `category` and optional `expiresAt`.
 // ---------------------------------------------------------------------------
 export const POST = withBotAuth(async (req, ctx, routeCtx) => {
   const { id: clientId } = (await routeCtx?.params) ?? {}
@@ -123,8 +123,14 @@ export const POST = withBotAuth(async (req, ctx, routeCtx) => {
     )
   }
 
-  const categoryRaw = String(form.get('category') ?? 'ltss').toLowerCase()
-  const category = ALLOWED_CATEGORIES.has(categoryRaw) ? categoryRaw : 'ltss'
+  const categoryRaw = String(form.get('category') ?? '').toLowerCase()
+  if (!categoryRaw) {
+    return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+  }
+  if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
+    return NextResponse.json({ error: `Unknown category: ${categoryRaw}` }, { status: 400 })
+  }
+  const category = categoryRaw
 
   const expiresAtRaw = form.get('expiresAt')
   const expiresAt =

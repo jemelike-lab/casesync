@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
 
@@ -112,23 +112,11 @@ function getDocIcon(mimeType: string | null | undefined, fileName: string) {
 
 export default function ClientDocuments({ clientId, currentUserId, currentProfile }: Props) {
   const supabase = createClient()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [docs, setDocs] = useState<ClientDocument[]>([])
   const [spDocs, setSpDocs] = useState<SpDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [spLoading, setSpLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [showUpload, setShowUpload] = useState(false)
-  const [category, setCategory] = useState('general')
-  const [expiresAt, setExpiresAt] = useState('')
   const [error, setError] = useState('')
-  const [useSharePoint, setUseSharePoint] = useState(true)
-
-  const inputStyle: React.CSSProperties = {
-    background: '#1c1c1e', border: '1px solid #333336', borderRadius: 6,
-    color: '#f5f5f7', padding: '6px 10px', fontSize: 13, width: '100%', colorScheme: 'dark' as any,
-  }
-  const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' }
 
   async function fetchSupabaseDocs() {
     const { data } = await supabase
@@ -161,57 +149,6 @@ export default function ClientDocuments({ clientId, currentUserId, currentProfil
   }
 
   useEffect(() => { fetchDocs() }, [clientId])
-
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setError('')
-    try {
-      if (useSharePoint) {
-        // Upload to SharePoint via API route
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('clientId', clientId)
-        formData.append('category', category)
-        if (expiresAt) formData.append('expiresAt', expiresAt)
-
-        const res = await fetch('/api/sharepoint/upload', { method: 'POST', body: formData })
-        if (!res.ok) {
-          const json = await res.json()
-          throw new Error(json.error ?? 'SharePoint upload failed')
-        }
-      } else {
-        // Fallback: Supabase Storage
-        const path = `${clientId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-        const { error: uploadErr } = await supabase.storage
-          .from('client-documents')
-          .upload(path, file, { contentType: file.type })
-        if (uploadErr) throw uploadErr
-
-        const { error: dbErr } = await supabase.from('client_documents').insert({
-          client_id: clientId,
-          uploaded_by: currentUserId,
-          file_name: file.name,
-          file_path: path,
-          file_size: file.size,
-          mime_type: file.type,
-          category,
-          expires_at: expiresAt || null,
-        })
-        if (dbErr) throw dbErr
-      }
-
-      setShowUpload(false)
-      setCategory('general')
-      setExpiresAt('')
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      await fetchDocs()
-    } catch (err: any) {
-      setError(err.message ?? 'Upload failed')
-    }
-    setUploading(false)
-  }
 
   async function handleDownload(doc: AnyDoc) {
     if (isSpDoc(doc)) {
@@ -266,69 +203,9 @@ export default function ClientDocuments({ clientId, currentUserId, currentProfil
         <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
           Documents
         </h3>
-        <button
-          className="btn-primary"
-          style={{ fontSize: 12, padding: '6px 14px', minHeight: 32 }}
-          onClick={() => setShowUpload(v => !v)}
-        >
-          {showUpload ? 'Cancel' : '+ Upload'}
-        </button>
       </div>
 
-      {showUpload && (
-        <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-          {/* Storage backend toggle */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button
-              type="button"
-              onClick={() => setUseSharePoint(true)}
-              style={{
-                fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-                border: useSharePoint ? '1px solid #0078d4' : '1px solid #333336',
-                background: useSharePoint ? 'rgba(0,120,212,0.15)' : 'transparent',
-                color: useSharePoint ? '#0078d4' : 'var(--text-secondary)',
-              }}
-            >
-              SharePoint
-            </button>
-            <button
-              type="button"
-              onClick={() => setUseSharePoint(false)}
-              style={{
-                fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-                border: !useSharePoint ? '1px solid var(--text-secondary)' : '1px solid #333336',
-                background: !useSharePoint ? 'var(--surface)' : 'transparent',
-                color: !useSharePoint ? 'var(--text)' : 'var(--text-secondary)',
-              }}
-            >
-              Supabase Storage
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Category</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
-                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Expiry Date (optional)</label>
-              <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} style={inputStyle} />
-            </div>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xlsx,.xls"
-            onChange={handleUpload}
-            disabled={uploading}
-            style={{ ...inputStyle, cursor: 'pointer' }}
-          />
-          {uploading && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Uploading to {useSharePoint ? 'SharePoint' : 'storage'}…</div>}
-          {error && <div style={{ fontSize: 12, color: '#ff453a', marginTop: 8 }}>{error}</div>}
-        </div>
-      )}
+      {error && <div style={{ fontSize: 12, color: '#ff453a', marginBottom: 12 }}>{error}</div>}
 
       {isLoading ? (
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '12px 0' }}>Loading documents…</div>
