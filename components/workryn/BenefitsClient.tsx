@@ -782,7 +782,10 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
   const [pending, start_] = useTransition()
 
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showErr, setShowErr] = useState(false)
   const total = useMemo(() => FUNDS.reduce((s, f) => s + (parseInt(alloc[f.key] || '0', 10) || 0), 0), [alloc])
+  const REQ: React.CSSProperties = { borderColor: '#f87171', boxShadow: '0 0 0 1px rgba(248,113,113,.5)' }
+  const bad = (cond: boolean) => (showErr && cond ? REQ : undefined)
 
   function splitEven() {
     const chosen = FUNDS.filter((f) => (parseInt(alloc[f.key] || '0', 10) || 0) > 0)
@@ -809,13 +812,19 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
 
   function submit() {
     setErr('')
-    const need: string[] = []
-    if (!(parseFloat(pct || '0') > 0)) need.push('a contribution amount (1–100%)')
-    if (total !== 100) need.push(`fund allocations totaling 100% (now ${total}%)`)
-    if (!p.name.trim()) need.push('a primary beneficiary name')
-    if (!sig.trim()) need.push('your signature')
-    if (!ack) need.push('the acknowledgment check')
-    if (need.length) { setErr('Still needed: ' + need.join('; ') + '.'); return }
+    setShowErr(true)
+    const blanks =
+      !(parseFloat(pct || '0') > 0) ||
+      !p.name.trim() || !p.rel.trim() || !(parseFloat(p.pct || '0') > 0) ||
+      !pi.ssn.trim() || !pi.dob.trim() || !pi.hire.trim() || !pi.phone.trim() ||
+      !pi.addr.trim() || !pi.city.trim() || !pi.state.trim() || !pi.zip.trim() ||
+      !p.dob.trim() || !p.ssn.trim() || !sig.trim() || !ack
+    if (blanks || total !== 100) {
+      let m = blanks ? 'Please complete all the fields highlighted in red' : ''
+      if (total !== 100) m += (m ? ', and make sure fund' : 'Fund') + ` allocations total 100% (now ${total}%)`
+      setErr(m + '.')
+      return
+    }
     const allocations: Record<string, number> = {}
     for (const f of FUNDS) {
       const v = parseInt(alloc[f.key] || '0', 10) || 0
@@ -859,7 +868,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
       <div className="b2-fgrid">
         <div className="b2-field">
           <label>Contribution — % of my pay</label>
-          <input type="number" min="1" max="100" step="1" value={pct} onChange={(e) => { const n = parseInt(e.target.value || '0', 10); setPct(e.target.value === '' ? '' : String(Math.max(0, Math.min(100, Number.isFinite(n) ? n : 0)))) }} placeholder="e.g. 6" />
+          <input type="number" min="1" max="100" step="1" value={pct} onChange={(e) => { const n = parseInt(e.target.value || '0', 10); setPct(e.target.value === '' ? '' : String(Math.max(0, Math.min(100, Number.isFinite(n) ? n : 0)))) }} placeholder="e.g. 6" style={bad(!(parseFloat(pct || '0') > 0))} />
         </div>
       </div>
       <p className="b2-mininote">Your salary deferral is pre-tax and applies to all future pay until you change it.</p>
@@ -884,6 +893,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
                   value={alloc[f.key]}
                   onChange={(e) => setFund(f.key, e.target.value)}
                   placeholder="%"
+                  style={bad(total !== 100)}
                 />
               </div>
             </div>
@@ -901,9 +911,9 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
       <p className="b2-mininote">Name who receives your account. Primary beneficiaries should total 100%.</p>
       <div className="b2-benrow">
         <span className="b2-benlabel">Primary</span>
-        <div className="b2-field"><input type="text" value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} placeholder="Full name" /></div>
-        <div className="b2-field"><input type="text" value={p.rel} onChange={(e) => setP({ ...p, rel: e.target.value })} placeholder="Relationship" /></div>
-        <div className="b2-field pct"><input type="number" min="0" max="100" value={p.pct} onChange={(e) => setP({ ...p, pct: e.target.value })} placeholder="%" /></div>
+        <div className="b2-field"><input type="text" value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} placeholder="Full name" style={bad(!p.name.trim())} /></div>
+        <div className="b2-field"><input type="text" value={p.rel} onChange={(e) => setP({ ...p, rel: e.target.value })} placeholder="Relationship" style={bad(!p.rel.trim())} /></div>
+        <div className="b2-field pct"><input type="number" min="0" max="100" value={p.pct} onChange={(e) => setP({ ...p, pct: e.target.value })} placeholder="%" style={bad(!(parseFloat(p.pct || '0') > 0))} /></div>
       </div>
       <div className="b2-benrow">
         <span className="b2-benlabel">Contingent</span>
@@ -917,28 +927,28 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
         Used only to complete and email your CDM enrollment PDF — these are <b>not stored</b> in Workryn.
       </p>
       <div className="b2-fgrid">
-        <div className="b2-field"><label>Your SSN</label><input type="text" value={pi.ssn} onChange={(e) => setPi({ ...pi, ssn: e.target.value })} placeholder="XXX-XX-XXXX" /></div>
-        <div className="b2-field"><label>Date of birth</label><input type="text" value={pi.dob} onChange={(e) => setPi({ ...pi, dob: e.target.value })} placeholder="MM/DD/YYYY" /></div>
-        <div className="b2-field"><label>Date of hire</label><input type="text" value={pi.hire} onChange={(e) => setPi({ ...pi, hire: e.target.value })} placeholder="MM/DD/YYYY" /></div>
-        <div className="b2-field"><label>Phone</label><input type="text" value={pi.phone} onChange={(e) => setPi({ ...pi, phone: e.target.value })} placeholder="(xxx) xxx-xxxx" /></div>
+        <div className="b2-field"><label>Your SSN</label><input type="text" value={pi.ssn} onChange={(e) => setPi({ ...pi, ssn: e.target.value })} placeholder="XXX-XX-XXXX" style={bad(!pi.ssn.trim())} /></div>
+        <div className="b2-field"><label>Date of birth</label><input type="text" value={pi.dob} onChange={(e) => setPi({ ...pi, dob: e.target.value })} placeholder="MM/DD/YYYY" style={bad(!pi.dob.trim())} /></div>
+        <div className="b2-field"><label>Date of hire</label><input type="text" value={pi.hire} onChange={(e) => setPi({ ...pi, hire: e.target.value })} placeholder="MM/DD/YYYY" style={bad(!pi.hire.trim())} /></div>
+        <div className="b2-field"><label>Phone</label><input type="text" value={pi.phone} onChange={(e) => setPi({ ...pi, phone: e.target.value })} placeholder="(xxx) xxx-xxxx" style={bad(!pi.phone.trim())} /></div>
       </div>
       <div className="b2-fgrid">
-        <div className="b2-field"><label>Street address</label><input type="text" value={pi.addr} onChange={(e) => setPi({ ...pi, addr: e.target.value })} placeholder="Street" /></div>
-        <div className="b2-field"><label>City</label><input type="text" value={pi.city} onChange={(e) => setPi({ ...pi, city: e.target.value })} placeholder="City" /></div>
-        <div className="b2-field"><label>State</label><input type="text" value={pi.state} onChange={(e) => setPi({ ...pi, state: e.target.value })} placeholder="MD" /></div>
-        <div className="b2-field"><label>ZIP</label><input type="text" value={pi.zip} onChange={(e) => setPi({ ...pi, zip: e.target.value })} placeholder="ZIP" /></div>
+        <div className="b2-field"><label>Street address</label><input type="text" value={pi.addr} onChange={(e) => setPi({ ...pi, addr: e.target.value })} placeholder="Street" style={bad(!pi.addr.trim())} /></div>
+        <div className="b2-field"><label>City</label><input type="text" value={pi.city} onChange={(e) => setPi({ ...pi, city: e.target.value })} placeholder="City" style={bad(!pi.city.trim())} /></div>
+        <div className="b2-field"><label>State</label><input type="text" value={pi.state} onChange={(e) => setPi({ ...pi, state: e.target.value })} placeholder="MD" style={bad(!pi.state.trim())} /></div>
+        <div className="b2-field"><label>ZIP</label><input type="text" value={pi.zip} onChange={(e) => setPi({ ...pi, zip: e.target.value })} placeholder="ZIP" style={bad(!pi.zip.trim())} /></div>
       </div>
       <div className="b2-fgrid">
-        <div className="b2-field"><label>Primary beneficiary DOB</label><input type="text" value={p.dob} onChange={(e) => setP({ ...p, dob: e.target.value })} placeholder="MM/DD/YYYY" /></div>
-        <div className="b2-field"><label>Primary beneficiary SSN</label><input type="text" value={p.ssn} onChange={(e) => setP({ ...p, ssn: e.target.value })} placeholder="XXX-XX-XXXX" /></div>
+        <div className="b2-field"><label>Primary beneficiary DOB</label><input type="text" value={p.dob} onChange={(e) => setP({ ...p, dob: e.target.value })} placeholder="MM/DD/YYYY" style={bad(!p.dob.trim())} /></div>
+        <div className="b2-field"><label>Primary beneficiary SSN</label><input type="text" value={p.ssn} onChange={(e) => setP({ ...p, ssn: e.target.value })} placeholder="XXX-XX-XXXX" style={bad(!p.ssn.trim())} /></div>
       </div>
 
-      <label className="b2-ack">
+      <label className="b2-ack" style={showErr && !ack ? { outline: '1px solid #f87171', outlineOffset: '3px', borderRadius: '8px' } : undefined}>
         <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
         <span>I’ve read the plan highlights and this records my election. My typed signature below authorizes the salary deferral above.</span>
       </label>
       <div className="b2-fgrid">
-        <div className="b2-field"><label>Signature (type your full name)</label><input type="text" value={sig} onChange={(e) => setSig(e.target.value)} placeholder="Your full name" /></div>
+        <div className="b2-field"><label>Signature (type your full name)</label><input type="text" value={sig} onChange={(e) => setSig(e.target.value)} placeholder="Your full name" style={bad(!sig.trim())} /></div>
       </div>
 
       {err && <p className="b2-mininote" style={{ color: '#f87171' }}>{err}</p>}
