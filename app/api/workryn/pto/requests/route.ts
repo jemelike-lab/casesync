@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
+import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 export async function GET(req: NextRequest) {
   const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { user } = session
-  const isElevated = ELEVATED_ROLES.includes(user.role)
+  const isElevated = isSupervisorOrAbove(user.role)
 
   const url = req.nextUrl
   const statusFilter = url.searchParams.get('status')

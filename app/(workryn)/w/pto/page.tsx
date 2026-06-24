@@ -3,8 +3,8 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import PTOClient from '@/components/workryn/PTOClient'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
+import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 export const metadata = { title: 'PTO - Workryn' }
 
@@ -12,7 +12,7 @@ export default async function PTOPage() {
   const session = await getWorkrynSession()
   const { user } = session!
 
-  const isElevated = ELEVATED_ROLES.includes(user.role)
+  const isElevated = isSupervisorOrAbove(user.role)
 
   const [types, balances, requests, allUsers, intuitMappings, intuitConnection] = await Promise.all([
     db.ptoType.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),

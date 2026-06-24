@@ -30,6 +30,7 @@ import {
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useState, useEffect, useRef } from 'react'
 import { AURORA_ACCENTS, type AuroraAccent } from '@/lib/workryn/aurora'
+import { isManagerOrAbove } from '@/lib/workryn/permissions'
 
 // ------------------ helpers ------------------
 
@@ -49,7 +50,7 @@ function getRoleLabel(role: string): string {
 }
 
 function hasElevatedAccess(role: string): boolean {
-  return ['OWNER', 'IT', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER'].includes(role)
+  return isManagerOrAbove(role)
 }
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }>; accent: AuroraAccent }

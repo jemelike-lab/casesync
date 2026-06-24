@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
+import { canManageSettings } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 export async function POST(req: NextRequest) {
   const session = await requireWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!ELEVATED_ROLES.includes(session.user.role))
+  if (!canManageSettings(session.user.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const clientId = process.env.INTUIT_CLIENT_ID

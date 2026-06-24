@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
+import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 export async function PATCH(
   req: NextRequest,
@@ -12,7 +12,7 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { user } = session
-  if (!ELEVATED_ROLES.includes(user.role))
+  if (!isSupervisorOrAbove(user.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params

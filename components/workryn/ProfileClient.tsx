@@ -74,6 +74,7 @@ import {
 import { getInitials, formatDate, timeAgo } from '@/lib/workryn/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import { canManageSettings } from '@/lib/workryn/permissions'
 
 // ---------- Types (unchanged contract) ----------
 
@@ -867,7 +868,7 @@ function EvaluationsTab({ userId }: { userId: string }) {
 // ---------- Settings tab ----------
 
 function SettingsTab({ profile }: { profile: ProfileProps['profile'] }) {
-  const isAdmin = profile.role === 'OWNER' || profile.role === 'ADMIN'
+  const isAdmin = canManageSettings(profile.role)
 
   const [name, setName] = useState(profile.name ?? '')
   const [jobTitle, setJobTitle] = useState(profile.jobTitle ?? '')

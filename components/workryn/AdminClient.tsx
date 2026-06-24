@@ -83,7 +83,7 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
 
   async function handlePromoteToOwner(user: AdminUser) {
     if (!viewerIsOwner) return
-    if (user.role === 'OWNER') return
+    if (isOwner(user.role)) return
     if (!confirm(`Promote ${user.name} to OWNER? They will have the same privileges as you.`)) return
     try {
       const res = await fetch('/api/workryn/admin/transfer-ownership', {

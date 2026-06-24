@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
+import { canManageSettings } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 // GET /api/workryn/pto/intuit/callback
 // Intuit redirects here after the user grants (or denies) access.
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  if (!ELEVATED_ROLES.includes(session.user.role)) {
+  if (!canManageSettings(session.user.role)) {
     return NextResponse.redirect(
       `${ptoUrl}?intuit=error&detail=${encodeURIComponent('Forbidden: insufficient role')}`
     )

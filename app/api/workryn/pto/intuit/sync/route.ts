@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { validateUUID } from '@/lib/validation'
+import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
-const ADMIN_ROLES = ['SUPERVISOR', 'OWNER', 'ADMIN']
 
 // Helper: refresh Intuit OAuth token if expired
 async function getIntuitToken(): Promise<{ accessToken: string; realmId: string } | null> {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!ADMIN_ROLES.includes(session.user.role)) {
+  if (!isSupervisorOrAbove(session.user.role)) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!ADMIN_ROLES.includes(session.user.role)) return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+  if (!isSupervisorOrAbove(session.user.role)) return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   const mappings = await db.intuitEmployeeMap.findMany({
     include: { user: { select: { id: true, name: true, email: true, avatarColor: true, jobTitle: true, role: true } } },
     orderBy: { user: { name: 'asc' } },

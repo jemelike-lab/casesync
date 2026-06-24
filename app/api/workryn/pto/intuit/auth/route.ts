@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import crypto from 'crypto'
+import { canManageSettings } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'TEAM_MANAGER']
 
 // GET /api/workryn/pto/intuit/auth
 // Builds the Intuit OAuth 2.0 authorization URL and redirects the user.
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  if (!ELEVATED_ROLES.includes(session.user.role)) {
+  if (!canManageSettings(session.user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createNotification } from '@/lib/workryn/notifications'
-import { canViewEvaluations } from '@/lib/workryn/permissions'
+import { ROLES, canViewEvaluations } from '@/lib/workryn/permissions'
 
 /**
  * Self-Assessment flow:
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   const managers = await db.user.findMany({
     where: {
       isActive: true,
-      role: { in: ['ADMIN', 'MANAGER', 'SUPERVISOR'] },
+      role: { in: ROLES.filter(canViewEvaluations) },
     },
     select: { id: true },
   })

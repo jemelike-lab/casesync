@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { validateUUID } from '@/lib/validation'
+import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
-const ELEVATED_ROLES = ['TEAM_MANAGER', 'SUPERVISOR', 'OWNER', 'ADMIN', 'MANAGER']
 
 export async function GET(req: NextRequest) {
   const session = await getWorkrynSession()
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url)
   const userId = url.searchParams.get('userId')
-  const isElevated = ELEVATED_ROLES.includes(session.user.role)
+  const isElevated = isSupervisorOrAbove(session.user.role)
 
   const targetUserId = (isElevated && userId && validateUUID(userId)) ? userId : session.user.id
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const session = await getWorkrynSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!['SUPERVISOR', 'OWNER', 'ADMIN'].includes(session.user.role)) {
+  if (!isSupervisorOrAbove(session.user.role)) {
     return NextResponse.json({ error: 'Only supervisors can adjust balances' }, { status: 403 })
   }
 
