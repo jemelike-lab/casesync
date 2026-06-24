@@ -32,6 +32,25 @@ function emailedAtFrom(sent: { ok: boolean; messageId?: string }): Date | null {
   return sent.ok && sent.messageId && sent.messageId !== 'dev-noop' ? new Date() : null
 }
 
+/** Best-effort plain-text confirmation to the employee's own inbox. Never blocks the save; no attachments (keeps SSN/DOB out of personal inboxes). */
+async function emailEmployeeConfirmation(to: string, name: string, subject: string, summary: string): Promise<void> {
+  if (!to) return
+  try {
+    await sendEmail({
+      to,
+      subject,
+      text:
+        `Hi ${name},\n\n` +
+        `We've received your submission through the Workryn benefits portal. Here's a summary for your records:\n\n` +
+        `${summary}\n\n` +
+        `If anything looks incorrect, you can resubmit in Workryn or reach out to HR.\n\n` +
+        `— Beatrice Loving Heart`,
+    })
+  } catch (err) {
+    console.error('[benefits] employee confirmation email failed:', err)
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Gym membership election — one row/user, in-portal, emailed to Bianca.
 // ─────────────────────────────────────────────────────────────────────────
@@ -112,6 +131,14 @@ export async function saveGymSelection(input: {
     return { ok: false, error: 'Could not save your gym election. Please try again.' }
   }
 
+  await emailEmployeeConfirmation(
+    user.email,
+    user.name || 'there',
+    'Your gym membership election was received',
+    `Election: ${GYM_SELECTION_LABEL[input.selection] ?? input.selection}\n` +
+      `Preferred start: ${input.preferredStartDate || '—'}\n` +
+      `Signed: ${sig} on ${date}`,
+  )
   revalidatePath('/w/benefits')
   return { ok: true }
 }
@@ -151,8 +178,8 @@ export async function saveRetirementElection(input: {
   const { user } = session
 
   const pct = Number(input.deferralValue)
-  if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-    return { ok: false, error: 'Deferral must be a percentage between 0 and 100.' }
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+    return { ok: false, error: 'Please enter a contribution between 1% and 100%.' }
   }
   if (!allocationsValid(input.allocations)) {
     return { ok: false, error: 'Fund allocations must use whole percentages that total exactly 100.' }
@@ -258,6 +285,15 @@ export async function saveRetirementElection(input: {
     return { ok: false, error: 'Could not save your 401(k) election. Please try again.' }
   }
 
+  await emailEmployeeConfirmation(
+    user.email,
+    user.name || 'there',
+    'Your 401(k) enrollment was received',
+    `Pre-tax salary deferral: ${pct}%\n` +
+      `Primary beneficiary: ${input.primary.name} (${input.primary.relationship})\n` +
+      (input.contingent ? `Contingent beneficiary: ${input.contingent.name} (${input.contingent.relationship})\n` : '') +
+      `Signed: ${sig} on ${date}`,
+  )
   revalidatePath('/w/benefits')
   return { ok: true }
 }
@@ -321,6 +357,15 @@ export async function submitMileage(input: {
     console.error('[benefits] mileage email failed:', err)
   }
 
+  await emailEmployeeConfirmation(
+    user.email,
+    user.name || 'there',
+    'Your mileage submission was received',
+    `Trip date: ${input.tripDate}\n` +
+      `Miles: ${miles}\n` +
+      (rate != null ? `Rate: $${rate.toFixed(3)}/mi\nAmount: $${(amount ?? 0).toFixed(2)}\n` : '') +
+      (input.purpose ? `Purpose: ${input.purpose}` : ''),
+  )
   revalidatePath('/w/benefits')
   return { ok: true }
 }

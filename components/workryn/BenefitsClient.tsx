@@ -6,7 +6,7 @@
  */
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { saveGymSelection, saveRetirementElection, submitMileage } from '@/app/actions/benefits'
 import { FUNDS } from '@/lib/benefits/funds'
 
@@ -616,6 +616,26 @@ function Static({ html }: { html: string }) {
   return <div dangerouslySetInnerHTML={{ __html: html }} />
 }
 
+function SubmittedPopup({ label, accent, onClose }: { label: string; accent: string; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4500)
+    return () => clearTimeout(t)
+  }, [onClose])
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,15,.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#0f1117', border: '1px solid rgba(255,255,255,.12)', borderRadius: '18px', padding: '32px 28px', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: '0 24px 70px rgba(0,0,0,.55)' }}>
+        <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(52,211,153,.16)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <Icon id="check" style={{ fontSize: '30px' }} />
+        </div>
+        <h3 style={{ margin: '0 0 8px', fontSize: '19px', color: '#f1f5f9' }}>Submitted</h3>
+        <p style={{ margin: '0 0 4px', color: '#e2e8f0', fontSize: '15px' }}>Your {label} has been submitted.</p>
+        <p style={{ margin: '0 0 20px', color: '#94a3b8', fontSize: '13px', lineHeight: 1.6 }}>A confirmation email is on its way to you.</p>
+        <button type="button" className="b2-btn b2-pri" style={{ background: accent, width: '100%', justifyContent: 'center' }} onClick={onClose}>Done</button>
+      </div>
+    </div>
+  )
+}
+
 function Icon({ id, style }: { id: string; style?: React.CSSProperties }) {
   return (
     <svg className="b2-icon" style={style}>
@@ -650,6 +670,7 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
   const [saved, setSaved] = useState(Boolean(initial))
   const [err, setErr] = useState('')
   const [pending, start_] = useTransition()
+  const [showConfirm, setShowConfirm] = useState(false)
   const waive = selection === 'waive'
 
   function submit() {
@@ -664,12 +685,14 @@ function GymForm({ initial, name }: { initial: GymOwn | null; name: string }) {
       if (r.ok) {
         setSaved(true)
         setEmailed(true)
+        setShowConfirm(true)
       } else setErr(r.error)
     })
   }
 
   return (
     <div className="b2-form b2-richform" id="gym-form" style={{ '--rose': ROSE } as React.CSSProperties}>
+      {showConfirm && <SubmittedPopup label="gym election" accent={ROSE} onClose={() => setShowConfirm(false)} />}
       <div className="b2-form-head">
         <div className="b2-formtitle"><span className="b2-formico"><Icon id="dumbbell" /></span><h3>Your gym election</h3></div>
         {saved && (
@@ -757,6 +780,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
   const [err, setErr] = useState('')
   const [pending, start_] = useTransition()
 
+  const [showConfirm, setShowConfirm] = useState(false)
   const total = useMemo(() => FUNDS.reduce((s, f) => s + (parseInt(alloc[f.key] || '0', 10) || 0), 0), [alloc])
 
   function splitEven() {
@@ -768,6 +792,18 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
     for (const f of FUNDS) next[f.key] = ''
     pool.forEach((f, i) => (next[f.key] = String(each + (i < rem ? 1 : 0))))
     setAlloc(next)
+  }
+
+  function setFund(key: string, raw: string) {
+    setAlloc((a) => {
+      if (raw === '') return { ...a, [key]: '' }
+      const others = FUNDS.reduce((s, f) => s + (f.key === key ? 0 : (parseInt(a[f.key] || '0', 10) || 0)), 0)
+      let v = parseInt(raw, 10)
+      if (!Number.isFinite(v) || v < 0) v = 0
+      const headroom = Math.max(0, 100 - others)
+      if (v > headroom) v = headroom
+      return { ...a, [key]: String(v) }
+    })
   }
 
   function submit() {
@@ -789,12 +825,14 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
       if (r.ok) {
         setSaved(true)
         setEmailed(true)
+        setShowConfirm(true)
       } else setErr(r.error)
     })
   }
 
   return (
     <div className="b2-form b2-richform" id="retire-form" style={{ '--rose': '#818cf8' } as React.CSSProperties}>
+      {showConfirm && <SubmittedPopup label="401(k) election" accent={IND} onClose={() => setShowConfirm(false)} />}
       <div className="b2-form-head">
         <div className="b2-formtitle"><span className="b2-formico"><Icon id="sprout" /></span><h3>Your 401(k) election</h3></div>
         {saved && (
@@ -813,7 +851,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
       <div className="b2-fgrid">
         <div className="b2-field">
           <label>Contribution — % of my pay</label>
-          <input type="number" min="0" max="100" step="1" value={pct} onChange={(e) => setPct(e.target.value)} placeholder="e.g. 6" />
+          <input type="number" min="1" max="100" step="1" value={pct} onChange={(e) => { const n = parseInt(e.target.value || '0', 10); setPct(e.target.value === '' ? '' : String(Math.max(0, Math.min(100, Number.isFinite(n) ? n : 0)))) }} placeholder="e.g. 6" />
         </div>
       </div>
       <p className="b2-mininote">Your salary deferral is pre-tax and applies to all future pay until you change it.</p>
@@ -836,7 +874,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
                   min="0"
                   max="100"
                   value={alloc[f.key]}
-                  onChange={(e) => setAlloc((a) => ({ ...a, [f.key]: e.target.value }))}
+                  onChange={(e) => setFund(f.key, e.target.value)}
                   placeholder="%"
                 />
               </div>
@@ -900,7 +938,7 @@ function RetirementForm({ initial, profile }: { initial: RetireOwn | null; profi
         <button
           className="b2-btn b2-pri"
           style={{ background: IND }}
-          disabled={pending || !ack || total !== 100 || !p.name.trim() || !sig.trim()}
+          disabled={pending || !ack || total !== 100 || !p.name.trim() || !sig.trim() || !(parseFloat(pct || '0') > 0)}
           onClick={submit}
         >
           {pending ? 'Saving…' : 'Save & email to Bianca'}
@@ -919,6 +957,7 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
   const [purpose, setPurpose] = useState('')
   const [rows, setRows] = useState<MileageRow[]>(history)
   const [ok, setOk] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [err, setErr] = useState('')
   const [pending, start_] = useTransition()
 
@@ -936,6 +975,7 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
       })
       if (r.ok) {
         setOk(true)
+        setShowConfirm(true)
         setRows((rs) => [
           { id: Math.random().toString(36).slice(2), tripDate, miles: parseFloat(miles) || 0, purpose: purpose || null, ratePerMile: parseFloat(rate) || null, amount: Math.round(amount * 100) / 100, submittedAt: new Date().toISOString(), emailedAt: null },
           ...rs,
@@ -948,6 +988,7 @@ function MileageForm({ history, name }: { history: MileageRow[]; name: string })
 
   return (
     <div className="b2-form b2-richform" id="mileage-form" style={{ '--rose': AMBER } as React.CSSProperties}>
+      {showConfirm && <SubmittedPopup label="mileage trip" accent={AMBER} onClose={() => setShowConfirm(false)} />}
       <div className="b2-form-head">
         <div className="b2-formtitle"><span className="b2-formico"><Icon id="car" /></span><h3>Submit a mileage trip</h3></div>
         {ok && (
