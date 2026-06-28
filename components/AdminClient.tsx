@@ -26,6 +26,7 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: 'administrator', label: 'Administrator' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'it', label: 'IT' },
+  { value: 'admin_assistant', label: 'Administrative Assistant' },
 ]
 
 const ROLE_COLORS: Record<Role, string> = {
@@ -34,6 +35,7 @@ const ROLE_COLORS: Record<Role, string> = {
   team_manager: '#ff9f0a',
   supports_planner: '#30d158',
   it: '#bf5af2',
+  admin_assistant: '#5e5ce6',
 }
 
 const INVITE_STATUS_COLORS: Record<InviteStatus, string> = {

@@ -67,6 +67,7 @@ function mapCsRoleToWorkryn(csRole?: string | null): string {
     case 'it':
     case 'admin':            return 'ADMIN'
     case 'team_manager':     return 'TEAM_MANAGER'
+    case 'admin_assistant':  return 'ADMIN_ASSISTANT'
     case 'support_planner':
     case 'supports_planner': return 'SUPPORT_PLANNER'
     default:                 return 'SUPPORT_PLANNER'

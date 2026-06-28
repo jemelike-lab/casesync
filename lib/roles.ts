@@ -14,6 +14,7 @@ export function getRoleLabel(role?: string | null): string {
   if (role === 'supervisor') return 'Supervisor'
   if (role === 'administrator') return 'Administrator'
   if (role === 'it') return 'IT'
+  if (role === 'admin_assistant') return 'Administrative Assistant'
   return (role ?? '').replace(/_/g, ' ')
 }
 
@@ -23,5 +24,6 @@ export function getRoleColor(role?: string | null): string {
   if (role === 'supervisor') return '#ff453a'
   if (role === 'administrator') return '#ff9f0a'
   if (role === 'it') return '#bf5af2'
+  if (role === 'admin_assistant') return '#5e5ce6'
   return '#98989d'
 }

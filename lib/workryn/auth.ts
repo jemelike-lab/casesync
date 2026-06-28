@@ -69,6 +69,7 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
           team_manager: 'MANAGER',
           supports_planner: 'STAFF',
           it: 'IT',
+          admin_assistant: 'ADMIN_ASSISTANT',
         }
         const wRole = roleMap[profile.role] ?? 'STAFF'
 
