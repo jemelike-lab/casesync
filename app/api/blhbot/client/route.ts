@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,14 +47,28 @@ export async function POST(req: Request) {
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
   if (!question) return NextResponse.json({ error: 'question is required' }, { status: 400 })
 
-  // RLS should enforce access, but we also check assigned_to defensively.
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('id, client_id, first_name, last_name, category, eligibility_code, pos_status, goal_pct, last_contact_date, last_contact_type, spm_completed, spm_next_due, eligibility_end_date, pos_deadline, assessment_due, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals')
-    .eq('id', id)
-    .single()
+  // Validate id format before it reaches the DB.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: 'Invalid client id' }, { status: 400 })
+  }
 
-  if (error || !client) {
+  // Resolve the client with the caller's RLS scope. Azure (Entra) in prod,
+  // Supabase fallback otherwise; RLS enforces the per-user scope either way.
+  let client: Record<string, any> | null = null
+  if (isAzureConfigured()) {
+    const rows: any[] = await withRlsContext(user.id, (sql: any) => sql`SELECT id, client_id, first_name, last_name, category, eligibility_code, pos_status, goal_pct, last_contact_date, last_contact_type, spm_completed, spm_next_due, eligibility_end_date, pos_deadline, assessment_due, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals FROM clients WHERE id = ${id}`)
+    client = rows[0] ?? null
+  } else {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, client_id, first_name, last_name, category, eligibility_code, pos_status, goal_pct, last_contact_date, last_contact_type, spm_completed, spm_next_due, eligibility_end_date, pos_deadline, assessment_due, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals')
+      .eq('id', id)
+      .single()
+    client = error ? null : data
+  }
+
+  if (!client) {
     return NextResponse.json({ error: 'Client not found (or access denied)' }, { status: 404 })
   }
 

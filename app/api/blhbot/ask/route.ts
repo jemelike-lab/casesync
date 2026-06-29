@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,14 +25,31 @@ export async function POST(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
   if (!question) return NextResponse.json({ error: 'question is required' }, { status: 400 })
 
-  // Fetch the client with RLS enforcement
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('id', id)
-    .single()
+  // Validate id format before it reaches the DB (a malformed uuid would
+  // otherwise 500 the Azure path; also closes the IDOR-shaped input gap).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: 'Invalid client id' }, { status: 400 })
+  }
 
-  if (error || !client) {
+  // Resolve the client with the caller's RLS scope. In Entra/Azure mode the
+  // clients table lives in Azure, so read it there via withRlsContext (runs
+  // as `authenticated` with app.user_id = caller, so the same per-user
+  // policies apply); otherwise fall back to the Supabase server client.
+  let clientExists = false
+  if (isAzureConfigured()) {
+    const rows: any[] = await withRlsContext(user.id, (sql: any) => sql`SELECT id FROM clients WHERE id = ${id}`)
+    clientExists = rows.length > 0
+  } else {
+    const { data: client, error } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', id)
+      .single()
+    clientExists = !error && !!client
+  }
+
+  if (!clientExists) {
     return NextResponse.json({ error: 'Client not found (or access denied)' }, { status: 404 })
   }
 
