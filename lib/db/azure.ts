@@ -6,19 +6,23 @@ import { getAzureDbToken, isEntraDbConfigured } from './azure-token'
  *
  * Two auth modes, selected at runtime:
  *
- *  1. Entra federated token (preferred — the pre-PHI gate). When the Entra env
- *     vars are present we connect as the dedicated principal `casesync-db-client`
- *     using a short-lived access token (no stored secret). The token is minted
- *     per-request from the Vercel OIDC token, so the client is built per-request
- *     rather than as a module singleton.
+ *  1. Entra federated token (preferred — the pre-PHI gate). We connect as the
+ *     dedicated principal `casesync-db-client` using a short-lived access token
+ *     (no stored secret). The token is supplied per-connection via a `password`
+ *     callback that returns the cached, auto-refreshing Entra token, so the pool
+ *     is a long-lived module singleton — reused across requests rather than built
+ *     and torn down per request.
  *
  *  2. Long-lived password (interim, test data only). When CASESYNC_DATABASE_URL
  *     is present we connect as `casesync_app` (NOINHERIT, RLS-bound). Singleton.
  *
  * Either way RLS is preserved via the `auth.uid()` shim: every unit of work runs
  * `SET ROLE authenticated` + `set_config('app.user_id', <uuid>)` on a RESERVED
- * connection, and resets in `finally`. Production has NEITHER configured, so the
- * Azure path stays dormant there and the route falls back to Supabase.
+ * connection, and resets in `finally` so identity can never leak to the next
+ * request that borrows that pooled connection.
+ *
+ * Connection target is env-tunable (CASESYNC_DB_PORT / CASESYNC_DB_POOL_MAX) so
+ * the server-side pooler (port 6432) can be adopted later without a code change.
  */
 
 const CONNECTION_STRING = process.env.CASESYNC_DATABASE_URL
@@ -57,38 +61,47 @@ function getSql(): postgres.Sql {
   return _sql
 }
 
-// --- Mode 1: Entra per-request client -------------------------------------------
-// Built fresh per request because the access token is short-lived and derived
-// from the request-scoped Vercel OIDC token. Small pool; ended after the unit of
-// work so nothing outlives the request.
-function buildEntraClient(token: string): postgres.Sql {
-  return postgres({
-    host: process.env.CASESYNC_DB_HOST!,
-    port: 5432,
-    database: process.env.CASESYNC_DB_NAME!,
-    username: process.env.CASESYNC_DB_ENTRA_USER!,
-    password: token,
-    ssl: 'require',
-    prepare: false,
-    max: 2,
-    idle_timeout: 20,
-    connect_timeout: 10,
-    types: DATE_AS_STRING,
-  })
+// --- Mode 1: Entra warm pool ----------------------------------------------------
+// One long-lived pool per warm instance. New connections authenticate with the
+// cached Entra token via the `password` callback (so they always pick up a
+// freshly-refreshed token), and are recycled via max_lifetime well within the
+// token's ~1h life. Reused across requests: no per-request Entra mint and no
+// per-request connect/teardown — the two things that prevented the data plane
+// from scaling under concurrency.
+let _entraSql: postgres.Sql | null = null
+
+function getEntraSql(): postgres.Sql {
+  if (!_entraSql) {
+    _entraSql = postgres({
+      host: process.env.CASESYNC_DB_HOST!,
+      port: Number(process.env.CASESYNC_DB_PORT ?? 5432),
+      database: process.env.CASESYNC_DB_NAME!,
+      username: process.env.CASESYNC_DB_ENTRA_USER!,
+      // Resolved per new connection -> always the current cached token.
+      password: () => getAzureDbToken(),
+      ssl: 'require',
+      prepare: false,
+      max: Number(process.env.CASESYNC_DB_POOL_MAX ?? 8),
+      idle_timeout: 30,
+      max_lifetime: 60 * 30, // recycle every 30 min, comfortably inside token life
+      connect_timeout: 15,
+      types: DATE_AS_STRING,
+    })
+  }
+  return _entraSql
 }
 
 /**
  * Run `fn` against a RESERVED connection scoped to the given user's identity,
  * exactly as the RLS policies expect. SET ROLE authenticated + app.user_id so
  * context cannot leak to other pooled requests; role/context reset and the
- * connection released in finally even if `fn` throws. When `endAfter` is true
- * (Entra per-request client) the pool is closed afterwards.
+ * connection released in `finally` even if `fn` throws. The pool itself is a
+ * warm singleton and is never ended here.
  */
 async function runReserved<T>(
   sql: postgres.Sql,
   userId: string,
   fn: (sql: postgres.Sql) => Promise<T>,
-  endAfter: boolean,
 ): Promise<T> {
   const reserved = await sql.reserve()
   try {
@@ -103,20 +116,13 @@ async function runReserved<T>(
       // If reset fails the connection is suspect; release still runs below.
     }
     reserved.release()
-    if (endAfter) {
-      try {
-        await sql.end({ timeout: 5 })
-      } catch {
-        // best-effort teardown of the per-request pool
-      }
-    }
   }
 }
 
 /**
  * Run `fn` against a connection scoped to the given user's identity. Prefers the
  * Entra federated-token path (no stored secret) when configured, otherwise the
- * long-lived-password singleton.
+ * long-lived-password singleton. Both are warm pools reused across requests.
  */
 export async function withRlsContext<T>(
   userId: string,
@@ -125,17 +131,14 @@ export async function withRlsContext<T>(
   if (!userId) {
     throw new Error('withRlsContext requires a non-empty userId')
   }
-  if (isEntraDbConfigured()) {
-    const token = await getAzureDbToken()
-    const sql = buildEntraClient(token)
-    return runReserved(sql, userId, fn, true)
-  }
-  return runReserved(getSql(), userId, fn, false)
+  const sql = isEntraDbConfigured() ? getEntraSql() : getSql()
+  return runReserved(sql, userId, fn)
 }
 
 /**
  * Health probe: confirms a connection can be made and a trivial query succeeds.
- * Does NOT set any RLS context. Diagnostics only. Honors the same mode selection.
+ * Does NOT set any RLS context. Diagnostics only. Honors the same mode selection
+ * and reuses the warm pool.
  */
 export async function azurePing(): Promise<{ ok: boolean; serverVersion?: string }> {
   const run = async (sql: postgres.Sql) => {
@@ -144,20 +147,8 @@ export async function azurePing(): Promise<{ ok: boolean; serverVersion?: string
     `
     return { ok: true, serverVersion: rows[0]?.server_version }
   }
-  if (isEntraDbConfigured()) {
-    const token = await getAzureDbToken()
-    const sql = buildEntraClient(token)
-    try {
-      return await run(sql)
-    } finally {
-      try {
-        await sql.end({ timeout: 5 })
-      } catch {
-        // best-effort teardown
-      }
-    }
-  }
-  return run(getSql())
+  const sql = isEntraDbConfigured() ? getEntraSql() : getSql()
+  return run(sql)
 }
 
 /** True when either the Entra path or the password path is configured. */
