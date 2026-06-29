@@ -111,11 +111,44 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  // ── Identity check (local-first) ───────────────────────────────────────────
+  // Verify the session JWT *locally* against the project's cached JWKS rather
+  // than calling Supabase Auth on every request. The previous per-request
+  // getUser() is a network round-trip that Supabase rate-limits under load
+  // (over_request_rate_limit) — which surfaced to users as 401s and capped
+  // concurrency once the data plane was fast. getClaims() does a cryptographic
+  // signature check offline for a valid token. We fall back to getUser() only
+  // when local verification can't confirm the token — e.g. it has expired and
+  // the session needs a refresh — which is at most ~once per hour per user, not
+  // per request. That fallback path also writes the refreshed cookies via
+  // setAll, so sessions keep rolling exactly as before.
+  let userId: string | null = null
+  let disabled = false
 
-  if (!user) {
+  try {
+    const { data: claimsData } = await supabase.auth.getClaims()
+    const claims = claimsData?.claims as
+      | { sub?: string; user_metadata?: Record<string, unknown> }
+      | undefined
+    if (claims?.sub) {
+      userId = claims.sub
+      disabled = claims.user_metadata?.disabled === true
+    }
+  } catch {
+    // Local verification couldn't confirm the token; fall through to getUser().
+  }
+
+  if (!userId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      userId = user.id
+      disabled = user.user_metadata?.disabled === true
+    }
+  }
+
+  if (!userId) {
     if (isApiRoute(pathname)) {
       return NextResponse.json(
         { error: 'Unauthorized \u2014 session expired or missing' },
@@ -128,7 +161,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (user.user_metadata?.disabled) {
+  if (disabled) {
     await supabase.auth.signOut()
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('reason', 'account_deactivated')
@@ -160,7 +193,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isDataApiRoute(pathname)) {
-    const result = rateLimit(`data:${user.id}`, {
+    const result = rateLimit(`data:${userId}`, {
       limit: DATA_RATE_LIMIT,
       windowMs: DATA_RATE_WINDOW_MS,
     })
