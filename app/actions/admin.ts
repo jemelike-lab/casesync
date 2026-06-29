@@ -7,6 +7,7 @@ import { cookies } from 'next/headers'
 import { sendEmail } from '@/lib/email'
 import { brandedInviteEmail, inviteReminderEmail } from '@/lib/email-templates'
 import { buildAcceptInviteUrl, generateInviteToken, getInviteExpiryIso } from '@/lib/invites'
+import { isSupervisorLike } from '@/lib/roles'
 
 // Admin Supabase client uses service role key for deterministic server-side writes
 function createAdminClient() {
@@ -39,7 +40,38 @@ async function getCurrentUserId() {
   return user?.id ?? null
 }
 
+/**
+ * Resolve the calling user and require that they may manage users
+ * (supervisor / it / administrator). Returns { id, role } when authorized,
+ * else null. Server actions are directly invocable, so this server-side gate
+ * is required — UI gating (hidden buttons) is not a security boundary.
+ */
+async function getElevatedCaller(): Promise<{ id: string; role: string } | null> {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cs) => { cs.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) }
+      }
+    }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (!profile || !isSupervisorLike(profile.role)) return null
+  return { id: user.id, role: profile.role as string }
+}
+
 export async function inviteUser(email: string, role: string, fullName: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
   const normalizedEmail = email.trim().toLowerCase()
   const currentUserId = await getCurrentUserId()
@@ -215,6 +247,8 @@ export async function removePendingInvite(inviteId: string) {
 }
 
 export async function updateUserRole(userId: string, role: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -232,6 +266,8 @@ export async function updateUserRole(userId: string, role: string) {
 }
 
 export async function updateTeamManagerAssignment(userId: string, teamManagerId: string | null) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
   const { error } = await supabase.from('profiles').update({ team_manager_id: teamManagerId }).eq('id', userId)
   if (error) return { error: error.message }
@@ -239,6 +275,8 @@ export async function updateTeamManagerAssignment(userId: string, teamManagerId:
 }
 
 export async function deactivateUser(userId: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
 
   // Ban the user permanently — this prevents any new sign-ins and
@@ -262,6 +300,8 @@ export async function deactivateUser(userId: string) {
 }
 
 export async function removeUser(userId: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
 
   const historyChecks = await Promise.all([
