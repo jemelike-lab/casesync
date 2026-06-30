@@ -190,41 +190,81 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
         LIMIT ${limit} OFFSET ${from}
       `
 
-      // 3) Full-scope rows (scope + is_active only, no filter/search/paging) for
-      //    the org-wide summary stats. Same column set so the summary helpers
-      //    have every field they read.
+      // 3) Full-scope summary stats (scope + is_active only, no filter/search).
       const fullScopeSql = sql`c.is_active = true AND ${scope}`
-      const fullRows = await sql`
+
+      // Org-wide summary stats as a single in-DB aggregate. Previously this
+      // SELECTed every in-scope client row (all columns) and counted them in JS
+      // on every request — for a supervisor that meant dragging the whole
+      // clients table over the wire each time, which did not survive concurrency.
+      // The bucket thresholds below mirror lib/types exactly:
+      //   getDateStatus(): red/critical => date < today; orange/yellow => date
+      //   within [today, today+7]. So isOverdue => any tracked deadline < today;
+      //   isDueThisWeek => any tracked deadline within today..today+7;
+      //   isEligibilityEndingSoon => eligibility_end_date <= today+7;
+      //   getDaysSinceContact >= 7 => last_contact_date <= today-7.
+      const summaryRows = await sql<
+        {
+          total: number
+          overdue: number
+          due_this_week: number
+          eligibility_soon: number
+          no_contact: number
+        }[]
+      >`
         SELECT
-          c.id, c.client_id, c.first_name, c.last_name, c.category, c.assigned_to,
-          c.is_active, c.last_contact_date, c.last_contact_type, c.goal_pct,
-          c.eligibility_code, c.eligibility_end_date, c.three_month_visit_due,
-          c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline,
-          c.assessment_due, c.thirty_day_letter_date, c.co_financial_redet_date,
-          c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date,
-          c.spm_next_due, c.pos_status
+          COUNT(*)::int AS total,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
+            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
+            c.pos_deadline < current_date OR c.assessment_due < current_date OR
+            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
+            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
+            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
+            c.spm_next_due < current_date
+          ))::int AS overdue,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
+            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
+            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
+            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
+            c.assessment_due BETWEEN current_date AND current_date + 7 OR
+            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
+            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.co_app_date BETWEEN current_date AND current_date + 7 OR
+            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
+            c.two57_date BETWEEN current_date AND current_date + 7 OR
+            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
+            c.spm_next_due BETWEEN current_date AND current_date + 7
+          ))::int AS due_this_week,
+          (COUNT(*) FILTER (WHERE c.eligibility_end_date <= current_date + 7))::int AS eligibility_soon,
+          (COUNT(*) FILTER (WHERE c.last_contact_date <= current_date - 7))::int AS no_contact
         FROM clients c
         WHERE ${fullScopeSql}
       `
 
-      return { total, pageRows, fullRows }
+      return { total, pageRows, summary: summaryRows[0] }
     })
 
     const pageClients = (result.pageRows ?? []) as unknown as Client[]
-    const allClients = (result.fullRows ?? []) as unknown as Client[]
+    const agg = result.summary ?? {
+      total: 0,
+      overdue: 0,
+      due_this_week: 0,
+      eligibility_soon: 0,
+      no_contact: 0,
+    }
     const total = result.total
     const hasMore = from + limit < total
 
-    // Full-scope summary — always from ALL clients in scope, never page-scoped.
+    // Full-scope summary — always over ALL in-scope clients, computed in-DB.
     const fullSummary = {
-      total: allClients.length,
-      overdue: allClients.filter(isOverdue).length,
-      dueThisWeek: allClients.filter(isDueThisWeek).length,
-      eligibilitySoon: allClients.filter(isEligibilityEndingSoon).length,
-      noContact: allClients.filter((client) => {
-        const days = getDaysSinceContact(client.last_contact_date)
-        return days !== null && days >= 7
-      }).length,
+      total: agg.total,
+      overdue: agg.overdue,
+      dueThisWeek: agg.due_this_week,
+      eligibilitySoon: agg.eligibility_soon,
+      noContact: agg.no_contact,
     }
 
     // When the list is filtered (category or search), show page-scoped counts;
@@ -251,7 +291,7 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       userRole: role,
       action: 'client.bulk_access',
       resourceType: 'clients',
-      count: allClients.length,
+      count: agg.total,
       details: {
         page,
         limit,
