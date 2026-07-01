@@ -1104,10 +1104,101 @@ const CHIPS = [
   { id: 'more', label: 'More', icon: 'laptop' },
 ]
 
+const CHIP_OPEN: Record<string, string> = { gym: 'gym-election', retire: 'retire', mileage: 'mileage' }
+
+const COLLAPSE_CSS = `
+  #ben2-app .b2-colhead{cursor:pointer;transition:border-color .15s}
+  #ben2-app .b2-colhead:hover{border-color:var(--rose)}
+  #ben2-app .b2-colhead:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+  #ben2-app .b2-coltitle{flex:1;min-width:0}
+  #ben2-app .b2-colstatus{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;flex:0 0 auto;white-space:nowrap}
+  #ben2-app .b2-colchev{flex:0 0 auto;display:inline-flex;color:var(--dim);transition:transform .18s ease}
+  @media(max-width:600px){
+    #ben2-app .b2-colhead h2{font-size:18px}
+    #ben2-app .b2-colstatus{display:none}
+  }
+`
+
+function Collapse({ id, icon, iconBg, iconColor, title, sub, status, open, onToggle, children }: {
+  id: string
+  icon: string
+  iconBg: string
+  iconColor: string
+  title: string
+  sub: string
+  status: { label: string; done: boolean }
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  const bodyId = `${id}-body`
+  return (
+    <div className="b2-sec" id={id}>
+      <div
+        className="b2-head b2-colhead"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggle()
+          }
+        }}
+        style={{ marginBottom: open ? '16px' : 0 }}
+      >
+        <div className="ico" style={{ background: iconBg, color: iconColor }}>
+          <Icon id={icon} style={{ fontSize: '22px' }} />
+        </div>
+        <div className="b2-coltitle">
+          <h2>{title}</h2>
+          <div className="sub">{sub}</div>
+        </div>
+        <span
+          className="b2-colstatus"
+          style={status.done ? { color: '#34d399', background: 'rgba(52,211,153,.14)', border: '1px solid rgba(52,211,153,.3)', padding: '5px 11px', borderRadius: '999px' } : { color: 'var(--dim)' }}
+        >
+          {status.done && <Icon id="check" style={{ fontSize: '14px' }} />}
+          {status.label}
+        </span>
+        <span className="b2-colchev" style={{ transform: open ? 'rotate(90deg)' : 'none' }} aria-hidden="true">
+          <Icon id="chev" style={{ fontSize: '20px' }} />
+        </span>
+      </div>
+      <div id={bodyId} style={{ display: open ? 'block' : 'none' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function BenefitsClient(props: Props) {
+  const [open, setOpen] = useState<Record<string, boolean>>({ 'gym-election': false, retire: false, mileage: false })
+  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }))
+  const openSection = (id: string) => setOpen((o) => (o[id] ? o : { ...o, [id]: true }))
+
+  useEffect(() => {
+    const openFromHash = () => {
+      const h = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : ''
+      const target = CHIP_OPEN[h] ?? (h === 'retire' || h === 'mileage' || h === 'gym-election' ? h : '')
+      if (target) openSection(target)
+    }
+    openFromHash()
+    window.addEventListener('hashchange', openFromHash)
+    return () => window.removeEventListener('hashchange', openFromHash)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const retireStatus = props.ownRetirement ? { label: 'Election on file', done: true } : { label: 'Make your election', done: false }
+  const gymStatus = props.ownGym ? { label: 'Election on file', done: true } : { label: 'Choose your plan', done: false }
+  const mileageStatus = props.ownMileage.length > 0 ? { label: `${props.ownMileage.length} ${props.ownMileage.length === 1 ? 'trip' : 'trips'} logged`, done: true } : { label: 'Submit a trip', done: false }
+
   return (
     <div id="ben2-app">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: COLLAPSE_CSS }} />
       <div style={{ display: 'none' }} dangerouslySetInnerHTML={{ __html: SPRITE }} />
 
       {props.bannerUrl && (
@@ -1122,7 +1213,7 @@ export default function BenefitsClient(props: Props) {
 
       <div className="b2-chips">
         {CHIPS.map((ch) => (
-          <a className="b2-chip" key={ch.id} href={`#${ch.id}`}>
+          <a className="b2-chip" key={ch.id} href={`#${ch.id}`} onClick={() => { const t = CHIP_OPEN[ch.id]; if (t) openSection(t) }}>
             <Icon id={ch.icon} />
             <span>{ch.label}</span>
           </a>
@@ -1132,27 +1223,19 @@ export default function BenefitsClient(props: Props) {
       <Static html={HTML.health} />
 
       <Static html={HTML.gym} />
-      <div className="b2-sec" id="gym-election" style={{ marginTop: '-8px' }}>
+      <Collapse id="gym-election" icon="dumbbell" iconBg="rgba(244,63,94,.16)" iconColor="#fb7185" title="Gym Membership Election" sub="Choose your plan and enroll with your e-signature" status={gymStatus} open={!!open['gym-election']} onToggle={() => toggle('gym-election')}>
         <GymForm initial={props.ownGym} name={props.profile.name} />
-      </div>
+      </Collapse>
 
       <Static html={HTML.rec} />
 
-      <div className="b2-sec" id="retire">
-        <div className="b2-head">
-          <div className="ico" style={{ background: 'rgba(99,102,241,.16)', color: '#818cf8' }}><Icon id="sprout" style={{ fontSize: '22px' }} /></div>
-          <div><h2>401(k) Profit-Sharing Plan</h2><div className="sub">Beatrice Loving Heart 401(k) PSP (02J) · make your election below</div></div>
-        </div>
+      <Collapse id="retire" icon="sprout" iconBg="rgba(99,102,241,.16)" iconColor="#818cf8" title="401(k) Profit-Sharing Plan" sub="Beatrice Loving Heart 401(k) PSP (02J) · make your election below" status={retireStatus} open={!!open.retire} onToggle={() => toggle('retire')}>
         <RetirementForm initial={props.ownRetirement} profile={props.profile} />
-      </div>
+      </Collapse>
 
-      <div className="b2-sec" id="mileage">
-        <div className="b2-head">
-          <div className="ico" style={{ background: 'rgba(217,119,6,.16)', color: '#fbbf24' }}><Icon id="car" style={{ fontSize: '22px' }} /></div>
-          <div><h2>Travel Mileage Reimbursement</h2><div className="sub">Track your miles and submit per trip</div></div>
-        </div>
+      <Collapse id="mileage" icon="car" iconBg="rgba(217,119,6,.16)" iconColor="#fbbf24" title="Travel Mileage Reimbursement" sub="Track your miles and submit per trip" status={mileageStatus} open={!!open.mileage} onToggle={() => toggle('mileage')}>
         <MileageForm history={props.ownMileage} name={props.profile.name} />
-      </div>
+      </Collapse>
 
       <Static html={HTML.referral} />
       <Static html={HTML.pto} />
