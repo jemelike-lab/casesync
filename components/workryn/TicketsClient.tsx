@@ -778,12 +778,6 @@ export default function TicketsClient({ initialTickets, users, departments, curr
           -webkit-backdrop-filter: blur(18px) saturate(140%);
           border: 1px solid rgba(245,158,11,0.28);
         }
-        /* Dark-modal label legibility: Mantine inputs render light-scheme labels,
-           which are illegible on the navy modal surface. Force light label +
-           description colors here. Higher specificity than Mantine defaults, so no
-           !important is needed and the required asterisk keeps its own red. */
-        .tia-modal-content .mantine-InputWrapper-label { color: #e2e8f0; }
-        .tia-modal-content .mantine-InputWrapper-description { color: #94a3b8; }
       `}</style>
     </>
   )

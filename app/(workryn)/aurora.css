@@ -172,3 +172,24 @@
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+
+/* -------------------------------------------------------------------
+   Aurora dark modals - input label legibility (single source of truth).
+   Every Workryn modal (Tickets, Tasks, Schedule, PTO, Training,
+   Departments) uses the same navy `*-modal-content` surface, but Mantine
+   renders light-scheme labels that are near-black on navy. Force legible
+   label/description colors for all of them here. New Aurora modal? Add its
+   `*-modal-content` class to the lists below.
+   ------------------------------------------------------------------- */
+:is(.tia-modal-content, .tra-modal-content, .ptoa-modal-content,
+    .sca-modal-content, .tka-modal-content, .dpa-modal-content)
+  :is(.mantine-InputWrapper-label, .mantine-Checkbox-label,
+      .mantine-Radio-label, .mantine-Switch-label) {
+  color: #e2e8f0;
+}
+:is(.tia-modal-content, .tra-modal-content, .ptoa-modal-content,
+    .sca-modal-content, .tka-modal-content, .dpa-modal-content)
+  .mantine-InputWrapper-description {
+  color: #94a3b8;
+}
