@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import IdleTimeout from '@/components/IdleTimeout'
-import YourCaseAI from '@/components/YourCaseAI'
 import { enforceMfa } from '@/lib/enforce-mfa'
 
 export default async function HelpLayout({
@@ -32,7 +31,6 @@ export default async function HelpLayout({
       <main style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
         {children}
       </main>
-      <YourCaseAI />
     </div>
   )
 }

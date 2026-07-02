@@ -10,6 +10,7 @@ import InstallBanner from '@/components/InstallBanner'
 import SessionGuard from '@/components/SessionGuard'
 import { ThemeProvider } from '@/components/workryn/ThemeProvider'
 import { Analytics } from '@vercel/analytics/next'
+import YourCaseAI from '@/components/YourCaseAI'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' })
 
@@ -79,6 +80,7 @@ export default function RootLayout({
           <SessionGuard />
           <InstallBanner />
           <Analytics />
+          <YourCaseAI />
         </ThemeProvider>
       <script dangerouslySetInnerHTML={{__html: "if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});}"}} />
       </body>

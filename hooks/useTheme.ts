@@ -49,6 +49,11 @@ export function useTheme() {
       localStorage.setItem('workryn-theme', t)
     } catch {}
     document.documentElement.setAttribute('data-theme', t)
+    // Keep color-scheme in sync with the theme so the browser repaints the page
+    // (canvas + native controls) on toggle. Without this, the load-time init
+    // script set color-scheme but the toggle didn't, so the change only fully
+    // applied after a hard refresh.
+    document.documentElement.style.colorScheme = t
   }
 
   function toggle() {

@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { enforceMfa } from '@/lib/enforce-mfa'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
-import YourCaseAI from '@/components/YourCaseAI'
 import OnboardingTour from '@/components/OnboardingTour'
 
 export default async function DashboardLayout({
@@ -34,7 +33,6 @@ export default async function DashboardLayout({
       <main style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
         {children}
       </main>
-      <YourCaseAI />
       {/* Onboarding tour — shows automatically on first visit, controlled by localStorage */}
       <OnboardingTour />
     </div>

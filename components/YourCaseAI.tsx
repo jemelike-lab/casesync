@@ -538,6 +538,11 @@ export default function BLHAssistant() {
 
   const showPulse = !hasOpenedBefore
 
+  // BLH Bot is mounted globally (root layout). Hide it on public /
+  // unauthenticated routes where it shouldn't appear.
+  const PUBLIC_PREFIXES = ['/login', '/onboarding', '/reset-password', '/accept-invite', '/auth']
+  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) return null
+
   return (
     <>
       {/* Styles */}
