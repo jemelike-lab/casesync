@@ -225,7 +225,7 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
 
         {mfaRequired && !activeFactor && !emailMfaEnabled && (
           <div style={{ background: 'rgba(255,159,10,0.1)', border: '1px solid rgba(255,159,10,0.3)', borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 13 }}>
-            <div style={{ fontWeight: 600, color: '#ff9f0a', marginBottom: 4 }}>Two-factor authentication is required</div>
+            <div style={{ fontWeight: 600, color: 'var(--orange)', marginBottom: 4 }}>Two-factor authentication is required</div>
             <div style={{ color: 'var(--text-secondary)' }}>
               Your organization requires all users to enable 2FA for HIPAA compliance. Choose one of the options below — either an authenticator app or email verification code.
             </div>
@@ -233,7 +233,7 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
         )}
 
         {message && (
-          <div style={{ background: 'rgba(48,209,88,0.1)', border: '1px solid rgba(48,209,88,0.3)', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#30d158' }}>
+          <div style={{ background: 'rgba(48,209,88,0.1)', border: '1px solid rgba(48,209,88,0.3)', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: 'var(--green)' }}>
             {message}
           </div>
         )}
@@ -255,11 +255,11 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
               </div>
             </div>
             {activeFactor ? (
-              <span style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+              <span style={{ background: 'rgba(48,209,88,0.15)', color: 'var(--green)', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
                 ✓ Enabled
               </span>
             ) : (
-              <span style={{ background: 'rgba(255,159,10,0.15)', color: '#ff9f0a', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+              <span style={{ background: 'rgba(255,159,10,0.15)', color: 'var(--orange)', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
                 Not enabled
               </span>
             )}
@@ -327,11 +327,11 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
               </div>
             </div>
             {emailMfaEnabled ? (
-              <span style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+              <span style={{ background: 'rgba(48,209,88,0.15)', color: 'var(--green)', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
                 ✓ Enabled
               </span>
             ) : (
-              <span style={{ background: 'rgba(255,159,10,0.15)', color: '#ff9f0a', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
+              <span style={{ background: 'rgba(255,159,10,0.15)', color: 'var(--orange)', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600 }}>
                 Not enabled
               </span>
             )}
@@ -394,7 +394,7 @@ export default function SecurityPageClient({ user, profile, factors }: Props) {
                   {navigator?.userAgent?.includes('Mobile') ? '📱 Mobile' : '💻 Desktop'} · Last active: {lastLogin}
                 </div>
               </div>
-              <span style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>Active</span>
+              <span style={{ background: 'rgba(48,209,88,0.15)', color: 'var(--green)', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>Active</span>
             </div>
           </div>
           <button onClick={signOutAll} disabled={signingOut} style={{ background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#ff453a', cursor: 'pointer' }}>

@@ -281,8 +281,8 @@ export default function CalendarView({ assignedTo }: Props) {
             {weekDays.map((dd,i)=>{
               const dk=toDateKey(dd), isT=dk===todayKey, past=dk<todayKey, items=eventsMap.get(dk)??[]
               return (
-                <div key={i} style={{ borderLeft:isT ? '3px solid #5ac8fa' : (lt ? '3px solid var(--border)' : '3px solid rgba(255,255,255,0.08)'), paddingLeft:16, opacity:past?0.5:1 }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:isT ? '#5ac8fa' : (lt ? 'var(--text-secondary)' : 'rgba(255,255,255,0.4)'), marginBottom:8 }}>
+                <div key={i} style={{ borderLeft:isT ? (lt ? '3px solid #0071e3' : '3px solid #5ac8fa') : (lt ? '3px solid var(--border)' : '3px solid rgba(255,255,255,0.08)'), paddingLeft:16, opacity:past?0.5:1 }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:isT ? (lt ? '#0071e3' : '#5ac8fa') : (lt ? 'var(--text-secondary)' : 'rgba(255,255,255,0.4)'), marginBottom:8 }}>
                     {dd.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
                     {items.length>0 && <span style={{ marginLeft:8, fontSize:10, padding:'2px 8px', borderRadius:8, background:'rgba(255,255,255,0.06)', color:'var(--text-secondary)' }}>{items.length}</span>}
                   </div>

@@ -329,13 +329,13 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
               Invite Status
             </h2>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
-              <span style={{ fontSize: 12, color: '#ff9f0a', fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 600 }}>
                 Pending: {pendingInvites.length}
               </span>
-              <span style={{ fontSize: 12, color: '#30d158', fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>
                 Accepted: {inviteHistory.filter(i => (i.computed_status ?? i.status) === 'accepted').length}
               </span>
-              <span style={{ fontSize: 12, color: '#ff453a', fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>
                 Expired: {inviteHistory.filter(i => (i.computed_status ?? i.status) === 'expired').length}
               </span>
             </div>
@@ -372,7 +372,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                       <td style={{ padding: '10px 12px' }}>
                         {status === 'accepted' ? (
                           <div>
-                            <div style={{ fontWeight: 600, color: '#30d158' }}>✅ Joined</div>
+                            <div style={{ fontWeight: 600, color: 'var(--green)' }}>✅ Joined</div>
                             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatDateTime(invite.accepted_at)}</div>
                           </div>
                         ) : (
@@ -399,7 +399,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                             style={{
                               background: 'transparent',
                               border: '1px solid rgba(255,69,58,0.45)',
-                              color: '#ff453a',
+                              color: 'var(--red)',
                               borderRadius: 6,
                               fontSize: 11,
                               padding: '4px 10px',
@@ -541,7 +541,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                     <td style={{ padding: '10px 12px' }}>
                       {user.joined_at ? (
                         <div>
-                          <div style={{ fontWeight: 600, color: '#30d158' }}>✅ Joined</div>
+                          <div style={{ fontWeight: 600, color: 'var(--green)' }}>✅ Joined</div>
                           <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatDateTime(user.joined_at)}</div>
                         </div>
                       ) : (
@@ -574,7 +574,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                             onClick={() => handleRemoveUser(user.id, user.full_name ?? 'this user')}
                             style={{
                               background: 'transparent', border: '1px solid rgba(255,69,58,0.55)',
-                              color: '#ff453a', borderRadius: 6, fontSize: 11,
+                              color: 'var(--red)', borderRadius: 6, fontSize: 11,
                               padding: '3px 10px', cursor: 'pointer', minHeight: 28,
                             }}
                           >
