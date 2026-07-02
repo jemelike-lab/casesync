@@ -58,8 +58,10 @@
   --w-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10), 0 4px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* Page canvas */
-[data-theme="light"] body,
+/* Page canvas — scoped to the Workryn shell only.
+   (Bare `body` was removed: this file is imported app-wide, and targeting
+   `body` hijacked the CaseSync page background, breaking its theme toggle.
+   CaseSync themes `body` via globals.css `var(--bg)`.) */
 [data-theme="light"] .w-app-shell,
 [data-theme="light"] .w-app-shell .w-page-content {
   background: #f4f6fb !important;
