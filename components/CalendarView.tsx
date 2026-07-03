@@ -352,7 +352,7 @@ export default function CalendarView({ assignedTo }: Props) {
                 const hasFut = ce.some(e=>e.urgency==='future')
                 const hasEv = ce.length>0
 
-                let bg = lt ? 'var(--surface)' : 'rgba(14,18,40,0.6)'
+                let bg = 'var(--cal-cell-bg)'
                 if (isSel) bg = lt ? 'rgba(0,113,227,0.1)' : 'rgba(0,122,255,0.18)'
                 else if (hasOD) bg = lt ? 'rgba(220,38,38,0.06)' : 'rgba(255,69,58,0.08)'
                 else if (hasTW) bg = lt ? 'rgba(202,138,4,0.05)' : 'rgba(255,214,10,0.06)'
