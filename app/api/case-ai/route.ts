@@ -45,6 +45,7 @@ function streamAnthropicResponse(
   messages: Array<{ role: string; content: unknown }>,
   tools?: unknown[],
   toolChoice?: { type: string },
+  appendText?: string,
 ): Response {
   const encoder = new TextEncoder()
 
@@ -102,6 +103,9 @@ function streamAnthropicResponse(
       } catch {
         controller.enqueue(encoder.encode('\n\nSorry, the response was interrupted. Please try again.'))
       } finally {
+        if (appendText) {
+          try { controller.enqueue(encoder.encode(appendText)) } catch { /* stream already closed */ }
+        }
         controller.close()
       }
     },
@@ -1110,6 +1114,45 @@ const BOT_TOOLS = [
       properties: {},
       required: [] as string[]
     }
+  },
+  {
+    name: "propose_log_contact" as const,
+    description: "PROPOSE logging a client contact (visit, call, email). Nothing is saved by this tool — the user must tap Confirm on the card shown under your reply. Use whenever the user asks to log, record, or note a contact or visit. Requires the client's uuid id.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: { type: "string" as const, description: "The client's uuid id field (from context or search_clients results)." },
+        date: { type: "string" as const, description: "Contact date, YYYY-MM-DD. Resolve 'today' from the Today date in your context." },
+        type: { type: "string" as const, description: "Contact type: phone, in_person, email, video, or similar." },
+        note: { type: "string" as const, description: "Optional short note about the contact." }
+      },
+      required: ["client_id", "date", "type"] as string[]
+    }
+  },
+  {
+    name: "propose_add_note" as const,
+    description: "PROPOSE adding a case note to a client's record. Nothing is saved by this tool — the user must tap Confirm on the card shown under your reply. Use whenever the user asks to add, save, or write a note. Requires the client's uuid id.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: { type: "string" as const, description: "The client's uuid id field (from context or search_clients results)." },
+        content: { type: "string" as const, description: "The note text, exactly as it should be saved." }
+      },
+      required: ["client_id", "content"] as string[]
+    }
+  },
+  {
+    name: "propose_update_date" as const,
+    description: "PROPOSE changing one of a client's deadline/date fields. Nothing is saved by this tool — the user must tap Confirm on the card shown under your reply. Use whenever the user asks to set, change, or update a deadline or date. Requires the client's uuid id, the exact field name, and the new date.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: { type: "string" as const, description: "The client's uuid id field (from context or search_clients results)." },
+        field: { type: "string" as const, description: "Exact column name, e.g. pos_deadline, assessment_due, spm_next_due, eligibility_end_date, three_month_visit_due." },
+        new_date: { type: "string" as const, description: "New value, YYYY-MM-DD." }
+      },
+      required: ["client_id", "field", "new_date"] as string[]
+    }
   }
 ];
 
@@ -1489,6 +1532,107 @@ async function executeGetPlannerWorkload(
     .in('assigned_to', plannerIds);
   const summary = getPlannerOpsSummary((clients || []) as Record<string, unknown>[], planners as unknown as Record<string, unknown>[]);
   return formatPlannerOpsContext(summary);
+}
+
+// Editable date fields for propose_update_date — MUST stay in sync with the
+// DATE_FIELDS whitelist in app/api/clients/[id]/route.ts (the PATCH route
+// that executes confirmed proposals).
+const PROPOSAL_DATE_FIELDS = [
+  'eligibility_end_date', 'last_contact_date', 'three_month_visit_date',
+  'three_month_visit_due', 'quarterly_waiver_date', 'med_tech_redet_date',
+  'poc_date', 'loc_date', 'doc_mdh_date', 'pos_deadline', 'assessment_due',
+  'spm_next_due', 'co_financial_redet_date', 'co_app_date', 'mfp_consent_date',
+  'two57_date', 'thirty_day_letter_date', 'drop_in_visit_date',
+]
+
+// The propose_* tools NEVER write anything. They validate the model's input
+// (uuid, role scope, field whitelist, date format), resolve the client name
+// (and current value for date updates), and stash a server-built proposal in
+// the request-scoped holder. The route appends that proposal as a machine
+// trailer; the UI's Confirm button then executes it through the existing
+// audited PATCH / notes routes under the user's own session.
+async function executeProposeAction(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  toolName: string,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string,
+  holder: { proposal: Record<string, unknown> | null }
+) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+  const clientId = String(input.client_id ?? '');
+  if (!uuidRegex.test(clientId)) {
+    return JSON.stringify({ error: 'client_id must be the uuid id field from context or search_clients results' });
+  }
+
+  const wantField = toolName === 'propose_update_date' ? String(input.field ?? '') : null;
+  if (wantField !== null && !PROPOSAL_DATE_FIELDS.includes(wantField)) {
+    return JSON.stringify({ error: `field must be one of: ${PROPOSAL_DATE_FIELDS.join(', ')}` });
+  }
+
+  // Resolve + scope-check the client. Also supplies the confirm card's client
+  // name and, for date updates, the current field value.
+  let clientRow: Record<string, unknown> | null = null;
+  if (isAzureConfigured()) {
+    clientRow = await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND assigned_to = ANY(${ids}::uuid[])`
+      }
+      const rows = await sql`SELECT id, first_name, last_name, eligibility_end_date, last_contact_date, three_month_visit_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, poc_date, loc_date, doc_mdh_date, pos_deadline, assessment_due, spm_next_due, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, thirty_day_letter_date, drop_in_visit_date FROM clients WHERE id = ${clientId} ${scope} LIMIT 1`
+      return (rows[0] ?? null) as unknown as Record<string, unknown> | null
+    });
+  } else {
+    let clientQuery = supabase.from('clients').select('*').eq('id', clientId);
+    if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+      clientQuery = clientQuery.eq('assigned_to', userId);
+    } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+      const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+      const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+      teamIds.push(userId);
+      clientQuery = clientQuery.in('assigned_to', teamIds);
+    }
+    const { data } = await clientQuery.single();
+    clientRow = data;
+  }
+  if (!clientRow) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+
+  const clientName = `${clientRow.last_name ?? 'Unknown'}${clientRow.first_name ? `, ${clientRow.first_name}` : ''}`;
+
+  if (toolName === 'propose_add_note') {
+    const content = typeof input.content === 'string' ? input.content.trim() : '';
+    if (!content) return JSON.stringify({ error: 'content is required' });
+    if (content.length > 10000) return JSON.stringify({ error: 'content exceeds 10000 characters' });
+    holder.proposal = { kind: 'add_note', client_id: clientId, client_name: clientName, content };
+    return JSON.stringify({ ok: true, status: 'proposal_ready', instruction: 'A confirmation card is shown below your reply. The note will ONLY be saved after the user taps Confirm. Do NOT claim it has been added.' });
+  }
+
+  if (toolName === 'propose_log_contact') {
+    const date = String(input.date ?? '');
+    if (!DATE_ONLY.test(date)) return JSON.stringify({ error: 'date must be YYYY-MM-DD' });
+    const type = typeof input.type === 'string' ? input.type.trim().slice(0, 50) : '';
+    if (!type) return JSON.stringify({ error: 'type is required (e.g. phone, in_person, email)' });
+    const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 1000) : null;
+    holder.proposal = { kind: 'log_contact', client_id: clientId, client_name: clientName, date, type, note };
+    return JSON.stringify({ ok: true, status: 'proposal_ready', instruction: 'A confirmation card is shown below your reply. The contact will ONLY be logged after the user taps Confirm. Do NOT claim it has been logged.' });
+  }
+
+  if (toolName === 'propose_update_date') {
+    const newDate = String(input.new_date ?? '');
+    if (!DATE_ONLY.test(newDate)) return JSON.stringify({ error: 'new_date must be YYYY-MM-DD' });
+    const oldValue = (clientRow[wantField as string] as string | null) ?? null;
+    holder.proposal = { kind: 'update_date', client_id: clientId, client_name: clientName, field: wantField, old_value: oldValue, new_date: newDate };
+    return JSON.stringify({ ok: true, status: 'proposal_ready', current_value: oldValue, instruction: 'A confirmation card is shown below your reply. The date will ONLY change after the user taps Confirm. Do NOT claim it has been changed.' });
+  }
+
+  return JSON.stringify({ error: 'Unknown proposal tool' });
 }
 
 async function executeCaseloadStats(
@@ -1891,6 +2035,16 @@ TOOL 4 - get_client_files: Use to check what documents are on file for a client 
 TOOL 5 - compute_deadline: REQUIRED for ALL date arithmetic — SPM next-due dates, adding days or months, days between dates, days until a deadline. NEVER compute dates in your head; your mental date math is not reliable enough for compliance work.
 TOOL 6 - get_assignment_history: Use for who a client was assigned to over time and why (pass the uuid id).
 TOOL 7 - get_planner_workload: Per-planner load and compliance comparison. ONLY available to team managers and supervisors — if a planner asks, explain it is not available for their role.
+TOOL 8 - propose_log_contact: When the user asks to log, record, or note a contact/visit for a client. Pass the uuid id, date (YYYY-MM-DD), type (phone, in_person, email, video), and optional note.
+TOOL 9 - propose_add_note: When the user asks to add or save a case note for a client. Pass the uuid id and the exact note content.
+TOOL 10 - propose_update_date: When the user asks to set, change, or update a deadline/date field for a client. Pass the uuid id, the exact field name, and new_date (YYYY-MM-DD).
+
+ACTION RULES (TOOLS 8-10 — CRITICAL):
+- These tools only PROPOSE a change. NOTHING is saved until the user taps the Confirm button that appears under your reply.
+- After a proposal_ready result: summarize exactly what will change and tell the user to review and tap Confirm. NEVER say the change has been made, logged, saved, or updated.
+- Propose ONE action per reply. If the user asks for several changes, do them one at a time.
+- Resolve "today"/"yesterday" from the Today date in your context. If details are missing (which client, which date, which field), ask instead of guessing.
+- If the user is viewing a client page (CURRENT CLIENT CONTEXT), use THAT client's id unless they clearly name a different client.
 
 RULES:
 - If the user asks about eligibility, overdue dates, caseload numbers, or finding entries by criteria: YOU MUST call the appropriate tool. Do not attempt to answer from the data already in this prompt.
@@ -2002,6 +2156,11 @@ RULES:
     const toolUseBlock = pass1Data.content.find((b: { type: string }) => b.type === 'tool_use')
     const toolsUsed: string[] = []
 
+    // Server-validated action proposal captured by the propose_* executor for
+    // THIS request; appended as a machine trailer so the UI can render the
+    // confirm card. Built from validated tool input — never from model prose.
+    const proposalHolder: { proposal: Record<string, unknown> | null } = { proposal: null }
+
     let finalText = ''
 
     if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
@@ -2025,6 +2184,8 @@ RULES:
           toolResult = await executeGetAssignmentHistory(supabase, toolUseBlock.input, userRole, userId)
         } else if (toolUseBlock.name === 'get_planner_workload') {
           toolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
+        } else if (toolUseBlock.name === 'propose_log_contact' || toolUseBlock.name === 'propose_add_note' || toolUseBlock.name === 'propose_update_date') {
+          toolResult = await executeProposeAction(supabase, toolUseBlock.name, toolUseBlock.input, userRole, userId, proposalHolder)
         } else {
           toolResult = JSON.stringify({ error: 'Unknown tool: ' + toolUseBlock.name })
         }
@@ -2084,7 +2245,10 @@ RULES:
               .join('')
 
             auditLog(req, { userId, action: 'bot_query' })
-            return new Response(finalAnswer, {
+            const proposalTrailer = proposalHolder.proposal
+              ? `\n\n[[ACTION_PROPOSAL]]${JSON.stringify(proposalHolder.proposal)}[[/ACTION_PROPOSAL]]`
+              : ''
+            return new Response(finalAnswer + proposalTrailer, {
               headers: { 'Content-Type': 'text/plain; charset=utf-8' },
             })
           }
@@ -2108,6 +2272,8 @@ RULES:
               nextToolResult = await executeGetAssignmentHistory(supabase, nextToolUse.input, userRole, userId)
             } else if (nextToolUse.name === 'get_planner_workload') {
               nextToolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
+            } else if (nextToolUse.name === 'propose_log_contact' || nextToolUse.name === 'propose_add_note' || nextToolUse.name === 'propose_update_date') {
+              nextToolResult = await executeProposeAction(supabase, nextToolUse.name, nextToolUse.input, userRole, userId, proposalHolder)
             } else {
               nextToolResult = JSON.stringify({ error: 'Unknown tool: ' + nextToolUse.name })
             }
@@ -2143,7 +2309,10 @@ RULES:
 
       // If we exhausted all rounds, stream one final call with tool_choice:none to force an answer
       auditLog(req, { userId, action: 'bot_query' }).catch(() => {})
-      return streamAnthropicResponse(apiHeaders, systemPrompt, loopMessages, BOT_TOOLS, { type: 'none' })
+      const exhaustedTrailer = proposalHolder.proposal
+        ? `\n\n[[ACTION_PROPOSAL]]${JSON.stringify(proposalHolder.proposal)}[[/ACTION_PROPOSAL]]`
+        : ''
+      return streamAnthropicResponse(apiHeaders, systemPrompt, loopMessages, BOT_TOOLS, { type: 'none' }, exhaustedTrailer)
     } else {
       // No tool use - extract text from pass1 response directly
       console.log('[BLH Bot] No tool use - returning pass1 text directly')

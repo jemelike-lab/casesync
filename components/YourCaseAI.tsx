@@ -4,10 +4,26 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+type ActionProposal = {
+  kind: 'log_contact' | 'add_note' | 'update_date'
+  client_id: string
+  client_name: string
+  date?: string
+  type?: string
+  note?: string | null
+  content?: string
+  field?: string
+  old_value?: string | null
+  new_date?: string
+}
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  proposal?: ActionProposal | null
+  proposalStatus?: 'pending' | 'applying' | 'applied' | 'cancelled' | 'failed'
+  proposalError?: string
 }
 
 const PLANNER_DASHBOARD_PROMPTS = [
@@ -393,6 +409,42 @@ export default function BLHAssistant() {
     setHasOpenedBefore(true)
   }
 
+  // Execute a confirmed proposal through the existing audited routes under
+  // the user's own session — RLS, field whitelists, and audit logs all apply.
+  const applyProposal = useCallback(async (msgId: string) => {
+    const msg = messages.find(m => m.id === msgId)
+    const p = msg?.proposal
+    if (!p || (msg?.proposalStatus !== 'pending' && msg?.proposalStatus !== 'failed')) return
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, proposalStatus: 'applying' as const, proposalError: undefined } : m))
+    try {
+      const H = { 'Content-Type': 'application/json' }
+      const fail = async (r: Response) => {
+        const j = await r.json().catch(() => ({} as { error?: string }))
+        throw new Error(j.error ?? `Failed (${r.status})`)
+      }
+      if (p.kind === 'add_note') {
+        const r = await fetch(`/api/clients/${p.client_id}/notes`, { method: 'POST', headers: H, body: JSON.stringify({ content: p.content }) })
+        if (!r.ok) await fail(r)
+      } else if (p.kind === 'log_contact') {
+        const r = await fetch(`/api/clients/${p.client_id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ last_contact_date: p.date, last_contact_type: p.type }) })
+        if (!r.ok) await fail(r)
+        await fetch(`/api/clients/${p.client_id}/activity`, { method: 'POST', headers: H, body: JSON.stringify({ action: `Logged contact: ${p.type}${p.note ? ' — ' + p.note : ''}`, field_name: 'last_contact_date', old_value: null, new_value: p.date }) }).catch(() => {})
+      } else if (p.kind === 'update_date') {
+        const r = await fetch(`/api/clients/${p.client_id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ [p.field as string]: p.new_date }) })
+        if (!r.ok) await fail(r)
+        await fetch(`/api/clients/${p.client_id}/activity`, { method: 'POST', headers: H, body: JSON.stringify({ action: `Changed ${String(p.field).replace(/_/g, ' ')}`, field_name: p.field, old_value: p.old_value ?? null, new_value: p.new_date }) }).catch(() => {})
+      }
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, proposalStatus: 'applied' as const } : m))
+      router.refresh()
+    } catch (e) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, proposalStatus: 'failed' as const, proposalError: (e as Error).message } : m))
+    }
+  }, [messages, router])
+
+  const cancelProposal = useCallback((msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId && m.proposalStatus === 'pending' ? { ...m, proposalStatus: 'cancelled' as const } : m))
+  }, [])
+
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || loading || !userId) return
 
@@ -486,7 +538,24 @@ export default function BLHAssistant() {
 
         setMessages(prev =>
           prev.map(m =>
-            m.id === assistantId ? { ...m, content: fullText } : m
+            // Hide any (possibly partial) action-proposal trailer while streaming
+            m.id === assistantId ? { ...m, content: fullText.split('[[ACTION_PROPOSAL]]')[0] } : m
+          )
+        )
+      }
+
+      // Server-built action proposal trailer (validated tool input — never
+      // parsed from model prose) → confirm card state on this message.
+      const trailerMatch = fullText.match(/\[\[ACTION_PROPOSAL\]\]([\s\S]*?)\[\[\/ACTION_PROPOSAL\]\]/)
+      if (trailerMatch) {
+        let proposal: ActionProposal | null = null
+        try { proposal = JSON.parse(trailerMatch[1]) as ActionProposal } catch { proposal = null }
+        const cleaned = fullText.replace(trailerMatch[0], '').trimEnd()
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantId
+              ? { ...m, content: cleaned, proposal, proposalStatus: proposal ? ('pending' as const) : undefined }
+              : m
           )
         )
       }
@@ -886,6 +955,33 @@ export default function BLHAssistant() {
                             router.push(path)
                             setOpen(false)
                           })}
+                          {msg.proposal && (
+                            <div style={{ marginTop: 10, border: '1px solid rgba(48,209,88,0.35)', borderRadius: 10, padding: '10px 12px', background: 'rgba(48,209,88,0.06)' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#30d158', marginBottom: 6 }}>
+                                {msg.proposal.kind === 'log_contact' ? 'Log contact' : msg.proposal.kind === 'add_note' ? 'Add note' : 'Update date'} — {msg.proposal.client_name}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#e2e8f0', marginBottom: 8, lineHeight: 1.5 }}>
+                                {msg.proposal.kind === 'log_contact' && (<>Date: <b>{msg.proposal.date}</b> · Type: <b>{msg.proposal.type}</b>{msg.proposal.note ? <> · Note: {msg.proposal.note}</> : null}</>)}
+                                {msg.proposal.kind === 'add_note' && (<>&ldquo;{msg.proposal.content}&rdquo;</>)}
+                                {msg.proposal.kind === 'update_date' && (<>{String(msg.proposal.field).replace(/_/g, ' ')}: <b>{msg.proposal.old_value ?? 'not set'}</b> → <b>{msg.proposal.new_date}</b></>)}
+                              </div>
+                              {msg.proposalStatus === 'pending' && (
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <button type="button" onClick={() => applyProposal(msg.id)} style={{ background: '#30d158', border: 'none', borderRadius: 7, color: '#04240f', fontWeight: 700, fontSize: 12, padding: '6px 14px', cursor: 'pointer' }}>Confirm</button>
+                                  <button type="button" onClick={() => cancelProposal(msg.id)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 7, color: '#e2e8f0', fontSize: 12, padding: '6px 14px', cursor: 'pointer' }}>Cancel</button>
+                                </div>
+                              )}
+                              {msg.proposalStatus === 'applying' && <div style={{ fontSize: 12, color: '#a78bfa' }}>Applying…</div>}
+                              {msg.proposalStatus === 'applied' && <div style={{ fontSize: 12, color: '#30d158', fontWeight: 600 }}>✓ Applied</div>}
+                              {msg.proposalStatus === 'cancelled' && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Cancelled — nothing was changed</div>}
+                              {msg.proposalStatus === 'failed' && (
+                                <div style={{ fontSize: 12, color: '#ff6b6b' }}>
+                                  Failed: {msg.proposalError ?? 'unknown error'}{' '}
+                                  <button type="button" onClick={() => applyProposal(msg.id)} style={{ background: 'transparent', border: '1px solid rgba(255,107,107,0.4)', borderRadius: 6, color: '#ff6b6b', fontSize: 11, padding: '2px 8px', cursor: 'pointer', marginLeft: 6 }}>Retry</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           {msg.content && !(loading && streamingIdRef.current === msg.id) && (
                             <button
                               type="button"
