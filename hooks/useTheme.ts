@@ -5,7 +5,22 @@ import { useState, useEffect } from 'react'
 type Theme = 'dark' | 'light'
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>('dark')
+  // Initialize synchronously from the actual theme (the `data-theme` attribute
+  // set by the no-flash init script, which persists across client-side nav),
+  // falling back to localStorage. Defaulting to 'dark' here caused the first
+  // client render to use dark colors even in light mode — on the calendar's
+  // Day/Week views that meant white text on a white page until a hard refresh.
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof document !== 'undefined') {
+      const attr = document.documentElement.getAttribute('data-theme')
+      if (attr === 'light' || attr === 'dark') return attr as Theme
+      try {
+        const stored = localStorage.getItem('theme')
+        if (stored === 'light' || stored === 'dark') return stored as Theme
+      } catch {}
+    }
+    return 'dark'
+  })
 
   useEffect(() => {
     try {
