@@ -226,7 +226,7 @@ function renderAIContent(text: string, onNavigate: (path: string) => void): Reac
               fontFamily: 'monospace',
             }}
           >
-            {path}
+            {/^\/clients\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(path) ? 'Open client page' : path}
           </button>
         ),
       })

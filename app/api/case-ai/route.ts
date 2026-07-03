@@ -1020,6 +1020,24 @@ const BOT_TOOLS = [
       properties: {},
       required: [] as string[]
     }
+  },
+  {
+    name: "get_client_notes" as const,
+    description: "Fetch the case notes for a specific client — visit history, prior conversations, and what colleagues have written. Use when the user asks what happened previously, about the last visit, or for background before contacting a client. Requires the client's uuid id (from CURRENT CLIENT CONTEXT or search_clients results — NOT the display client_id). Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: {
+          type: "string" as const,
+          description: "The client's uuid id field (from context or search_clients results)."
+        },
+        limit: {
+          type: "number" as const,
+          description: "Max notes to return, most recent first (default 10, max 25)."
+        }
+      },
+      required: ["client_id"] as string[]
+    }
   }
 ];
 
@@ -1144,6 +1162,61 @@ async function executeSearchClients(
 
   if (error) return JSON.stringify({ error: error.message });
   return JSON.stringify({ count: (data || []).length, results: data || [] });
+}
+
+async function executeGetClientNotes(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clientId = String(input.client_id ?? '');
+  if (!uuidRegex.test(clientId)) {
+    return JSON.stringify({ error: 'client_id must be the uuid id field from context or search_clients results, not the display client_id' });
+  }
+  const limit = Math.min(Number(input.limit) || 10, 25);
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      const rows = await sql`SELECT n.content, n.created_at, p.full_name AS author FROM client_notes n JOIN clients c ON c.id = n.client_id LEFT JOIN profiles p ON p.id = n.author_id WHERE n.client_id = ${clientId} ${scope} ORDER BY n.created_at DESC LIMIT ${limit}`
+      const notes = rows as unknown as Record<string, unknown>[]
+      return JSON.stringify({ count: notes.length, notes });
+    });
+  }
+
+  // Supabase fallback: verify the client is in role scope first (RLS also applies).
+  let clientQuery = supabase.from('clients').select('id').eq('id', clientId);
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    clientQuery = clientQuery.eq('assigned_to', userId);
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    clientQuery = clientQuery.in('assigned_to', teamIds);
+  }
+  const { data: scopedClient } = await clientQuery.single();
+  if (!scopedClient) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+
+  const { data, error } = await supabase
+    .from('client_notes')
+    .select('content, created_at, profiles(full_name)')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return JSON.stringify({ error: error.message });
+  const notes = (data || []).map((n: { content: string; created_at: string; profiles?: { full_name: string | null } | null }) => ({ content: n.content, created_at: n.created_at, author: n.profiles?.full_name ?? null }));
+  return JSON.stringify({ count: notes.length, notes });
 }
 
 async function executeCaseloadStats(
@@ -1420,13 +1493,22 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
     if (clientId) {
       // Always fetch the specific client when one is provided — but verify access
       let client: Record<string, unknown> | null = null
+      let recentNotes: Record<string, unknown>[] = []
       if (isAzureConfigured()) {
-        client = await withRlsContext(userId, async (sql) => {
+        const ctxData = await withRlsContext(userId, async (sql) => {
           let scope = sql``
           if (isPlannerRole) scope = sql`AND assigned_to = ${userId}`
           const rows = await sql`SELECT id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs FROM clients WHERE id = ${clientId} ${scope} LIMIT 1`
-          return (rows[0] ?? null) as unknown as Record<string, unknown> | null
+          const row = (rows[0] ?? null) as unknown as Record<string, unknown> | null
+          let notes: Record<string, unknown>[] = []
+          if (row) {
+            const noteRows = await sql`SELECT n.content, n.created_at, p.full_name AS author FROM client_notes n LEFT JOIN profiles p ON p.id = n.author_id WHERE n.client_id = ${clientId} ORDER BY n.created_at DESC LIMIT 5`
+            notes = noteRows as unknown as Record<string, unknown>[]
+          }
+          return { row, notes }
         })
+        client = ctxData.row
+        recentNotes = ctxData.notes
       } else {
         let clientQuery = supabase.from('clients').select('id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, eligibility_code, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, spm_completed, poc_date, loc_date, med_tech_status, provider_forms, signatures_needed, reportable_events, appeals, atp, snfs, foc, schedule_docs, profiles!clients_assigned_to_fkey(full_name)').eq('id', clientId)
         // For planners, enforce they can only ask about their own clients
@@ -1435,10 +1517,22 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         }
         const { data } = await clientQuery.single()
         client = data
+        if (client) {
+          const { data: noteRows } = await supabase
+            .from('client_notes')
+            .select('content, created_at, profiles(full_name)')
+            .eq('client_id', clientId)
+            .order('created_at', { ascending: false })
+            .limit(5)
+          recentNotes = ((noteRows || []) as unknown as Array<{ content: string; created_at: string; profiles?: { full_name: string | null } | null }>).map((n) => ({ content: n.content, created_at: n.created_at, author: n.profiles?.full_name ?? null }))
+        }
       }
 
       if (client) {
-        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\n${formatClientSummary(client as Record<string, unknown>)}\n=== END CLIENT CONTEXT ===`
+        const notesBlock = recentNotes.length > 0
+          ? `\n=== RECENT CASE NOTES (newest first, up to 5 — call get_client_notes for older history) ===\n${recentNotes.map((n) => `- [${String(n.created_at ?? '').slice(0, 10)}] ${n.author ?? 'Unknown'}: ${String(n.content ?? '').slice(0, 300)}`).join('\n')}\n=== END CASE NOTES ===`
+          : ''
+        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\n${formatClientSummary(client as Record<string, unknown>)}${notesBlock}\n=== END CLIENT CONTEXT ===`
       }
     } else if (allClients && allClients.length > 0 && (isPlannerRole || isManagerRole)) {
       // Only send full client list rows for planner/manager — supervisor uses ops snapshot above
@@ -1448,7 +1542,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         const overdueCount = getOverdueCount(c)
         const spmStatus = getDateStatus(c.spm_next_due as string | null)
         const spmNote = spmStatus === 'critical' ? ' 🚨 SPM CRITICALLY OVERDUE' : spmStatus === 'red' ? ' ⚠️ SPM OVERDUE' : spmStatus === 'orange' ? ' ⏰ SPM due within 3 days' : spmStatus === 'yellow' ? ' ⏰ SPM due this week' : ''
-        return `- ${name} (ID: ${c.client_id}) | Overdue: ${overdueCount} | Last contact: ${daysSince !== null ? `${daysSince}d ago` : 'never'} | Goal: ${c.goal_pct ?? 0}% | POS: ${c.pos_status ?? 'unknown'}${spmNote}`
+        return `- ${name} (ID: ${c.client_id}) | Overdue: ${overdueCount} | Last contact: ${daysSince !== null ? `${daysSince}d ago` : 'never'} | Goal: ${c.goal_pct ?? 0}% | POS: ${c.pos_status ?? 'unknown'}${spmNote} | page: [/clients/${c.id}]`
       }).join('\n')
       clientContextStr = `\n\n=== YOUR CLIENTS (${clientCount} total) ===\n${clientList}\n=== END CLIENTS ===`
     }
@@ -1519,6 +1613,7 @@ You have tools you MUST use for data queries. NEVER say "I cannot search" or "le
 
 TOOL 1 - search_clients: Use for ANY question about specific entries - eligibility dates, overdue items, categories, names, assigned planners.
 TOOL 2 - get_caseload_stats: Use for aggregate questions - totals, overdue counts, eligibility expiration summaries.
+TOOL 3 - get_client_notes: Use for visit history and what colleagues wrote about a specific client. Pass the uuid id from CURRENT CLIENT CONTEXT or from a search_clients result (call search_clients first if you only have a name).
 
 RULES:
 - If the user asks about eligibility, overdue dates, caseload numbers, or finding entries by criteria: YOU MUST call the appropriate tool. Do not attempt to answer from the data already in this prompt.
@@ -1560,6 +1655,7 @@ RULES:
 4. For ATP questions — confirm the program type, then apply the correct rules.
 5. For SPM — always remind: next due = 15th of the FOLLOWING month (never +30 days).
 6. For navigation — embed page paths in brackets like [/calendar] so the UI renders them as clickable links.
+6b. CLIENT DEEP LINKS: whenever you name a specific client that came from a tool result or the client list, append their page link right after the name, e.g. "Smith, Jane [/clients/<uuid>]" — copy the page link shown in the client list, or build it from the uuid id field in tool results. NEVER use the display client_id in the link and NEVER fabricate an id; omit the link if you do not have the uuid.
 7. When asked org/team operations questions, use the planner ops snapshot to name who needs intervention now, who can absorb work, and the most practical next move.
 8. Prefer operational recommendations over generic commentary: identify the riskiest planners/clients first, then suggest the next 1-3 actions.
 9. If the question is manager/supervisor-facing, summarize pressure, overdue burden, due-this-week load, and no-contact risk in plain English.
@@ -1642,6 +1738,8 @@ RULES:
           toolResult = await executeSearchClients(supabase, toolUseBlock.input, userRole, userId)
         } else if (toolUseBlock.name === 'get_caseload_stats') {
           toolResult = await executeCaseloadStats(supabase, userRole, userId)
+        } else if (toolUseBlock.name === 'get_client_notes') {
+          toolResult = await executeGetClientNotes(supabase, toolUseBlock.input, userRole, userId)
         } else {
           toolResult = JSON.stringify({ error: 'Unknown tool: ' + toolUseBlock.name })
         }
@@ -1715,6 +1813,8 @@ RULES:
               nextToolResult = await executeSearchClients(supabase, nextToolUse.input, userRole, userId)
             } else if (nextToolUse.name === 'get_caseload_stats') {
               nextToolResult = await executeCaseloadStats(supabase, userRole, userId)
+            } else if (nextToolUse.name === 'get_client_notes') {
+              nextToolResult = await executeGetClientNotes(supabase, nextToolUse.input, userRole, userId)
             } else {
               nextToolResult = JSON.stringify({ error: 'Unknown tool: ' + nextToolUse.name })
             }
