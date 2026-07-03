@@ -230,8 +230,8 @@ export default function CalendarView({ assignedTo }: Props) {
     )
   }
 
-  const navBtn: React.CSSProperties = { background: lt ? 'var(--surface-2)' : 'rgba(255,255,255,0.04)', border: lt ? '1px solid var(--border)' : '1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'8px 14px', color: lt ? 'var(--text)' : '#fff', cursor:'pointer', fontSize:14, transition:'background 0.2s' }
-  const todayBtn: React.CSSProperties = { background: lt ? 'rgba(0,113,227,0.1)' : 'rgba(0,122,255,0.12)', border: lt ? '1px solid rgba(0,113,227,0.3)' : '1px solid rgba(0,122,255,0.25)', borderRadius:10, padding:'8px 16px', color: lt ? '#0071e3' : '#5ac8fa', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.2s' }
+  const navBtn: React.CSSProperties = { background: 'var(--cal-navbtn-bg)', border: '1px solid var(--cal-navbtn-border)', borderRadius:10, padding:'8px 14px', color: 'var(--cal-navbtn-text)', cursor:'pointer', fontSize:14, transition:'background 0.2s' }
+  const todayBtn: React.CSSProperties = { background: 'var(--cal-todaybtn-bg)', border: '1px solid var(--cal-todaybtn-border)', borderRadius:10, padding:'8px 16px', color: 'var(--cal-todaybtn-text)', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.2s' }
 
   return (
     <div>
@@ -259,11 +259,11 @@ export default function CalendarView({ assignedTo }: Props) {
         <div>
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap' }}>
             <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()-1);setCurrentDate(d)}} style={navBtn}>←</button>
-            <span style={{ fontSize:17, fontWeight:700, flex:1, textAlign:'center', color: lt ? 'var(--text)' : '#fff' }}>{currentDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span>
+            <span style={{ fontSize:17, fontWeight:700, flex:1, textAlign:'center', color: 'var(--cal-daytext)' }}>{currentDate.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span>
             <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()+1);setCurrentDate(d)}} style={navBtn}>→</button>
             <button onClick={()=>setCurrentDate(new Date(today))} style={todayBtn}>Today</button>
           </div>
-          {dayEvents.length===0 ? <div style={{textAlign:'center',padding:'48px 0',color: lt ? 'var(--text-secondary)' : 'rgba(255,255,255,0.25)',fontSize:15}}>No deadlines ✅</div>
+          {dayEvents.length===0 ? <div style={{textAlign:'center',padding:'48px 0',color: 'var(--cal-empty)',fontSize:15}}>No deadlines ✅</div>
             : <div style={{display:'flex',flexDirection:'column',gap:6}}>{dayEvents.map((e,i)=><DI key={i} evt={e} idx={i}/>)}</div>}
         </div>
       )}
@@ -273,7 +273,7 @@ export default function CalendarView({ assignedTo }: Props) {
         <div>
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap' }}>
             <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()-7);setCurrentDate(d)}} style={navBtn}>←</button>
-            <span style={{ fontSize:16, fontWeight:700, flex:1, textAlign:'center', color: lt ? 'var(--text)' : '#fff' }}>Week of {MONTH_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}</span>
+            <span style={{ fontSize:16, fontWeight:700, flex:1, textAlign:'center', color: 'var(--cal-daytext)' }}>Week of {MONTH_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}</span>
             <button onClick={()=>{const d=new Date(currentDate);d.setDate(d.getDate()+7);setCurrentDate(d)}} style={navBtn}>→</button>
             <button onClick={()=>setCurrentDate(new Date(today))} style={todayBtn}>Today</button>
           </div>
@@ -281,12 +281,12 @@ export default function CalendarView({ assignedTo }: Props) {
             {weekDays.map((dd,i)=>{
               const dk=toDateKey(dd), isT=dk===todayKey, past=dk<todayKey, items=eventsMap.get(dk)??[]
               return (
-                <div key={i} style={{ borderLeft:isT ? (lt ? '3px solid #0071e3' : '3px solid #5ac8fa') : (lt ? '3px solid var(--border)' : '3px solid rgba(255,255,255,0.08)'), paddingLeft:16, opacity:past?0.5:1 }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:isT ? (lt ? '#0071e3' : '#5ac8fa') : (lt ? 'var(--text-secondary)' : 'rgba(255,255,255,0.4)'), marginBottom:8 }}>
+                <div key={i} style={{ borderLeft:isT ? '3px solid var(--cal-today-accent)' : '3px solid var(--cal-weekborder)', paddingLeft:16, opacity:past?0.5:1 }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:isT ? 'var(--cal-today-accent)' : 'var(--cal-daylabel)', marginBottom:8 }}>
                     {dd.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
-                    {items.length>0 && <span style={{ marginLeft:8, fontSize:10, padding:'2px 8px', borderRadius:8, background:'rgba(255,255,255,0.06)', color:'var(--text-secondary)' }}>{items.length}</span>}
+                    {items.length>0 && <span style={{ marginLeft:8, fontSize:10, padding:'2px 8px', borderRadius:8, background:'var(--cal-count-bg)', color:'var(--text-secondary)' }}>{items.length}</span>}
                   </div>
-                  {items.length===0 ? <div style={{fontSize:12,color: lt ? 'var(--text-secondary)' : 'rgba(255,255,255,0.15)',fontStyle:'italic'}}>(nothing due)</div>
+                  {items.length===0 ? <div style={{fontSize:12,color: 'var(--cal-nothing-due)',fontStyle:'italic'}}>(nothing due)</div>
                     : <div style={{display:'flex',flexDirection:'column',gap:6}}>{items.map((e,j)=><DI key={j} evt={e} idx={j}/>)}</div>}
                 </div>
               )
