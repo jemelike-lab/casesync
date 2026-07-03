@@ -442,16 +442,36 @@ export default function BLHAssistant() {
         const j = await r.json().catch(() => ({} as { error?: string }))
         throw new Error(j.error ?? `Failed (${r.status})`)
       }
+      // Read-back guard: the PATCH route's validateUpdates silently ignores
+      // unknown keys, so any future field-whitelist drift would otherwise
+      // surface as "\u2713 Applied" with no actual change. Verify the value
+      // landed before claiming success. A failed *read* doesn't block (the
+      // write already succeeded); a mismatched *value* does.
+      const verifyApplied = async (clientId: string, expect: Record<string, string>) => {
+        const r = await fetch(`/api/clients/${clientId}`, { cache: 'no-store' })
+        if (!r.ok) return
+        const j = await r.json().catch(() => null) as Record<string, unknown> | null
+        const c = (j && typeof j === 'object' && 'client' in j ? (j as { client?: Record<string, unknown> }).client : j) as Record<string, unknown> | null
+        if (!c) return
+        for (const [k, v] of Object.entries(expect)) {
+          const got = String(c[k] ?? '')
+          if (got !== v && !got.startsWith(v)) {
+            throw new Error(`The change did not save (${k.replace(/_/g, ' ')} is still ${got || 'not set'}). Nothing was applied \u2014 please report this.`)
+          }
+        }
+      }
       if (p.kind === 'add_note') {
         const r = await fetch(`/api/clients/${p.client_id}/notes`, { method: 'POST', headers: H, body: JSON.stringify({ content: p.content }) })
         if (!r.ok) await fail(r)
       } else if (p.kind === 'log_contact') {
         const r = await fetch(`/api/clients/${p.client_id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ last_contact_date: p.date, last_contact_type: p.type }) })
         if (!r.ok) await fail(r)
+        await verifyApplied(p.client_id, { last_contact_date: String(p.date), last_contact_type: String(p.type) })
         await fetch(`/api/clients/${p.client_id}/activity`, { method: 'POST', headers: H, body: JSON.stringify({ action: `Logged contact: ${p.type}${p.note ? ' — ' + p.note : ''}`, field_name: 'last_contact_date', old_value: null, new_value: p.date }) }).catch(() => {})
       } else if (p.kind === 'update_date') {
         const r = await fetch(`/api/clients/${p.client_id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ [p.field as string]: p.new_date }) })
         if (!r.ok) await fail(r)
+        await verifyApplied(p.client_id, { [p.field as string]: String(p.new_date) })
         await fetch(`/api/clients/${p.client_id}/activity`, { method: 'POST', headers: H, body: JSON.stringify({ action: `Changed ${String(p.field).replace(/_/g, ' ')}`, field_name: p.field, old_value: p.old_value ?? null, new_value: p.new_date }) }).catch(() => {})
       }
       setMessages(prev => prev.map(m => m.id === msgId ? { ...m, proposalStatus: 'applied' as const } : m))
