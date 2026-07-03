@@ -1948,7 +1948,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
         const notesBlock = recentNotes.length > 0
           ? `\n=== RECENT CASE NOTES (newest first, up to 5 — call get_client_notes for older history) ===\n${recentNotes.map((n) => `- [${String(n.created_at ?? '').slice(0, 10)}] ${n.author ?? 'Unknown'}: ${String(n.content ?? '').slice(0, 300)}`).join('\n')}\n=== END CASE NOTES ===`
           : ''
-        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\n${formatClientSummary(client as Record<string, unknown>)}${notesBlock}\n=== END CLIENT CONTEXT ===`
+        clientContextStr = `\n\n=== CURRENT CLIENT CONTEXT ===\nIMPORTANT: The user is currently viewing this specific client detail page. ALL questions should be answered in the context of THIS client only, unless the user explicitly asks about other clients or the full caseload.\nThis client's uuid id (use it for ALL tool calls that need client_id): ${clientId}\n${formatClientSummary(client as Record<string, unknown>)}${notesBlock}\n=== END CLIENT CONTEXT ===`
       }
     } else if (allClients && allClients.length > 0 && (isPlannerRole || isManagerRole)) {
       // Only send full client list rows for planner/manager — supervisor uses ops snapshot above
