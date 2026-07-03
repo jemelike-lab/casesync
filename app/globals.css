@@ -198,6 +198,24 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
+/* ── Mantine body-reset containment ───────────────────────────────────────
+   The Workryn + CaseSync-V2 Mantine providers (mounted on /dashboard,
+   /supervisor, /dashboard-v2 and /w/*) import @mantine/core/styles.css and
+   set data-mantine-color-scheme="light". Mantine's global
+   `body, :host { background: var(--mantine-color-body) }` reset AND that
+   forced-light scheme both persist across client-side navigation onto
+   non-Mantine routes (e.g. /calendar), repainting the body white in dark
+   mode and hiding dark-mode text (invisible Day/Week views). Pin the body to
+   CaseSync's own theme tokens with higher specificity than Mantine's
+   element-level reset so it can't leak. Dark-mode-scoped only: light mode was
+   never affected, and every Mantine page already covers the body with its own
+   opaque surface — so this is a no-op there and only corrects routes where the
+   bare body shows through. */
+html[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
 @media (max-width: 768px) {
   body {
     padding-bottom: calc(84px + env(safe-area-inset-bottom));
