@@ -74,9 +74,48 @@ const SUPERVISOR_DASHBOARD_PROMPTS = [
   'What documents are on file for a client?',
 ]
 
+type PromptBucket = 'read' | 'action' | 'deadline' | 'team' | 'status'
+
+// Classify a suggested prompt into a capability bucket so the visible chips
+// always span the bot's range (reads, confirm-to-execute actions, deadline
+// math, team ops) instead of a random slice that buries the newer tools.
+function classifyPrompt(text: string): PromptBucket {
+  if (/^Log a (phone )?contact|^Add a note|Draft (a )?(30-day letter|contact note)/i.test(text)) return 'action'
+  if (/case notes|documents (are )?on file|Read me the latest/i.test(text)) return 'read'
+  if (/deadline|next .*due|eligibility (ends|ending)|next 3 deadlines|complete the SPM|SPM is completed/i.test(text)) return 'deadline'
+  if (/planner|rebalance|take more clients|workload|assignment history|team compliance|follow-up|assigned to/i.test(text)) return 'team'
+  return 'status'
+}
+
+// New-capability buckets lead so reads and confirm-to-execute actions surface
+// before the older status/compliance questions.
+const BUCKET_ORDER: PromptBucket[] = ['read', 'action', 'deadline', 'team', 'status']
+
+// Bucketed rotation: one rotating prompt per bucket in priority order, skipping
+// empty buckets, then top up from the remainder so we always return `count`.
 function getRotatingPrompts(prompts: string[], count = 4): string[] {
-  const shuffled = [...prompts].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
+  const byBucket = new Map<PromptBucket, string[]>()
+  for (const p of prompts) {
+    const b = classifyPrompt(p)
+    const arr = byBucket.get(b) ?? []
+    arr.push(p)
+    byBucket.set(b, arr)
+  }
+  const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
+  const chosen: string[] = []
+  for (const bucket of BUCKET_ORDER) {
+    if (chosen.length >= count) break
+    const arr = byBucket.get(bucket)
+    if (arr && arr.length) chosen.push(pick(arr))
+  }
+  if (chosen.length < count) {
+    const rest = prompts.filter(p => !chosen.includes(p)).sort(() => Math.random() - 0.5)
+    for (const p of rest) {
+      if (chosen.length >= count) break
+      chosen.push(p)
+    }
+  }
+  return chosen
 }
 
 function getDashboardPromptsForRole(role: string | null): string[] {
@@ -365,7 +404,13 @@ export default function BLHAssistant() {
 
   // Determine context-aware prompts
   const isClientPage = !!currentClientId
-  const suggestedPrompts = getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : getDashboardPromptsForRole(userRole))
+  // Compute suggested prompts on the client only (Math.random in the bucketed
+  // rotation would otherwise mismatch SSR vs. first client render -> React
+  // #418). Recompute when the page context or role changes.
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([])
+  useEffect(() => {
+    setSuggestedPrompts(getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : getDashboardPromptsForRole(userRole)))
+  }, [isClientPage, userRole])
 
   // Fetch current user
   useEffect(() => {
