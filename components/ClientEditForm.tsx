@@ -311,21 +311,22 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false, accent
    NOTES — Chat-bubble style
    ═══════════════════════════════════════════════════════════════════ */
 
-function NotesSection({ clientId, currentUserId }: { clientId: string; currentUserId: string }) {
+function NotesSection({ clientId }: { clientId: string; currentUserId: string }) {
   const [notes, setNotes] = useState<ClientNote[]>([])
   const [newNote, setNewNote] = useState('')
   const [saving, setSaving] = useState(false)
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('client_notes').select('*, profiles(full_name)').eq('client_id', clientId).order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setNotes(data as ClientNote[]) })
+    fetch(`/api/clients/${clientId}/notes`)
+      .then(r => r.json())
+      .then(j => { if (j?.notes) setNotes(j.notes as ClientNote[]) })
+      .catch(() => {})
   }, [clientId])
   const addNote = async () => {
     if (!newNote.trim()) return
     setSaving(true)
-    const supabase = createClient()
-    const { data, error } = await supabase.from('client_notes').insert({ client_id: clientId, author_id: currentUserId, content: newNote.trim() }).select('*, profiles(full_name)').single()
-    if (!error && data) { setNotes(prev => [data as ClientNote, ...prev]); setNewNote('') }
+    const res = await fetch(`/api/clients/${clientId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newNote.trim() }) })
+    const j = await res.json().catch(() => ({} as { note?: ClientNote }))
+    if (res.ok && j?.note) { setNotes(prev => [j.note as ClientNote, ...prev]); setNewNote('') }
     setSaving(false)
   }
   const getInitials = (n: string | null | undefined) => { if (!n) return '?'; const p = n.trim().split(' '); return p.length >= 2 ? (p[0][0] + p[p.length-1][0]).toUpperCase() : p[0][0]?.toUpperCase() ?? '?' }

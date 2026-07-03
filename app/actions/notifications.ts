@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, clientAssignedEmail } from '@/lib/email-templates'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 function getAdminClient() {
   return createClient(
@@ -28,12 +29,32 @@ export async function sendAssignmentEmail(clientId: string, newAssigneeId: strin
     const prefs = (assignee.notification_preferences as any) ?? {}
     if (prefs.client_assigned === false) return { skipped: 'preference disabled' }
 
-    // Get client details
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, client_id, first_name, last_name, category, assigned_to, profiles!clients_assigned_to_fkey(full_name)')
-      .eq('id', clientId)
-      .single()
+    // Get client details. Phase 3 data plane: the client row lives in Azure
+    // when configured — read it under the RECIPIENT's RLS scope (the new
+    // assignee owns the row by the time this fires post-reassign).
+    type AssignClientRow = { id: string; client_id: string; first_name: string | null; last_name: string | null; category: string; assigned_to: string | null; profiles?: { full_name: string | null } | null }
+    let client: AssignClientRow | null = null
+    if (isAzureConfigured()) {
+      const rows = await withRlsContext(newAssigneeId, (sql) => sql`
+        SELECT c.id, c.client_id, c.first_name, c.last_name, c.category, c.assigned_to, p.full_name AS assigned_full_name
+        FROM clients c
+        LEFT JOIN profiles p ON p.id = c.assigned_to
+        WHERE c.id = ${clientId}
+        LIMIT 1
+      `)
+      const row = rows[0] as (Record<string, unknown> & { assigned_full_name?: string | null }) | undefined
+      if (row) {
+        const { assigned_full_name, ...rest } = row
+        client = { ...(rest as unknown as AssignClientRow), profiles: { full_name: assigned_full_name ?? null } }
+      }
+    } else {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, client_id, first_name, last_name, category, assigned_to, profiles!clients_assigned_to_fkey(full_name)')
+        .eq('id', clientId)
+        .single()
+      client = (data as unknown as AssignClientRow) ?? null
+    }
 
     if (!client) return { error: 'Client not found' }
 
@@ -77,12 +98,20 @@ export async function sendDeadlineEmail(
     const prefs = (user.notification_preferences as any) ?? {}
     if (prefs.deadline_7day === false) return { skipped: 'preference disabled' }
 
-    // Get client details
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, first_name, last_name')
-      .eq('id', clientId)
-      .single()
+    // Get client details. Phase 3 data plane: read from Azure under the
+    // RECIPIENT's RLS scope (the assigned planner sees their own client).
+    let client: { id: string; first_name: string | null; last_name: string | null } | null = null
+    if (isAzureConfigured()) {
+      const rows = await withRlsContext(userId, (sql) => sql`SELECT id, first_name, last_name FROM clients WHERE id = ${clientId} LIMIT 1`)
+      client = (rows[0] as { id: string; first_name: string | null; last_name: string | null } | undefined) ?? null
+    } else {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, first_name, last_name')
+        .eq('id', clientId)
+        .single()
+      client = data ?? null
+    }
 
     if (!client) return { error: 'Client not found' }
 

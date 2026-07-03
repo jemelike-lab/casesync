@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Client, formatDate, getDateStatus } from '@/lib/types'
 import PrintButton from '@/components/PrintButton'
 import { notFound } from 'next/navigation'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,13 +48,47 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
-    .eq('id', id)
-    .single()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) notFound()
 
-  if (error || !client) notFound()
+  // Malformed ids would 500 the Azure query (invalid uuid input) — treat as 404.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(id)) notFound()
+
+  // Phase 3 data plane: read from Azure under the caller's RLS scope when configured.
+  let client: Client | null = null
+  if (isAzureConfigured()) {
+    const rows = await withRlsContext(user.id, (sql) => sql`
+      SELECT c.*, p.id AS assigned_profile_id, p.full_name AS assigned_profile_name, p.role AS assigned_profile_role
+      FROM clients c
+      LEFT JOIN profiles p ON p.id = c.assigned_to
+      WHERE c.id = ${id}
+      LIMIT 1
+    `)
+    const row = rows[0] as Record<string, unknown> | undefined
+    if (row) {
+      const { assigned_profile_id, assigned_profile_name, assigned_profile_role, ...rest } = row
+      client = ({
+        ...rest,
+        profiles: assigned_profile_id
+          ? {
+              id: assigned_profile_id as string,
+              full_name: (assigned_profile_name as string | null) ?? null,
+              role: (assigned_profile_role as string | null) ?? null,
+            }
+          : null,
+      } as unknown) as Client
+    }
+  } else {
+    const { data } = await supabase
+      .from('clients')
+      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
+      .eq('id', id)
+      .single()
+    client = ((data ?? null) as unknown) as Client | null
+  }
+
+  if (!client) notFound()
 
   const c = client as Client
 

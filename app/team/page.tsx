@@ -8,6 +8,7 @@ import RebalanceHistoryClient from '@/components/RebalanceHistoryClient'
 import TeamQueuesClient from '@/components/TeamQueuesClient'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const revalidate = 60
 
@@ -51,7 +52,25 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const plannerIds = planners.map(planner => planner.id).filter(Boolean)
   let clients: Client[] = []
 
-  if (isSupervisorLike(profile.role) && view === 'transfer') {
+  // Phase 3 data plane: team caseload reads come from Azure when configured,
+  // under the CALLER's RLS scope; Supabase session client otherwise. The
+  // assigned-planner join is reshaped to the `profiles.full_name` nested
+  // object the team components expect.
+  if (isAzureConfigured()) {
+    const wantAll = isSupervisorLike(profile.role) && view === 'transfer'
+    if (wantAll || plannerIds.length > 0) {
+      const rows = await withRlsContext(user.id, async (sql) => {
+        if (wantAll) {
+          return await sql`SELECT c.*, p.full_name AS assigned_full_name FROM clients c LEFT JOIN profiles p ON p.id = c.assigned_to WHERE c.is_active = true ORDER BY c.last_name`
+        }
+        return await sql`SELECT c.*, p.full_name AS assigned_full_name FROM clients c LEFT JOIN profiles p ON p.id = c.assigned_to WHERE c.is_active = true AND c.assigned_to = ANY(${plannerIds}::uuid[]) ORDER BY c.last_name`
+      })
+      clients = (rows as Record<string, unknown>[]).map(({ assigned_full_name, ...c }) => ({
+        ...c,
+        profiles: { full_name: (assigned_full_name as string | null) ?? null },
+      })) as unknown as Client[]
+    }
+  } else if (isSupervisorLike(profile.role) && view === 'transfer') {
     { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).order('last_name'); clients = data ?? [] }
   } else if (plannerIds.length > 0) {
     { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).in('assigned_to', plannerIds).order('last_name'); clients = data ?? [] }

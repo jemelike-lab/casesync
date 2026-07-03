@@ -7,7 +7,6 @@
 import { useState, useEffect } from 'react'
 import { Box, Group, Text } from '@mantine/core'
 import { Send } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import type { Client, ClientNote } from '@/lib/types'
 import SectionPaper from '../SectionPaper'
 
@@ -33,33 +32,30 @@ function formatNoteDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function Notes({ client, currentUserId }: Props) {
+export default function Notes({ client }: Props) {
   const [notes, setNotes] = useState<ClientNote[]>([])
   const [newNote, setNewNote] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase
-      .from('client_notes')
-      .select('*, profiles(full_name)')
-      .eq('client_id', client.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setNotes(data as ClientNote[]) })
+    fetch(`/api/clients/${client.id}/notes`)
+      .then(r => r.json())
+      .then(j => { if (j?.notes) setNotes(j.notes as ClientNote[]) })
+      .catch(() => {})
   }, [client.id])
 
   const addNote = async () => {
     const trimmed = newNote.trim()
     if (!trimmed) return
     setSaving(true)
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('client_notes')
-      .insert({ client_id: client.id, author_id: currentUserId, content: trimmed })
-      .select('*, profiles(full_name)')
-      .single()
-    if (!error && data) {
-      setNotes(prev => [data as ClientNote, ...prev])
+    const res = await fetch(`/api/clients/${client.id}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: trimmed }),
+    })
+    const j = await res.json().catch(() => ({} as { note?: ClientNote }))
+    if (res.ok && j?.note) {
+      setNotes(prev => [j.note as ClientNote, ...prev])
       setNewNote('')
     }
     setSaving(false)

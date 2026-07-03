@@ -339,7 +339,7 @@ export default function BLHAssistant() {
       setUserId(user.id)
 
       const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
@@ -354,17 +354,15 @@ export default function BLHAssistant() {
       setClientName(null)
       return
     }
-    const supabase = createClient()
-    supabase
-      .from('clients')
-      .select('first_name, last_name')
-      .eq('id', currentClientId)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setClientName(`${data.first_name ?? ''} ${data.last_name ?? ''}`.trim())
+    fetch(`/api/clients/${currentClientId}`)
+      .then(r => r.json())
+      .then(j => {
+        const c = j?.client
+        if (c) {
+          setClientName(`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim())
         }
       })
+      .catch(() => {})
   }, [currentClientId])
 
   // Auto-scroll to bottom

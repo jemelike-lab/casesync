@@ -540,16 +540,18 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     setSavingClientId(clientId)
     setClients(prev => prev.map(c => c.id === clientId ? { ...c, assigned_to: plannerId, profiles: planner ?? null } : c))
 
-    const { error } = await supabase
-      .from('clients')
-      .update({ assigned_to: plannerId })
-      .eq('id', clientId)
+    const res = await fetch('/api/clients/bulk-reassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_ids: [clientId], new_planner_id: plannerId }),
+    })
 
     setSavingClientId(null)
 
-    if (error) {
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({} as { error?: string }))
       setClients(previousClients)
-      showToast('error', error.message)
+      showToast('error', j.error ?? `Reassign failed (${res.status})`)
       return
     }
 
@@ -576,16 +578,18 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     setApplyingMoveKey(moveKey)
     setClients(nextClients)
 
-    const { error } = await supabase
-      .from('clients')
-      .update({ assigned_to: receiverPlanner.id })
-      .in('id', candidateIds)
+    const res = await fetch('/api/clients/bulk-reassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_ids: candidateIds, new_planner_id: receiverPlanner.id }),
+    })
 
     setApplyingMoveKey(null)
 
-    if (error) {
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({} as { error?: string }))
       setClients(previousClients)
-      showToast('error', error.message)
+      showToast('error', j.error ?? `Reassign failed (${res.status})`)
       return
     }
 
@@ -626,16 +630,18 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       ? { ...client, assigned_to: lastAppliedMove.fromPlannerId, profiles: fromPlanner }
       : client))
 
-    const { error } = await supabase
-      .from('clients')
-      .update({ assigned_to: lastAppliedMove.fromPlannerId })
-      .in('id', lastAppliedMove.clientIds)
+    const res = await fetch('/api/clients/bulk-reassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_ids: lastAppliedMove.clientIds, new_planner_id: lastAppliedMove.fromPlannerId }),
+    })
 
     setUndoingMove(false)
 
-    if (error) {
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({} as { error?: string }))
       setClients(previousClients)
-      showToast('error', error.message)
+      showToast('error', j.error ?? `Reassign failed (${res.status})`)
       return
     }
 

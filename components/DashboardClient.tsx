@@ -1482,10 +1482,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
   const handleContactLogged = useCallback(async (clientId: string, date: string, type: string, note: string) => {
     const supabase = createClient()
-    await supabase.from('clients').update({
-      last_contact_date: date,
-      last_contact_type: type,
-    }).eq('id', clientId)
+    await fetch(`/api/clients/${clientId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ last_contact_date: date, last_contact_type: type }),
+    })
 
     if (note) {
       await supabase.from('activity_log').insert({
@@ -1521,8 +1522,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   async function handleBulkAssign() {
     if (!bulkAssignId || selectedIds.length === 0) return
     setBulkAssigning(true)
-    const supabase = createClient()
-    await supabase.from('clients').update({ assigned_to: bulkAssignId }).in('id', selectedIds)
+    await fetch('/api/clients/bulk-reassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_ids: selectedIds, new_planner_id: bulkAssignId }),
+    })
     const planner = planners.find(p => p.id === bulkAssignId)
     setClients(prev => prev.map(c =>
       selectedIds.includes(c.id)
