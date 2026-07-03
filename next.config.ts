@@ -39,6 +39,18 @@ const securityHeaders = [
   },
 ]
 
+// The file-download/proxy route serves files we embed in our own in-portal
+// viewer, so it needs SAME-ORIGIN framing instead of the global DENY /
+// frame-ancestors 'none' (which are for clickjacking-protection of app pages).
+// Same-origin only — third parties still cannot frame these responses.
+const downloadHeaders = securityHeaders.map((h) =>
+  h.key === 'X-Frame-Options'
+    ? { key: h.key, value: 'SAMEORIGIN' }
+    : h.key === 'Content-Security-Policy'
+      ? { key: h.key, value: h.value.replace("frame-ancestors 'none'", "frame-ancestors 'self'") }
+      : h
+)
+
 const nextConfig = {
   // Performance optimizations
   compress: true,
@@ -54,7 +66,10 @@ const nextConfig = {
   // Turbopack is default in Next.js 16; empty config satisfies peer checks from plugins
   turbopack: {},
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }]
+    return [
+      { source: '/api/sharepoint/download/:path*', headers: downloadHeaders },
+      { source: '/((?!api/sharepoint/download/).*)', headers: securityHeaders },
+    ]
   },
 }
 
