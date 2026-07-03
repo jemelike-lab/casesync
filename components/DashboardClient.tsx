@@ -1481,7 +1481,6 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
   }, [baseClients, search, filter, alertFilter, activeDayFilter])
 
   const handleContactLogged = useCallback(async (clientId: string, date: string, type: string, note: string) => {
-    const supabase = createClient()
     await fetch(`/api/clients/${clientId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1489,14 +1488,11 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     })
 
     if (note) {
-      await supabase.from('activity_log').insert({
-        client_id: clientId,
-        user_id: currentUserId,
-        action: `Logged contact: ${type}${note ? ' — ' + note : ''}`,
-        field_name: 'last_contact_date',
-        old_value: null,
-        new_value: date,
-      })
+      await fetch(`/api/clients/${clientId}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: `Logged contact: ${type}${note ? ' — ' + note : ''}`, field_name: 'last_contact_date', old_value: null, new_value: date }),
+      }).catch(() => {})
     }
 
     setClients(prev => prev.map(c => c.id === clientId

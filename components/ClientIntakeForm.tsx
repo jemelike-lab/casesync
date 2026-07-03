@@ -336,14 +336,11 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
     const data = { id: j.id }
 
     // Log activity
-    await supabase.from('activity_log').insert({
-      client_id: data.id,
-      user_id: currentUserId,
-      action: `Client created via intake form`,
-      field_name: null,
-      old_value: null,
-      new_value: form.client_id,
-    })
+    await fetch(`/api/clients/${data.id}/activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: `Client created via intake form`, field_name: null, old_value: null, new_value: form.client_id }),
+    }).catch(() => {})
 
     // Best-effort: create SharePoint folder for this client immediately.
     // This keeps document storage consistent and avoids relying on the first upload to create it.

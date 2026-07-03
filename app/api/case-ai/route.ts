@@ -761,6 +761,15 @@ const KNOWLEDGE_SUPPLEMENTAL_ACP = `
 
 === END SUPPLEMENTAL / ACP GUIDANCE ===`
 
+const KNOWLEDGE_DRAFTING = `
+=== DRAFT WRITING (LETTERS, NOTES, SUMMARIES) ===
+You can draft professional text for the user to copy into their own workflow. You NEVER send anything yourself, and drafts are ALWAYS for the user to review before use.
+• Contact / case note: 2-6 sentences, past tense, objective and factual, no diagnoses or speculation. Include: date, contact type, what was discussed, and any follow-ups with owner + due date.
+• 30-day letter: professional letter to the client. Use placeholders like [Date], [Client Name], [Address] for anything not supplied. State that the Support Planner has been unable to reach them, list ONLY contact attempts the user actually provided (never invent attempts or dates), state clearly what the client must do and by when, and close with the SP name + contact line.
+• Reportable-event summary: strictly factual and chronological — what happened, when it was discovered, who was notified, immediate actions taken, and the follow-up plan. No speculation about causes or fault.
+• Fill drafts from the ACTUAL client context or tool data when available; use [placeholders] for anything unknown. Always remind the user to review and complete the draft before using it.
+`
+
 const KNOWLEDGE_GLOSSARY = `
 === FIELD & TERM GLOSSARY ===
 SPM: Monthly Monitoring — must be filed in LTSS by the 15th; next due = 15th of NEXT month after completion
@@ -1038,6 +1047,69 @@ const BOT_TOOLS = [
       },
       required: ["client_id"] as string[]
     }
+  },
+  {
+    name: "get_client_files" as const,
+    description: "List the documents on file for a specific client (name, category, upload date, expiration). Use whenever the user asks whether a document exists, what is on file, or what is missing. NEVER guess about file existence. Requires the client's uuid id. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: {
+          type: "string" as const,
+          description: "The client's uuid id field (from context or search_clients results)."
+        }
+      },
+      required: ["client_id"] as string[]
+    }
+  },
+  {
+    name: "compute_deadline" as const,
+    description: "Deterministic date math. REQUIRED for ALL date arithmetic — never compute dates yourself. Operations: spm_next_due (15th of the month following anchor_date), add_days, add_months, days_between.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        operation: {
+          type: "string" as const,
+          description: "One of: spm_next_due, add_days, add_months, days_between"
+        },
+        anchor_date: {
+          type: "string" as const,
+          description: "Start date, YYYY-MM-DD"
+        },
+        amount: {
+          type: "number" as const,
+          description: "Integer days/months for add_days / add_months"
+        },
+        end_date: {
+          type: "string" as const,
+          description: "End date (YYYY-MM-DD) for days_between"
+        }
+      },
+      required: ["operation", "anchor_date"] as string[]
+    }
+  },
+  {
+    name: "get_assignment_history" as const,
+    description: "Show who a client has been assigned to over time — each reassignment with from/to planner, who did it, when, and why. Requires the client's uuid id. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: {
+          type: "string" as const,
+          description: "The client's uuid id field (from context or search_clients results)."
+        }
+      },
+      required: ["client_id"] as string[]
+    }
+  },
+  {
+    name: "get_planner_workload" as const,
+    description: "Per-planner workload and compliance comparison: client counts, overdue burden, due-this-week load, contact gaps, compliance scores, rebalance donors/receivers. ONLY for team managers and supervisors — refuse for planners. Team managers see their own team; supervisors see all planners.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [] as string[]
+    }
   }
 ];
 
@@ -1217,6 +1289,206 @@ async function executeGetClientNotes(
   if (error) return JSON.stringify({ error: error.message });
   const notes = (data || []).map((n: { content: string; created_at: string; profiles?: { full_name: string | null } | null }) => ({ content: n.content, created_at: n.created_at, author: n.profiles?.full_name ?? null }));
   return JSON.stringify({ count: notes.length, notes });
+}
+
+async function executeGetClientFiles(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clientId = String(input.client_id ?? '');
+  if (!uuidRegex.test(clientId)) {
+    return JSON.stringify({ error: 'client_id must be the uuid id field from context or search_clients results' });
+  }
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      const rows = await sql`SELECT cd.file_name, cd.category, cd.file_size, cd.expires_at, cd.created_at, cd.storage_provider FROM client_documents cd JOIN clients c ON c.id = cd.client_id WHERE cd.client_id = ${clientId} ${scope} ORDER BY cd.created_at DESC LIMIT 50`
+      return JSON.stringify({ count: rows.length, files: rows });
+    });
+  }
+
+  let clientQuery = supabase.from('clients').select('id').eq('id', clientId);
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    clientQuery = clientQuery.eq('assigned_to', userId);
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    clientQuery = clientQuery.in('assigned_to', teamIds);
+  }
+  const { data: scopedClient } = await clientQuery.single();
+  if (!scopedClient) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+
+  const { data, error } = await supabase
+    .from('client_documents')
+    .select('file_name, category, file_size, expires_at, created_at, storage_provider')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) return JSON.stringify({ error: error.message });
+  return JSON.stringify({ count: (data || []).length, files: data || [] });
+}
+
+function executeComputeDeadline(input: Record<string, unknown>) {
+  const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+  const op = String(input.operation ?? '')
+  const anchor = String(input.anchor_date ?? '')
+  if (!DATE_ONLY.test(anchor)) return JSON.stringify({ error: 'anchor_date must be YYYY-MM-DD' })
+  const [y, m, d] = anchor.split('-').map(Number)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (dt: Date) => `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`
+
+  if (op === 'spm_next_due') {
+    // SPM RULE (KNOWLEDGE_POS_WORKFLOW): next due = 15th of the month
+    // FOLLOWING the anchor date — NEVER anchor + 30 days.
+    const dt = new Date(Date.UTC(y, m, 15))
+    return JSON.stringify({ operation: op, anchor_date: anchor, result_date: fmt(dt), rule: '15th of the month following the anchor date (never +30 days)' })
+  }
+  if (op === 'add_days') {
+    const amount = Number(input.amount)
+    if (!Number.isInteger(amount) || Math.abs(amount) > 3650) return JSON.stringify({ error: 'amount must be an integer number of days (max ±3650)' })
+    const dt = new Date(Date.UTC(y, m - 1, d + amount))
+    return JSON.stringify({ operation: op, anchor_date: anchor, amount, result_date: fmt(dt) })
+  }
+  if (op === 'add_months') {
+    const amount = Number(input.amount)
+    if (!Number.isInteger(amount) || Math.abs(amount) > 120) return JSON.stringify({ error: 'amount must be an integer number of months (max ±120)' })
+    const targetMonthIndex = (m - 1) + amount
+    const lastDay = new Date(Date.UTC(y, targetMonthIndex + 1, 0)).getUTCDate()
+    const dt = new Date(Date.UTC(y, targetMonthIndex, Math.min(d, lastDay)))
+    return JSON.stringify({ operation: op, anchor_date: anchor, amount, result_date: fmt(dt), note: 'day clamped to month length when needed' })
+  }
+  if (op === 'days_between') {
+    const end = String(input.end_date ?? '')
+    if (!DATE_ONLY.test(end)) return JSON.stringify({ error: 'end_date must be YYYY-MM-DD' })
+    const [ey, em, ed] = end.split('-').map(Number)
+    const days = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(y, m - 1, d)) / 86400000)
+    return JSON.stringify({ operation: op, anchor_date: anchor, end_date: end, days, interpretation: days >= 0 ? `end_date is ${days} day(s) after anchor_date` : `end_date is ${Math.abs(days)} day(s) before anchor_date` })
+  }
+  return JSON.stringify({ error: 'operation must be one of: spm_next_due, add_days, add_months, days_between' })
+}
+
+async function executeGetAssignmentHistory(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clientId = String(input.client_id ?? '');
+  if (!uuidRegex.test(clientId)) {
+    return JSON.stringify({ error: 'client_id must be the uuid id field from context or search_clients results' });
+  }
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      const rows = await sql`SELECT h.occurred_at, h.reason, pf.full_name AS from_planner, pt.full_name AS to_planner, pb.full_name AS reassigned_by FROM client_assignment_history h JOIN clients c ON c.id = h.client_id LEFT JOIN profiles pf ON pf.id = h.from_planner_id LEFT JOIN profiles pt ON pt.id = h.to_planner_id LEFT JOIN profiles pb ON pb.id = h.reassigned_by WHERE h.client_id = ${clientId} ${scope} ORDER BY h.occurred_at DESC LIMIT 20`
+      return JSON.stringify({ count: rows.length, history: rows });
+    });
+  }
+
+  let clientQuery = supabase.from('clients').select('id').eq('id', clientId);
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    clientQuery = clientQuery.eq('assigned_to', userId);
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    clientQuery = clientQuery.in('assigned_to', teamIds);
+  }
+  const { data: scopedClient } = await clientQuery.single();
+  if (!scopedClient) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+
+  const { data: hist, error } = await supabase
+    .from('client_assignment_history')
+    .select('occurred_at, reason, from_planner_id, to_planner_id, reassigned_by')
+    .eq('client_id', clientId)
+    .order('occurred_at', { ascending: false })
+    .limit(20);
+  if (error) return JSON.stringify({ error: error.message });
+  const rows = (hist || []) as { occurred_at: string; reason: string | null; from_planner_id: string | null; to_planner_id: string | null; reassigned_by: string | null }[];
+  const ids = Array.from(new Set(rows.flatMap((h) => [h.from_planner_id, h.to_planner_id, h.reassigned_by]).filter(Boolean))) as string[];
+  const nameMap: Record<string, string | null> = {};
+  if (ids.length > 0) {
+    const { data: profs } = await supabase.from('profiles').select('id, full_name').in('id', ids);
+    for (const p of (profs || []) as { id: string; full_name: string | null }[]) nameMap[p.id] = p.full_name;
+  }
+  const history = rows.map((h) => ({
+    occurred_at: h.occurred_at,
+    reason: h.reason,
+    from_planner: h.from_planner_id ? nameMap[h.from_planner_id] ?? null : null,
+    to_planner: h.to_planner_id ? nameMap[h.to_planner_id] ?? null : null,
+    reassigned_by: h.reassigned_by ? nameMap[h.reassigned_by] ?? null : null,
+  }));
+  return JSON.stringify({ count: history.length, history });
+}
+
+async function executeGetPlannerWorkload(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userRole: string,
+  userId: string
+) {
+  // HARD ROLE GATE: planners never see other planners' workloads.
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF' || userRole === 'case_manager') {
+    return JSON.stringify({ error: 'get_planner_workload is only available to team managers and supervisors' });
+  }
+  const isTM = userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER';
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      const planners = isTM
+        ? await sql`SELECT id, full_name FROM profiles WHERE team_manager_id = ${userId} OR id = ${userId}`
+        : await sql`SELECT id, full_name FROM profiles WHERE role IN ('supports_planner', 'case_manager', 'team_manager')`
+      const plannerIds = (planners as unknown as { id: string }[]).map((p) => p.id)
+      if (plannerIds.length === 0) return JSON.stringify({ error: 'No planners found in your scope' })
+      const clients = await sql`SELECT id, client_id, first_name, last_name, assigned_to, last_contact_date, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due FROM clients WHERE is_active = true AND client_classification = 'real' AND assigned_to = ANY(${plannerIds}::uuid[])`
+      const summary = getPlannerOpsSummary(clients as unknown as Record<string, unknown>[], planners as unknown as Record<string, unknown>[])
+      return formatPlannerOpsContext(summary)
+    });
+  }
+
+  let planners: { id: string; full_name: string | null }[] = [];
+  if (isTM) {
+    const { data } = await supabase.from('profiles').select('id, full_name').or(`team_manager_id.eq.${userId},id.eq.${userId}`);
+    planners = data || [];
+  } else {
+    const { data } = await supabase.from('profiles').select('id, full_name').in('role', ['supports_planner', 'case_manager', 'team_manager']);
+    planners = data || [];
+  }
+  const plannerIds = planners.map((p) => p.id);
+  if (plannerIds.length === 0) return JSON.stringify({ error: 'No planners found in your scope' });
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, client_id, first_name, last_name, assigned_to, last_contact_date, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due')
+    .eq('is_active', true)
+    .eq('client_classification', 'real')
+    .in('assigned_to', plannerIds);
+  const summary = getPlannerOpsSummary((clients || []) as Record<string, unknown>[], planners as unknown as Record<string, unknown>[]);
+  return formatPlannerOpsContext(summary);
 }
 
 async function executeCaseloadStats(
@@ -1599,6 +1871,7 @@ ${KNOWLEDGE_PERSONAL_ASSISTANCE}
 
 ${KNOWLEDGE_SUPPLEMENTAL_ACP}
 
+${KNOWLEDGE_DRAFTING}
 ${KNOWLEDGE_GLOSSARY}
 
 ${KNOWLEDGE_NAVIGATION}
@@ -1614,6 +1887,10 @@ You have tools you MUST use for data queries. NEVER say "I cannot search" or "le
 TOOL 1 - search_clients: Use for ANY question about specific entries - eligibility dates, overdue items, categories, names, assigned planners.
 TOOL 2 - get_caseload_stats: Use for aggregate questions - totals, overdue counts, eligibility expiration summaries.
 TOOL 3 - get_client_notes: Use for visit history and what colleagues wrote about a specific client. Pass the uuid id from CURRENT CLIENT CONTEXT or from a search_clients result (call search_clients first if you only have a name).
+TOOL 4 - get_client_files: Use to check what documents are on file for a client (pass the uuid id). NEVER guess or assume whether a document exists — always check.
+TOOL 5 - compute_deadline: REQUIRED for ALL date arithmetic — SPM next-due dates, adding days or months, days between dates, days until a deadline. NEVER compute dates in your head; your mental date math is not reliable enough for compliance work.
+TOOL 6 - get_assignment_history: Use for who a client was assigned to over time and why (pass the uuid id).
+TOOL 7 - get_planner_workload: Per-planner load and compliance comparison. ONLY available to team managers and supervisors — if a planner asks, explain it is not available for their role.
 
 RULES:
 - If the user asks about eligibility, overdue dates, caseload numbers, or finding entries by criteria: YOU MUST call the appropriate tool. Do not attempt to answer from the data already in this prompt.
@@ -1740,6 +2017,14 @@ RULES:
           toolResult = await executeCaseloadStats(supabase, userRole, userId)
         } else if (toolUseBlock.name === 'get_client_notes') {
           toolResult = await executeGetClientNotes(supabase, toolUseBlock.input, userRole, userId)
+        } else if (toolUseBlock.name === 'get_client_files') {
+          toolResult = await executeGetClientFiles(supabase, toolUseBlock.input, userRole, userId)
+        } else if (toolUseBlock.name === 'compute_deadline') {
+          toolResult = executeComputeDeadline(toolUseBlock.input)
+        } else if (toolUseBlock.name === 'get_assignment_history') {
+          toolResult = await executeGetAssignmentHistory(supabase, toolUseBlock.input, userRole, userId)
+        } else if (toolUseBlock.name === 'get_planner_workload') {
+          toolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
         } else {
           toolResult = JSON.stringify({ error: 'Unknown tool: ' + toolUseBlock.name })
         }
@@ -1762,7 +2047,7 @@ RULES:
         },
       ]
 
-      const MAX_TOOL_ROUNDS = 3
+      const MAX_TOOL_ROUNDS = 5
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
         const loopController = new AbortController()
         const loopTimeout = setTimeout(() => loopController.abort(), 30000)
@@ -1815,6 +2100,14 @@ RULES:
               nextToolResult = await executeCaseloadStats(supabase, userRole, userId)
             } else if (nextToolUse.name === 'get_client_notes') {
               nextToolResult = await executeGetClientNotes(supabase, nextToolUse.input, userRole, userId)
+            } else if (nextToolUse.name === 'get_client_files') {
+              nextToolResult = await executeGetClientFiles(supabase, nextToolUse.input, userRole, userId)
+            } else if (nextToolUse.name === 'compute_deadline') {
+              nextToolResult = executeComputeDeadline(nextToolUse.input)
+            } else if (nextToolUse.name === 'get_assignment_history') {
+              nextToolResult = await executeGetAssignmentHistory(supabase, nextToolUse.input, userRole, userId)
+            } else if (nextToolUse.name === 'get_planner_workload') {
+              nextToolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
             } else {
               nextToolResult = JSON.stringify({ error: 'Unknown tool: ' + nextToolUse.name })
             }

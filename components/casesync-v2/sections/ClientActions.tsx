@@ -76,15 +76,11 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
         const j = await res.json().catch(() => ({}))
         throw new Error(j.error ?? `Reassign failed (${res.status})`)
       }
-      const supabase = createClient()
-      await supabase.from('activity_log').insert({
-        client_id: client.id,
-        user_id: currentUserId,
-        action: 'Reassigned client',
-        field_name: 'assigned_to',
-        old_value: client.assigned_to,
-        new_value: assignedTo,
-      })
+      await fetch(`/api/clients/${client.id}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'Reassigned client', field_name: 'assigned_to', old_value: client.assigned_to, new_value: assignedTo }),
+      }).catch(() => {})
       sendAssignmentEmail(client.id, assignedTo).catch(() => {})
       setReassignOpen(false)
       setReassignReason('')
@@ -114,15 +110,11 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
         const j = await res.json().catch(() => ({}))
         throw new Error(j.error ?? `Failed to mark deceased (${res.status})`)
       }
-      const supabase = createClient()
-      await supabase.from('activity_log').insert({
-        client_id: client.id,
-        user_id: currentUserId,
-        action: 'Deactivated client',
-        field_name: 'deactivation_reason',
-        old_value: null,
-        new_value: 'deceased',
-      })
+      await fetch(`/api/clients/${client.id}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'Deactivated client', field_name: 'deactivation_reason', old_value: null, new_value: 'deceased' }),
+      }).catch(() => {})
       window.location.href = '/dashboard'
       return
     } catch (err) {

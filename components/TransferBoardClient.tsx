@@ -169,13 +169,10 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     if (!userId) return
 
     await Promise.all(params.clientIds.map(clientId =>
-      supabase.from('activity_log').insert({
-        client_id: clientId,
-        user_id: userId,
-        action: params.action,
-        field_name: 'assigned_to',
-        old_value: params.fromPlannerId,
-        new_value: params.toPlannerId,
+      fetch(`/api/clients/${clientId}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: params.action, field_name: 'assigned_to', old_value: params.fromPlannerId, new_value: params.toPlannerId }),
       })
     )).catch(error => {
       console.error('[TransferBoardClient] activity_log insert failed:', error, params)

@@ -135,12 +135,34 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   }
 
   if ((isSupervisorLike(profile.role) || profile.role === 'team_manager') && view === 'history') {
-    const { data: historyLogs } = await supabase
-      .from('activity_log')
-      .select('*, profiles!activity_log_user_id_fkey(full_name), clients!activity_log_client_id_fkey(first_name, last_name, client_id)')
-      .ilike('action', 'Recommended rebalance move%')
-      .order('created_at', { ascending: false })
-      .limit(500)
+    // Phase 3 data plane: activity_log lives in Azure when configured.
+    let historyLogs: Record<string, unknown>[] | null = null
+    if (isAzureConfigured()) {
+      const rows = await withRlsContext(user.id, (sql) => sql`
+        SELECT a.*, p.full_name AS p_full_name, c.first_name AS c_first_name, c.last_name AS c_last_name, c.client_id AS c_client_id
+        FROM activity_log a
+        LEFT JOIN profiles p ON p.id = a.user_id
+        LEFT JOIN clients c ON c.id = a.client_id
+        WHERE a.action ILIKE 'Recommended rebalance move%'
+        ORDER BY a.created_at DESC
+        LIMIT 500
+      `)
+      historyLogs = (rows as Record<string, unknown>[]).map(({ p_full_name, c_first_name, c_last_name, c_client_id, ...a }) => ({
+        ...a,
+        profiles: { full_name: (p_full_name as string | null) ?? null },
+        clients: (c_client_id ?? c_first_name ?? c_last_name) != null
+          ? { first_name: c_first_name ?? null, last_name: c_last_name ?? null, client_id: c_client_id ?? null }
+          : null,
+      }))
+    } else {
+      const { data } = await supabase
+        .from('activity_log')
+        .select('*, profiles!activity_log_user_id_fkey(full_name), clients!activity_log_client_id_fkey(first_name, last_name, client_id)')
+        .ilike('action', 'Recommended rebalance move%')
+        .order('created_at', { ascending: false })
+        .limit(500)
+      historyLogs = data
+    }
 
     return <RebalanceHistoryClient logs={(historyLogs as any[]) ?? []} />
   }

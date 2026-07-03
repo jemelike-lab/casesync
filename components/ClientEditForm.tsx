@@ -374,9 +374,10 @@ function ActivitySection({ clientId }: { clientId: string }) {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [open, setOpen] = useState(false)
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('activity_log').select('*, profiles(full_name)').eq('client_id', clientId).order('created_at', { ascending: false }).limit(20)
-      .then(({ data }) => { if (data) setLogs(data as ActivityLog[]) })
+    fetch(`/api/clients/${clientId}/activity?limit=20`)
+      .then(r => r.json())
+      .then(j => { if (j?.entries) setLogs(j.entries as ActivityLog[]) })
+      .catch(() => {})
   }, [clientId])
   if (logs.length === 0) return null
   return (
@@ -503,7 +504,7 @@ export default function ClientEditForm({
         const j = await res.json().catch(() => ({} as { error?: string }))
         throw new Error(j.error ?? `Save failed (${res.status})`)
       }
-      if (changes.length > 0) await supabase.from('activity_log').insert(changes.map(c => ({ client_id: client.id, user_id: currentUserId, action: `Changed ${c.field.replace(/_/g, ' ')}`, field_name: c.field, old_value: c.old, new_value: c.new })))
+      if (changes.length > 0) await fetch(`/api/clients/${client.id}/activity`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: changes.map(c => ({ action: `Changed ${c.field.replace(/_/g, ' ')}`, field_name: c.field, old_value: c.old, new_value: c.new })) }) }).catch(() => {})
       setEditing(false); onExitEdit?.(); setToast({ type: 'success', message: 'Saved!' }); setTimeout(() => setToast(null), 3000)
     } catch (err: any) { setToast({ type: 'error', message: err?.message || 'Failed.' }) } finally { setSaving(false) }
   }

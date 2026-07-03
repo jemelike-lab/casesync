@@ -1,5 +1,7 @@
 'use server'
 
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
@@ -309,7 +311,21 @@ export async function removeUser(userId: string) {
     supabase.from('client_notes').select('id', { count: 'exact', head: true }).eq('author_id', userId),
   ])
 
-  const historyCount = historyChecks.reduce((sum, result) => sum + (result.count ?? 0), 0)
+  let historyCount = historyChecks.reduce((sum, result) => sum + (result.count ?? 0), 0)
+  // Phase 3 data plane: activity_log + client_notes live in Azure when
+  // configured — count there too (legacy Supabase rows still counted above).
+  // Fail closed: if the Azure count cannot run, block the removal.
+  if (isAzureConfigured()) {
+    try {
+      historyCount += await withRlsContext(caller.id, async (sql) => {
+        const a = await sql`SELECT count(*)::int AS n FROM activity_log WHERE user_id = ${userId}`
+        const n = await sql`SELECT count(*)::int AS n FROM client_notes WHERE author_id = ${userId}`
+        return Number((a[0] as { n: number }).n) + Number((n[0] as { n: number }).n)
+      })
+    } catch {
+      return { error: 'Could not verify user history. Try again.' }
+    }
+  }
   if (historyCount > 0) {
     return { error: 'Cannot remove a user with activity history. Deactivate them instead.' }
   }

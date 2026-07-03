@@ -881,10 +881,26 @@ export default function BLHAssistant() {
                           ))}
                         </div>
                       ) : (
-                        renderAIContent(msg.content, (path) => {
-                          router.push(path)
-                          setOpen(false)
-                        })
+                        <>
+                          {renderAIContent(msg.content, (path) => {
+                            router.push(path)
+                            setOpen(false)
+                          })}
+                          {msg.content && !(loading && streamingIdRef.current === msg.id) && (
+                            <button
+                              type="button"
+                              onClick={() => { navigator.clipboard?.writeText(msg.content).catch(() => {}) }}
+                              title="Copy message"
+                              style={{
+                                display: 'block', marginTop: 8, background: 'transparent',
+                                border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6,
+                                color: '#a78bfa', fontSize: 11, padding: '3px 8px', cursor: 'pointer',
+                              }}
+                            >
+                              Copy
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

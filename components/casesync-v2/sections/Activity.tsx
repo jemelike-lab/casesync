@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react'
 import { Box, Text } from '@mantine/core'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import type { Client, ActivityLog } from '@/lib/types'
 import SectionPaper from '../SectionPaper'
 
@@ -26,14 +25,10 @@ export default function Activity({ client }: Props) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase
-      .from('activity_log')
-      .select('*, profiles(full_name)')
-      .eq('client_id', client.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-      .then(({ data }) => { if (data) setLogs(data as ActivityLog[]) })
+    fetch(`/api/clients/${client.id}/activity?limit=20`)
+      .then(r => r.json())
+      .then(j => { if (j?.entries) setLogs(j.entries as ActivityLog[]) })
+      .catch(() => {})
   }, [client.id])
 
   if (logs.length === 0) return null
