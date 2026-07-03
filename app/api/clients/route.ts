@@ -3,9 +3,10 @@ import { NextRequest } from 'next/server'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isDueThisWeek, isEligibilityEndingSoon, isOverdue, getDaysSinceContact, Client } from '@/lib/types'
-import { auditBulkAccess } from '@/lib/audit'
+import { auditBulkAccess, auditLog } from '@/lib/audit'
+import { withAuth } from '@/lib/api-auth'
 import { sanitizeSearchParam } from '@/lib/validation'
-import { isAzureConfigured } from '@/lib/db/azure'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { handleClientsViaAzure } from '@/lib/db/clients-azure'
 
 export const dynamic = 'force-dynamic'
@@ -286,3 +287,103 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify({ error: msg }), { status: 500 })
   }
 }
+// ---------------------------------------------------------------------------
+// POST /api/clients — create a single client (Azure-aware).
+//
+// Phase 3 data plane: inserts go to Azure under the CALLER's RLS scope when
+// configured (same withRlsContext pattern as /api/clients/import); otherwise
+// the Supabase session client (RLS applies — never the service role).
+//
+// Body forms:
+//   { validate_only: true, client_id }              -> { exists }  (intake step-1 check)
+//   { client_id, last_name, category, ...optional } -> 201 { id }
+//
+// NOTE: the duplicate-client_id probe runs under the caller's OWN row scope,
+// so a unique index on clients.client_id remains the authoritative guard —
+// a unique-violation from either plane is translated to 409 below.
+export const POST = withAuth(async (req, ctx) => {
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 })
+  }
+
+  const clientIdRaw = typeof body.client_id === 'string' ? body.client_id.trim() : ''
+
+  // --- validate_only: existence probe for the intake form's step-1 check ---
+  if (body.validate_only === true) {
+    if (!clientIdRaw) return new Response(JSON.stringify({ exists: false }), { status: 200 })
+    let exists = false
+    if (isAzureConfigured()) {
+      const rows = await withRlsContext(ctx.user.id, (sql) => sql`SELECT id FROM clients WHERE client_id = ${clientIdRaw} LIMIT 1`)
+      exists = rows.length > 0
+    } else {
+      const { data } = await ctx.supabase.from('clients').select('id').eq('client_id', clientIdRaw).limit(1)
+      exists = Boolean(data && data.length > 0)
+    }
+    return new Response(JSON.stringify({ exists }), { status: 200 })
+  }
+
+  // --- create ---
+  if (!clientIdRaw) return new Response(JSON.stringify({ error: 'client_id is required' }), { status: 400 })
+  const lastName = typeof body.last_name === 'string' ? body.last_name.trim() : ''
+  if (!lastName) return new Response(JSON.stringify({ error: 'last_name is required' }), { status: 400 })
+  const category = typeof body.category === 'string' ? body.category.trim().toLowerCase() : ''
+  if (!category) return new Response(JSON.stringify({ error: 'category is required' }), { status: 400 })
+
+  const CREATE_FIELDS = [
+    'first_name', 'eligibility_code', 'eligibility_end_date', 'assigned_to',
+    'last_contact_date', 'last_contact_type', 'three_month_visit_date',
+    'three_month_visit_due', 'quarterly_waiver_date', 'drop_in_visit_date',
+    'poc_date', 'loc_date', 'med_tech_redet_date', 'med_tech_status',
+    'pos_deadline', 'pos_status', 'assessment_due', 'spm_completed', 'foc',
+    'provider_forms', 'signatures_needed', 'schedule_docs', 'atp', 'snfs',
+    'lease', 'co_financial_redet_date', 'co_app_date', 'request_letter',
+    'mfp_consent_date', 'two57_date', 'goal_pct',
+  ]
+  const payload: Record<string, unknown> = {
+    client_id: clientIdRaw,
+    last_name: lastName,
+    category,
+    is_active: true,
+    client_classification: 'real',
+  }
+  for (const key of CREATE_FIELDS) {
+    if (key in body) payload[key] = body[key] === '' ? null : body[key]
+  }
+
+  let createdId: string | null = null
+  let createErr: string | null = null
+  if (isAzureConfigured()) {
+    try {
+      const rows = await withRlsContext(ctx.user.id, (sql) => sql`INSERT INTO clients ${sql(payload)} RETURNING id`)
+      createdId = (rows[0] as { id?: string } | undefined)?.id ?? null
+    } catch (e) {
+      createErr = (e as Error).message
+    }
+  } else {
+    const { data, error } = await ctx.supabase.from('clients').insert(payload).select('id').single()
+    if (error) createErr = error.message
+    else createdId = data?.id ?? null
+  }
+
+  if (createErr || !createdId) {
+    const msg = createErr ?? 'Insert failed'
+    const isDup = /duplicate|unique/i.test(msg)
+    await auditLog(req, {
+      userId: ctx.user.id, userEmail: ctx.user.email, userRole: ctx.role,
+      action: 'client.create.denied', resourceType: 'client',
+      details: { client_id: clientIdRaw, error: msg },
+    })
+    return new Response(JSON.stringify({ error: isDup ? 'This Client ID is already in use' : msg }), { status: isDup ? 409 : 400 })
+  }
+
+  await auditLog(req, {
+    userId: ctx.user.id, userEmail: ctx.user.email, userRole: ctx.role,
+    action: 'client.create', resourceType: 'client', resourceId: createdId,
+    details: { client_id: clientIdRaw },
+  })
+
+  return new Response(JSON.stringify({ id: createdId }), { status: 201 })
+})

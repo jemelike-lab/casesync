@@ -245,12 +245,13 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
 
     // Check Client ID uniqueness
     if (form.client_id.trim()) {
-      const { data } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('client_id', form.client_id.trim())
-        .single()
-      if (data) newErrors.client_id = 'This Client ID is already in use'
+      const res = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ validate_only: true, client_id: form.client_id.trim() }),
+      })
+      const j = await res.json().catch(() => ({} as { exists?: boolean }))
+      if (j?.exists) newErrors.client_id = 'This Client ID is already in use'
     }
 
     setErrors(newErrors)
@@ -319,18 +320,20 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
       goal_pct: 0,
     }
 
-    const { data, error } = await supabase
-      .from('clients')
-      .insert(payload)
-      .select('id')
-      .single()
+    const res = await fetch('/api/clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const j = await res.json().catch(() => ({} as { id?: string; error?: string }))
 
     setSubmitting(false)
 
-    if (error) {
-      setSubmitError(error.message)
+    if (!res.ok || !j?.id) {
+      setSubmitError(j?.error ?? `Create failed (${res.status})`)
       return
     }
+    const data = { id: j.id }
 
     // Log activity
     await supabase.from('activity_log').insert({

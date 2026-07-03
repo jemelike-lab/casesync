@@ -4,6 +4,7 @@ import { Client, Profile } from '@/lib/types'
 import ClientDetailV2Wrapper from '@/components/ClientDetailV2Wrapper'
 import { notFound } from 'next/navigation'
 import { getPlanners } from '@/lib/queries'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,19 +15,53 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Malformed ids would 500 the Azure query (invalid uuid input) — treat as 404.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(id)) notFound()
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, full_name, role, created_at, team_manager_id')
     .eq('id', user.id)
     .single()
 
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
-    .eq('id', id)
-    .single()
+  // Phase 3 data plane: the client record lives in Azure when configured.
+  // Read it under the CALLER's RLS scope; Supabase session client otherwise.
+  // The assigned-planner join is reshaped into the `profiles` nested object
+  // the wrapper expects (id, full_name, role — PostgREST-join parity).
+  let client: Client | null = null
+  if (isAzureConfigured()) {
+    const rows = await withRlsContext(user.id, (sql) => sql`
+      SELECT c.*, p.id AS assigned_profile_id, p.full_name AS assigned_profile_name, p.role AS assigned_profile_role
+      FROM clients c
+      LEFT JOIN profiles p ON p.id = c.assigned_to
+      WHERE c.id = ${id}
+      LIMIT 1
+    `)
+    const row = rows[0] as Record<string, unknown> | undefined
+    if (row) {
+      const { assigned_profile_id, assigned_profile_name, assigned_profile_role, ...rest } = row
+      client = ({
+        ...rest,
+        profiles: assigned_profile_id
+          ? {
+              id: assigned_profile_id as string,
+              full_name: (assigned_profile_name as string | null) ?? null,
+              role: (assigned_profile_role as string | null) ?? null,
+            }
+          : null,
+      } as unknown) as Client
+    }
+  } else {
+    const { data } = await supabase
+      .from('clients')
+      .select('*, profiles!clients_assigned_to_fkey(id, full_name, role)')
+      .eq('id', id)
+      .single()
+    client = ((data ?? null) as unknown) as Client | null
+  }
 
-  if (error || !client) {
+  if (!client) {
     notFound()
   }
 

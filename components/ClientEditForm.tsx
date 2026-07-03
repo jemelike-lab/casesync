@@ -493,8 +493,15 @@ export default function ClientEditForm({
         const oldVal = client[field as keyof Client]; const newVal = formData[field]
         if (String(oldVal ?? '') !== String(newVal ?? '')) changes.push({ field: field as string, old: oldVal != null ? String(oldVal) : null, new: newVal != null ? String(newVal) : null })
       }
-      const { error } = await supabase.from('clients').update(formData).eq('id', client.id)
-      if (error) throw error
+      const res = await fetch(`/api/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as { error?: string }))
+        throw new Error(j.error ?? `Save failed (${res.status})`)
+      }
       if (changes.length > 0) await supabase.from('activity_log').insert(changes.map(c => ({ client_id: client.id, user_id: currentUserId, action: `Changed ${c.field.replace(/_/g, ' ')}`, field_name: c.field, old_value: c.old, new_value: c.new })))
       setEditing(false); onExitEdit?.(); setToast({ type: 'success', message: 'Saved!' }); setTimeout(() => setToast(null), 3000)
     } catch (err: any) { setToast({ type: 'error', message: err?.message || 'Failed.' }) } finally { setSaving(false) }

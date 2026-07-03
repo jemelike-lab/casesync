@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } from '@/lib/email-templates'
 
@@ -90,16 +91,47 @@ export async function GET(request: Request) {
   // Morning cron runs at 12 UTC (8am EDT / 7am EST). Daily digest only on morning run.
   const isMorningRun = currentHour >= 11 && currentHour <= 13
 
-  // C4 fix: only fetch active, real clients with an assigned planner
-  const { data: clients, error } = await supabase
-    .from('clients')
-    .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
-    .eq('is_active', true)
-    .eq('client_classification', 'real')
-    .not('assigned_to', 'is', null)
+  // C4 fix: only fetch active, real clients with an assigned planner.
+  // Phase 3 data plane: the clients table lives in Azure when configured.
+  // This cron has no acting user, so it reads under a resolved SUPERVISOR's
+  // RLS scope (supervisors see all clients) — RLS-honest with zero schema
+  // change. Identity-plane reads (profiles, prefs, emails) stay on Supabase.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let clients: any[] | null = null
+  let plane: 'azure' | 'supabase' = 'supabase'
+  if (isAzureConfigured()) {
+    plane = 'azure'
+    const { data: sup } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'supervisor')
+      .order('created_at', { ascending: true })
+      .limit(1)
+    const supervisorId = sup?.[0]?.id
+    if (!supervisorId) {
+      return NextResponse.json({ error: 'No supervisor profile found to scope the Azure deadline scan' }, { status: 500 })
+    }
+    try {
+      clients = await withRlsContext(supervisorId, async (sql) => {
+        const rows = await sql`SELECT id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date FROM clients WHERE is_active = true AND client_classification = 'real' AND assigned_to IS NOT NULL`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return rows as unknown as any[]
+      })
+    } catch (e) {
+      return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+    }
+  } else {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
+      .eq('is_active', true)
+      .eq('client_classification', 'real')
+      .not('assigned_to', 'is', null)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    clients = data
   }
 
   // C2 fix: fetch profiles, emails, and notification prefs from their correct tables
@@ -410,6 +442,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    plane,
     checked: clients?.length ?? 0,
     notificationsSent: notifications.length,
     emailsSent,
