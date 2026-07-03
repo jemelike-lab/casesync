@@ -37,6 +37,11 @@ const PLANNER_DASHBOARD_PROMPTS = [
   'What documents do I need for transition funds?',
   'How many signatures does a POS need?',
   'What is a RUG score?',
+  'Log a contact for one of my clients',
+  'What documents are on file for one of my clients?',
+  'If an SPM is completed today, when is the next one due?',
+  "Draft a 30-day letter for a client I can't reach",
+  "Read me the latest case notes for one of my clients",
 ]
 
 const MANAGER_DASHBOARD_PROMPTS = [
@@ -48,6 +53,10 @@ const MANAGER_DASHBOARD_PROMPTS = [
   'Which clients have no contact in 7+ days?',
   'What is the SPM deadline?',
   'How do I submit a POS?',
+  "Compare my planners' workloads",
+  "Show a client's assignment history",
+  'Log a contact for one of my clients',
+  "Draft a 30-day letter for a client we can't reach",
 ]
 
 const SUPERVISOR_DASHBOARD_PROMPTS = [
@@ -59,6 +68,10 @@ const SUPERVISOR_DASHBOARD_PROMPTS = [
   'Show me clients with eligibility ending soon',
   'What is the SPM deadline?',
   'What are the CFC service limitations?',
+  'Compare planner workloads across the org',
+  "Show a client's assignment history",
+  'If an SPM is completed today, when is the next one due?',
+  'What documents are on file for a client?',
 ]
 
 function getRotatingPrompts(prompts: string[], count = 4): string[] {
@@ -85,6 +98,13 @@ const ALL_CLIENT_PROMPTS = [
   "What are the next 3 deadlines for this client?",
   "Is this client's LOC still valid?",
   "What is this client's eligibility code?",
+  'What do the recent case notes say?',
+  'What documents are on file for this client?',
+  'Log a phone contact for this client for today',
+  "Add a note to this client's record",
+  'Who has this client been assigned to before?',
+  'If I complete the SPM today, when is the next one due?',
+  'Draft a contact note from my last visit',
 ]
 
 // Simple markdown renderer (regex-based, no library)
@@ -869,12 +889,12 @@ export default function BLHAssistant() {
                   </div>
                   <div style={{ fontSize: 12 }}>
                     {isClientPage
-                      ? 'I have full context for this client.'
+                      ? "I can read this client's notes, files & deadlines — and log contacts, add notes, or update dates (you confirm every change)."
                       : userRole === 'team_manager'
-                        ? 'Ask me about team pressure, follow-up, or rebalance moves.'
+                        ? 'Team pressure, planner workloads, rebalance moves — plus I can log contacts and update dates (you confirm every change).'
                         : userRole === 'supervisor' || userRole === 'admin'
-                          ? 'Ask me about org pressure, staffing balance, or intervention points.'
-                          : 'Ask me about your caseload.'}
+                          ? 'Org pressure, planner workloads, assignment history — plus I can log contacts and update dates (you confirm every change).'
+                          : 'Your caseload, notes, files & deadlines — I can also log contacts, add notes, and update dates (you confirm every change).'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
