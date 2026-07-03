@@ -98,7 +98,7 @@ function CalendarTooltip({ events, position, lt }: { events: CalendarEvent[]; po
               </div>
 
               {/* Planner + ID */}
-              <div style={{ fontSize: 10, color: lt ? '#94A3B8' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
+              <div style={{ fontSize: 10, color: lt ? '#64748B' : '#5a6a8a', marginTop: 6, display: 'flex', gap: 6 }}>
                 <span>ID {first.client_id}</span>
                 {first.plannerName && (
                   <>
@@ -404,7 +404,7 @@ export default function CalendarView({ assignedTo }: Props) {
                         ) : (
                           <span style={{
                             fontSize:14, fontWeight:hasEv?700:400,
-                            color:isSel ? (lt ? '#0071e3' : '#fff') : hasEv ? (lt ? '#0F172A' : '#d0daf0') : (lt ? '#94A3B8' : '#4a5a7a'),
+                            color:isSel ? (lt ? '#0071e3' : '#fff') : hasEv ? (lt ? '#0F172A' : '#d0daf0') : (lt ? '#64748B' : '#4a5a7a'),
                           }}>{day}</span>
                         )}
                       </div>
@@ -424,7 +424,7 @@ export default function CalendarView({ assignedTo }: Props) {
                               {evt.clientName.split(',')[0]}
                             </div>
                           ))}
-                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#94A3B8' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
+                          {ce.length>2 && <div style={{ fontSize:9, color: lt ? '#64748B' : '#6a7a9a', paddingLeft:6, fontWeight:600 }}>+{ce.length-2} more</div>}
                         </div>
                       )}
 
