@@ -211,7 +211,7 @@ function FileViewer({
 
     ;(async () => {
       try {
-        const res = await fetch(`${url}?mode=proxy`)
+        const res = await fetch(url) // url already carries ?mode=proxy
         if (!res.ok) throw new Error(`Could not fetch file (${res.status})`)
         const buf = await res.arrayBuffer()
         if (cancelled) return
@@ -281,7 +281,7 @@ function FileViewer({
           href={url}
           download={file.file_name}
           style={{
-            background: 'var(--surface, #1c1c1e)', border: '1px solid #333336',
+            background: '#1c1c1e', border: '1px solid #333336',
             borderRadius: 6, padding: '6px 12px', fontSize: 12,
             color: '#f5f5f7', textDecoration: 'none',
           }}
@@ -485,7 +485,12 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
     try {
       // SharePoint: stream via our download route (redirects to a signed URL).
       // PDFs/images render inline; full Office preview gets a same-origin proxy next.
-      setViewing({ file, url: `/api/sharepoint/download/${file.id}` })
+      // Preview via the same-origin proxy stream: the plain route 302s to
+      // SharePoint's download.aspx (attachment + frame-blocked), so a PDF/image
+      // <iframe> pointed at it renders blank. ?mode=proxy streams the bytes
+      // through our origin with the right Content-Type so the viewer renders
+      // inline (and the header Download link's download attr is honored).
+      setViewing({ file, url: `/api/sharepoint/download/${file.id}?mode=proxy` })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not open file'
       setError(msg)
