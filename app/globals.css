@@ -1111,6 +1111,10 @@ input[type="time"] {
     left: 16px !important;
     right: 16px !important;
   }
+  html, body {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
   .stat-hero-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;

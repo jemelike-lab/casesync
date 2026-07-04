@@ -261,8 +261,8 @@ function FileViewer({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 20px',
+          display: 'flex', alignItems: 'center', gap: 12, rowGap: 8, flexWrap: 'wrap',
+          padding: 'calc(10px + env(safe-area-inset-top, 0px)) 16px 10px',
           background: 'rgba(28,28,30,0.95)',
           borderBottom: '1px solid #333336',
           color: '#f5f5f7',
@@ -282,18 +282,21 @@ function FileViewer({
           download={file.file_name}
           style={{
             background: '#1c1c1e', border: '1px solid #333336',
-            borderRadius: 6, padding: '6px 12px', fontSize: 12,
-            color: '#f5f5f7', textDecoration: 'none',
+            borderRadius: 8, padding: '10px 14px', fontSize: 13, minHeight: 44,
+            display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
+            color: '#f5f5f7', textDecoration: 'none', boxSizing: 'border-box',
           }}
         >
           ↓ Download
         </a>
         <button
           onClick={onClose}
+          className="cs-viewer-close"
           style={{
-            background: 'transparent', border: '1px solid #333336',
-            borderRadius: 6, padding: '6px 12px', fontSize: 12,
-            color: '#f5f5f7', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.08)', border: '1px solid #4a4a4e',
+            borderRadius: 8, padding: '10px 14px', fontSize: 13, minHeight: 44,
+            display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
+            color: '#f5f5f7', cursor: 'pointer', boxSizing: 'border-box',
           }}
         >
           ✕ Close
@@ -305,12 +308,13 @@ function FileViewer({
         onClick={e => e.stopPropagation()}
         style={{
           flex: 1, overflow: 'auto', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', padding: 16,
+          alignItems: 'center', justifyContent: 'center',
+          padding: '8px 8px calc(8px + env(safe-area-inset-bottom, 0px))',
         }}
       >
         {isPdf && (
           <iframe
-            src={url}
+            src={`${url}#view=FitH`}
             title={file.file_name}
             style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
           />
