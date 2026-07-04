@@ -39,6 +39,7 @@ import ReportingReviews from '@/components/casesync-v2/sections/ReportingReviews
 import Notes from '@/components/casesync-v2/sections/Notes'
 import Activity from '@/components/casesync-v2/sections/Activity'
 import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
+import AttentionCard from '@/components/casesync-v2/sections/AttentionCard'
 import ClientActions from '@/components/casesync-v2/sections/ClientActions'
 import ClientAIRail from '@/components/casesync-v2/sections/ClientAIRail'
 import ClientEditForm from '@/components/ClientEditForm'
@@ -366,12 +367,19 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             }
           />
           <StatusRow     client={props.client} />
+          <AttentionCard client={props.client} />
+          <div id="cs-sec-deadlines">
           <Deadlines         client={props.client} />
+          </div>
           <ContactDetails    client={props.client} />
+          <div id="cs-sec-plans">
           <PlansAssessments  client={props.client} />
+          </div>
           <CoDetails         client={props.client} />
           <MedTech           client={props.client} />
+          <div id="cs-sec-forms">
           <FormsSignatures   client={props.client} />
+          </div>
           <Authorizations    client={props.client} />
           <ReportingReviews  client={props.client} />
           <Notes             client={props.client} currentUserId={props.currentUserId} />

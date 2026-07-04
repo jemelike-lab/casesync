@@ -39,6 +39,8 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
   const [reassignReason, setReassignReason] = useState('')
   const [assignSaving, setAssignSaving] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [deceasedOpen, setDeceasedOpen] = useState(false)
+  const [deceasedTyped, setDeceasedTyped] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const canManage = isSupervisorLike(currentProfile.role) || currentProfile.role === 'team_manager'
@@ -95,10 +97,12 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
     }
   }
 
+  const deceasedMatch =
+    deceasedTyped.trim().toLowerCase() === (client.last_name ?? '').trim().toLowerCase() &&
+    (client.last_name ?? '').trim().length > 0
+
   const handleMarkDeceased = async () => {
-    setMenuOpen(false)
-    if (!canManage) return
-    if (!confirm(`Mark ${client.last_name}${client.first_name ? `, ${client.first_name}` : ''} as deceased?`)) return
+    if (!canManage || !deceasedMatch || deactivating) return
     setDeactivating(true)
     try {
       const res = await fetch(`/api/clients/${client.id}/deactivate`, {
@@ -160,8 +164,8 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
               </button>
             )}
             {canManage && isActive && (
-              <button style={{ ...menuItem, color: '#d83a32' }} onClick={handleMarkDeceased} disabled={deactivating}>
-                <UserX size={15} /> {deactivating ? 'Saving…' : 'Mark as deceased'}
+              <button style={{ ...menuItem, color: '#d83a32' }} onClick={() => { setMenuOpen(false); setDeceasedTyped(''); setDeceasedOpen(true) }}>
+                <UserX size={15} /> Mark as deceased
               </button>
             )}
             <button style={menuItem} onClick={handlePrint}>
@@ -216,6 +220,43 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setReassignOpen(false)} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
               <button onClick={handleReassign} disabled={!assignedTo || assignSaving || assignedTo === client.assigned_to} style={{ background: (!assignedTo || assignedTo === client.assigned_to) ? 'rgba(37,99,235,0.5)' : '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: (!assignedTo || assignSaving || assignedTo === client.assigned_to) ? 'not-allowed' : 'pointer' }}>{assignSaving ? 'Reassigning…' : 'Reassign'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deceasedOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div role="dialog" aria-modal="true" aria-label="Mark client as deceased" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, width: 440, maxWidth: '100%', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#d83a32' }}>Mark as deceased</div>
+              <button aria-label="Close" onClick={() => { if (!deactivating) setDeceasedOpen(false) }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, marginBottom: 12 }}>
+              This deactivates <strong>{client.first_name} {client.last_name}</strong> across CaseSync. The record is preserved and audited, but the client leaves active caseloads immediately.
+            </div>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+              Type the client&apos;s last name (<strong>{client.last_name}</strong>) to confirm
+            </label>
+            <input
+              value={deceasedTyped}
+              onChange={e => setDeceasedTyped(e.target.value)}
+              placeholder={client.last_name ?? ''}
+              autoFocus
+              disabled={deactivating}
+              className="cs-deceased-confirm-input"
+              style={{ width: '100%', background: 'var(--surface-2)', border: `1px solid ${deceasedMatch ? '#1D9E75' : 'var(--border)'}`, borderRadius: 8, color: 'var(--text)', padding: '8px 10px', fontSize: 13, marginBottom: 14 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setDeceasedOpen(false)} disabled={deactivating} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+              <button
+                onClick={handleMarkDeceased}
+                disabled={!deceasedMatch || deactivating}
+                className="cs-deceased-confirm-btn"
+                style={{ background: (!deceasedMatch || deactivating) ? 'rgba(216,58,50,0.45)' : '#d83a32', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: (!deceasedMatch || deactivating) ? 'not-allowed' : 'pointer' }}
+              >
+                {deactivating ? 'Saving…' : 'Mark as deceased'}
+              </button>
             </div>
           </div>
         </div>

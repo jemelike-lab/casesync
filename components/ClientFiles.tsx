@@ -412,6 +412,8 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
 
   // Viewer state
   const [viewing, setViewing] = useState<{ file: ClientFile; url: string } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<ClientFile | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [loadingView, setLoadingView] = useState<string | null>(null)
 
   const inputStyle: React.CSSProperties = {
@@ -499,8 +501,8 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
     }
   }
 
-  async function handleDelete(file: ClientFile) {
-    if (!confirm(`Permanently delete "${file.file_name}"?`)) return
+  async function performDelete(file: ClientFile) {
+    setDeleting(true)
     setError('')
     try {
       const res = await fetch(`/api/sharepoint/delete/${file.id}`, {
@@ -511,9 +513,13 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
         throw new Error(j.error ?? `Delete failed (${res.status})`)
       }
       await fetchFiles()
+      setConfirmDelete(null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Delete failed'
       setError(msg)
+      setConfirmDelete(null)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -568,7 +574,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                     </button>
                     {canDelete(f) && (
                       <button
-                        onClick={() => handleDelete(f)}
+                        onClick={() => setConfirmDelete(f)}
                         style={{
                           background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.3)',
                           borderRadius: 6, padding: '5px 10px', fontSize: 12,
@@ -646,7 +652,18 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
         )}
 
         {loading ? (
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '12px 0' }}>Loading…</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-label="Loading files" role="status">
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface-2)', borderRadius: 8, padding: '10px 14px', animation: 'pulseBg 1.6s ease-in-out infinite', animationDelay: `${i * 0.15}s` }}>
+                <div style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--surface)' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 10, width: `${60 - i * 12}%`, borderRadius: 4, background: 'var(--surface)', marginBottom: 6 }} />
+                  <div style={{ height: 8, width: '35%', borderRadius: 4, background: 'var(--surface)' }} />
+                </div>
+                <div style={{ width: 52, height: 22, borderRadius: 6, background: 'var(--surface)' }} />
+              </div>
+            ))}
+          </div>
         ) : files.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '12px 0', textAlign: 'center' }}>
             No files in CaseSync yet
@@ -708,14 +725,16 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
               const k = folderOf(f.category)
               ;(byFolder[k] ??= []).push(f)
             }
-            const folders = FILE_FOLDERS.filter(fld => (byFolder[fld.key]?.length ?? 0) > 0)
+            const folders = q
+              ? FILE_FOLDERS.filter(fld => (byFolder[fld.key]?.length ?? 0) > 0)
+              : FILE_FOLDERS
             return (
               <>
                 {toolbar}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {folders.map(fld => {
-                    const rows = byFolder[fld.key]
-                    const isOpen = openFolders[fld.key] ?? true
+                    const rows = byFolder[fld.key] ?? []
+                    const isOpen = openFolders[fld.key] ?? rows.length > 0
                     return (
                       <div key={fld.key} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
                         <button
@@ -733,7 +752,17 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                         </button>
                         {isOpen && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 10px', background: 'var(--surface)' }}>
-                            {rows.map(renderRow)}
+                            {rows.length > 0 ? rows.map(renderRow) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                                <span>Nothing in {fld.label} yet.</span>
+                                <button
+                                  onClick={() => { setCategory(fld.key); setShowUpload(true); setError('') }}
+                                  style={{ background: 'transparent', border: 'none', color: 'var(--accent, #2563eb)', fontSize: 12.5, cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                                >
+                                  Upload the first document
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -745,6 +774,28 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
           })()
         )}
       </div>
+
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div role="dialog" aria-modal="true" aria-label="Delete file" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, width: 420, maxWidth: '100%', padding: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Delete file?</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 16, wordBreak: 'break-word' }}>
+              <strong style={{ color: 'var(--text)' }}>{confirmDelete.file_name}</strong> will be permanently removed from CaseSync and SharePoint. This can&apos;t be undone.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setConfirmDelete(null)} disabled={deleting} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+              <button
+                onClick={() => performDelete(confirmDelete)}
+                disabled={deleting}
+                className="cs-file-delete-confirm-btn"
+                style={{ background: deleting ? 'rgba(255,69,58,0.45)' : '#ff453a', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: deleting ? 'not-allowed' : 'pointer' }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewing && (
         <FileViewer
