@@ -26,6 +26,23 @@ interface Message {
   proposalError?: string
 }
 
+interface BriefingClient {
+  id: string
+  client_id: string | null
+  name: string
+  blocking_count: number
+  blocking: string[]
+}
+interface Briefing {
+  generated_at: string
+  role: string
+  total: number
+  ready_count: number
+  not_ready_count: number
+  truncated: boolean
+  not_ready: BriefingClient[]
+}
+
 const PLANNER_DASHBOARD_PROMPTS = [
   'Which clients need attention today?',
   'What should I do next today?',
@@ -408,6 +425,8 @@ export default function BLHAssistant() {
   // rotation would otherwise mismatch SSR vs. first client render -> React
   // #418). Recompute when the page context or role changes.
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([])
+  const [briefing, setBriefing] = useState<Briefing | null>(null)
+  const [briefingDismissed, setBriefingDismissed] = useState(false)
   useEffect(() => {
     setSuggestedPrompts(getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : getDashboardPromptsForRole(userRole)))
   }, [isClientPage, userRole])
@@ -452,6 +471,27 @@ export default function BLHAssistant() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, open])
+
+  // Daily briefing — fetch at most once per calendar day, on the dashboard, when the
+  // panel opens. The server route is deterministic and reuses the five readiness gates.
+  useEffect(() => {
+    if (!open || isClientPage) return
+    const today = new Date().toISOString().slice(0, 10)
+    try {
+      if (localStorage.getItem('blh-briefing-date') === today) return
+    } catch {
+      return
+    }
+    fetch('/api/case-ai/briefing')
+      .then(r => (r.ok ? r.json() : null))
+      .then((j: Briefing | null) => {
+        if (j && typeof j.ready_count === 'number') {
+          setBriefing(j)
+          try { localStorage.setItem('blh-briefing-date', today) } catch {}
+        }
+      })
+      .catch(() => {})
+  }, [open, isClientPage])
 
   // Focus input when opened
   useEffect(() => {
@@ -942,6 +982,68 @@ export default function BLHAssistant() {
             {messages.length === 0 ? (
               /* Empty state with suggested prompts */
               <div>
+                {briefing && !briefingDismissed && (
+                  <div style={{
+                    background: 'rgba(139,92,246,0.08)',
+                    border: '1px solid rgba(139,92,246,0.25)',
+                    borderRadius: 12,
+                    padding: '12px 13px',
+                    marginBottom: 14,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#c4b5fd', letterSpacing: 0.2 }}>
+                        Today&apos;s readiness
+                      </div>
+                      <button
+                        onClick={() => setBriefingDismissed(true)}
+                        aria-label="Dismiss briefing"
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: briefing.not_ready.length ? 10 : 0 }}>
+                      {briefing.total === 0
+                        ? 'No active clients in your caseload yet.'
+                        : `${briefing.ready_count} of ${briefing.total} ready to submit · ${briefing.not_ready_count} need attention`}
+                      {briefing.truncated ? ' (first 2,000)' : ''}
+                    </div>
+                    {briefing.not_ready.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {briefing.not_ready.slice(0, 4).map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => { setOpen(false); router.push(`/clients/${c.id}`) }}
+                            style={{
+                              background: 'rgba(255,255,255,0.04)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: 9,
+                              padding: '8px 11px',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {c.name}
+                            </span>
+                            <span style={{ fontSize: 11, color: '#fca5a5', whiteSpace: 'nowrap' }}>
+                              {c.blocking_count} {c.blocking_count === 1 ? 'blocker' : 'blockers'}
+                            </span>
+                          </button>
+                        ))}
+                        {briefing.not_ready.length > 4 && (
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', paddingLeft: 2 }}>
+                            +{briefing.not_ready.length - 4} more
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div style={{
                   textAlign: 'center',
                   padding: '20px 0 16px',
