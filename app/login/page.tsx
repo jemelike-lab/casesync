@@ -8,6 +8,7 @@ const REASON_MESSAGES: Record<string, string> = {
   session_timeout: 'Your session has expired due to inactivity. Please sign in again.',
   session_expired: 'Your session has expired. Please sign in again.',
   signed_out: 'You have been signed out.',
+  app_relaunch: 'For your security, please sign in again after reopening the app.',
   account_removed: 'Your account has been removed. Contact an administrator if you think this is a mistake.',
   account_deactivated: 'Your account has been deactivated. Contact an administrator for assistance.',
 }

@@ -280,6 +280,8 @@ function FileViewer({
         <a
           href={url}
           download={file.file_name}
+          target="_blank"
+          rel="noopener"
           style={{
             background: '#1c1c1e', border: '1px solid #333336',
             borderRadius: 8, padding: '10px 14px', fontSize: 13, minHeight: 44,

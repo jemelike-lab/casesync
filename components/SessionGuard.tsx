@@ -81,8 +81,36 @@ export default function SessionGuard() {
     // (terminal use, brief Slack reply, walking to the kitchen). 5min
     // is the sweet spot — abandoned PWA sessions still reap, but normal
     // multi-tasking doesn't punish the user.
-    const BACKGROUND_GRACE_MS = 5 * 60 * 1000 // 5 minutes
+    // 2026-07-04 (Josh, PHI hardening): grace is now MODE-AWARE. The 5min
+    // value protects desktop context-switching (the 2026-06-11 rationale
+    // above), but the installed PWA carries PHI into the field — swiping
+    // away and reopening must demand credentials. Standalone gets 60s.
+    const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)')?.matches === true ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true
+    const BACKGROUND_GRACE_MS = isStandalone ? 60 * 1000 : 5 * 60 * 1000
     const HIDDEN_AT_KEY = 'cs_hidden_at'
+
+    // ── Cold-relaunch guard (standalone PWA only) ──
+    // sessionStorage survives suspend, reloads, and in-app navigation, but
+    // is destroyed when the OS kills the PWA process. A missing marker on
+    // mount therefore means the app was fully closed since last launch —
+    // for PHI, that requires fresh credentials regardless of idle timers.
+    // Scoped to standalone so desktop browser tabs (each with their own
+    // sessionStorage) are unaffected.
+    const APP_ALIVE_KEY = 'cs_app_alive'
+    if (isStandalone) {
+      let alive: string | null = null
+      try { alive = sessionStorage.getItem(APP_ALIVE_KEY) } catch { /* private mode */ }
+      try { sessionStorage.setItem(APP_ALIVE_KEY, '1') } catch { /* ignore */ }
+      if (!alive && window.location.pathname !== '/login') {
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session) {
+            supabase.auth.signOut().finally(() => redirectToLogin('app_relaunch'))
+          }
+        })
+      }
+    }
 
     // Clear any stale hidden-timestamp from a previous browser session.
     // localStorage persists across PWA restarts and browser tab closes, so
