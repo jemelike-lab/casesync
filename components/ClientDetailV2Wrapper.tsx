@@ -42,7 +42,7 @@ import IdentityHero from '@/components/casesync-v2/sections/IdentityHero'
 import AttentionCard from '@/components/casesync-v2/sections/AttentionCard'
 import ClientActions from '@/components/casesync-v2/sections/ClientActions'
 import ClientAIRail from '@/components/casesync-v2/sections/ClientAIRail'
-import ClientEditForm from '@/components/ClientEditForm'
+import ClientEditFormV2 from '@/components/ClientEditFormV2'
 import ClientFiles from '@/components/ClientFiles'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
@@ -205,7 +205,7 @@ function StatusRow({ client }: { client: Client }) {
                         'until renewal'
 
   return (
-    <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 14 }}>
+    <Box className="cs-status-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 14 }}>
       <StatusCard label="Last contact"  value={dSince === null ? '\u2014' : `${dSince}d`} subtitle={contactSubtitle} stripe={contactStripe} />
       <StatusCard label="Next deadline" value={nextValue}                                  subtitle={nextSubtitle}    stripe={nextStripe} />
       <StatusCard label="Goal progress" value={`${goalPct}%`}                              subtitle={goalSubtitle}    stripe={goalStripe} />
@@ -330,7 +330,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           }}
         >
           <Container size={1280} px={0} pb={80}>
-            <ClientEditForm {...props} onExitEdit={exitEdit} />
+            <ClientEditFormV2 {...props} onExitEdit={exitEdit} />
           </Container>
         </Box>
       </CaseSyncV2MantineProvider>
@@ -352,6 +352,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           {createdToast && (
             <div className="slide-in-up" style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, background: 'rgba(48,209,88,0.12)', border: '1px solid rgba(48,209,88,0.3)', borderRadius: 14, padding: '10px 16px', color: '#30d158', fontSize: 13, fontWeight: 600, backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>✓ Client created!</div>
           )}
+          <style>{`@media (max-width: 640px) { .cs-status-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }`}</style>
           <Breadcrumb    client={props.client} />
           <div className="cs-detail-grid">
           <div className="cs-detail-main">

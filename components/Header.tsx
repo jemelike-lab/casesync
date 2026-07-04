@@ -228,6 +228,22 @@ export default function Header({ user, profile }: Props) {
           display: none;
         }
 
+        .desktop-nav {
+          min-width: 0;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .desktop-nav::-webkit-scrollbar { display: none; }
+
+        @media (max-width: 1280px) {
+          .header-user-meta { display: none !important; }
+          .desktop-only { flex-basis: 220px !important; }
+        }
+        @media (max-width: 1080px) {
+          .desktop-nav a { padding: 6px 8px !important; font-size: 11.5px !important; }
+          .desktop-only { flex-basis: 150px !important; }
+        }
+
         @media (max-width: 640px) {
           .header-user-meta {
             display: none !important;

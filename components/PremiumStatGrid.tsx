@@ -266,7 +266,7 @@ export default function PremiumStatGrid({
       {/* Hero row — 4 big cards with staggered entrance */}
       <div className="stat-hero-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
         gap: 14,
         marginBottom: 14,
       }}>
