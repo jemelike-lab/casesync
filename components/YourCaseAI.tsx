@@ -24,6 +24,8 @@ interface Message {
   proposal?: ActionProposal | null
   proposalStatus?: 'pending' | 'applying' | 'applied' | 'cancelled' | 'failed'
   proposalError?: string
+  serverId?: string          // persisted bot_messages id (feedback target)
+  feedback?: 1 | -1          // thumbs already given for this message
 }
 
 interface BriefingClient {
@@ -427,6 +429,10 @@ export default function BLHAssistant() {
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([])
   const [briefing, setBriefing] = useState<Briefing | null>(null)
   const [briefingDismissed, setBriefingDismissed] = useState(false)
+  // Batch D: durable conversations. conversationId is server-issued
+  // (X-Conversation-Id) — the client never invents one.
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [resumeInfo, setResumeInfo] = useState<{ id: string; title: string } | null>(null)
   useEffect(() => {
     setSuggestedPrompts(getRotatingPrompts(isClientPage ? ALL_CLIENT_PROMPTS : getDashboardPromptsForRole(userRole)))
   }, [isClientPage, userRole])
@@ -492,6 +498,18 @@ export default function BLHAssistant() {
       })
       .catch(() => {})
   }, [open, isClientPage])
+
+  // Batch D: surface the most recent saved conversation as a resume option.
+  useEffect(() => {
+    if (!userId) return
+    fetch('/api/case-ai/conversations', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const latest = d?.conversations?.[0]
+        if (latest?.id) setResumeInfo({ id: latest.id, title: latest.title ?? 'Previous conversation' })
+      })
+      .catch(() => {})
+  }, [userId])
 
   // Focus input when opened
   useEffect(() => {
@@ -570,6 +588,40 @@ export default function BLHAssistant() {
     setMessages(prev => prev.map(m => m.id === msgId && m.proposalStatus === 'pending' ? { ...m, proposalStatus: 'cancelled' as const } : m))
   }, [])
 
+  // Batch D: load a saved conversation. Server route is RLS-scoped, so a
+  // stale/foreign id just 404s and the chip silently stays.
+  const resumeConversation = useCallback(async (id: string) => {
+    try {
+      const r = await fetch(`/api/case-ai/conversations/${id}`, { credentials: 'same-origin' })
+      if (!r.ok) return
+      const d = await r.json()
+      const msgs: Message[] = (d?.messages ?? []).map((m: { id: string; role: string; content: string }) => ({
+        id: m.id,
+        role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+        content: m.content,
+        ...(m.role === 'assistant' ? { serverId: m.id } : {}),
+      }))
+      if (msgs.length === 0) return
+      setConversationId(id)
+      setMessages(msgs)
+      setResumeInfo(null)
+    } catch { /* resume is best-effort */ }
+  }, [])
+
+  // Batch D: thumbs on a persisted assistant message. Optimistic; the vote is
+  // upserted server-side (one per message per user).
+  const sendFeedback = useCallback(async (msgId: string, serverId: string, rating: 1 | -1) => {
+    setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, feedback: rating } : m)))
+    try {
+      await fetch('/api/case-ai/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ message_id: serverId, rating }),
+      })
+    } catch { /* feedback is best-effort */ }
+  }, [])
+
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || loading || !userId) return
 
@@ -596,6 +648,7 @@ export default function BLHAssistant() {
         messages: conversationMessages,
         userId,
         clientId: currentClientId,
+        conversationId,
       })
 
       // Helper: make the API call
@@ -651,6 +704,12 @@ export default function BLHAssistant() {
         throw new Error(`API error: ${res.status}`)
       }
 
+      // Batch D: server-issued persistence ids (absent when the persistence
+      // plane is unavailable — everything below degrades gracefully).
+      const serverConversationId = res.headers.get('X-Conversation-Id')
+      const serverAssistantId = res.headers.get('X-Assistant-Message-Id')
+      if (serverConversationId) setConversationId(serverConversationId)
+
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -684,6 +743,12 @@ export default function BLHAssistant() {
           )
         )
       }
+
+      // Batch D: this reply is persisted under serverAssistantId — attach it so
+      // the thumbs buttons render for this message.
+      if (serverAssistantId) {
+        setMessages(prev => prev.map(m => (m.id === assistantId ? { ...m, serverId: serverAssistantId } : m)))
+      }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Something went wrong'
       // User-friendly messages for common errors
@@ -710,7 +775,7 @@ export default function BLHAssistant() {
         setTimeout(() => inputRef.current?.focus(), 0)
       })
     }
-  }, [messages, loading, userId, currentClientId])
+  }, [messages, loading, userId, currentClientId, conversationId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -726,6 +791,15 @@ export default function BLHAssistant() {
 
   const clearConversation = () => {
     setMessages([])
+    setConversationId(null)
+    // Refresh the resume chip so the chat just left is offered for resume.
+    fetch('/api/case-ai/conversations', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const latest = d?.conversations?.[0]
+        if (latest?.id) setResumeInfo({ id: latest.id, title: latest.title ?? 'Previous conversation' })
+      })
+      .catch(() => {})
   }
 
   const showPulse = !hasOpenedBefore
@@ -922,9 +996,9 @@ export default function BLHAssistant() {
                       color: 'rgba(255,255,255,0.4)',
                       cursor: 'pointer',
                     }}
-                    title="Clear conversation"
+                    title="Start a new chat (this conversation stays saved)"
                   >
-                    Clear
+                    New chat
                   </button>
                 )}
                 <button
@@ -982,6 +1056,23 @@ export default function BLHAssistant() {
             {messages.length === 0 ? (
               /* Empty state with suggested prompts */
               <div>
+                {resumeInfo && (
+                  <button
+                    type="button"
+                    onClick={() => resumeConversation(resumeInfo.id)}
+                    style={{
+                      display: 'flex', width: '100%', textAlign: 'left', alignItems: 'center', gap: 8,
+                      background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)',
+                      borderRadius: 12, padding: '10px 13px', marginBottom: 14, cursor: 'pointer',
+                      color: '#93c5fd', fontSize: 12,
+                    }}
+                  >
+                    <span aria-hidden style={{ fontSize: 14 }}>↺</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Resume last chat: <b style={{ color: '#bfdbfe' }}>{resumeInfo.title}</b>
+                    </span>
+                  </button>
+                )}
                 {briefing && !briefingDismissed && (
                   <div style={{
                     background: 'rgba(139,92,246,0.08)',
@@ -1170,18 +1261,56 @@ export default function BLHAssistant() {
                             </div>
                           )}
                           {msg.content && !(loading && streamingIdRef.current === msg.id) && (
-                            <button
-                              type="button"
-                              onClick={() => { navigator.clipboard?.writeText(msg.content).catch(() => {}) }}
-                              title="Copy message"
-                              style={{
-                                display: 'block', marginTop: 8, background: 'transparent',
-                                border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6,
-                                color: '#a78bfa', fontSize: 11, padding: '3px 8px', cursor: 'pointer',
-                              }}
-                            >
-                              Copy
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                              <button
+                                type="button"
+                                onClick={() => { navigator.clipboard?.writeText(msg.content).catch(() => {}) }}
+                                title="Copy message"
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6,
+                                  color: '#a78bfa', fontSize: 11, padding: '3px 8px', cursor: 'pointer',
+                                }}
+                              >
+                                Copy
+                              </button>
+                              {msg.serverId && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => sendFeedback(msg.id, msg.serverId!, 1)}
+                                    disabled={msg.feedback != null}
+                                    title="This was helpful"
+                                    aria-label="Thumbs up"
+                                    style={{
+                                      background: msg.feedback === 1 ? 'rgba(48,209,88,0.18)' : 'transparent',
+                                      border: `1px solid ${msg.feedback === 1 ? 'rgba(48,209,88,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                                      borderRadius: 6, fontSize: 11, padding: '3px 7px',
+                                      cursor: msg.feedback != null ? 'default' : 'pointer',
+                                      opacity: msg.feedback === -1 ? 0.35 : 1,
+                                    }}
+                                  >
+                                    👍
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => sendFeedback(msg.id, msg.serverId!, -1)}
+                                    disabled={msg.feedback != null}
+                                    title="This was not helpful"
+                                    aria-label="Thumbs down"
+                                    style={{
+                                      background: msg.feedback === -1 ? 'rgba(255,107,107,0.15)' : 'transparent',
+                                      border: `1px solid ${msg.feedback === -1 ? 'rgba(255,107,107,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                                      borderRadius: 6, fontSize: 11, padding: '3px 7px',
+                                      cursor: msg.feedback != null ? 'default' : 'pointer',
+                                      opacity: msg.feedback === 1 ? 0.35 : 1,
+                                    }}
+                                  >
+                                    👎
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           )}
                         </>
                       )}

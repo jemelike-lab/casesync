@@ -7,6 +7,8 @@ import { validateUUID } from '@/lib/validation'
 import { auditLog } from '@/lib/audit'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
+import { ensureConversation, persistExchange } from '@/lib/bot-persistence'
+import { getBotKnowledgeSection } from '@/lib/bot-knowledge'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Allow up to 60s for multi-tool bot conversations
@@ -47,11 +49,16 @@ function streamAnthropicResponse(
   tools?: unknown[],
   toolChoice?: { type: string },
   appendText?: string,
+  extraHeaders?: Record<string, string>,
+  onDone?: (fullText: string) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Batch D: accumulate the streamed text so onDone can persist the final
+      // answer (appendText — the proposal trailer — is deliberately excluded).
+      let streamedText = ''
       try {
         const body: Record<string, unknown> = {
           model: 'claude-haiku-4-5',
@@ -94,6 +101,7 @@ function streamAnthropicResponse(
             try {
               const event = JSON.parse(json)
               if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                streamedText += event.delta.text
                 controller.enqueue(encoder.encode(event.delta.text))
               }
             } catch {
@@ -107,6 +115,11 @@ function streamAnthropicResponse(
         if (appendText) {
           try { controller.enqueue(encoder.encode(appendText)) } catch { /* stream already closed */ }
         }
+        // The invocation is still alive while the stream is open, so awaiting
+        // persistence here (before close) is serverless-safe. Non-fatal.
+        if (onDone) {
+          try { await onDone(streamedText) } catch { /* persistence is non-fatal */ }
+        }
         controller.close()
       }
     },
@@ -117,6 +130,7 @@ function streamAnthropicResponse(
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',
       'Cache-Control': 'no-cache',
+      ...(extraHeaders ?? {}),
     },
   })
 }
@@ -1836,11 +1850,18 @@ export async function POST(req: NextRequest) {
     }
     const userId = authData.user.id
 
-    const { messages, clientId } = await req.json()
+    const { messages, clientId, conversationId: requestedConversationId } = await req.json()
 
     // P0: UUID validation on clientId
     if (clientId && !validateUUID(clientId)) {
       return new Response('Invalid client ID format', { status: 400 })
+    }
+
+    // Batch D: UUID validation on conversationId (ownership is proven later by
+    // an RLS-scoped lookup inside ensureConversation — a foreign id is treated
+    // as "start a new conversation", never written into)
+    if (requestedConversationId && !validateUUID(requestedConversationId)) {
+      return new Response('Invalid conversation ID format', { status: 400 })
     }
 
     // P0: Cap messages array length to prevent token abuse
@@ -1852,6 +1873,23 @@ export async function POST(req: NextRequest) {
     if (messages.length > 50) {
       return new Response('Too many messages', { status: 400 })
     }
+
+    // Batch D: durable conversations (Azure PHI plane). Resolved up front so
+    // every success exit can persist the exchange and return the ids the UI
+    // needs. Null when Azure is unavailable — the bot then answers statelessly.
+    const lastUserText = String(
+      [...messages].reverse().find((m: { role: string }) => m.role === 'user')?.content ?? ''
+    )
+    const conversationId = await ensureConversation(
+      userId,
+      requestedConversationId ?? null,
+      lastUserText,
+      clientId ?? null,
+    )
+    const assistantMessageId = globalThis.crypto.randomUUID()
+    const persistHeaders: Record<string, string> = conversationId
+      ? { 'X-Conversation-Id': conversationId, 'X-Assistant-Message-Id': assistantMessageId }
+      : {}
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -2071,6 +2109,10 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
     const isManagerLike = userRole === 'team_manager' || isSupervisorLike(userRole)
     const isPlannerLike = userRole === 'supports_planner'
 
+    // Batch D: admin-maintained knowledge (Supabase bot_knowledge; 60s
+    // in-memory cache per warm instance — no per-request read at scale).
+    const botKnowledgeSection = await getBotKnowledgeSection()
+
     const systemPrompt = `You are "BLH Bot", an intelligent assistant built into the CaseSync case management portal for Beatrice Loving Heart (BLH). You help Supports Planners, Team Managers, and Supervisors manage their caseloads and stay fully compliant.
 
 === CURRENT USER ===
@@ -2188,7 +2230,7 @@ RULES:
 10. If there is not enough information for certainty, say what is known from CaseSync and what is still missing.
 11. Be warm but professional — planners are caring for vulnerable people.
 12. HIPAA: never suggest sharing client info externally.
-=== END GUIDELINES ===`
+=== END GUIDELINES ===${botKnowledgeSection}`
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -2345,8 +2387,12 @@ RULES:
             const proposalTrailer = proposalHolder.proposal
               ? `\n\n[[ACTION_PROPOSAL]]${JSON.stringify(proposalHolder.proposal)}[[/ACTION_PROPOSAL]]`
               : ''
+            // Batch D: persist the display text (trailer excluded); proposal
+            // goes into meta for audit value only.
+            await persistExchange(userId, conversationId, lastUserText, finalAnswer, assistantMessageId,
+              proposalHolder.proposal ? { tools_used: toolsUsed, proposal: proposalHolder.proposal } : { tools_used: toolsUsed })
             return new Response(finalAnswer + proposalTrailer, {
-              headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+              headers: { 'Content-Type': 'text/plain; charset=utf-8', ...persistHeaders },
             })
           }
 
@@ -2411,7 +2457,11 @@ RULES:
       const exhaustedTrailer = proposalHolder.proposal
         ? `\n\n[[ACTION_PROPOSAL]]${JSON.stringify(proposalHolder.proposal)}[[/ACTION_PROPOSAL]]`
         : ''
-      return streamAnthropicResponse(apiHeaders, systemPrompt, loopMessages, BOT_TOOLS, { type: 'none' }, exhaustedTrailer)
+      return streamAnthropicResponse(apiHeaders, systemPrompt, loopMessages, BOT_TOOLS, { type: 'none' }, exhaustedTrailer, persistHeaders,
+        async (fullText) => {
+          await persistExchange(userId, conversationId, lastUserText, fullText, assistantMessageId,
+            proposalHolder.proposal ? { tools_used: toolsUsed, proposal: proposalHolder.proposal } : { tools_used: toolsUsed })
+        })
     } else {
       // No tool use - extract text from pass1 response directly
       console.log('[BLH Bot] No tool use - returning pass1 text directly')
@@ -2422,8 +2472,12 @@ RULES:
 
       auditLog(req, { userId, action: 'bot_query' })
 
+      // Batch D: persist the exchange before returning (small indexed writes
+      // on the warm Azure pool; failure is logged and never blocks the answer).
+      await persistExchange(userId, conversationId, lastUserText, finalText, assistantMessageId, { tools_used: toolsUsed })
+
       return new Response(finalText, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', ...persistHeaders },
       })
     }
   } finally {
