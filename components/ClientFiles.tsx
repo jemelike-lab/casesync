@@ -278,10 +278,8 @@ function FileViewer({
           </div>
         </div>
         <a
-          href={url}
+          href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
           download={file.file_name}
-          target="_blank"
-          rel="noopener"
           style={{
             background: '#1c1c1e', border: '1px solid #333336',
             borderRadius: 8, padding: '10px 14px', fontSize: 13, minHeight: 44,
@@ -347,7 +345,7 @@ function FileViewer({
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Couldn&apos;t render preview</div>
                 <div style={{ fontSize: 13 }}>{officeError}</div>
                 <a
-                  href={url}
+                  href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
                   download={file.file_name}
                   style={{
                     display: 'inline-block', marginTop: 16,
@@ -380,7 +378,7 @@ function FileViewer({
               In-portal preview for Word and Excel files is coming next. For now, download to view.
             </div>
             <a
-              href={url}
+              href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
               download={file.file_name}
               style={{
                 display: 'inline-block',

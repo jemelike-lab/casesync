@@ -35,6 +35,15 @@ export async function GET(
       const cl = upstream.headers.get('content-length')
       if (cl) headers.set('content-length', cl)
       headers.set('cache-control', 'private, no-store')
+      // dl=1: force a download instead of inline rendering. Same-origin +
+      // Content-Disposition attachment is the only combination that
+      // reliably triggers the download UI on iOS standalone PWAs (the
+      // download attribute is ignored there, and inline PDFs just render).
+      if (req.nextUrl.searchParams.get('dl') === '1') {
+        const rawName = req.nextUrl.searchParams.get('name') ?? `file-${itemId}`
+        const ascii = rawName.replace(/[\r\n"\\]/g, '').replace(/[^\x20-\x7E]/g, '_').slice(0, 150) || 'download'
+        headers.set('content-disposition', `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(rawName).slice(0, 300)}`)
+      }
       return new NextResponse(upstream.body, { status: 200, headers })
     }
 
