@@ -6,6 +6,7 @@ import { checkAiRateLimit } from '@/lib/ai-rate-limit'
 import { validateUUID } from '@/lib/validation'
 import { auditLog } from '@/lib/audit'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Allow up to 60s for multi-tool bot conversations
@@ -1116,6 +1117,20 @@ const BOT_TOOLS = [
     }
   },
   {
+    name: "evaluate_client_readiness" as const,
+    description: "Deterministically check whether a specific client's Plan of Service is ready to submit, against BLH's five hard submission gates: Medicaid active, Level of Care valid (annual — not expired or expiring within 30 days), POS marked Completed, signed forms on file (Forms & Signatures folder), and a Plan of Care on file. A missing value FAILS its gate. Also returns the manual-checklist reminders the planner must eyeball (emergency backups, narrative, service address, CSQ timing, services) — these are NOT auto-scored. Requires the client's uuid id. Results are scoped by role automatically. Use whenever the user asks whether a client is ready, what is blocking submission, or what still needs doing before submitting a POS.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: {
+          type: "string" as const,
+          description: "The client's uuid id field (from context or search_clients results)."
+        }
+      },
+      required: ["client_id"] as string[]
+    }
+  },
+  {
     name: "propose_log_contact" as const,
     description: "PROPOSE logging a client contact (visit, call, email). Nothing is saved by this tool — the user must tap Confirm on the card shown under your reply. Use whenever the user asks to log, record, or note a contact or visit. Requires the client's uuid id.",
     input_schema: {
@@ -1383,6 +1398,85 @@ async function executeGetClientFiles(
     .limit(50);
   if (error) return JSON.stringify({ error: error.message });
   return JSON.stringify({ count: (data || []).length, files: data || [] });
+}
+
+async function executeEvaluateClientReadiness(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clientId = String(input.client_id ?? '');
+  if (!uuidRegex.test(clientId)) {
+    return JSON.stringify({ error: 'client_id must be the uuid id field from context or search_clients results' });
+  }
+
+  const sigCats = SIGNATURE_CATEGORIES as readonly string[];
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      const rows = await sql`SELECT eligibility_end_date, loc_date, pos_status, poc_date, first_name, last_name, client_id FROM clients c WHERE c.id = ${clientId} ${scope} LIMIT 1`
+      if (!rows.length) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+      const sig = await sql`SELECT 1 FROM client_documents WHERE client_id = ${clientId} AND category = ANY(${sigCats}::text[]) LIMIT 1`
+      return JSON.stringify(buildReadinessPayload(rows[0] as Record<string, unknown>, sig.length > 0));
+    });
+  }
+
+  let clientQuery = supabase
+    .from('clients')
+    .select('eligibility_end_date, loc_date, pos_status, poc_date, first_name, last_name, client_id')
+    .eq('id', clientId);
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    clientQuery = clientQuery.eq('assigned_to', userId);
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+    const teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+    clientQuery = clientQuery.in('assigned_to', teamIds);
+  }
+  const { data: client } = await clientQuery.single();
+  if (!client) return JSON.stringify({ error: 'Client not found (or out of scope)' });
+
+  const { data: sigDocs } = await supabase
+    .from('client_documents')
+    .select('id')
+    .eq('client_id', clientId)
+    .in('category', sigCats)
+    .limit(1);
+  return JSON.stringify(buildReadinessPayload(client as Record<string, unknown>, (sigDocs || []).length > 0));
+}
+
+function buildReadinessPayload(client: Record<string, unknown>, hasSignatureDoc: boolean) {
+  const result = evaluateReadiness(
+    {
+      eligibility_end_date: (client.eligibility_end_date as string) ?? null,
+      loc_date: (client.loc_date as string) ?? null,
+      pos_status: (client.pos_status as string) ?? null,
+      poc_date: (client.poc_date as string) ?? null,
+    },
+    hasSignatureDoc,
+  );
+  const name = [client.first_name, client.last_name].filter(Boolean).join(' ').trim();
+  const blocking = result.gates.filter((g) => g.status === 'fail').map((g) => `${g.label}: ${g.detail}`);
+  return {
+    client: name || (client.client_id as string) || 'client',
+    ready: result.ready,
+    summary: result.ready ? 'All five submission gates pass.' : `${blocking.length} of 5 gates failing.`,
+    gates: result.gates,
+    blocking,
+    manual_reminders: result.reminders,
+  };
 }
 
 function executeComputeDeadline(input: Record<string, unknown>) {
@@ -2038,6 +2132,7 @@ TOOL 7 - get_planner_workload: Per-planner load and compliance comparison. ONLY 
 TOOL 8 - propose_log_contact: When the user asks to log, record, or note a contact/visit for a client. Pass the uuid id, date (YYYY-MM-DD), type (phone, in_person, email, video), and optional note.
 TOOL 9 - propose_add_note: When the user asks to add or save a case note for a client. Pass the uuid id and the exact note content.
 TOOL 10 - propose_update_date: When the user asks to set, change, or update a deadline/date field for a client. Pass the uuid id, the exact field name, and new_date (YYYY-MM-DD).
+TOOL 11 - evaluate_client_readiness: Use when the user asks whether a client is ready to submit, what is blocking a POS, or what still needs doing before submission. Deterministic five-gate check plus manual reminders. Pass the uuid id. NEVER assess readiness yourself — always call this tool.
 
 ACTION RULES (TOOLS 8-10 — CRITICAL):
 - These tools only PROPOSE a change. NOTHING is saved until the user taps the Confirm button that appears under your reply.
@@ -2184,6 +2279,8 @@ RULES:
           toolResult = await executeGetAssignmentHistory(supabase, toolUseBlock.input, userRole, userId)
         } else if (toolUseBlock.name === 'get_planner_workload') {
           toolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
+        } else if (toolUseBlock.name === 'evaluate_client_readiness') {
+          toolResult = await executeEvaluateClientReadiness(supabase, toolUseBlock.input, userRole, userId)
         } else if (toolUseBlock.name === 'propose_log_contact' || toolUseBlock.name === 'propose_add_note' || toolUseBlock.name === 'propose_update_date') {
           toolResult = await executeProposeAction(supabase, toolUseBlock.name, toolUseBlock.input, userRole, userId, proposalHolder)
         } else {
@@ -2272,6 +2369,8 @@ RULES:
               nextToolResult = await executeGetAssignmentHistory(supabase, nextToolUse.input, userRole, userId)
             } else if (nextToolUse.name === 'get_planner_workload') {
               nextToolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
+            } else if (nextToolUse.name === 'evaluate_client_readiness') {
+              nextToolResult = await executeEvaluateClientReadiness(supabase, nextToolUse.input, userRole, userId)
             } else if (nextToolUse.name === 'propose_log_contact' || nextToolUse.name === 'propose_add_note' || nextToolUse.name === 'propose_update_date') {
               nextToolResult = await executeProposeAction(supabase, nextToolUse.name, nextToolUse.input, userRole, userId, proposalHolder)
             } else {
