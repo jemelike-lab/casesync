@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[BLH Bot] feedback failed:', err)
+    console.error('[Casey] feedback failed:', err)
     return NextResponse.json({ error: 'Failed to record feedback' }, { status: 500 })
   }
 }

@@ -55,7 +55,7 @@ export function AIAskClient({ clientId }: { clientId: string }) {
       }
 
       if (res.status === 429) {
-        throw new Error('BLH Bot is busy — please wait a moment and try again')
+        throw new Error('Casey is busy — please wait a moment and try again')
       }
 
       const data = await res.json()

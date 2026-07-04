@@ -1,5 +1,5 @@
 // app/api/bot-knowledge/[id]/route.ts
-// Batch D: update / delete a BLH Bot knowledge entry. Supervisor /
+// Batch D: update / delete a Casey knowledge entry. Supervisor /
 // administrator only (IT excluded); RLS-enforced via the caller's own session client.
 
 import { NextResponse } from 'next/server'

@@ -1,5 +1,5 @@
 // app/api/bot-knowledge/route.ts
-// Batch D: admin CRUD for the BLH Bot knowledge base (Supabase `bot_knowledge`).
+// Batch D: admin CRUD for the Casey knowledge base (Supabase `bot_knowledge`).
 // Restricted to supervisor / administrator (IT intentionally excluded — this is
 // stricter than the /admin gate). Writes go through the
 // caller's OWN session client so Supabase RLS is enforced end to end (the

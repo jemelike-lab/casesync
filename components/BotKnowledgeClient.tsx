@@ -1,7 +1,7 @@
 'use client'
 
 // components/BotKnowledgeClient.tsx
-// Batch D: BLH Bot knowledge-base editor (admin-only page component).
+// Batch D: Casey knowledge-base editor (admin-only page component).
 // Entries marked Active are injected into the bot's system prompt (60s cache),
 // in sort-order, under a hard character budget — so shorter, focused entries
 // beat one giant one.
@@ -157,11 +157,11 @@ export default function BotKnowledgeClient({ initialEntries }: { initialEntries:
   return (
     <div style={S.page}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>BLH Bot Knowledge Base</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Casey Knowledge Base</h1>
         <Link href="/admin" style={{ fontSize: 12, opacity: 0.7 }}>← Back to Admin</Link>
       </div>
       <p style={{ fontSize: 13, opacity: 0.7, marginTop: 4, marginBottom: 20, lineHeight: 1.5 }}>
-        Active entries are injected into BLH Bot&apos;s instructions for every user (updates take effect within ~60 seconds).
+        Active entries are injected into Casey&apos;s instructions for every user (updates take effect within ~60 seconds).
         Never include client PHI here — this is organizational guidance only. Keep entries short and specific; there is a
         total size budget and lower sort-order entries win.
       </p>

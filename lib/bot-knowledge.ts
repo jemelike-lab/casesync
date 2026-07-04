@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 /**
- * Batch D: admin-maintained BLH Bot knowledge (Supabase `bot_knowledge`).
+ * Batch D: admin-maintained Casey knowledge (Supabase `bot_knowledge`).
  *
  * Non-PHI organizational guidance (policies, program rules, canned procedures)
  * that supervisors edit at /admin/bot-knowledge and the bot injects into its

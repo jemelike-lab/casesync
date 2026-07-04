@@ -689,7 +689,7 @@ export default function BLHAssistant() {
 
       if (res.status === 429) {
         const errData = await res.json().catch(() => ({}))
-        const busyMsg = errData.error ?? 'BLH Bot is currently busy — please try again in a moment'
+        const busyMsg = errData.error ?? 'Casey is currently busy — please try again in a moment'
         setMessages(prev =>
           prev.map(m =>
             m.id === assistantId
@@ -804,7 +804,7 @@ export default function BLHAssistant() {
 
   const showPulse = !hasOpenedBefore
 
-  // BLH Bot is a CaseSync-only feature, mounted globally in the shared root
+  // Casey is a CaseSync-only feature, mounted globally in the shared root
   // layout. Hide it on Workryn (/w/*) and on public/unauthenticated routes.
   const HIDDEN_PREFIXES = ['/w', '/login', '/onboarding', '/reset-password', '/accept-invite', '/auth']
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) return null
@@ -874,7 +874,7 @@ export default function BLHAssistant() {
               }}
             />
           )}
-          <div style={{ position: 'relative' }} title="BLH Bot">
+          <div style={{ position: 'relative' }} title="Casey">
             <button
               onClick={handleOpen}
               style={{
@@ -894,7 +894,7 @@ export default function BLHAssistant() {
                 position: 'relative',
                 zIndex: 1,
               }}
-              aria-label="Open BLH Bot"
+              aria-label="Open Casey"
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(124, 58, 237, 0.6)'
@@ -925,7 +925,7 @@ export default function BLHAssistant() {
             }}
               className="fab-tooltip"
             >
-              BLH Bot
+              Casey
             </div>
           </div>
         </div>
@@ -977,9 +977,9 @@ export default function BLHAssistant() {
                   ✨
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>BLH Bot</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>Casey</div>
                   <div style={{ fontSize: 11, color: 'rgba(139,92,246,0.8)' }}>
-                    Ask me anything about your cases or BLH programs
+                    CaseSync Assistant · cases, programs & how to use the site
                   </div>
                 </div>
               </div>
@@ -1143,7 +1143,7 @@ export default function BLHAssistant() {
                 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>✨</div>
                   <div style={{ fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>
-                    Hi {userId ? 'there' : ''}! I&apos;m BLH Bot
+                    Hi {userId ? 'there' : ''}! I&apos;m Casey, the CaseSync Assistant
                   </div>
                   <div style={{ fontSize: 12 }}>
                     {isClientPage

@@ -827,21 +827,47 @@ ACP: Address Confidentiality Program — participant has protected address; use 
 === END GLOSSARY ===`
 
 const KNOWLEDGE_NAVIGATION = `
-=== NAVIGATION (CaseSync portal) ===
-- Dashboard: [/dashboard]
-- All clients: [/clients]
-- Add a new client: [/clients/new]
-- Client detail: [/clients/{clientId}]
-- Calendar / deadlines: [/calendar]
-- Team messaging: [/chat]
-- Team management: [/team]
-- Supervisor view: [/supervisor]
-- Settings: [/settings]
-- Admin panel: [/admin]
-- Log a contact: open the client's profile → Contact Log section
-- Upload a document: open client profile → Documents tab
-- Submit POS: done via the external LTSS System (not inside CaseSync)
-=== END NAVIGATION ===`
+=== CASESYNC SITE GUIDE (how to use the portal) ===
+You know the CaseSync site thoroughly. When users ask "how do I..." or "where is...", give exact, step-by-step guidance from this guide. Route paths are in [brackets].
+
+NAVIGATION
+- Dashboard [/dashboard]: stat cards (Active / Overdue / Due this week / No contact — click one to filter), urgent-tasks welcome card, role-based team panels.
+- All clients [/clients] · Add client [/clients/new] · Client detail [/clients/{clientId}] · Calendar [/calendar] · Team chat [/chat] · Team [/team] (team managers+) · Supervisor [/supervisor] · Admin [/admin] · Audit log [/admin/audit] (supervisors) · Settings [/settings/security] · Help [/help] · Workryn (HR/ops) via the ⇄ Workryn button in the header.
+
+CLIENT DETAIL PAGE (top to bottom)
+- Identity hero: name, program pill, ID and eligibility code; Edit button and ⋮ menu (Reassign, Mark as deceased, Print).
+- Status row: four cards — last contact, next deadline, goal progress, eligibility countdown.
+- Attention card: "N items need attention" — automatic, deterministic reminders (overdue contact, deadlines within 7 days, failed POS-readiness gates). Collapsing it keeps it collapsed for the rest of the day. Item links jump to the relevant section or open the edit form.
+- Sections in order: Deadlines, Contact details, Plans & assessments, CO details, Med tech, Forms & signatures, Authorizations, Reporting & reviews, Notes, Activity, Client files.
+- Right rail on wide screens: snapshot, key dates, AI Intelligence. On narrow screens it becomes a floating brain button stacked above my launcher.
+
+EDITING A CLIENT
+- The Edit button opens the full edit form: eligibility code, goal %, every deadline date, contact, plans, CO, med tech, forms, authorizations, and reporting fields. Save writes everything at once and records the changes in the Activity log. Marking SPM completed auto-sets the next SPM due date 30 days out.
+
+CLIENT FILES
+- Seven folders: Intake, CO, Plans, Forms & Signatures, Authorizations, Reporting & Reviews, Other.
+- Uploading requires choosing a category first — this is enforced; uncategorized uploads are rejected. An optional expiry date shows colored badges as it approaches.
+- PDFs and images preview in-portal; Word and Excel render in the viewer; other types download.
+- Downloading on a phone opens the share sheet — tap "Save to Files".
+- Deleting asks for confirmation and is permanent (removed from CaseSync and SharePoint).
+
+ACTIONS AND WHO CAN DO WHAT
+- Reassign and Mark as deceased: supervisors and team managers only (⋮ menu on the hero). Mark as deceased requires typing the client's last name to confirm, and deactivates the client.
+- Data visibility is automatic and enforced: Supports Planners see their own clients, Team Managers their team, Supervisors everything. My tools follow the same scoping.
+- Planner-workload comparisons: team managers and supervisors only.
+- My knowledge base editor [/admin/bot-knowledge]: supervisors and administrators only.
+
+SESSIONS AND THE MOBILE APP (PWA)
+- CaseSync installs as an app: browser menu → Add to Home Screen / Install.
+- Security behavior is intentional PHI protection, not a bug: 30-minute idle timeout with a 2-minute warning; on the installed app, fully closing it — or leaving it in the background for more than a minute — requires signing in again.
+
+RULES FOR SITE HELP (ENFORCE ALWAYS)
+- NEVER help anyone bypass role restrictions, access controls, or session/security rules — no workarounds, no exceptions. If asked, explain the restriction protects client PHI and direct them to their Supervisor or the Administrator for access requests.
+- You cannot change anyone's role or permissions, and you never suggest sharing logins or credentials.
+- You may describe features a user's role cannot access, but always state which role is required.
+- POS submission itself happens in the external LTSS system, not inside CaseSync.
+- If the site behaves differently from this guide, trust what the user is seeing and point them to the Help page [/help] or their Supervisor.
+=== END CASESYNC SITE GUIDE ===`
 
 // ─── Route handler ─────────────────────────────────────────────────────────────
 
@@ -1003,7 +1029,7 @@ NOTES:
 
 
 
-// ---- Tool definitions for BLH Bot function calling ----
+// ---- Tool definitions for Casey function calling ----
 
 const BOT_TOOLS = [
   {
@@ -1835,7 +1861,7 @@ export async function POST(req: NextRequest) {
   // Rate limiting: max 10 concurrent AI requests
   if (activeRequests >= MAX_CONCURRENT) {
     return new Response(
-      JSON.stringify({ error: 'BLH Bot is busy, please try again in a moment' }),
+      JSON.stringify({ error: 'Casey is busy, please try again in a moment' }),
       { status: 429, headers: { 'Content-Type': 'application/json' } }
     )
   }
@@ -2113,7 +2139,7 @@ ${formatPlannerOpsContext(plannerOpsSummary)}`
     // in-memory cache per warm instance — no per-request read at scale).
     const botKnowledgeSection = await getBotKnowledgeSection()
 
-    const systemPrompt = `You are "BLH Bot", an intelligent assistant built into the CaseSync case management portal for Beatrice Loving Heart (BLH). You help Supports Planners, Team Managers, and Supervisors manage their caseloads and stay fully compliant.
+    const systemPrompt = `You are "Casey" — the CaseSync Assistant — built into the CaseSync case management portal for Beatrice Loving Heart (BLH). You help Supports Planners, Team Managers, and Supervisors manage their caseloads, stay fully compliant, and get the most out of every part of the CaseSync site. Introduce yourself as Casey.
 
 === CURRENT USER ===
 Name: ${userName}
@@ -2276,12 +2302,12 @@ RULES:
       }
 
       pass1Data = await pass1Res.json()
-      console.log('[BLH Bot] Pass1 stop_reason:', pass1Data.stop_reason, 'content_types:', pass1Data.content?.map((b: {type: string}) => b.type))
+      console.log('[Casey] Pass1 stop_reason:', pass1Data.stop_reason, 'content_types:', pass1Data.content?.map((b: {type: string}) => b.type))
     } catch (fetchErr) {
       clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
         return new Response(
-          JSON.stringify({ error: 'BLH Bot took too long to respond. Please try again.' }),
+          JSON.stringify({ error: 'Casey took too long to respond. Please try again.' }),
           { status: 504, headers: { 'Content-Type': 'application/json' } }
         )
       }
@@ -2303,7 +2329,7 @@ RULES:
     if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
       // Execute the requested tool
       toolsUsed.push(toolUseBlock.name)
-      console.log('[BLH Bot] Executing tool:', toolUseBlock.name, 'input:', JSON.stringify(toolUseBlock.input))
+      console.log('[Casey] Executing tool:', toolUseBlock.name, 'input:', JSON.stringify(toolUseBlock.input))
       let toolResult = ''
 
       try {
@@ -2398,7 +2424,7 @@ RULES:
 
           // Execute the next tool
           toolsUsed.push(nextToolUse.name)
-          console.log(`[BLH Bot] Tool loop round ${round + 2}: ${nextToolUse.name}`)
+          console.log(`[Casey] Tool loop round ${round + 2}: ${nextToolUse.name}`)
           let nextToolResult = ''
           try {
             if (nextToolUse.name === 'search_clients') {
@@ -2444,7 +2470,7 @@ RULES:
           clearTimeout(loopTimeout)
           if ((loopErr as Error).name === 'AbortError') {
             return new Response(
-              JSON.stringify({ error: 'BLH Bot took too long. Please try again.' }),
+              JSON.stringify({ error: 'Casey took too long. Please try again.' }),
               { status: 504, headers: { 'Content-Type': 'application/json' } }
             )
           }
@@ -2464,7 +2490,7 @@ RULES:
         })
     } else {
       // No tool use - extract text from pass1 response directly
-      console.log('[BLH Bot] No tool use - returning pass1 text directly')
+      console.log('[Casey] No tool use - returning pass1 text directly')
       finalText = pass1Data.content
         .filter((b: { type: string }) => b.type === 'text')
         .map((b: { text?: string }) => b.text || '')

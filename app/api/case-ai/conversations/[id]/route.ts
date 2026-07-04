@@ -1,5 +1,5 @@
 // app/api/case-ai/conversations/[id]/route.ts
-// Batch D: load (GET) or delete (DELETE) one of the caller's saved BLH Bot
+// Batch D: load (GET) or delete (DELETE) one of the caller's saved Casey
 // conversations. Azure RLS under withRlsContext(userId) is the authority — a
 // foreign or unknown id simply resolves to zero rows, which we surface as 404.
 
@@ -60,7 +60,7 @@ export async function GET(
     }
     return NextResponse.json(result)
   } catch (err) {
-    console.error('[BLH Bot] conversation load failed:', err)
+    console.error('[Casey] conversation load failed:', err)
     return NextResponse.json({ error: 'Failed to load conversation' }, { status: 500 })
   }
 }
@@ -91,7 +91,7 @@ export async function DELETE(
     // bot_messages / bot_feedback rows follow via ON DELETE CASCADE.
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[BLH Bot] conversation delete failed:', err)
+    console.error('[Casey] conversation delete failed:', err)
     return NextResponse.json({ error: 'Failed to delete conversation' }, { status: 500 })
   }
 }

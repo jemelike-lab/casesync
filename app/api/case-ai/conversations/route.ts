@@ -1,5 +1,5 @@
 // app/api/case-ai/conversations/route.ts
-// Batch D: list the caller's saved BLH Bot conversations (Azure PHI plane).
+// Batch D: list the caller's saved Casey conversations (Azure PHI plane).
 //
 // Auth mirrors /api/case-ai (session cookie, any authenticated staff role) —
 // deliberately NOT withAuth, whose role allowlist is narrower than the bot's
@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
     `)
     return NextResponse.json({ conversations: rows, persistence: true })
   } catch (err) {
-    console.error('[BLH Bot] conversations list failed:', err)
+    console.error('[Casey] conversations list failed:', err)
     // History being unavailable must never look like a bot outage.
     return NextResponse.json({ conversations: [], persistence: false })
   }

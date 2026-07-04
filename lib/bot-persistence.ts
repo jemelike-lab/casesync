@@ -1,7 +1,7 @@
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
 /**
- * Batch D: durable BLH Bot conversations on the Azure PHI plane.
+ * Batch D: durable Casey conversations on the Azure PHI plane.
  *
  * Bot chats contain client PHI, so they persist to Azure (`bot_conversations`
  * / `bot_messages`), never Supabase. Every read and write runs under
@@ -58,7 +58,7 @@ export async function ensureConversation(
       return (inserted[0]?.id as string) ?? null
     })
   } catch (err) {
-    console.error('[BLH Bot] ensureConversation failed (non-fatal):', err)
+    console.error('[Casey] ensureConversation failed (non-fatal):', err)
     return null
   }
 }
@@ -102,6 +102,6 @@ export async function persistExchange(
       `
     })
   } catch (err) {
-    console.error('[BLH Bot] persistExchange failed (non-fatal):', err)
+    console.error('[Casey] persistExchange failed (non-fatal):', err)
   }
 }

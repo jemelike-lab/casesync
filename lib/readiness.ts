@@ -10,7 +10,7 @@
 //   • Everything else on the checklist is surfaced as a manual reminder — never scored.
 //   • No schema changes.
 //
-// Pure and framework-free so both the BLH Bot tool (evaluate_client_readiness) and
+// Pure and framework-free so both the Casey tool (evaluate_client_readiness) and
 // the once-a-day briefing card can call it without duplicating the rules.
 
 export type GateStatus = 'pass' | 'fail'

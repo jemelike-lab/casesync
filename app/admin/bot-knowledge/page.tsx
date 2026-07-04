@@ -1,5 +1,5 @@
 // app/admin/bot-knowledge/page.tsx
-// Batch D: admin editor for the BLH Bot knowledge base. Restricted to
+// Batch D: admin editor for the Casey knowledge base. Restricted to
 // supervisor / administrator only (stricter than /admin, which still allows
 // IT). Content lives in Supabase
 // `bot_knowledge` (non-PHI organizational guidance); the bot injects active
