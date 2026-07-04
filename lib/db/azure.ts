@@ -136,6 +136,33 @@ export async function withRlsContext<T>(
 }
 
 /**
+ * Run `fn` on a RESERVED connection under the INSERT-only `casesync_audit`
+ * role — the Entra-era audit write path (the dedicated `casesync_audit`
+ * password login died with the 2026-06-28 Entra-only cutover; the role
+ * survives as a NOLOGIN group role granted to the connecting principals).
+ * Deliberately sets NO app.user_id: audit rows may have no acting user
+ * (auth.failed, denied access). RESET ROLE in `finally` so the audit role
+ * can never leak to the next pooled request.
+ */
+export async function withAuditRole<T>(
+  fn: (sql: postgres.Sql) => Promise<T>,
+): Promise<T> {
+  const sql = isEntraDbConfigured() ? getEntraSql() : getSql()
+  const reserved = await sql.reserve()
+  try {
+    await reserved`SET ROLE casesync_audit`
+    return await fn(reserved as unknown as postgres.Sql)
+  } finally {
+    try {
+      await reserved`RESET ROLE`
+    } catch {
+      // If reset fails the connection is suspect; release still runs below.
+    }
+    reserved.release()
+  }
+}
+
+/**
  * Health probe: confirms a connection can be made and a trivial query succeeds.
  * Does NOT set any RLS context. Diagnostics only. Honors the same mode selection
  * and reuses the warm pool.

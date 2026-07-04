@@ -54,10 +54,11 @@ export async function auditLog(
       await withAuditWriter((sql) => sql`INSERT INTO audit_logs (user_id, user_email, user_role, action, resource_type, resource_id, details, ip_address, user_agent) VALUES (${row.user_id}, ${row.user_email}, ${row.user_role}, ${row.action}, ${row.resource_type}, ${row.resource_id}, ${row.details ? sql.json(row.details as unknown as Parameters<typeof sql.json>[0]) : null}, ${row.ip_address}, ${row.user_agent})`)
     } else {
       const admin = getAdminClient()
-      await admin.from('audit_logs').insert(row)
+      const { error } = await admin.from('audit_logs').insert(row)
+      if (error) throw error
     }
-  } catch {
-    console.error('[audit] Failed to write audit log for action:', payload.action)
+  } catch (err) {
+    console.error('[audit] Failed to write audit log for action:', payload.action, err)
   }
 }
 

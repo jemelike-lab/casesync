@@ -1,4 +1,28 @@
 import { createClient } from '@/lib/supabase/server'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+
+/**
+ * Dashboard summary counts (supervisor control panel + team manager views).
+ *
+ * PHI go-live migration (2026-07-04): these aggregates now run on the Azure
+ * data plane whenever it is configured, via `withRlsContext` — the same RLS
+ * scoping as the rest of the clients data path (SET ROLE authenticated +
+ * app.user_id), so counts reflect exactly the clients the caller can see.
+ * The Supabase views (client_status_summary_by_assignee / _global) remain
+ * ONLY as the fallback for environments without Azure configured — in
+ * production they would under-report as real PHI lives in Azure.
+ *
+ * Predicate provenance — the Azure SQL mirrors lib/types (the canonical
+ * definitions used by the clients list and AttentionCard):
+ *   - overdue / due-this-week check the FULL 13 tracked deadline columns.
+ *     (The live Supabase view from migration 030 had drifted to 8 columns
+ *     for due_this_week; that drift is deliberately NOT ported.)
+ *   - is_active = true is restored (030 accidentally dropped 007's WHERE).
+ *   - eligibility_ending_soon: eligibility_end_date within [today, today+30]
+ *     (migration 030 semantics).
+ *   - no_contact_7_days: never contacted OR last contact more than 7 days
+ *     ago (migration 030 semantics).
+ */
 
 export interface AssigneeSummaryRow {
   assigned_to: string | null
@@ -17,7 +41,81 @@ interface GlobalSummaryRow {
   no_contact_7_days_clients: number
 }
 
+const EMPTY_GLOBAL: GlobalSummaryRow = {
+  total_clients: 0,
+  overdue_clients: 0,
+  due_this_week_clients: 0,
+  eligibility_ending_soon_clients: 0,
+  no_contact_7_days_clients: 0,
+}
+
+async function getSessionUserId(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getUser()
+  return data?.user?.id ?? null
+}
+
 export async function getAssigneeSummaryMap(assignedTo?: string[]) {
+  if (assignedTo && assignedTo.length === 0) {
+    return new Map<string, AssigneeSummaryRow>()
+  }
+
+  if (isAzureConfigured()) {
+    const userId = await getSessionUserId()
+    if (!userId) return new Map<string, AssigneeSummaryRow>()
+
+    const rows = await withRlsContext(userId, async (sql) => {
+      const whereSql = assignedTo
+        ? sql`c.is_active = true AND c.assigned_to = ANY(${assignedTo}::uuid[])`
+        : sql`c.is_active = true AND c.assigned_to IS NOT NULL`
+      return await sql<AssigneeSummaryRow[]>`
+        SELECT
+          c.assigned_to,
+          COUNT(*)::int AS total_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
+            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
+            c.pos_deadline < current_date OR c.assessment_due < current_date OR
+            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
+            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
+            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
+            c.spm_next_due < current_date
+          ))::int AS overdue_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
+            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
+            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
+            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
+            c.assessment_due BETWEEN current_date AND current_date + 7 OR
+            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
+            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.co_app_date BETWEEN current_date AND current_date + 7 OR
+            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
+            c.two57_date BETWEEN current_date AND current_date + 7 OR
+            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
+            c.spm_next_due BETWEEN current_date AND current_date + 7
+          ))::int AS due_this_week_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date BETWEEN current_date AND current_date + 30
+          ))::int AS eligibility_ending_soon_clients,
+          (COUNT(*) FILTER (WHERE
+            c.last_contact_date IS NULL OR c.last_contact_date < current_date - 7
+          ))::int AS no_contact_7_days_clients
+        FROM clients c
+        WHERE ${whereSql}
+        GROUP BY c.assigned_to
+      `
+    })
+
+    return new Map(
+      rows
+        .filter((row) => row.assigned_to)
+        .map((row) => [row.assigned_to as string, row])
+    )
+  }
+
+  // Fallback: Supabase views (non-Azure environments only).
   const supabase = await createClient()
 
   let query = supabase
@@ -25,7 +123,6 @@ export async function getAssigneeSummaryMap(assignedTo?: string[]) {
     .select('*')
 
   if (assignedTo) {
-    if (assignedTo.length === 0) return new Map<string, AssigneeSummaryRow>()
     query = query.in('assigned_to', assignedTo)
   }
 
@@ -39,7 +136,54 @@ export async function getAssigneeSummaryMap(assignedTo?: string[]) {
   )
 }
 
-export async function getGlobalSummary() {
+export async function getGlobalSummary(): Promise<GlobalSummaryRow> {
+  if (isAzureConfigured()) {
+    const userId = await getSessionUserId()
+    if (!userId) return EMPTY_GLOBAL
+
+    const rows = await withRlsContext(userId, async (sql) => {
+      return await sql<GlobalSummaryRow[]>`
+        SELECT
+          COUNT(*)::int AS total_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
+            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
+            c.pos_deadline < current_date OR c.assessment_due < current_date OR
+            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
+            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
+            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
+            c.spm_next_due < current_date
+          ))::int AS overdue_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
+            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
+            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
+            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
+            c.assessment_due BETWEEN current_date AND current_date + 7 OR
+            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
+            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
+            c.co_app_date BETWEEN current_date AND current_date + 7 OR
+            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
+            c.two57_date BETWEEN current_date AND current_date + 7 OR
+            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
+            c.spm_next_due BETWEEN current_date AND current_date + 7
+          ))::int AS due_this_week_clients,
+          (COUNT(*) FILTER (WHERE
+            c.eligibility_end_date BETWEEN current_date AND current_date + 30
+          ))::int AS eligibility_ending_soon_clients,
+          (COUNT(*) FILTER (WHERE
+            c.last_contact_date IS NULL OR c.last_contact_date < current_date - 7
+          ))::int AS no_contact_7_days_clients
+        FROM clients c
+        WHERE c.is_active = true
+      `
+    })
+
+    return rows[0] ?? EMPTY_GLOBAL
+  }
+
+  // Fallback: Supabase view (non-Azure environments only).
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('client_status_summary_global')
@@ -48,11 +192,5 @@ export async function getGlobalSummary() {
 
   if (error) throw error
 
-  return (data as GlobalSummaryRow) ?? {
-    total_clients: 0,
-    overdue_clients: 0,
-    due_this_week_clients: 0,
-    eligibility_ending_soon_clients: 0,
-    no_contact_7_days_clients: 0,
-  }
+  return (data as GlobalSummaryRow) ?? EMPTY_GLOBAL
 }
