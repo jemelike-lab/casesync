@@ -1,6 +1,6 @@
 // app/api/bot-knowledge/[id]/route.ts
-// Batch D: update / delete a BLH Bot knowledge entry. Elevated roles only;
-// RLS-enforced via the caller's own session client.
+// Batch D: update / delete a BLH Bot knowledge entry. Supervisor /
+// administrator only (IT excluded); RLS-enforced via the caller's own session client.
 
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-auth'
@@ -9,7 +9,7 @@ import { validateUUID } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
-const ELEVATED = ['supervisor', 'it', 'administrator'] as const
+const KB_EDITORS = ['supervisor', 'administrator'] as const
 
 const MAX_TITLE = 120
 const MAX_CONTENT = 4000
@@ -82,7 +82,7 @@ export const PATCH = withAuth(
     invalidateBotKnowledgeCache()
     return NextResponse.json({ entry: data })
   },
-  { roles: [...ELEVATED] },
+  { roles: [...KB_EDITORS] },
 )
 
 export const DELETE = withAuth(
@@ -98,5 +98,5 @@ export const DELETE = withAuth(
     invalidateBotKnowledgeCache()
     return NextResponse.json({ ok: true })
   },
-  { roles: [...ELEVATED] },
+  { roles: [...KB_EDITORS] },
 )

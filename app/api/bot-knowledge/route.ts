@@ -1,6 +1,7 @@
 // app/api/bot-knowledge/route.ts
 // Batch D: admin CRUD for the BLH Bot knowledge base (Supabase `bot_knowledge`).
-// Elevated roles only — matches the /admin page gate. Writes go through the
+// Restricted to supervisor / administrator (IT intentionally excluded — this is
+// stricter than the /admin gate). Writes go through the
 // caller's OWN session client so Supabase RLS is enforced end to end (the
 // withAuth admin client is deliberately not used for writes here).
 
@@ -10,7 +11,7 @@ import { invalidateBotKnowledgeCache } from '@/lib/bot-knowledge'
 
 export const dynamic = 'force-dynamic'
 
-const ELEVATED = ['supervisor', 'it', 'administrator'] as const
+const KB_EDITORS = ['supervisor', 'administrator'] as const
 
 const MAX_TITLE = 120
 const MAX_CONTENT = 4000
@@ -28,7 +29,7 @@ export const GET = withAuth(
     }
     return NextResponse.json({ entries: data ?? [] })
   },
-  { roles: [...ELEVATED] },
+  { roles: [...KB_EDITORS] },
 )
 
 export const POST = withAuth(
@@ -67,5 +68,5 @@ export const POST = withAuth(
     invalidateBotKnowledgeCache()
     return NextResponse.json({ entry: data })
   },
-  { roles: [...ELEVATED] },
+  { roles: [...KB_EDITORS] },
 )

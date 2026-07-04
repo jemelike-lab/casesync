@@ -1,6 +1,7 @@
 // app/admin/bot-knowledge/page.tsx
-// Batch D: admin editor for the BLH Bot knowledge base. Gated identically to
-// /admin (supervisor / it / administrator). Content lives in Supabase
+// Batch D: admin editor for the BLH Bot knowledge base. Restricted to
+// supervisor / administrator only (stricter than /admin, which still allows
+// IT). Content lives in Supabase
 // `bot_knowledge` (non-PHI organizational guidance); the bot injects active
 // entries into its system prompt with a 60s server-side cache.
 
@@ -21,7 +22,7 @@ export default async function BotKnowledgePage() {
     .eq('id', user.id)
     .single()
 
-  if (!(profile?.role === 'supervisor' || profile?.role === 'it' || profile?.role === 'administrator')) {
+  if (!(profile?.role === 'supervisor' || profile?.role === 'administrator')) {
     redirect('/dashboard')
   }
 
