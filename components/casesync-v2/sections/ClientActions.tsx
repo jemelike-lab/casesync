@@ -263,7 +263,7 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
       )}
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 80, background: toast.type === 'success' ? '#0f5132' : '#842029', color: '#fff', padding: '10px 16px', borderRadius: 10, fontSize: 13, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+        <div className="cs-action-toast" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 80, background: toast.type === 'success' ? '#0f5132' : '#842029', color: '#fff', padding: '10px 16px', borderRadius: 10, fontSize: 13, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
           {toast.message}
         </div>
       )}

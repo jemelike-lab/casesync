@@ -1106,6 +1106,11 @@ input[type="time"] {
 
 /* ═══ Mobile PWA responsive fixes ═══ */
 @media (max-width: 768px) {
+  .cs-action-toast {
+    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    left: 16px !important;
+    right: 16px !important;
+  }
   .stat-hero-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
