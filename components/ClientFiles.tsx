@@ -198,6 +198,48 @@ function FileViewer({
 
   // Office formats render client-side from the signed URL. We lazy-load the
   // converters only when actually needed so the bundle stays small.
+  const [downloading, setDownloading] = useState(false)
+
+  // iOS standalone PWAs have no download manager: neither the download
+  // attribute nor Content-Disposition attachment produce anything the user
+  // can act on. The one mechanism that works there is the Web Share API
+  // with a file payload (share sheet -> "Save to Files"). Chain:
+  //   1. navigator.share({ files }) when available (iOS/Android PWA)
+  //   2. object-URL anchor click (desktop / Android browser)
+  //   3. attachment URL navigation (last resort)
+  const attachmentUrl = `${url}&dl=1&name=${encodeURIComponent(file.file_name)}`
+  const doDownload = async () => {
+    if (downloading) return
+    setDownloading(true)
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`fetch ${res.status}`)
+      const blob = await res.blob()
+      const shared = new File([blob], file.file_name, { type: blob.type || file.mime_type || 'application/octet-stream' })
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [shared] })) {
+        try {
+          await navigator.share({ files: [shared] })
+          return
+        } catch (err) {
+          if ((err as Error).name === 'AbortError') return // user closed the sheet
+          // NotAllowedError etc. -> fall through to object URL
+        }
+      }
+      const obj = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = obj
+      a.download = file.file_name
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(obj), 10_000)
+    } catch {
+      window.location.href = attachmentUrl
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   const [officeHtml, setOfficeHtml] = useState<string | null>(null)
   const [officeError, setOfficeError] = useState<string | null>(null)
   const [officeLoading, setOfficeLoading] = useState(false)
@@ -277,18 +319,20 @@ function FileViewer({
             {formatFileSize(file.file_size)} · {file.mime_type}
           </div>
         </div>
-        <a
-          href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
-          download={file.file_name}
+        <button
+          onClick={doDownload}
+          disabled={downloading}
+          className="cs-viewer-download"
           style={{
             background: '#1c1c1e', border: '1px solid #333336',
             borderRadius: 8, padding: '10px 14px', fontSize: 13, minHeight: 44,
             display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
-            color: '#f5f5f7', textDecoration: 'none', boxSizing: 'border-box',
+            color: '#f5f5f7', cursor: downloading ? 'wait' : 'pointer', boxSizing: 'border-box',
+            opacity: downloading ? 0.6 : 1,
           }}
         >
-          ↓ Download
-        </a>
+          ↓ {downloading ? 'Preparing…' : 'Download'}
+        </button>
         <button
           onClick={onClose}
           className="cs-viewer-close"
@@ -344,18 +388,18 @@ function FileViewer({
               <div style={{ color: '#d32f2f', padding: 20, background: '#fff4f4', borderRadius: 6 }}>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Couldn&apos;t render preview</div>
                 <div style={{ fontSize: 13 }}>{officeError}</div>
-                <a
-                  href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
-                  download={file.file_name}
+                <button
+                  onClick={doDownload}
+                  disabled={downloading}
                   style={{
                     display: 'inline-block', marginTop: 16,
-                    background: '#0a84ff', color: 'white',
+                    background: '#0a84ff', color: 'white', border: 'none', cursor: 'pointer',
                     borderRadius: 6, padding: '8px 14px',
-                    fontSize: 13, textDecoration: 'none',
+                    fontSize: 13,
                   }}
                 >
-                  ↓ Download to open locally
-                </a>
+                  ↓ {downloading ? 'Preparing…' : 'Download to open locally'}
+                </button>
               </div>
             )}
             {officeHtml && (
@@ -377,18 +421,18 @@ function FileViewer({
             <div style={{ fontSize: 13, color: '#a1a1a6', marginBottom: 20 }}>
               In-portal preview for Word and Excel files is coming next. For now, download to view.
             </div>
-            <a
-              href={`${url}&dl=1&name=${encodeURIComponent(file.file_name)}`}
-              download={file.file_name}
+            <button
+              onClick={doDownload}
+              disabled={downloading}
               style={{
                 display: 'inline-block',
-                background: '#0a84ff', color: 'white',
+                background: '#0a84ff', color: 'white', border: 'none', cursor: 'pointer',
                 borderRadius: 8, padding: '10px 20px',
-                fontSize: 14, fontWeight: 500, textDecoration: 'none',
+                fontSize: 14, fontWeight: 500,
               }}
             >
-              ↓ Download {file.file_name}
-            </a>
+              ↓ {downloading ? 'Preparing…' : `Download ${file.file_name}`}
+            </button>
           </div>
         )}
       </div>
