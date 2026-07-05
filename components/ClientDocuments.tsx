@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
+import { daysFromBusinessToday } from '@/lib/business-date'
 
 interface ClientDocument {
   id: string
@@ -90,7 +91,7 @@ function formatDate(d: string | null) {
 
 function ExpiryBadge({ expiresAt }: { expiresAt: string | null }) {
   if (!expiresAt) return null
-  const diff = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
+  const diff = daysFromBusinessToday(expiresAt) ?? 0
   if (diff < 0) {
     return <span style={{ background: 'rgba(255,69,58,0.2)', color: '#ff453a', borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 600 }}>Expired</span>
   }

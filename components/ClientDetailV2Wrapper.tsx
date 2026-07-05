@@ -46,6 +46,7 @@ import ClientEditFormV2 from '@/components/ClientEditFormV2'
 import ClientFiles from '@/components/ClientFiles'
 import type { Client, Profile } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
+import { daysFromBusinessToday } from '@/lib/business-date'
 
 interface ClientDetailV2WrapperProps {
   client: Client
@@ -84,17 +85,17 @@ const DEADLINE_FIELDS: Array<{ field: keyof Client; label: string }> = [
   { field: 'drop_in_visit_date',      label: 'Drop-in visit'      },
 ]
 
+// Business-date alignment (2026-07-05): raw ms diffs against Date.now()
+// drifted a day in the ET evening (hero said 3d while AttentionCard said 4d).
+// All day math now runs through lib/business-date.
 function daysFromNow(dateStr: string): number {
-  const t = new Date(dateStr).getTime()
-  if (isNaN(t)) return 0
-  return Math.round((t - Date.now()) / 86_400_000)
+  return daysFromBusinessToday(dateStr) ?? 0
 }
 
 function daysSinceContact(dateStr: string | null | undefined): number | null {
-  if (!dateStr) return null
-  const t = new Date(dateStr).getTime()
-  if (isNaN(t)) return null
-  return Math.max(0, Math.round((Date.now() - t) / 86_400_000))
+  const d = daysFromBusinessToday(dateStr)
+  if (d === null) return null
+  return Math.max(0, -d)
 }
 
 function findNextDeadline(client: Client): { label: string; days: number } | null {

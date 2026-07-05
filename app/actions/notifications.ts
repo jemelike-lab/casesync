@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, clientAssignedEmail } from '@/lib/email-templates'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { daysFromBusinessToday } from '@/lib/business-date'
 
 function getAdminClient() {
   return createClient(
@@ -116,11 +117,9 @@ export async function sendDeadlineEmail(
     if (!client) return { error: 'Client not found' }
 
     const clientName = `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const due = new Date(dueDate)
-    due.setHours(0, 0, 0, 0)
-    const daysUntil = Math.round((due.getTime() - today.getTime()) / 86400000)
+    // Business-date alignment (2026-07-05): server runs UTC, so the old
+    // setHours(0,0,0,0) normalization flipped "today" at 8pm ET.
+    const daysUntil = daysFromBusinessToday(dueDate) ?? 0
 
     const { subject, html } = deadlineAlertEmail({
       clientName,

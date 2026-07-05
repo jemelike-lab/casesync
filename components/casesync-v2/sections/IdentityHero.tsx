@@ -12,6 +12,7 @@
 import { Box } from '@mantine/core'
 import type { ReactNode } from 'react'
 import type { Client } from '@/lib/types'
+import { daysFromBusinessToday } from '@/lib/business-date'
 import HealthScoreRing from '@/components/HealthScoreRing'
 
 interface Props {
@@ -41,17 +42,15 @@ const DEADLINE_FIELDS: Array<keyof Client> = [
   'drop_in_visit_date',
 ]
 
+// Business-date alignment (2026-07-05): see lib/business-date.
 function daysFromNow(s: string): number {
-  const t = new Date(s).getTime()
-  if (isNaN(t)) return 0
-  return Math.round((t - Date.now()) / 86_400_000)
+  return daysFromBusinessToday(s) ?? 0
 }
 
 function daysSinceContact(s: string | null | undefined): number | null {
-  if (!s) return null
-  const t = new Date(s).getTime()
-  if (isNaN(t)) return null
-  return Math.max(0, Math.round((Date.now() - t) / 86_400_000))
+  const d = daysFromBusinessToday(s)
+  if (d === null) return null
+  return Math.max(0, -d)
 }
 
 function countUrgency(client: Client): { overdue: number; dueSoon: number } {
