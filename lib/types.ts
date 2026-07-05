@@ -398,6 +398,7 @@ const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
   'mfp_consent_date',
   'two57_date',
   'doc_mdh_date',
+  'spm_next_due',
 ]
 
 export function clientPriorityScore(client: Client): number {

@@ -6,7 +6,18 @@
 // evaluate_client_readiness bot tool. No LLM call and no schema changes: this route
 // loads the user's in-scope ACTIVE clients (role-scoped identically to search_clients
 // and evaluate_client_readiness), evaluates each, and returns a summary — the ready
-// count plus every not-ready client with its blocking gates.
+// count plus not-ready clients with their blocking gates.
+//
+// 2026-07-04 accuracy-at-scale rebuild (audit item #6):
+//   • The scan now paginates through the FULL in-scope caseload instead of a
+//     silent LIMIT 2000 — at 5k clients the old cap made supervisor/admin
+//     ready/not-ready counts simply wrong. A generous safety ceiling remains
+//     (SCAN_CEILING) and sets `truncated` if ever hit.
+//   • Signature-doc lookup joins clients in SQL instead of shipping thousands
+//     of uuids back and forth (the Supabase fallback chunks its .in() filter).
+//   • Counts are always exact; the not_ready DETAIL list is capped at
+//     NOT_READY_DETAIL_MAX (closest-to-submittable first — the card only
+//     renders a handful). `not_ready_count` is the number to display.
 //
 // "Once/day" is a front-end concern (localStorage in YourCaseAI.tsx); the route itself
 // is stateless and safe to call anytime.
@@ -22,10 +33,15 @@ import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Safety bound on rows evaluated in one request. Covers any realistic SP/TM caseload
-// in full; only a supervisor/admin/owner org-wide view could approach it, in which
-// case `truncated` is set in the payload.
-const MAX_CLIENTS = 2000
+// Page size for the caseload scan and the absolute safety ceiling. The ceiling
+// exists only to bound a pathological runaway — it is far above any realistic
+// BLH caseload, and hitting it sets `truncated: true` in the payload.
+const SCAN_PAGE = 2000
+const SCAN_CEILING = 25000
+
+// Counts are always exact; only the per-client detail list is capped (the
+// briefing card renders 4 rows and a "+N more" from not_ready_count).
+const NOT_READY_DETAIL_MAX = 50
 
 // Role scoping mirrors search_clients / evaluate_client_readiness EXACTLY so the
 // briefing can never disagree with the per-client tool. Everything not in these two
@@ -89,62 +105,90 @@ export async function GET(req: NextRequest) {
 
   const sigCats: string[] = [...SIGNATURE_CATEGORIES]
 
-  // --- Load in-scope ACTIVE clients + which of them have a signature doc ---------
+  // --- Load ALL in-scope ACTIVE clients + which of them have a signature doc ----
   let clients: ClientRow[] = []
   let sigSet = new Set<string>()
+  let truncated = false
 
   if (isAzureConfigured()) {
     const loaded = await withRlsContext(userId, async (sql) => {
       let scope = sql``
       if (SP_ROLES.has(userRole)) {
-        scope = sql`AND assigned_to = ${userId}`
+        scope = sql`AND c.assigned_to = ${userId}`
       } else if (TM_ROLES.has(userRole)) {
         const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
         const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
         ids.push(userId)
-        scope = sql`AND assigned_to = ANY(${ids}::uuid[])`
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
       }
       // supervisor / admin / owner / etc.: no scope filter (org-wide), same as search_clients.
-      const rows = await sql`SELECT id, client_id, first_name, last_name, eligibility_end_date, loc_date, pos_status, poc_date FROM clients WHERE is_active = true AND client_classification = 'real' ${scope} ORDER BY last_name ASC, first_name ASC LIMIT ${MAX_CLIENTS}`
-      const list = rows as unknown as ClientRow[]
-      const ids = list.map((c) => c.id)
-      let sig: { client_id: string }[] = []
-      if (ids.length) {
-        sig = (await sql`SELECT DISTINCT client_id FROM client_documents WHERE client_id = ANY(${ids}::uuid[]) AND category = ANY(${sigCats}::text[])`) as unknown as { client_id: string }[]
+
+      // Paginate the full caseload. Stable ORDER BY (id tiebreak) keeps pages
+      // disjoint even when names collide.
+      const list: ClientRow[] = []
+      let hitCeiling = false
+      for (let offset = 0; offset < SCAN_CEILING; offset += SCAN_PAGE) {
+        const rows = await sql`SELECT c.id, c.client_id, c.first_name, c.last_name, c.eligibility_end_date, c.loc_date, c.pos_status, c.poc_date FROM clients c WHERE c.is_active = true AND c.client_classification = 'real' ${scope} ORDER BY c.last_name ASC, c.first_name ASC, c.id ASC LIMIT ${SCAN_PAGE} OFFSET ${offset}`
+        const page = rows as unknown as ClientRow[]
+        list.push(...page)
+        if (page.length < SCAN_PAGE) break
+        if (offset + SCAN_PAGE >= SCAN_CEILING) hitCeiling = true
       }
-      return { list, sigIds: sig.map((s) => s.client_id) }
+
+      // Signature docs resolved by JOIN under the same scope — no uuid arrays
+      // over the wire.
+      const sig = (await sql`SELECT DISTINCT d.client_id FROM client_documents d JOIN clients c ON c.id = d.client_id WHERE c.is_active = true AND c.client_classification = 'real' ${scope} AND d.category = ANY(${sigCats}::text[])`) as unknown as { client_id: string }[]
+
+      return { list, sigIds: sig.map((s) => s.client_id), hitCeiling }
     })
     clients = loaded.list
     sigSet = new Set(loaded.sigIds)
+    truncated = loaded.hitCeiling
   } else {
-    let query = supabase
-      .from('clients')
-      .select(CLIENT_COLS)
-      .eq('is_active', true)
-      .eq('client_classification', 'real')
-    if (SP_ROLES.has(userRole)) {
-      query = query.eq('assigned_to', userId)
-    } else if (TM_ROLES.has(userRole)) {
+    // Fallback plane: same pagination discipline (a bare select caps at the
+    // PostgREST max-rows setting and would silently truncate).
+    let teamIds: string[] | null = null
+    if (TM_ROLES.has(userRole)) {
       const { data: teamMembers } = await supabase
         .from('profiles')
         .select('id')
         .eq('team_manager_id', userId)
-      const teamIds = (teamMembers || []).map((m: { id: string }) => m.id)
+      teamIds = (teamMembers || []).map((m: { id: string }) => m.id)
       teamIds.push(userId)
-      query = query.in('assigned_to', teamIds)
     }
-    const { data, error } = await query
-      .order('last_name', { ascending: true })
-      .order('first_name', { ascending: true })
-      .limit(MAX_CLIENTS)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    clients = (data || []) as ClientRow[]
+
+    for (let offset = 0; offset < SCAN_CEILING; offset += SCAN_PAGE) {
+      let query = supabase
+        .from('clients')
+        .select(CLIENT_COLS)
+        .eq('is_active', true)
+        .eq('client_classification', 'real')
+      if (SP_ROLES.has(userRole)) {
+        query = query.eq('assigned_to', userId)
+      } else if (teamIds) {
+        query = query.in('assigned_to', teamIds)
+      }
+      const { data, error } = await query
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+        .order('id', { ascending: true })
+        .range(offset, offset + SCAN_PAGE - 1)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      const page = (data || []) as ClientRow[]
+      clients.push(...page)
+      if (page.length < SCAN_PAGE) break
+      if (offset + SCAN_PAGE >= SCAN_CEILING) truncated = true
+    }
+
+    // Chunk the id filter — thousands of uuids in one .in() overflows the
+    // request line.
     const ids = clients.map((c) => c.id)
-    if (ids.length) {
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = ids.slice(i, i + 500)
       const { data: sigDocs } = await supabase
         .from('client_documents')
         .select('client_id')
-        .in('client_id', ids)
+        .in('client_id', chunk)
         .in('category', sigCats)
       for (const d of (sigDocs || []) as { client_id: string }[]) sigSet.add(d.client_id)
     }
@@ -193,7 +237,7 @@ export async function GET(req: NextRequest) {
     total: clients.length,
     ready_count: readyCount,
     not_ready_count: notReady.length,
-    truncated: clients.length >= MAX_CLIENTS,
-    not_ready: notReady,
+    truncated,
+    not_ready: notReady.slice(0, NOT_READY_DETAIL_MAX),
   })
 }

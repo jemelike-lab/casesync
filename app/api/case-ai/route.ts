@@ -257,7 +257,7 @@ function getPlannerOpsSummary(allClients: Record<string, unknown>[], planners: R
     const dueThisWeek = plannerClients.filter(isDueThisWeekClient).length
     const noContact7 = plannerClients.filter((client) => {
       const days = getDaysSinceContact(client.last_contact_date as string | null)
-      return days !== null && days >= 7
+      return days === null || days >= 7
     }).length
     const avgGoalPct = plannerClients.length > 0
       ? Math.round(plannerClients.reduce((sum, client) => sum + Number(client.goal_pct ?? 0), 0) / plannerClients.length)
@@ -288,6 +288,27 @@ function getPlannerOpsSummary(allClients: Record<string, unknown>[], planners: R
     }
   })
 
+  return derivePlannerOps(plannerRows)
+}
+
+type PlannerOpsRow = {
+  plannerId: string
+  plannerName: string
+  clientCount: number
+  overdue: number
+  dueThisWeek: number
+  noContact7: number
+  avgGoalPct: number
+  complianceScore: number
+  pressureScore: number
+  loadStatus: 'rebalance' | 'watch' | 'balanced'
+  topOverdueClients: string[]
+}
+
+// Shared tail of the workload summary — the donor/receiver/alert derivation is
+// planner-level and identical for both the SQL-aggregate (Azure) and row-scan
+// (fallback) paths, so it lives in exactly one place.
+function derivePlannerOps(plannerRows: PlannerOpsRow[]) {
   const donors = plannerRows
     .filter((row) => row.loadStatus === 'rebalance')
     .sort((a, b) => b.pressureScore - a.pressureScore)
@@ -304,6 +325,97 @@ function getPlannerOpsSummary(allClients: Record<string, unknown>[], planners: R
     .slice(0, 5)
 
   return { plannerRows, donors, receivers, managerAlerts }
+}
+
+// Audit item #7 (2026-07-04): the Azure path computes per-planner counts IN the
+// database instead of hauling every in-scope client row into JS on each bot
+// question. Predicates mirror the canonical 13 deadline fields and the
+// America/New_York business date, same as lib/dashboard-summary and
+// lib/db/clients-azure. Never-contacted counts as no-contact (isNoContact7Days
+// semantics).
+async function getPlannerOpsSummaryAzure(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sql: any,
+  plannerIds: string[],
+  planners: Record<string, unknown>[],
+) {
+  const agg = (await sql`
+    WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
+    SELECT
+      c.assigned_to,
+      COUNT(*)::int AS client_count,
+      COUNT(*) FILTER (WHERE c.eligibility_end_date < t.today OR c.three_month_visit_due < t.today OR c.quarterly_waiver_date < t.today OR c.med_tech_redet_date < t.today OR c.pos_deadline < t.today OR c.assessment_due < t.today OR c.thirty_day_letter_date < t.today OR c.co_financial_redet_date < t.today OR c.co_app_date < t.today OR c.mfp_consent_date < t.today OR c.two57_date < t.today OR c.doc_mdh_date < t.today OR c.spm_next_due < t.today)::int AS overdue,
+      COUNT(*) FILTER (WHERE c.eligibility_end_date BETWEEN t.today AND t.today + 7 OR c.three_month_visit_due BETWEEN t.today AND t.today + 7 OR c.quarterly_waiver_date BETWEEN t.today AND t.today + 7 OR c.med_tech_redet_date BETWEEN t.today AND t.today + 7 OR c.pos_deadline BETWEEN t.today AND t.today + 7 OR c.assessment_due BETWEEN t.today AND t.today + 7 OR c.thirty_day_letter_date BETWEEN t.today AND t.today + 7 OR c.co_financial_redet_date BETWEEN t.today AND t.today + 7 OR c.co_app_date BETWEEN t.today AND t.today + 7 OR c.mfp_consent_date BETWEEN t.today AND t.today + 7 OR c.two57_date BETWEEN t.today AND t.today + 7 OR c.doc_mdh_date BETWEEN t.today AND t.today + 7 OR c.spm_next_due BETWEEN t.today AND t.today + 7)::int AS due_this_week,
+      COUNT(*) FILTER (WHERE c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7)::int AS no_contact7,
+      COALESCE(ROUND(AVG(COALESCE(c.goal_pct, 0)))::int, 0) AS avg_goal_pct
+    FROM clients c CROSS JOIN t
+    WHERE c.is_active = true AND c.client_classification = 'real' AND c.assigned_to = ANY(${plannerIds}::uuid[])
+    GROUP BY c.assigned_to
+  `) as unknown as Array<{
+    assigned_to: string
+    client_count: number
+    overdue: number
+    due_this_week: number
+    no_contact7: number
+    avg_goal_pct: number
+  }>
+
+  const top = (await sql`
+    WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today),
+    oc AS (
+      SELECT c.assigned_to, c.last_name, c.first_name, c.client_id,
+        ((c.eligibility_end_date IS NOT NULL AND c.eligibility_end_date < t.today)::int + (c.three_month_visit_due IS NOT NULL AND c.three_month_visit_due < t.today)::int + (c.quarterly_waiver_date IS NOT NULL AND c.quarterly_waiver_date < t.today)::int + (c.med_tech_redet_date IS NOT NULL AND c.med_tech_redet_date < t.today)::int + (c.pos_deadline IS NOT NULL AND c.pos_deadline < t.today)::int + (c.assessment_due IS NOT NULL AND c.assessment_due < t.today)::int + (c.thirty_day_letter_date IS NOT NULL AND c.thirty_day_letter_date < t.today)::int + (c.co_financial_redet_date IS NOT NULL AND c.co_financial_redet_date < t.today)::int + (c.co_app_date IS NOT NULL AND c.co_app_date < t.today)::int + (c.mfp_consent_date IS NOT NULL AND c.mfp_consent_date < t.today)::int + (c.two57_date IS NOT NULL AND c.two57_date < t.today)::int + (c.doc_mdh_date IS NOT NULL AND c.doc_mdh_date < t.today)::int + (c.spm_next_due IS NOT NULL AND c.spm_next_due < t.today)::int) AS overdue_count
+      FROM clients c CROSS JOIN t
+      WHERE c.is_active = true AND c.client_classification = 'real' AND c.assigned_to = ANY(${plannerIds}::uuid[])
+    )
+    SELECT assigned_to, last_name, first_name, client_id, overdue_count FROM (
+      SELECT oc.*, ROW_NUMBER() OVER (PARTITION BY assigned_to ORDER BY overdue_count DESC, last_name ASC) AS rn
+      FROM oc WHERE overdue_count > 0
+    ) ranked WHERE rn <= 3
+  `) as unknown as Array<{
+    assigned_to: string
+    last_name: string | null
+    first_name: string | null
+    client_id: string | null
+  }>
+
+  const aggMap = new Map(agg.map((row) => [row.assigned_to, row]))
+  const topMap = new Map<string, string[]>()
+  for (const row of top) {
+    const label = `${row.last_name ?? 'Unknown'}${row.first_name ? `, ${row.first_name}` : ''} (${row.client_id ?? 'no-id'})`
+    const list = topMap.get(row.assigned_to) ?? []
+    list.push(label)
+    topMap.set(row.assigned_to, list)
+  }
+
+  const plannerRows: PlannerOpsRow[] = planners.map((planner) => {
+    const id = String(planner.id ?? '')
+    const a = aggMap.get(id)
+    const clientCount = a?.client_count ?? 0
+    const overdue = a?.overdue ?? 0
+    const dueThisWeek = a?.due_this_week ?? 0
+    const complianceScore = clientCount > 0
+      ? Math.round((clientCount - overdue) / clientCount * 100)
+      : 100
+    const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, clientCount - 35)
+    const loadStatus: PlannerOpsRow['loadStatus'] =
+      pressureScore >= 12 ? 'rebalance' : pressureScore >= 6 ? 'watch' : 'balanced'
+    return {
+      plannerId: id,
+      plannerName: String(planner.full_name ?? 'Unknown'),
+      clientCount,
+      overdue,
+      dueThisWeek,
+      noContact7: a?.no_contact7 ?? 0,
+      avgGoalPct: a?.avg_goal_pct ?? 0,
+      complianceScore,
+      pressureScore,
+      loadStatus,
+      topOverdueClients: topMap.get(id) ?? [],
+    }
+  })
+
+  return derivePlannerOps(plannerRows)
 }
 
 function formatPlannerOpsContext(summary: ReturnType<typeof getPlannerOpsSummary>): string {
@@ -1639,8 +1751,7 @@ async function executeGetPlannerWorkload(
         : await sql`SELECT id, full_name FROM profiles WHERE role IN ('supports_planner', 'case_manager', 'team_manager')`
       const plannerIds = (planners as unknown as { id: string }[]).map((p) => p.id)
       if (plannerIds.length === 0) return JSON.stringify({ error: 'No planners found in your scope' })
-      const clients = await sql`SELECT id, client_id, first_name, last_name, assigned_to, last_contact_date, goal_pct, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due FROM clients WHERE is_active = true AND client_classification = 'real' AND assigned_to = ANY(${plannerIds}::uuid[])`
-      const summary = getPlannerOpsSummary(clients as unknown as Record<string, unknown>[], planners as unknown as Record<string, unknown>[])
+      const summary = await getPlannerOpsSummaryAzure(sql, plannerIds, planners as unknown as Record<string, unknown>[])
       return formatPlannerOpsContext(summary)
     });
   }
@@ -1772,10 +1883,12 @@ async function executeCaseloadStats(
   userRole: string,
   userId: string
 ) {
-  let rows: Record<string, unknown>[];
   if (isAzureConfigured()) {
+    // Audit item #7 (2026-07-04): counts run IN the database on the
+    // America/New_York business date — no more hauling every in-scope row
+    // into JS per bot question.
     try {
-      rows = await withRlsContext(userId, async (sql) => {
+      return await withRlsContext(userId, async (sql) => {
         let scope = sql``
         if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
           scope = sql`AND assigned_to = ${userId}`
@@ -1785,13 +1898,58 @@ async function executeCaseloadStats(
           ids.push(userId)
           scope = sql`AND assigned_to = ANY(${ids}::uuid[])`
         }
-        const r = await sql`SELECT id, eligibility_end_date, pos_deadline, assessment_due, loc_date, med_tech_redet_date, spm_next_due, quarterly_waiver_date, three_month_visit_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, is_active FROM clients WHERE is_active = true AND client_classification = 'real' ${scope}`
-        return r as unknown as Record<string, unknown>[]
+        const rows = await sql`
+          WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
+          SELECT
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE pos_deadline < t.today)::int AS pos_deadline,
+            COUNT(*) FILTER (WHERE assessment_due < t.today)::int AS assessment_due,
+            COUNT(*) FILTER (WHERE eligibility_end_date < t.today)::int AS eligibility_end_date,
+            COUNT(*) FILTER (WHERE loc_date < t.today)::int AS loc_date,
+            COUNT(*) FILTER (WHERE med_tech_redet_date < t.today)::int AS med_tech_redet_date,
+            COUNT(*) FILTER (WHERE spm_next_due < t.today)::int AS spm_next_due,
+            COUNT(*) FILTER (WHERE quarterly_waiver_date < t.today)::int AS quarterly_waiver_date,
+            COUNT(*) FILTER (WHERE three_month_visit_due < t.today)::int AS three_month_visit_due,
+            COUNT(*) FILTER (WHERE thirty_day_letter_date < t.today)::int AS thirty_day_letter_date,
+            COUNT(*) FILTER (WHERE co_financial_redet_date < t.today)::int AS co_financial_redet_date,
+            COUNT(*) FILTER (WHERE co_app_date < t.today)::int AS co_app_date,
+            COUNT(*) FILTER (WHERE mfp_consent_date < t.today)::int AS mfp_consent_date,
+            COUNT(*) FILTER (WHERE two57_date < t.today)::int AS two57_date,
+            COUNT(*) FILTER (WHERE doc_mdh_date < t.today)::int AS doc_mdh_date,
+            COUNT(*) FILTER (WHERE eligibility_end_date BETWEEN t.today AND t.today + 30)::int AS elig_30,
+            COUNT(*) FILTER (WHERE eligibility_end_date BETWEEN t.today AND t.today + 60)::int AS elig_60,
+            COUNT(*) FILTER (WHERE eligibility_end_date BETWEEN t.today AND t.today + 90)::int AS elig_90
+          FROM clients CROSS JOIN t
+          WHERE is_active = true AND client_classification = 'real' ${scope}
+        `
+        const agg = (rows as unknown as Record<string, number>[])[0] ?? {}
+        const overdueFieldsSql = [
+          'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
+          'med_tech_redet_date', 'spm_next_due', 'quarterly_waiver_date',
+          'three_month_visit_due', 'thirty_day_letter_date', 'co_financial_redet_date',
+          'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date'
+        ];
+        const overdueCountsSql: Record<string, number> = {}
+        for (const f of overdueFieldsSql) overdueCountsSql[f] = Number(agg[f] ?? 0)
+        return JSON.stringify({
+          total: Number(agg.total ?? 0),
+          active: Number(agg.total ?? 0),
+          overdue_counts: overdueCountsSql,
+          eligibility_expiring: {
+            within_30_days: Number(agg.elig_30 ?? 0),
+            within_60_days: Number(agg.elig_60 ?? 0),
+            within_90_days: Number(agg.elig_90 ?? 0),
+          },
+        })
       })
     } catch (fetchErr) {
       return JSON.stringify({ error: (fetchErr as Error).message });
     }
-  } else {
+  }
+
+  // Fallback plane (non-Azure environments): fetch rows and count in JS.
+  let rows: Record<string, unknown>[];
+  {
     // Pre-fetch team IDs if needed (can't do async inside query builder fn)
     let teamIds: string[] | null = null
     if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {

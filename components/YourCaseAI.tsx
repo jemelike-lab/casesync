@@ -1097,7 +1097,7 @@ export default function BLHAssistant() {
                       {briefing.total === 0
                         ? 'No active clients in your caseload yet.'
                         : `${briefing.ready_count} of ${briefing.total} ready to submit · ${briefing.not_ready_count} need attention`}
-                      {briefing.truncated ? ' (first 2,000)' : ''}
+                      {briefing.truncated ? ' (partial scan)' : ''}
                     </div>
                     {briefing.not_ready.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1126,9 +1126,9 @@ export default function BLHAssistant() {
                             </span>
                           </button>
                         ))}
-                        {briefing.not_ready.length > 4 && (
+                        {briefing.not_ready_count > 4 && (
                           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', paddingLeft: 2 }}>
-                            +{briefing.not_ready.length - 4} more
+                            +{briefing.not_ready_count - 4} more
                           </div>
                         )}
                       </div>
