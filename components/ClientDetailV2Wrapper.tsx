@@ -25,6 +25,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Container, Group, Paper, Stack, Text } from '@mantine/core'
 import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
@@ -288,9 +289,13 @@ function Breadcrumb({ client }: { client: Client }) {
   return (
     <Group gap={6} mb={14} align="center" wrap="nowrap">
       <ArrowLeft size={14} style={{ color: 'var(--v2-text-muted)', flexShrink: 0 }} />
-      <Text fz={12} c="var(--v2-text-muted)">Dashboard</Text>
+      <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+        <Text fz={12} c="var(--v2-text-muted)" style={{ cursor: 'pointer' }} className="cs-crumb-link">Dashboard</Text>
+      </Link>
       <Text fz={12} c="var(--v2-text-muted)">/</Text>
-      <Text fz={12} c="var(--v2-text-muted)">Clients</Text>
+      <Link href="/team?filter=all" style={{ textDecoration: 'none' }}>
+        <Text fz={12} c="var(--v2-text-muted)" style={{ cursor: 'pointer' }} className="cs-crumb-link">Clients</Text>
+      </Link>
       <Text fz={12} c="var(--v2-text-muted)">/</Text>
       <Text fz={12} c="var(--v2-text)" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {client.first_name} {client.last_name}
