@@ -2471,7 +2471,12 @@ RULES:
     clearTimeout(timeoutId)
 
     // Check if the model wants to use a tool
-    const toolUseBlock = pass1Data.content.find((b: { type: string }) => b.type === 'tool_use')
+    // Parallel tool-use fix (2026-07-05): the model may emit SEVERAL
+    // tool_use blocks in one assistant turn; the API requires a matching
+    // tool_result for EVERY id in the next message. Answering only the
+    // first block 400s the follow-up call (surfaced as 502s on the AI rail).
+    const toolUseBlocks = pass1Data.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
+    const toolUseBlock = toolUseBlocks[0]
     const toolsUsed: string[] = []
 
     // Server-validated action proposal captured by the propose_* executor for
@@ -2481,51 +2486,40 @@ RULES:
 
     let finalText = ''
 
-    if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
-      // Execute the requested tool
-      toolsUsed.push(toolUseBlock.name)
-      console.log('[Casey] Executing tool:', toolUseBlock.name, 'input:', JSON.stringify(toolUseBlock.input))
-      let toolResult = ''
-
+    const runCaseyTool = async (name: string, input: any): Promise<string> => {
       try {
-        if (toolUseBlock.name === 'search_clients') {
-          toolResult = await executeSearchClients(supabase, toolUseBlock.input, userRole, userId)
-        } else if (toolUseBlock.name === 'get_caseload_stats') {
-          toolResult = await executeCaseloadStats(supabase, userRole, userId)
-        } else if (toolUseBlock.name === 'get_client_notes') {
-          toolResult = await executeGetClientNotes(supabase, toolUseBlock.input, userRole, userId)
-        } else if (toolUseBlock.name === 'get_client_files') {
-          toolResult = await executeGetClientFiles(supabase, toolUseBlock.input, userRole, userId)
-        } else if (toolUseBlock.name === 'compute_deadline') {
-          toolResult = executeComputeDeadline(toolUseBlock.input)
-        } else if (toolUseBlock.name === 'get_assignment_history') {
-          toolResult = await executeGetAssignmentHistory(supabase, toolUseBlock.input, userRole, userId)
-        } else if (toolUseBlock.name === 'get_planner_workload') {
-          toolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
-        } else if (toolUseBlock.name === 'evaluate_client_readiness') {
-          toolResult = await executeEvaluateClientReadiness(supabase, toolUseBlock.input, userRole, userId)
-        } else if (toolUseBlock.name === 'propose_log_contact' || toolUseBlock.name === 'propose_add_note' || toolUseBlock.name === 'propose_update_date') {
-          toolResult = await executeProposeAction(supabase, toolUseBlock.name, toolUseBlock.input, userRole, userId, proposalHolder)
-        } else {
-          toolResult = JSON.stringify({ error: 'Unknown tool: ' + toolUseBlock.name })
+        if (name === 'search_clients') return await executeSearchClients(supabase, input, userRole, userId)
+        if (name === 'get_caseload_stats') return await executeCaseloadStats(supabase, userRole, userId)
+        if (name === 'get_client_notes') return await executeGetClientNotes(supabase, input, userRole, userId)
+        if (name === 'get_client_files') return await executeGetClientFiles(supabase, input, userRole, userId)
+        if (name === 'compute_deadline') return executeComputeDeadline(input)
+        if (name === 'get_assignment_history') return await executeGetAssignmentHistory(supabase, input, userRole, userId)
+        if (name === 'get_planner_workload') return await executeGetPlannerWorkload(supabase, userRole, userId)
+        if (name === 'evaluate_client_readiness') return await executeEvaluateClientReadiness(supabase, input, userRole, userId)
+        if (name === 'propose_log_contact' || name === 'propose_add_note' || name === 'propose_update_date') {
+          return await executeProposeAction(supabase, name, input, userRole, userId, proposalHolder)
         }
+        return JSON.stringify({ error: 'Unknown tool: ' + name })
       } catch (toolErr) {
         console.error('Tool execution error:', toolErr)
-        toolResult = JSON.stringify({ error: 'Tool execution failed' })
+        return JSON.stringify({ error: 'Tool execution failed' })
+      }
+    }
+
+    if (toolUseBlock && toolUseBlock.name && toolUseBlock.input) {
+      // Execute ALL requested tools and answer every tool_use id.
+      const pass1Results: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = []
+      for (const blk of toolUseBlocks) {
+        toolsUsed.push(blk.name)
+        console.log('[Casey] Executing tool:', blk.name, 'input:', JSON.stringify(blk.input))
+        pass1Results.push({ type: 'tool_result', tool_use_id: blk.id, content: await runCaseyTool(blk.name, blk.input) })
       }
 
       // ---- Tool loop: execute tools until the model gives a text-only response ----
       let loopMessages = [
         ...formattedMessages,
         { role: 'assistant' as const, content: pass1Data.content },
-        {
-          role: 'user' as const,
-          content: [{
-            type: 'tool_result' as const,
-            tool_use_id: toolUseBlock.id,
-            content: toolResult,
-          }],
-        },
+        { role: 'user' as const, content: pass1Results },
       ]
 
       const MAX_TOOL_ROUNDS = 5
@@ -2555,9 +2549,9 @@ RULES:
           }
 
           const loopData = await loopRes.json() as typeof pass1Data
-          const nextToolUse = loopData.content.find((b: { type: string }) => b.type === 'tool_use')
+          const nextToolUses = loopData.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
 
-          if (!nextToolUse || !nextToolUse.name || !nextToolUse.input) {
+          if (nextToolUses.length === 0) {
             // No more tool calls — extract final text and return
             const finalAnswer = loopData.content
               .filter((b: { type: string }) => b.type === 'text')
@@ -2577,49 +2571,19 @@ RULES:
             })
           }
 
-          // Execute the next tool
-          toolsUsed.push(nextToolUse.name)
-          console.log(`[Casey] Tool loop round ${round + 2}: ${nextToolUse.name}`)
-          let nextToolResult = ''
-          try {
-            if (nextToolUse.name === 'search_clients') {
-              nextToolResult = await executeSearchClients(supabase, nextToolUse.input, userRole, userId)
-            } else if (nextToolUse.name === 'get_caseload_stats') {
-              nextToolResult = await executeCaseloadStats(supabase, userRole, userId)
-            } else if (nextToolUse.name === 'get_client_notes') {
-              nextToolResult = await executeGetClientNotes(supabase, nextToolUse.input, userRole, userId)
-            } else if (nextToolUse.name === 'get_client_files') {
-              nextToolResult = await executeGetClientFiles(supabase, nextToolUse.input, userRole, userId)
-            } else if (nextToolUse.name === 'compute_deadline') {
-              nextToolResult = executeComputeDeadline(nextToolUse.input)
-            } else if (nextToolUse.name === 'get_assignment_history') {
-              nextToolResult = await executeGetAssignmentHistory(supabase, nextToolUse.input, userRole, userId)
-            } else if (nextToolUse.name === 'get_planner_workload') {
-              nextToolResult = await executeGetPlannerWorkload(supabase, userRole, userId)
-            } else if (nextToolUse.name === 'evaluate_client_readiness') {
-              nextToolResult = await executeEvaluateClientReadiness(supabase, nextToolUse.input, userRole, userId)
-            } else if (nextToolUse.name === 'propose_log_contact' || nextToolUse.name === 'propose_add_note' || nextToolUse.name === 'propose_update_date') {
-              nextToolResult = await executeProposeAction(supabase, nextToolUse.name, nextToolUse.input, userRole, userId, proposalHolder)
-            } else {
-              nextToolResult = JSON.stringify({ error: 'Unknown tool: ' + nextToolUse.name })
-            }
-          } catch (toolErr) {
-            console.error('Tool loop execution error:', toolErr)
-            nextToolResult = JSON.stringify({ error: 'Tool execution failed' })
+          // Execute ALL requested tools this round and answer every id.
+          const roundResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = []
+          for (const blk of nextToolUses) {
+            toolsUsed.push(blk.name)
+            console.log(`[Casey] Tool loop round ${round + 2}: ${blk.name}`)
+            roundResults.push({ type: 'tool_result', tool_use_id: blk.id, content: await runCaseyTool(blk.name, blk.input) })
           }
 
           // Append this round to the conversation and continue the loop
           loopMessages = [
             ...loopMessages,
             { role: 'assistant' as const, content: loopData.content },
-            {
-              role: 'user' as const,
-              content: [{
-                type: 'tool_result' as const,
-                tool_use_id: nextToolUse.id,
-                content: nextToolResult,
-              }],
-            },
+            { role: 'user' as const, content: roundResults },
           ]
         } catch (loopErr) {
           clearTimeout(loopTimeout)
