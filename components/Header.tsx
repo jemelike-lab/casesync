@@ -31,7 +31,7 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
         fontWeight: 600,
         color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
         textDecoration: 'none',
-        padding: 'clamp(3px, 0.3vw, 6px) clamp(5px, 0.6vw, 12px)',
+        padding: 'clamp(3px, 0.3vw, 6px) clamp(5px, 0.52vw, 12px)',
         borderRadius: 6,
         background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
         transition: 'all 0.15s',
@@ -105,7 +105,7 @@ export default function Header({ user, profile }: Props) {
           </div>
 
           {/* Nav links - desktop only */}
-          <nav style={{ display: 'flex', gap: 'clamp(1px, 0.3vw, 4px)' }} className="desktop-nav">
+          <nav style={{ display: 'flex', gap: 'clamp(1px, 0.22vw, 4px)' }} className="desktop-nav">
             <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
