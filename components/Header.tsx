@@ -149,7 +149,7 @@ export default function Header({ user, profile }: Props) {
         </div>
 
         {/* Right: global search + Help & Tour + theme toggle + notifications + user info + logout */}
-        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
+        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 0.5vw, 8px)', minWidth: 0, flexShrink: 1 }}>
           <div className="desktop-only" style={{ minWidth: 0, flex: '0 3 clamp(140px, 24vw, 340px)', maxWidth: 420 }}>
             <GlobalSearch userId={user.id} profile={profile} />
           </div>
@@ -249,6 +249,12 @@ export default function Header({ user, profile }: Props) {
            still hides below 1280 to buy space. */
         @media (max-width: 1280px) {
           .header-user-meta { display: none !important; }
+        }
+        /* Below 1440 the Help & Tour text collapses to its icon (aria-label
+           and title keep it accessible); buys ~75px so the full nav keeps
+           fitting as clamp() scales the pills. */
+        @media (max-width: 1440px) {
+          .desktop-nav-label { display: none; }
         }
 
         @media (max-width: 640px) {
