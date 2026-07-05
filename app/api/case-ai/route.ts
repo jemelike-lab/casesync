@@ -266,7 +266,7 @@ function getPlannerOpsSummary(allClients: Record<string, unknown>[], planners: R
       ? Math.round(plannerClients.filter((client) => getOverdueCount(client) === 0).length / plannerClients.length * 100)
       : 100
     const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, plannerClients.length - 35)
-    const loadStatus = pressureScore >= 12 ? 'rebalance' : pressureScore >= 6 ? 'watch' : 'balanced'
+    const loadStatus: PlannerOpsRow['loadStatus'] = pressureScore >= 12 ? 'rebalance' : pressureScore >= 6 ? 'watch' : 'balanced'
     const topOverdueClients = plannerClients
       .filter((client) => getOverdueCount(client) > 0)
       .sort((a, b) => getOverdueCount(b) - getOverdueCount(a))
