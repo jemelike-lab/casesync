@@ -27,11 +27,11 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
         // Fluid scaling (2026-07-05): font and padding track viewport width
         // continuously so links shrink smoothly instead of clipping mid-word
         // between the old 1280/1080 breakpoints.
-        fontSize: 'clamp(11px, 0.95vw, 13px)',
+        fontSize: 'clamp(10.5px, 0.85vw, 13px)',
         fontWeight: 600,
         color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
         textDecoration: 'none',
-        padding: 'clamp(4px, 0.4vw, 6px) clamp(6px, 0.85vw, 12px)',
+        padding: 'clamp(3px, 0.3vw, 6px) clamp(5px, 0.6vw, 12px)',
         borderRadius: 6,
         background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
         transition: 'all 0.15s',
@@ -101,7 +101,7 @@ export default function Header({ user, profile }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 0.9vw, 12px)', minWidth: 0, flex: '1 1 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
             <img src="/logo.png" alt="BLH" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-            <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: 'nowrap', color: '#FFFFFF', letterSpacing: '-0.01em' }}>CaseSync</span>
+            <span style={{ fontSize: 'clamp(15px, 1.25vw, 17px)', fontWeight: 700, whiteSpace: 'nowrap', color: '#FFFFFF', letterSpacing: '-0.01em' }}>CaseSync</span>
           </div>
 
           {/* Nav links - desktop only */}
@@ -126,11 +126,11 @@ export default function Header({ user, profile }: Props) {
               href="/w/dashboard"
               data-tour="workryn-button"
               style={{
-                fontSize: 'clamp(10.5px, 0.9vw, 12px)',
+                fontSize: 'clamp(10px, 0.8vw, 12px)',
                 fontWeight: 600,
                 color: '#E0E7FF',
                 textDecoration: 'none',
-                padding: 'clamp(4px, 0.4vw, 6px) clamp(6px, 0.85vw, 12px)',
+                padding: 'clamp(3px, 0.3vw, 6px) clamp(5px, 0.6vw, 12px)',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 borderRadius: 6,
@@ -150,7 +150,7 @@ export default function Header({ user, profile }: Props) {
 
         {/* Right: global search + Help & Tour + theme toggle + notifications + user info + logout */}
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
-          <div className="desktop-only" style={{ minWidth: 0, flex: '1 3 clamp(120px, 22vw, 320px)', maxWidth: 420 }}>
+          <div className="desktop-only" style={{ minWidth: 0, flex: '0 3 clamp(140px, 24vw, 340px)', maxWidth: 420 }}>
             <GlobalSearch userId={user.id} profile={profile} />
           </div>
           {/* Help & Tour button */}
