@@ -6,6 +6,7 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, c
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { Client, Profile } from '@/lib/types'
+import { businessTodayStr, businessTodayEpoch, dateStrToEpoch, DAY_MS } from '@/lib/business-date'
 import { createClient } from '@/lib/supabase/client'
 
 interface Props {
@@ -347,29 +348,23 @@ export default function TransferBoardClient({ clients: initialClients, planners 
     }
 
     function isClientOverdue(client: Client) {
-      const today = new Date().toISOString().split('T')[0]
+      const today = businessTodayStr()
       return getClientDates(client).some(date => date < today)
     }
 
     function isClientDueSoon(client: Client) {
-      const today = new Date()
-      const start = new Date(today)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(start)
-      end.setDate(end.getDate() + 7)
+      const startEpoch = businessTodayEpoch()
+      const endEpoch = startEpoch + 7 * DAY_MS
       return getClientDates(client).some(date => {
-        const d = new Date(date)
-        return d >= start && d <= end
+        const epoch = dateStrToEpoch(date)
+        return epoch !== null && epoch >= startEpoch && epoch <= endEpoch
       })
     }
 
     function daysSinceContact(client: Client) {
-      if (!client.last_contact_date) return null
-      const last = new Date(client.last_contact_date)
-      if (Number.isNaN(last.getTime())) return null
-      const today = new Date()
-      const diffMs = today.getTime() - last.getTime()
-      return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+      const lastEpoch = dateStrToEpoch(client.last_contact_date)
+      if (lastEpoch === null) return null
+      return Math.round((businessTodayEpoch() - lastEpoch) / DAY_MS)
     }
 
     function donorCategoryPressure(client: Client) {

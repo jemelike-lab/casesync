@@ -13,6 +13,8 @@
 // Pure and framework-free so both the Casey tool (evaluate_client_readiness) and
 // the once-a-day briefing card can call it without duplicating the rules.
 
+import { businessTodayEpoch } from './business-date'
+
 export type GateStatus = 'pass' | 'fail'
 
 export interface ReadinessGate {
@@ -80,7 +82,9 @@ export function evaluateReadiness(
   hasSignatureDoc: boolean,
   now: Date = new Date()
 ): ReadinessResult {
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  // "Today" is the America/New_York business date — gates must agree with
+  // the dashboard SQL and client-list badges, not the server's UTC clock.
+  const today = businessTodayEpoch(now)
   const gates: ReadinessGate[] = []
 
   // 1 — Medicaid active. eligibility_end_date must be today or later. Missing = fail.

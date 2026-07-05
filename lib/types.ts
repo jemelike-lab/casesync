@@ -1,3 +1,5 @@
+import { businessTodayStr, businessTodayEpoch, dateStrToEpoch, dateToBusinessStr, DAY_MS } from './business-date'
+
 export type Role = 'supports_planner' | 'team_manager' | 'supervisor' | 'it' | 'administrator' | 'admin_assistant'
 export type Category = 'co' | 'cfc' | 'cpas'
 
@@ -201,13 +203,12 @@ export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
-  // Use date-only comparison to match DB view logic (current_date is date-only)
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)  // midnight local
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())  // midnight local
-  const diffMs = date.getTime() - today.getTime()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+  // Date-only comparison anchored to the America/New_York business day —
+  // the same anchor as the dashboard SQL ((now() at time zone
+  // 'America/New_York')::date), so badges and counters never disagree.
+  const dateEpoch = dateStrToEpoch(dateStr)
+  if (dateEpoch === null) return 'none'
+  const diffDays = Math.round((dateEpoch - businessTodayEpoch()) / DAY_MS)
 
   if (diffDays < -14) return 'critical'  // 14+ days overdue — pulsing red
   if (diffDays < 0) return 'red'          // 1-14 days overdue
@@ -222,7 +223,7 @@ export function getDateStatus(dateStr: string | null): StatusLevel {
  */
 export function getUrgencyTier(dueDate: Date | string | null): UrgencyTier | 'none' {
   if (!dueDate) return 'none'
-  const dateStr = typeof dueDate === 'string' ? dueDate : dueDate.toISOString().split('T')[0]
+  const dateStr = typeof dueDate === 'string' ? dueDate : dateToBusinessStr(dueDate)
   return getDateStatus(dateStr)
 }
 
@@ -248,12 +249,9 @@ export const URGENCY_COLORS_RGB: Record<StatusLevel, string> = {
 
 export function getSpmDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const diffMs = date.getTime() - today.getTime()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+  const dateEpoch = dateStrToEpoch(dateStr)
+  if (dateEpoch === null) return 'none'
+  const diffDays = Math.round((dateEpoch - businessTodayEpoch()) / DAY_MS)
 
   if (diffDays < -14) return 'critical'
   if (diffDays < 0) return 'red'
@@ -264,11 +262,19 @@ export function getSpmDateStatus(dateStr: string | null): StatusLevel {
 
 export function getDaysSinceContact(dateStr: string | null): number | null {
   if (!dateStr) return null
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  return Math.round((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const dateEpoch = dateStrToEpoch(dateStr)
+  if (dateEpoch === null) return null
+  return Math.round((businessTodayEpoch() - dateEpoch) / DAY_MS)
+}
+
+/**
+ * Canonical "no contact in 7+ days": never-contacted counts as no-contact.
+ * Must match the no_contact SQL aggregates (last_contact_date IS NULL OR
+ * last_contact_date <= business_today - 7).
+ */
+export function isNoContact7Days(client: Client): boolean {
+  const days = getDaysSinceContact(client.last_contact_date)
+  return days === null || days >= 7
 }
 
 export function isOverdue(client: Client): boolean {
@@ -310,7 +316,7 @@ export function isDueToday(client: Client): boolean {
     client.spm_next_due,
   ]
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = businessTodayStr()
   return datesToCheck.some(d => d === today)
 }
 
@@ -353,22 +359,24 @@ export function isDueNext14Days(client: Client): boolean {
     client.spm_next_due,
   ]
 
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const in14 = new Date(today)
-  in14.setDate(in14.getDate() + 14)
+  const todayEpoch = businessTodayEpoch()
+  const in14Epoch = todayEpoch + 14 * DAY_MS
 
   return datesToCheck.some((d) => {
-    if (!d) return false
-    const [y, m, day] = d.split('-').map(Number)
-    const date = new Date(y, m - 1, day)
-    return date >= today && date <= in14
+    const epoch = dateStrToEpoch(d)
+    return epoch !== null && epoch >= todayEpoch && epoch <= in14Epoch
   })
 }
 
+// Canonical "eligibility ending soon": within the next 30 days (inclusive of
+// today), NOT already expired — expired eligibility belongs to isOverdue.
+// Must stay in lockstep with the eligibility_soon / eligibility_ending_soon
+// SQL aggregates in lib/db/clients-azure.ts and lib/dashboard-summary.ts.
 export function isEligibilityEndingSoon(client: Client): boolean {
-  const s = getDateStatus(client.eligibility_end_date)
-  return s === 'yellow' || s === 'orange' || s === 'red' || s === 'critical'
+  const epoch = dateStrToEpoch(client.eligibility_end_date)
+  if (epoch === null) return false
+  const diffDays = Math.round((epoch - businessTodayEpoch()) / DAY_MS)
+  return diffDays >= 0 && diffDays <= 30
 }
 
 export function formatDate(dateStr: string | null): string {
@@ -468,14 +476,14 @@ export function getClientHealthScore(client: Client): number {
     { key: 'spm_next_due', label: 'SPM Next Due' },
   ]
 
-  const now = new Date()
+  const todayEpoch = businessTodayEpoch()
 
   for (const { key } of datesToCheck) {
     const d = client[key] as string | null
     if (!d) continue
-    const date = new Date(d)
-    const diffMs = date.getTime() - now.getTime()
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    const dateEpoch = dateStrToEpoch(d)
+    if (dateEpoch === null) continue
+    const diffDays = Math.round((dateEpoch - todayEpoch) / DAY_MS)
 
     if (diffDays < -14) {
       score -= 25 // critically overdue (14+ days)

@@ -2,6 +2,7 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { businessTodayStr } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,10 +20,6 @@ const DEADLINE_FIELDS = [
   { key: 'two57_date', label: '257 Date' },
   { key: 'doc_mdh_date', label: 'MDH Documentation' },
 ] as const
-
-function toDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
 
 function getUrgency(dateStr: string, todayKey: string) {
   if (dateStr === todayKey) return 'today'
@@ -149,9 +146,9 @@ export async function GET(req: Request) {
       data = res.data ?? []
     }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayKey = toDateKey(today)
+    // America/New_York business date — server-local (UTC) rolled the calendar
+    // "today" marker a day forward every evening ET.
+    const todayKey = businessTodayStr()
 
     const events = [] as Array<{
       clientId: string

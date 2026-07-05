@@ -9,6 +9,7 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 import { ensureConversation, persistExchange } from '@/lib/bot-persistence'
 import { getBotKnowledgeSection } from '@/lib/bot-knowledge'
+import { businessTodayStr, businessDateOffsetStr } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Allow up to 60s for multi-tool bot conversations
@@ -1234,10 +1235,9 @@ async function executeSearchClients(
       }
       let eligFrag = sql``
       if (input.eligibility_ending_within_days) {
-        const today = new Date();
-        const future = new Date(today);
-        future.setDate(future.getDate() + Number(input.eligibility_ending_within_days));
-        eligFrag = sql`AND eligibility_end_date >= ${today.toISOString().split('T')[0]} AND eligibility_end_date <= ${future.toISOString().split('T')[0]}`
+        const todayStr = businessTodayStr();
+        const futureStr = businessDateOffsetStr(Number(input.eligibility_ending_within_days));
+        eligFrag = sql`AND eligibility_end_date >= ${todayStr} AND eligibility_end_date <= ${futureStr}`
       }
       let catFrag = sql``
       if (input.category) {
@@ -1258,7 +1258,7 @@ async function executeSearchClients(
         ]);
         const field = String(input.overdue_field);
         if (validFields.has(field)) {
-          overdueFrag = sql`AND ${sql(field)} < ${new Date().toISOString().split('T')[0]} AND ${sql(field)} IS NOT NULL`
+          overdueFrag = sql`AND ${sql(field)} < ${businessTodayStr()} AND ${sql(field)} IS NOT NULL`
         }
       }
       let assignedFrag = sql``
@@ -1292,11 +1292,8 @@ async function executeSearchClients(
   // SUPERVISOR, ADMIN, OWNER see all - no filter needed
 
   if (input.eligibility_ending_within_days) {
-    const today = new Date();
-    const future = new Date(today);
-    future.setDate(future.getDate() + Number(input.eligibility_ending_within_days));
-    query = query.gte('eligibility_end_date', today.toISOString().split('T')[0])
-                 .lte('eligibility_end_date', future.toISOString().split('T')[0]);
+    query = query.gte('eligibility_end_date', businessTodayStr())
+                 .lte('eligibility_end_date', businessDateOffsetStr(Number(input.eligibility_ending_within_days)));
   }
 
   if (input.category) {
@@ -1317,7 +1314,7 @@ async function executeSearchClients(
     ]);
     const field = String(input.overdue_field);
     if (validFields.has(field)) {
-      query = query.lt(field, new Date().toISOString().split('T')[0]).not(field, 'is', null);
+      query = query.lt(field, businessTodayStr()).not(field, 'is', null);
     }
   }
 
@@ -1822,10 +1819,10 @@ async function executeCaseloadStats(
       return JSON.stringify({ error: (fetchErr as Error).message });
     }
   }
-  const today = new Date().toISOString().split('T')[0];
-  const d30 = new Date(); d30.setDate(d30.getDate() + 30);
-  const d60 = new Date(); d60.setDate(d60.getDate() + 60);
-  const d90 = new Date(); d90.setDate(d90.getDate() + 90);
+  const today = businessTodayStr();
+  const d30 = businessDateOffsetStr(30);
+  const d60 = businessDateOffsetStr(60);
+  const d90 = businessDateOffsetStr(90);
 
   const overdueFields = [
     'pos_deadline', 'assessment_due', 'eligibility_end_date', 'loc_date',
@@ -1840,9 +1837,9 @@ async function executeCaseloadStats(
   }
 
   const eligExpiring = {
-    within_30_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d30.toISOString().split('T')[0]).length,
-    within_60_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d60.toISOString().split('T')[0]).length,
-    within_90_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d90.toISOString().split('T')[0]).length,
+    within_30_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d30).length,
+    within_60_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d60).length,
+    within_90_days: rows.filter((r: Record<string, unknown>) => r.eligibility_end_date && String(r.eligibility_end_date) >= today && String(r.eligibility_end_date) <= d90).length,
   };
 
   return JSON.stringify({

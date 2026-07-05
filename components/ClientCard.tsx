@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useRef, useCallback } from 'react'
 import { Client, getDateStatus, getDaysSinceContact, getSpmDateStatus, StatusLevel, formatDate, getRiskLevel, getOverdueCount, getClientHealthScore, URGENCY_COLORS_RGB } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
+import { businessTodayStr } from '@/lib/business-date'
 import StatusDot from './StatusDot'
 import HealthScoreRing from './HealthScoreRing'
 
@@ -109,7 +110,7 @@ function ContactModal({ onClose, onSave }: {
   onClose: () => void
   onSave: (date: string, type: string, note: string) => void
 }) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(businessTodayStr())
   const [type, setType] = useState('Phone')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)

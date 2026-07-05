@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid
 } from 'recharts'
-import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact, getOverdueCount, formatDate } from '@/lib/types'
+import { Client, Profile, SavedViewRecord, isOverdue, isDueToday, isDueThisWeek, isDueNext14Days, getRiskLevel, getDateStatus, getClientHealthScore, getDaysSinceContact, isNoContact7Days, getOverdueCount, formatDate } from '@/lib/types'
 import { scrollToElement } from '@/lib/scroll'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
@@ -134,10 +134,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
       dueToday: statsSource.filter(isDueToday).length,
       dueThisWeek: statsSource.filter(isDueThisWeek).length,
       dueNext14Days: statsSource.filter(client => isDueNext14Days(client) && !isOverdue(client) && !isDueToday(client) && !isDueThisWeek(client)).length,
-      noContact7: statsSource.filter(client => {
-        const days = getDaysSinceContact(client.last_contact_date)
-        return days !== null && days >= 7
-      }).length,
+      noContact7: statsSource.filter(isNoContact7Days).length,
     }
   }, [clients, allScopedClients])
 
@@ -148,11 +145,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
     if (activeFilter === 'due_today') return source.filter(isDueToday)
     if (activeFilter === 'due_this_week') return source.filter(isDueThisWeek)
     if (activeFilter === 'due_next_14_days') return source.filter(c => isDueNext14Days(c) && !isOverdue(c) && !isDueToday(c) && !isDueThisWeek(c))
-    if (activeFilter === 'no_contact_7') return source.filter(c => {
-      if (!c.last_contact_date) return true
-      const days = getDaysSinceContact(c.last_contact_date)
-      return days !== null && days >= 7
-    })
+    if (activeFilter === 'no_contact_7') return source.filter(isNoContact7Days)
     return source
   }, [clients, allScopedClients, activeFilter])
 

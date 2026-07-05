@@ -2,6 +2,7 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { businessDateOffsetStr } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,11 +22,11 @@ const DEADLINE_FIELDS = [
   'spm_next_due',
 ] as const
 
+// Next-7-days agenda keys anchored to the America/New_York business date —
+// deriving them from server-local UTC shifted the window a day early every
+// evening ET.
 function dateKey(offsetDays: number) {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + offsetDays)
-  return date.toISOString().split('T')[0]
+  return businessDateOffsetStr(offsetDays)
 }
 
 export async function GET(req: Request) {

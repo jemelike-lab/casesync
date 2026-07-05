@@ -19,6 +19,7 @@ import {
   isDueToday,
   isEligibilityEndingSoon,
   getDaysSinceContact,
+  isNoContact7Days,
   clientPriorityScore,
   sortClients,
   formatDate,
@@ -440,11 +441,7 @@ function SupervisorOverviewStrip({
 }) {
   const overdue = clients.filter(isOverdue).length
   const dueThisWeek = clients.filter(isDueThisWeek).length
-  const quiet = clients.filter(c => {
-    if (!c.last_contact_date) return true
-    const days = getDaysSinceContact(c.last_contact_date)
-    return days !== null && days > 7
-  }).length
+  const quiet = clients.filter(isNoContact7Days).length
   const unassignedPlanners = planners.filter(p => !p.team_manager_id).length
 
   return (
@@ -505,11 +502,7 @@ function TeamManagerSummaryTable({
     const managerClients = clients.filter(c => c.assigned_to && managerPlannerIds.has(c.assigned_to))
     const overdue = managerClients.filter(isOverdue).length
     const dueThisWeek = managerClients.filter(isDueThisWeek).length
-    const quiet = managerClients.filter(c => {
-      if (!c.last_contact_date) return true
-      const days = getDaysSinceContact(c.last_contact_date)
-      return days !== null && days > 7
-    }).length
+    const quiet = managerClients.filter(isNoContact7Days).length
     const plannerQuery = managerPlanners.map(planner => `planner=${encodeURIComponent(planner.id)}`).join('&')
     const managerScopedBase = plannerQuery ? `/team?full=1&${plannerQuery}` : '/team?full=1'
 
@@ -1188,10 +1181,7 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
           overdue: (payload.clients ?? []).filter(isOverdue).length,
           dueThisWeek: (payload.clients ?? []).filter(isDueThisWeek).length,
           eligibilitySoon: (payload.clients ?? []).filter(isEligibilityEndingSoon).length,
-          noContact: (payload.clients ?? []).filter(c => {
-            const d = getDaysSinceContact(c.last_contact_date)
-            return d !== null && d >= 7
-          }).length,
+          noContact: (payload.clients ?? []).filter(isNoContact7Days).length,
         }
         setSummaryStats(rawSummary)
         setFullSummaryStats(payload.fullSummary ?? rawSummary)

@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { auditLog } from '@/lib/audit'
+import { businessTodayStr, businessDateOffsetStr } from '@/lib/business-date'
 import {
   SAFE_EXPORT_SELECT,
   SAFE_EXPORT_HEADERS,
@@ -55,8 +56,8 @@ export async function GET(req: Request) {
     let data: any[] = []
     if (isAzureConfigured()) {
       data = await withRlsContext(userId, async (sql) => {
-        const now = new Date().toISOString().split('T')[0]
-        const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        const now = businessTodayStr()
+        const weekLater = businessDateOffsetStr(7)
         const cols = canSeePhi
           ? sql`c.id, c.client_id, c.first_name, c.last_name, c.category, c.eligibility_code, c.eligibility_end_date, c.assigned_to, c.last_contact_date, c.last_contact_type, c.goal_pct, c.pos_status, c.assessment_due, c.spm_next_due, c.three_month_visit_due, c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline, c.thirty_day_letter_date, c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date, c.loc_date, c.drop_in_visit_date, c.is_active, c.client_classification`
           : sql`c.id, c.category, c.eligibility_end_date, c.assigned_to, c.last_contact_date, c.last_contact_type, c.goal_pct, c.pos_status, c.assessment_due, c.spm_next_due, c.three_month_visit_due, c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline, c.thirty_day_letter_date, c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date, c.loc_date, c.drop_in_visit_date, c.is_active, c.client_classification`
@@ -123,8 +124,8 @@ export async function GET(req: Request) {
         query = query.eq('assigned_to', assignedTo)
       }
 
-      const now = new Date().toISOString().split('T')[0]
-      const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const now = businessTodayStr()
+      const weekLater = businessDateOffsetStr(7)
 
       if (deadlineDate) {
         query = query.or([

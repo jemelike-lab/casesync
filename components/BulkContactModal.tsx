@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Client, formatDate } from '@/lib/types'
+import { businessTodayStr } from '@/lib/business-date'
 
 interface Props {
   clients: Client[]
@@ -12,7 +13,7 @@ interface Props {
 const CONTACT_TYPES = ['Phone', 'Home Visit', 'Email', 'Office Visit', 'Video']
 
 export default function BulkContactModal({ clients, onClose, onSuccess }: Props) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(businessTodayStr())
   const [type, setType] = useState('Phone')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)

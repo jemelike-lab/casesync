@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { auditLog } from '@/lib/audit'
 import { sanitizeSearchParam } from '@/lib/validation'
+import { businessTodayStr, businessDateOffsetStr } from '@/lib/business-date'
 import {
   SAFE_EXPORT_SELECT,
   SAFE_EXPORT_HEADERS,
@@ -70,9 +71,9 @@ export async function GET(req: NextRequest) {
 
   let clients: any[] = []
   if (isAzureConfigured()) {
-    const today = new Date().toISOString().split('T')[0]
-    const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    const today = businessTodayStr()
+    const weekFromNow = businessDateOffsetStr(7)
+    const sevenDaysAgo = businessDateOffsetStr(-7)
     try {
       clients = await withRlsContext(user.id, async (sql) => {
         const cols = canSeePhi
@@ -164,9 +165,9 @@ export async function GET(req: NextRequest) {
       if (s) query = query.ilike('category', `%${s}%`)
     }
 
-    const today = new Date().toISOString().split('T')[0]
-    const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    const today = businessTodayStr()
+    const weekFromNow = businessDateOffsetStr(7)
+    const sevenDaysAgo = businessDateOffsetStr(-7)
 
     // Must match the 13 deadline fields in lib/types.ts isOverdue/isDueThisWeek.
     // Fix 2026-05-22: spm_next_due was missing — caused export filter counts
