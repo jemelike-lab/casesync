@@ -22,6 +22,10 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
  *     (migration 030 semantics).
  *   - no_contact_7_days: never contacted OR last contact more than 7 days
  *     ago (migration 030 semantics).
+ *   - 2026-07-04 audit: aggregates count client_classification = 'real' only
+ *     (matching the cron, agenda, bot tools, and briefing), and "today" is
+ *     the America/New_York business date — the bare Postgres today-value is
+ *     UTC on Azure and flipped counts a day early every evening ET.
  */
 
 export interface AssigneeSummaryRow {
@@ -66,43 +70,44 @@ export async function getAssigneeSummaryMap(assignedTo?: string[]) {
 
     const rows = await withRlsContext(userId, async (sql) => {
       const whereSql = assignedTo
-        ? sql`c.is_active = true AND c.assigned_to = ANY(${assignedTo}::uuid[])`
-        : sql`c.is_active = true AND c.assigned_to IS NOT NULL`
+        ? sql`c.is_active = true AND c.client_classification = 'real' AND c.assigned_to = ANY(${assignedTo}::uuid[])`
+        : sql`c.is_active = true AND c.client_classification = 'real' AND c.assigned_to IS NOT NULL`
       return await sql<AssigneeSummaryRow[]>`
+        WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
         SELECT
           c.assigned_to,
           COUNT(*)::int AS total_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
-            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
-            c.pos_deadline < current_date OR c.assessment_due < current_date OR
-            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
-            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
-            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
-            c.spm_next_due < current_date
+            c.eligibility_end_date < t.today OR c.three_month_visit_due < t.today OR
+            c.quarterly_waiver_date < t.today OR c.med_tech_redet_date < t.today OR
+            c.pos_deadline < t.today OR c.assessment_due < t.today OR
+            c.thirty_day_letter_date < t.today OR c.co_financial_redet_date < t.today OR
+            c.co_app_date < t.today OR c.mfp_consent_date < t.today OR
+            c.two57_date < t.today OR c.doc_mdh_date < t.today OR
+            c.spm_next_due < t.today
           ))::int AS overdue_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
-            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
-            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
-            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
-            c.assessment_due BETWEEN current_date AND current_date + 7 OR
-            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
-            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.co_app_date BETWEEN current_date AND current_date + 7 OR
-            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
-            c.two57_date BETWEEN current_date AND current_date + 7 OR
-            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
-            c.spm_next_due BETWEEN current_date AND current_date + 7
+            c.eligibility_end_date BETWEEN t.today AND t.today + 7 OR
+            c.three_month_visit_due BETWEEN t.today AND t.today + 7 OR
+            c.quarterly_waiver_date BETWEEN t.today AND t.today + 7 OR
+            c.med_tech_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.pos_deadline BETWEEN t.today AND t.today + 7 OR
+            c.assessment_due BETWEEN t.today AND t.today + 7 OR
+            c.thirty_day_letter_date BETWEEN t.today AND t.today + 7 OR
+            c.co_financial_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.co_app_date BETWEEN t.today AND t.today + 7 OR
+            c.mfp_consent_date BETWEEN t.today AND t.today + 7 OR
+            c.two57_date BETWEEN t.today AND t.today + 7 OR
+            c.doc_mdh_date BETWEEN t.today AND t.today + 7 OR
+            c.spm_next_due BETWEEN t.today AND t.today + 7
           ))::int AS due_this_week_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date BETWEEN current_date AND current_date + 30
+            c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date < current_date - 7
+            c.last_contact_date IS NULL OR c.last_contact_date < t.today - 7
           ))::int AS no_contact_7_days_clients
-        FROM clients c
+        FROM clients c CROSS JOIN t
         WHERE ${whereSql}
         GROUP BY c.assigned_to
       `
@@ -143,40 +148,41 @@ export async function getGlobalSummary(): Promise<GlobalSummaryRow> {
 
     const rows = await withRlsContext(userId, async (sql) => {
       return await sql<GlobalSummaryRow[]>`
+        WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
         SELECT
           COUNT(*)::int AS total_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
-            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
-            c.pos_deadline < current_date OR c.assessment_due < current_date OR
-            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
-            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
-            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
-            c.spm_next_due < current_date
+            c.eligibility_end_date < t.today OR c.three_month_visit_due < t.today OR
+            c.quarterly_waiver_date < t.today OR c.med_tech_redet_date < t.today OR
+            c.pos_deadline < t.today OR c.assessment_due < t.today OR
+            c.thirty_day_letter_date < t.today OR c.co_financial_redet_date < t.today OR
+            c.co_app_date < t.today OR c.mfp_consent_date < t.today OR
+            c.two57_date < t.today OR c.doc_mdh_date < t.today OR
+            c.spm_next_due < t.today
           ))::int AS overdue_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
-            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
-            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
-            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
-            c.assessment_due BETWEEN current_date AND current_date + 7 OR
-            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
-            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.co_app_date BETWEEN current_date AND current_date + 7 OR
-            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
-            c.two57_date BETWEEN current_date AND current_date + 7 OR
-            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
-            c.spm_next_due BETWEEN current_date AND current_date + 7
+            c.eligibility_end_date BETWEEN t.today AND t.today + 7 OR
+            c.three_month_visit_due BETWEEN t.today AND t.today + 7 OR
+            c.quarterly_waiver_date BETWEEN t.today AND t.today + 7 OR
+            c.med_tech_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.pos_deadline BETWEEN t.today AND t.today + 7 OR
+            c.assessment_due BETWEEN t.today AND t.today + 7 OR
+            c.thirty_day_letter_date BETWEEN t.today AND t.today + 7 OR
+            c.co_financial_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.co_app_date BETWEEN t.today AND t.today + 7 OR
+            c.mfp_consent_date BETWEEN t.today AND t.today + 7 OR
+            c.two57_date BETWEEN t.today AND t.today + 7 OR
+            c.doc_mdh_date BETWEEN t.today AND t.today + 7 OR
+            c.spm_next_due BETWEEN t.today AND t.today + 7
           ))::int AS due_this_week_clients,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date BETWEEN current_date AND current_date + 30
+            c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date < current_date - 7
+            c.last_contact_date IS NULL OR c.last_contact_date < t.today - 7
           ))::int AS no_contact_7_days_clients
-        FROM clients c
-        WHERE c.is_active = true
+        FROM clients c CROSS JOIN t
+        WHERE c.is_active = true AND c.client_classification = 'real'
       `
     })
 

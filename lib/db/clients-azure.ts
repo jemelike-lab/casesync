@@ -191,18 +191,22 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       `
 
       // 3) Full-scope summary stats (scope + is_active only, no filter/search).
-      const fullScopeSql = sql`c.is_active = true AND ${scope}`
+      const fullScopeSql = sql`c.is_active = true AND c.client_classification = 'real' AND ${scope}`
 
       // Org-wide summary stats as a single in-DB aggregate. Previously this
       // SELECTed every in-scope client row (all columns) and counted them in JS
       // on every request — for a supervisor that meant dragging the whole
       // clients table over the wire each time, which did not survive concurrency.
       // The bucket thresholds below mirror lib/types exactly:
-      //   getDateStatus(): red/critical => date < today; orange/yellow => date
-      //   within [today, today+7]. So isOverdue => any tracked deadline < today;
-      //   isDueThisWeek => any tracked deadline within today..today+7;
-      //   isEligibilityEndingSoon => eligibility_end_date <= today+7;
-      //   getDaysSinceContact >= 7 => last_contact_date <= today-7.
+      //   isOverdue => any tracked deadline < today; isDueThisWeek => any tracked
+      //   deadline within today..today+7; isEligibilityEndingSoon =>
+      //   eligibility_end_date within today..today+30 (expired belongs to
+      //   overdue, not "soon"); isNoContact7Days => never contacted OR
+      //   last_contact_date <= today-7. "today" is the America/New_York
+      //   business date (t.today via CTE) — same anchor as lib/business-date
+      //   and lib/dashboard-summary. Counts are client_classification = 'real'
+      //   only; test/drill clients stay visible in the list rows but never
+      //   inflate compliance stats.
       const summaryRows = await sql<
         {
           total: number
@@ -212,35 +216,36 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
           no_contact: number
         }[]
       >`
+        WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
         SELECT
           COUNT(*)::int AS total,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date < current_date OR c.three_month_visit_due < current_date OR
-            c.quarterly_waiver_date < current_date OR c.med_tech_redet_date < current_date OR
-            c.pos_deadline < current_date OR c.assessment_due < current_date OR
-            c.thirty_day_letter_date < current_date OR c.co_financial_redet_date < current_date OR
-            c.co_app_date < current_date OR c.mfp_consent_date < current_date OR
-            c.two57_date < current_date OR c.doc_mdh_date < current_date OR
-            c.spm_next_due < current_date
+            c.eligibility_end_date < t.today OR c.three_month_visit_due < t.today OR
+            c.quarterly_waiver_date < t.today OR c.med_tech_redet_date < t.today OR
+            c.pos_deadline < t.today OR c.assessment_due < t.today OR
+            c.thirty_day_letter_date < t.today OR c.co_financial_redet_date < t.today OR
+            c.co_app_date < t.today OR c.mfp_consent_date < t.today OR
+            c.two57_date < t.today OR c.doc_mdh_date < t.today OR
+            c.spm_next_due < t.today
           ))::int AS overdue,
           (COUNT(*) FILTER (WHERE
-            c.eligibility_end_date BETWEEN current_date AND current_date + 7 OR
-            c.three_month_visit_due BETWEEN current_date AND current_date + 7 OR
-            c.quarterly_waiver_date BETWEEN current_date AND current_date + 7 OR
-            c.med_tech_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.pos_deadline BETWEEN current_date AND current_date + 7 OR
-            c.assessment_due BETWEEN current_date AND current_date + 7 OR
-            c.thirty_day_letter_date BETWEEN current_date AND current_date + 7 OR
-            c.co_financial_redet_date BETWEEN current_date AND current_date + 7 OR
-            c.co_app_date BETWEEN current_date AND current_date + 7 OR
-            c.mfp_consent_date BETWEEN current_date AND current_date + 7 OR
-            c.two57_date BETWEEN current_date AND current_date + 7 OR
-            c.doc_mdh_date BETWEEN current_date AND current_date + 7 OR
-            c.spm_next_due BETWEEN current_date AND current_date + 7
+            c.eligibility_end_date BETWEEN t.today AND t.today + 7 OR
+            c.three_month_visit_due BETWEEN t.today AND t.today + 7 OR
+            c.quarterly_waiver_date BETWEEN t.today AND t.today + 7 OR
+            c.med_tech_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.pos_deadline BETWEEN t.today AND t.today + 7 OR
+            c.assessment_due BETWEEN t.today AND t.today + 7 OR
+            c.thirty_day_letter_date BETWEEN t.today AND t.today + 7 OR
+            c.co_financial_redet_date BETWEEN t.today AND t.today + 7 OR
+            c.co_app_date BETWEEN t.today AND t.today + 7 OR
+            c.mfp_consent_date BETWEEN t.today AND t.today + 7 OR
+            c.two57_date BETWEEN t.today AND t.today + 7 OR
+            c.doc_mdh_date BETWEEN t.today AND t.today + 7 OR
+            c.spm_next_due BETWEEN t.today AND t.today + 7
           ))::int AS due_this_week,
-          (COUNT(*) FILTER (WHERE c.eligibility_end_date <= current_date + 7))::int AS eligibility_soon,
-          (COUNT(*) FILTER (WHERE c.last_contact_date <= current_date - 7))::int AS no_contact
-        FROM clients c
+          (COUNT(*) FILTER (WHERE c.eligibility_end_date BETWEEN t.today AND t.today + 30))::int AS eligibility_soon,
+          (COUNT(*) FILTER (WHERE c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7))::int AS no_contact
+        FROM clients c CROSS JOIN t
         WHERE ${fullScopeSql}
       `
 
