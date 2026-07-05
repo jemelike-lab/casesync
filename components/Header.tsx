@@ -22,18 +22,24 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
   return (
     <Link
       href={href}
+      className="nav-pill"
       style={{
-        fontSize: 13,
+        // Fluid scaling (2026-07-05): font and padding track viewport width
+        // continuously so links shrink smoothly instead of clipping mid-word
+        // between the old 1280/1080 breakpoints.
+        fontSize: 'clamp(11px, 0.95vw, 13px)',
         fontWeight: 600,
         color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
         textDecoration: 'none',
-        padding: '6px 12px',
+        padding: 'clamp(4px, 0.4vw, 6px) clamp(6px, 0.85vw, 12px)',
         borderRadius: 6,
         background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
         transition: 'all 0.15s',
         minHeight: 44,
         display: 'flex',
         alignItems: 'center',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}
     >
       {label}
@@ -92,14 +98,14 @@ export default function Header({ user, profile }: Props) {
         backdropFilter: 'blur(12px)',
       }}>
         {/* Left: Logo + nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 0.9vw, 12px)', minWidth: 0, flex: '1 1 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
             <img src="/logo.png" alt="BLH" style={{ width: 36, height: 36, objectFit: 'contain' }} />
             <span style={{ fontSize: 17, fontWeight: 700, whiteSpace: 'nowrap', color: '#FFFFFF', letterSpacing: '-0.01em' }}>CaseSync</span>
           </div>
 
           {/* Nav links - desktop only */}
-          <nav style={{ display: 'flex', gap: 4 }} className="desktop-nav">
+          <nav style={{ display: 'flex', gap: 'clamp(1px, 0.3vw, 4px)' }} className="desktop-nav">
             <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
@@ -120,11 +126,13 @@ export default function Header({ user, profile }: Props) {
               href="/w/dashboard"
               data-tour="workryn-button"
               style={{
-                fontSize: 12,
+                fontSize: 'clamp(10.5px, 0.9vw, 12px)',
                 fontWeight: 600,
                 color: '#E0E7FF',
                 textDecoration: 'none',
-                padding: '6px 12px',
+                padding: 'clamp(4px, 0.4vw, 6px) clamp(6px, 0.85vw, 12px)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
                 borderRadius: 6,
                 background: 'rgba(199,210,254,0.18)',
                 border: '1px solid rgba(199,210,254,0.45)',
@@ -142,7 +150,7 @@ export default function Header({ user, profile }: Props) {
 
         {/* Right: global search + Help & Tour + theme toggle + notifications + user info + logout */}
         <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
-          <div className="desktop-only" style={{ minWidth: 0, flex: '1 1 320px', maxWidth: 420 }}>
+          <div className="desktop-only" style={{ minWidth: 0, flex: '1 3 clamp(120px, 22vw, 320px)', maxWidth: 420 }}>
             <GlobalSearch userId={user.id} profile={profile} />
           </div>
           {/* Help & Tour button */}
@@ -235,13 +243,12 @@ export default function Header({ user, profile }: Props) {
         }
         .desktop-nav::-webkit-scrollbar { display: none; }
 
+        /* Fluid scaling (2026-07-05): continuous clamp() sizing on the nav
+           pills replaces the old 1280/1080 step-downs, which left dead zones
+           where links clipped mid-word ("Settings" -> "Set"). The user meta
+           still hides below 1280 to buy space. */
         @media (max-width: 1280px) {
           .header-user-meta { display: none !important; }
-          .desktop-only { flex-basis: 220px !important; }
-        }
-        @media (max-width: 1080px) {
-          .desktop-nav a { padding: 6px 8px !important; font-size: 11.5px !important; }
-          .desktop-only { flex-basis: 150px !important; }
         }
 
         @media (max-width: 640px) {
