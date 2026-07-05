@@ -2475,7 +2475,7 @@ RULES:
     // tool_use blocks in one assistant turn; the API requires a matching
     // tool_result for EVERY id in the next message. Answering only the
     // first block 400s the follow-up call (surfaced as 502s on the AI rail).
-    const toolUseBlocks = pass1Data.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
+    const toolUseBlocks: Array<{ id: string; name: string; input: any }> = pass1Data.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
     const toolUseBlock = toolUseBlocks[0]
     const toolsUsed: string[] = []
 
@@ -2549,7 +2549,7 @@ RULES:
           }
 
           const loopData = await loopRes.json() as typeof pass1Data
-          const nextToolUses = loopData.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
+          const nextToolUses: Array<{ id: string; name: string; input: any }> = loopData.content.filter((b: any) => b.type === 'tool_use' && b.name && b.input)
 
           if (nextToolUses.length === 0) {
             // No more tool calls — extract final text and return
