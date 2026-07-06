@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { getInviteExpiryIso } from '@/lib/invites'
+import { upsertAzureIdentity } from '@/lib/db/identity-sync'
 
 function createAdminClient() {
   return createSupabaseAdminClient(
@@ -143,6 +144,17 @@ export async function acceptInvite(_prevState: any, formData: FormData) {
 
   if (profileError) {
     return { error: profileError.message }
+  }
+
+  // Azure identity shim: without this row the new user resolves to role NULL
+  // on the PHI data plane and sees zero clients (2026-07-06 launch finding).
+  const { data: freshProfile } = await admin
+    .from('profiles')
+    .select('id, full_name, role, team_manager_id')
+    .eq('id', userId)
+    .single()
+  if (freshProfile) {
+    await upsertAzureIdentity(freshProfile)
   }
 
   const { error: inviteUpdateError } = await admin

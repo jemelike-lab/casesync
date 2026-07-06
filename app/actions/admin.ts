@@ -11,6 +11,7 @@ import { brandedInviteEmail, inviteReminderEmail } from '@/lib/email-templates'
 import { buildAcceptInviteUrl, generateInviteToken, getInviteExpiryIso } from '@/lib/invites'
 import { getGuideAttachmentForRole } from '@/lib/guides/attachments'
 import { isSupervisorLike } from '@/lib/roles'
+import { upsertAzureIdentity, deleteAzureIdentity } from '@/lib/db/identity-sync'
 
 // Admin Supabase client uses service role key for deterministic server-side writes
 function createAdminClient() {
@@ -24,6 +25,18 @@ function createAdminClient() {
       },
     }
   )
+}
+
+// Mirror a (possibly changed) Supabase profile into the Azure identity shim.
+// Reads via the service-role client so RLS can never hide the row.
+async function syncIdentityFromSupabase(userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, full_name, role, team_manager_id')
+    .eq('id', userId)
+    .single()
+  if (data) await upsertAzureIdentity(data)
 }
 
 async function getCurrentUserId() {
@@ -131,6 +144,8 @@ export async function inviteUser(email: string, role: string, fullName: string) 
       role,
       team_manager_id: null,
     })
+
+    await syncIdentityFromSupabase(existingAuthUser.id)
   }
 
   const inviteRecord = {
@@ -284,6 +299,8 @@ export async function removePendingInvite(inviteId: string, email?: string) {
 
     if (profileDeleteError) return { error: profileDeleteError.message }
 
+    await deleteAzureIdentity(userId)
+
     const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
     if (authDeleteError) return { error: authDeleteError.message }
   }
@@ -308,6 +325,7 @@ export async function updateUserRole(userId: string, role: string) {
   )
   const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
   if (error) return { error: error.message }
+  await syncIdentityFromSupabase(userId)
   return { success: true }
 }
 
@@ -317,6 +335,7 @@ export async function updateTeamManagerAssignment(userId: string, teamManagerId:
   const supabase = createAdminClient()
   const { error } = await supabase.from('profiles').update({ team_manager_id: teamManagerId }).eq('id', userId)
   if (error) return { error: error.message }
+  await syncIdentityFromSupabase(userId)
   return { success: true }
 }
 
@@ -392,6 +411,8 @@ export async function removeUser(userId: string) {
     .eq('id', userId)
 
   if (profileError) return { error: profileError.message }
+
+  await deleteAzureIdentity(userId)
 
   const { error: authError } = await supabase.auth.admin.deleteUser(userId)
   if (authError) return { error: authError.message }
