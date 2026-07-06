@@ -58,12 +58,18 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   // object the team components expect.
   if (isAzureConfigured()) {
     const wantAll = isSupervisorLike(profile.role) && view === 'transfer'
-    if (wantAll || plannerIds.length > 0) {
+    // Unassigned clients (assigned_to IS NULL) must stay visible to
+    // team-managing roles: during onboarding whole caseloads are unassigned,
+    // and in steady state an unassigned+overdue client is the highest-risk
+    // state there is. This page is gated to canManageTeam, so the NULL pool
+    // is always in scope here. (2026-07-06: dashboard drill-down showed 0
+    // rows while the stat cards counted 53, because the pool excluded them.)
+    {
       const rows = await withRlsContext(user.id, async (sql) => {
         if (wantAll) {
           return await sql`SELECT c.*, p.full_name AS assigned_full_name FROM clients c LEFT JOIN profiles p ON p.id = c.assigned_to WHERE c.is_active = true ORDER BY c.last_name`
         }
-        return await sql`SELECT c.*, p.full_name AS assigned_full_name FROM clients c LEFT JOIN profiles p ON p.id = c.assigned_to WHERE c.is_active = true AND c.assigned_to = ANY(${plannerIds}::uuid[]) ORDER BY c.last_name`
+        return await sql`SELECT c.*, p.full_name AS assigned_full_name FROM clients c LEFT JOIN profiles p ON p.id = c.assigned_to WHERE c.is_active = true AND (c.assigned_to = ANY(${plannerIds}::uuid[]) OR c.assigned_to IS NULL) ORDER BY c.last_name`
       })
       clients = (rows as Record<string, unknown>[]).map(({ assigned_full_name, ...c }) => ({
         ...c,
@@ -72,8 +78,13 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     }
   } else if (isSupervisorLike(profile.role) && view === 'transfer') {
     { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).order('last_name'); clients = data ?? [] }
-  } else if (plannerIds.length > 0) {
-    { const { data } = await supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true).in('assigned_to', plannerIds).order('last_name'); clients = data ?? [] }
+  } else {
+    const base = supabase.from('clients').select('*, profiles!clients_assigned_to_fkey(full_name)').eq('is_active', true)
+    const scoped = plannerIds.length > 0
+      ? base.or(`assigned_to.in.(${plannerIds.join(',')}),assigned_to.is.null`)
+      : base.is('assigned_to', null)
+    const { data } = await scoped.order('last_name')
+    clients = data ?? []
   }
 
   const plannerFilters = Array.isArray(derivedPlanner) ? derivedPlanner.filter(Boolean) : derivedPlanner ? [derivedPlanner] : []
