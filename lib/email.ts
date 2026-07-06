@@ -22,6 +22,39 @@ export async function sendEmail({
   html: string
   attachments?: { filename: string; content: string }[]
 }) {
+  const key = process.env.RESEND_API_KEY
+  if (!key) {
+    throw new Error('Missing RESEND_API_KEY')
+  }
+
+  // RESEND_REST_FOR_ATTACHMENTS: the Resend SDK applies a recursive payload
+  // transform that overflows the call stack on large base64 attachment
+  // strings (RangeError observed in prod, 2026-07-06). For sends WITH
+  // attachments we call the Resend REST API directly with JSON.stringify,
+  // which handles large strings without recursion. All attachment-free
+  // sends keep the SDK path unchanged.
+  if (attachments && attachments.length) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to,
+        subject,
+        html,
+        attachments,
+      }),
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`Resend REST ${res.status}: ${body.slice(0, 300)}`)
+    }
+    return res.json()
+  }
+
   const resend = getResend()
   if (!resend) {
     throw new Error('Missing RESEND_API_KEY')
@@ -32,6 +65,5 @@ export async function sendEmail({
     to,
     subject,
     html,
-    ...(attachments && attachments.length ? { attachments } : {}),
   })
 }
