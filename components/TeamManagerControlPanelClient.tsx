@@ -112,10 +112,13 @@ interface KpiTileProps {
   gradient: string
   shadowColor: string
   subtitle?: string
+  href?: string
 }
 
-function KpiTile({ label, value, icon, gradient, shadowColor, subtitle }: KpiTileProps) {
-  return (
+/* IDEMPOTENT_KPI_HREF */
+function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: KpiTileProps) {
+  const [kpiHovered, setKpiHovered] = useState(false)
+  const tile = (
     <Paper
       p="lg"
       style={{
@@ -157,6 +160,23 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle }: KpiTil
         </Box>
       </Group>
     </Paper>
+  )
+  if (!href) return tile
+  return (
+    <Link
+      href={href}
+      style={{
+        textDecoration: 'none',
+        display: 'block',
+        cursor: 'pointer',
+        transform: kpiHovered ? 'translateY(-2px)' : 'none',
+        transition: 'transform 0.2s ease',
+      }}
+      onMouseEnter={() => setKpiHovered(true)}
+      onMouseLeave={() => setKpiHovered(false)}
+    >
+      {tile}
+    </Link>
   )
 }
 
@@ -951,6 +971,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
               label="My Caseload"
+              href="/team?filter=all"
               value={scopedSummary.total_clients}
               subtitle={`${planners.length} SP${planners.length === 1 ? '' : 's'}`}
               icon={<Users size={20} color="#fff" />}
@@ -961,6 +982,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
               label="Overdue"
+              href="/team?filter=overdue"
               value={scopedSummary.overdue_clients}
               subtitle="needs follow-up"
               icon={<AlertTriangle size={20} color="#fff" />}
@@ -971,6 +993,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
               label="Due This Week"
+              href="/team?filter=due_this_week"
               value={scopedSummary.due_this_week_clients}
               subtitle="in next 7 days"
               icon={<Clock size={20} color="#fff" />}
@@ -981,6 +1004,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
               label="No Contact 7+"
+              href="/team?filter=no_contact_7"
               value={scopedSummary.no_contact_7_days_clients}
               subtitle="in last 7 days"
               icon={<PhoneOff size={20} color="#fff" />}
