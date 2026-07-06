@@ -34,12 +34,13 @@ export async function GET(req: NextRequest) {
     const sortDir = (searchParams.get('sortDir') ?? 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc'
     const deadlineDate = searchParams.get('deadlineDate') ?? ''
 
-    // Phase 3 (Azure slice): when CASESYNC_DATABASE_URL is set (Preview), route the
-    // common reads through the Azure data path. Only category filters with no specific
-    // deadlineDate are handled there; deadline-derived filters stay on Supabase below.
-    // Production has no such env var, so this guard is inert and Supabase is unchanged.
-    const AZURE_FILTERS = new Set(['all', 'co', 'cfc', 'cpas'])
-    if (isAzureConfigured() && !deadlineDate && AZURE_FILTERS.has(filter)) {
+    // Azure data plane (live in production since the 2026-06-28 Entra cutover):
+    // ALL client reads route through Azure, including deadline-derived filters
+    // and calendar deadlineDate clicks (added 2026-07-06 - these previously
+    // fell through to the abandoned Supabase table and returned 0 rows).
+    // The Supabase path below survives only as the non-Azure dev fallback.
+    const AZURE_FILTERS = new Set(['all', 'co', 'cfc', 'cpas', 'overdue', 'due_today', 'due_this_week', 'due_next_14_days'])
+    if (isAzureConfigured() && (AZURE_FILTERS.has(filter) || deadlineDate)) {
       return await handleClientsViaAzure(req)
     }
 

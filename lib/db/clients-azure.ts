@@ -12,6 +12,7 @@ import {
 } from '@/lib/types'
 import { auditBulkAccess } from '@/lib/audit'
 import { sanitizeSearchParam } from '@/lib/validation'
+import { businessTodayStr } from '@/lib/business-date'
 
 /**
  * Phase 3 — Azure data path for GET /api/clients.
@@ -56,6 +57,8 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
     const search = searchParams.get('search') ?? ''
     const assignedTo = searchParams.get('assignedTo') ?? ''
     const SORT_FIELDS = new Set(['goal_pct', 'last_contact_date', 'eligibility_end_date'])
+    const deadlineDateRaw = searchParams.get('deadlineDate') ?? ''
+    const deadlineDate = /^\d{4}-\d{2}-\d{2}$/.test(deadlineDateRaw) ? deadlineDateRaw : ''
     const _sortFieldRaw = searchParams.get('sortField') ?? ''
     const sortField = SORT_FIELDS.has(_sortFieldRaw) ? _sortFieldRaw : 'name'
     const sortDir =
@@ -126,6 +129,32 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       else if (filter === 'cfc') categoryPred = sql`c.category = 'cfc'`
       else if (filter === 'cpas') categoryPred = sql`c.category = 'cpas'`
 
+      // --- deadline-derived filters (2026-07-06) ---
+      // These previously fell through to the legacy Supabase clients table in
+      // route.ts, which is empty post-Entra-cutover - every drill-down and
+      // calendar day-click returned 0 rows against live Azure data. Same 13
+      // tracked fields as lib/types PRIORITY dates, anchored to the
+      // America/New_York business date (never UTC).
+      const DEADLINE_COLS = ['eligibility_end_date', 'three_month_visit_due', 'quarterly_waiver_date', 'med_tech_redet_date', 'pos_deadline', 'assessment_due', 'thirty_day_letter_date', 'co_financial_redet_date', 'co_app_date', 'mfp_consent_date', 'two57_date', 'doc_mdh_date', 'spm_next_due']
+      const today = businessTodayStr()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyDeadline = (mk: (col: any) => any) =>
+        DEADLINE_COLS
+          .map((f) => mk(sql(f)))
+          .reduce((acc: any, p: any, i: number) => (i === 0 ? sql`(${p}` : sql`${acc} OR ${p}`), sql``)
+      let deadlinePred = null
+      if (deadlineDate) {
+        deadlinePred = sql`${anyDeadline((col) => sql`c.${col} = ${deadlineDate}::date`)})`
+      } else if (filter === 'overdue') {
+        deadlinePred = sql`${anyDeadline((col) => sql`c.${col} < ${today}::date`)})`
+      } else if (filter === 'due_today') {
+        deadlinePred = sql`${anyDeadline((col) => sql`c.${col} = ${today}::date`)})`
+      } else if (filter === 'due_this_week') {
+        deadlinePred = sql`${anyDeadline((col) => sql`c.${col} BETWEEN ${today}::date AND ${today}::date + 7`)})`
+      } else if (filter === 'due_next_14_days') {
+        deadlinePred = sql`${anyDeadline((col) => sql`c.${col} BETWEEN ${today}::date AND ${today}::date + 14`)})`
+      }
+
       // --- search (ilike across the same fields as route.ts) ---
       let searchPred = null
       const trimmed = search.trim()
@@ -140,6 +169,7 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       // Compose WHERE from the active predicates.
       const preds = [sql`c.is_active = true`, scope]
       if (categoryPred) preds.push(categoryPred)
+      if (deadlinePred) preds.push(deadlinePred)
       if (searchPred) preds.push(searchPred)
       const whereSql = preds.reduce((acc, p, i) => (i === 0 ? sql`${p}` : sql`${acc} AND ${p}`), sql``)
 

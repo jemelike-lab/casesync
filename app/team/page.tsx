@@ -115,8 +115,10 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   } else if (derivedFilter === 'no_contact_7') {
     clients = clients.filter(client => {
       const categoryOk = !derivedCategory || client.category === derivedCategory
+      // Null-inclusive (canonical isNoContact7Days semantics): a client with
+      // no contact ever logged belongs in the no-contact queue, not outside it.
       const days = getDaysSinceContact(client.last_contact_date)
-      return categoryOk && days !== null && days >= 7
+      return categoryOk && (days === null || days >= 7)
     })
   } else if (derivedFilter === 'due_next_14_days') {
     clients = clients.filter(client => {
