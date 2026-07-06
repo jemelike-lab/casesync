@@ -120,9 +120,10 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
         showToast('error', result.error)
       } else {
         showToast('success', `Invite sent to ${inviteEmail}!`)
+        const realInviteId = 'inviteId' in result ? result.inviteId : null
         setInviteRows(prev => [
           {
-            id: `temp-${Date.now()}`,
+            id: realInviteId ?? `temp-${Date.now()}`,
             email: inviteEmail.trim().toLowerCase(),
             full_name: inviteName.trim(),
             role: inviteRole,
@@ -147,9 +148,9 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
     })
   }
 
-  const handleReminder = async (inviteId: string) => {
+  const handleReminder = async (inviteId: string, email: string) => {
     setSendingReminderId(inviteId)
-    const result = await resendInviteReminder(inviteId)
+    const result = await resendInviteReminder(inviteId, email)
     if (result.error) {
       showToast('error', result.error)
     } else {
@@ -173,7 +174,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
   const handleRemoveInvite = async (inviteId: string, email: string) => {
     if (!confirm(`Remove pending invite for ${email}?`)) return
     setRemovingInviteId(inviteId)
-    const result = await removePendingInvite(inviteId)
+    const result = await removePendingInvite(inviteId, email)
     if (result.error) {
       showToast('error', result.error)
     } else {
@@ -388,7 +389,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                           <button
                             className="btn-primary"
                             disabled={!canRemind || sendingReminderId === invite.id}
-                            onClick={() => handleReminder(invite.id)}
+                            onClick={() => handleReminder(invite.id, invite.email)}
                             style={{ minHeight: 30, fontSize: 11, padding: '4px 10px', opacity: canRemind ? 1 : 0.55 }}
                           >
                             {sendingReminderId === invite.id ? 'Sending…' : 'Resend Reminder'}

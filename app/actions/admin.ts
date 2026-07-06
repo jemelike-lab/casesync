@@ -72,6 +72,24 @@ async function getElevatedCaller(): Promise<{ id: string; role: string } | null>
   return { id: user.id, role: profile.role as string }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Optimistic UI rows carry a client-generated `temp-<ts>` id until refresh.
+// If the id isn't a real uuid, resolve the pending invite by email instead of
+// letting Postgres reject the cast ("invalid input syntax for type uuid").
+async function resolvePendingInviteId(supabase: any, inviteId: string, email?: string): Promise<string | null> {
+  if (UUID_RE.test(inviteId)) return inviteId
+  const normalizedEmail = email?.trim().toLowerCase()
+  if (!normalizedEmail) return null
+  const { data } = await supabase
+    .from('user_invites')
+    .select('id')
+    .eq('email', normalizedEmail)
+    .eq('status', 'pending')
+    .maybeSingle()
+  return data?.id ?? null
+}
+
 export async function inviteUser(email: string, role: string, fullName: string) {
   const caller = await getElevatedCaller()
   if (!caller) return { error: 'Not authorized' }
@@ -134,10 +152,10 @@ export async function inviteUser(email: string, role: string, fullName: string) 
   }
 
   const trackingQuery = existingPendingInvite?.id
-    ? supabase.from('user_invites').update(inviteRecord).eq('id', existingPendingInvite.id)
-    : supabase.from('user_invites').insert(inviteRecord)
+    ? supabase.from('user_invites').update(inviteRecord).eq('id', existingPendingInvite.id).select('id').single()
+    : supabase.from('user_invites').insert(inviteRecord).select('id').single()
 
-  const { error: trackingError } = await trackingQuery
+  const { data: trackedInvite, error: trackingError } = await trackingQuery
 
   if (trackingError) {
     console.error('[inviteUser] tracking error:', trackingError)
@@ -166,16 +184,21 @@ export async function inviteUser(email: string, role: string, fullName: string) 
   }
 
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, inviteId: trackedInvite?.id ?? null }
 }
 
-export async function resendInviteReminder(inviteId: string) {
+export async function resendInviteReminder(inviteId: string, email?: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
+
+  const resolvedInviteId = await resolvePendingInviteId(supabase, inviteId, email)
+  if (!resolvedInviteId) return { error: 'Invite not found \u2014 refresh the page and try again.' }
 
   const { data: invite, error } = await supabase
     .from('user_invites_with_state')
     .select('*')
-    .eq('id', inviteId)
+    .eq('id', resolvedInviteId)
     .single()
 
   if (error || !invite) return { error: error?.message ?? 'Invite not found' }
@@ -216,7 +239,7 @@ export async function resendInviteReminder(inviteId: string) {
       invite_token_expires_at: expiresAt,
       status: 'pending',
     })
-    .eq('id', inviteId)
+    .eq('id', resolvedInviteId)
 
   if (updateError) return { error: updateError.message }
 
@@ -224,13 +247,18 @@ export async function resendInviteReminder(inviteId: string) {
   return { success: true }
 }
 
-export async function removePendingInvite(inviteId: string) {
+export async function removePendingInvite(inviteId: string, email?: string) {
+  const caller = await getElevatedCaller()
+  if (!caller) return { error: 'Not authorized' }
   const supabase = createAdminClient()
+
+  const resolvedInviteId = await resolvePendingInviteId(supabase, inviteId, email)
+  if (!resolvedInviteId) return { error: 'Invite not found \u2014 refresh the page and try again.' }
 
   const { data: invite, error } = await supabase
     .from('user_invites')
     .select('id,email,invited_user_id,accepted_at')
-    .eq('id', inviteId)
+    .eq('id', resolvedInviteId)
     .single()
 
   if (error || !invite) return { error: error?.message ?? 'Invite not found' }
@@ -241,7 +269,7 @@ export async function removePendingInvite(inviteId: string) {
   const { error: inviteDeleteError } = await supabase
     .from('user_invites')
     .delete()
-    .eq('id', inviteId)
+    .eq('id', resolvedInviteId)
 
   if (inviteDeleteError) return { error: inviteDeleteError.message }
 
