@@ -55,7 +55,7 @@ function formatRoleLabel(role: string): string {
   return role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-// INVITE_PREMIUM_LAYOUT — light, logo-forward layout used for invite + reminder.
+// INVITE_PREMIUM_LAYOUT — cream & gold, logo-forward layout for invite + reminder.
 function invitePremiumLayout({
   eyebrow,
   heading,
@@ -76,13 +76,13 @@ function invitePremiumLayout({
   const logo = `${BASE_URL}/email/blh-logo.png`
   const guideBlock = guideAttached
     ? `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0 2px;">
-        <tr><td style="background:#F2F8FF;border:1px solid #D8E8FF;border-radius:12px;padding:14px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 2px;">
+        <tr><td style="background:#FBF4E2;border:1px solid #E7D5A6;border-radius:12px;padding:15px 17px;">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td valign="top" style="width:30px;font-size:18px;line-height:1;">&#128206;</td>
+            <td valign="top" style="width:30px;font-size:18px;line-height:1;">&#128278;</td>
             <td>
-              <div style="font-size:13.5px;font-weight:700;color:#0F1B2D;">Your ${roleDisplay} guide is attached</div>
-              <div style="font-size:12.5px;color:#5B6B80;line-height:1.6;margin-top:3px;">A plain-language PDF walkthrough of CaseSync &amp; Workryn, written for your role. Keep it handy for your first week.</div>
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14.5px;font-weight:700;color:#3B2F14;">Your ${roleDisplay} guide is attached</div>
+              <div style="font-size:12.5px;color:#7A6A45;line-height:1.65;margin-top:4px;">A plain-language PDF walkthrough of CaseSync &amp; Workryn, written for your role. Keep it handy for your first week.</div>
             </td>
           </tr></table>
         </td></tr>
@@ -96,43 +96,49 @@ function invitePremiumLayout({
   <meta name="color-scheme" content="light only" />
   <title>CaseSync</title>
 </head>
-<body bgcolor="#EEF3FB" style="margin:0;padding:0;background:#EEF3FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF3FB;padding:34px 12px;">
+<body bgcolor="#F5EEDD" style="margin:0;padding:0;background:#F5EEDD;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5EEDD;padding:36px 12px;">
     <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E3EAF3;box-shadow:0 8px 30px rgba(15,27,45,0.08);">
-        <tr><td height="6" bgcolor="#1E7CFF" style="height:6px;line-height:6px;font-size:0;background:#1E7CFF;background:linear-gradient(90deg,#1E7CFF 0%,#2D8BFF 50%,#1A6FEB 100%);">&nbsp;</td></tr>
-        <tr><td align="center" style="padding:30px 32px 4px;">
-          <img src="${logo}" width="188" alt="Beatrice Loving Heart" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:188px;max-width:70%;" />
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFDF7;border-radius:18px;overflow:hidden;border:1px solid #E4D3A4;box-shadow:0 10px 34px rgba(97,74,17,0.12);">
+        <tr><td height="7" bgcolor="#C99722" style="height:7px;line-height:7px;font-size:0;background:#C99722;background:linear-gradient(90deg,#E4B84A 0%,#C99722 45%,#A87A16 100%);">&nbsp;</td></tr>
+        <tr><td align="center" style="padding:34px 32px 2px;">
+          <img src="${logo}" width="196" alt="Beatrice Loving Heart" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:196px;max-width:66%;" />
         </td></tr>
-        <tr><td align="center" style="padding:6px 32px 0;">
-          <span style="font-size:19px;font-weight:800;color:#0F1B2D;letter-spacing:-0.3px;">Case<span style="color:#1E7CFF;">Sync</span> <span style="color:#9AA8BC;font-weight:600;">&amp; Workryn</span></span>
+        <tr><td align="center" style="padding:12px 32px 0;">
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:#2B2312;letter-spacing:0.2px;">Case<span style="color:#B8860B;">Sync</span> <span style="color:#B3A276;font-weight:400;font-style:italic;">&amp; Workryn</span></span>
         </td></tr>
-        <tr><td style="padding:18px 44px 0;"><div style="height:1px;background:#EDF1F7;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
-        <tr><td style="padding:24px 44px 6px;">
-          <p style="margin:0 0 10px;font-size:12px;font-weight:800;color:#1E7CFF;text-transform:uppercase;letter-spacing:0.12em;">${eyebrow}</p>
-          <h1 style="margin:0 0 8px;font-size:25px;font-weight:800;color:#0F1B2D;line-height:1.28;letter-spacing:-0.4px;">${heading}</h1>
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 16px;"><tr>
-            <td style="background:#EAF2FF;border-radius:20px;padding:6px 14px;"><span style="font-size:12px;font-weight:700;color:#1A6FEB;letter-spacing:0.02em;">Role &middot; ${roleDisplay}</span></td>
+        <tr><td align="center" style="padding:14px 60px 0;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
+            <td style="height:1px;background:#EADFC2;line-height:1px;font-size:0;">&nbsp;</td>
+            <td style="width:44px;text-align:center;font-size:11px;color:#C99722;padding:0 8px;line-height:1;">&#10022;</td>
+            <td style="height:1px;background:#EADFC2;line-height:1px;font-size:0;">&nbsp;</td>
           </tr></table>
-          <p style="margin:0 0 18px;font-size:15px;color:#41506A;line-height:1.7;">${intro}</p>
+        </td></tr>
+        <tr><td style="padding:24px 46px 6px;">
+          <p style="margin:0 0 10px;font-size:11.5px;font-weight:800;color:#A87A16;text-transform:uppercase;letter-spacing:0.18em;">${eyebrow}</p>
+          <h1 style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;color:#2B2312;line-height:1.3;letter-spacing:-0.2px;">${heading}</h1>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;"><tr>
+            <td style="background:#F6ECCE;border:1px solid #E7D5A6;border-radius:20px;padding:6px 15px;"><span style="font-size:12px;font-weight:700;color:#8C6A14;letter-spacing:0.03em;">Role &middot; ${roleDisplay}</span></td>
+          </tr></table>
+          <p style="margin:0 0 20px;font-size:15px;color:#4E4327;line-height:1.75;">${intro}</p>
 
-          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:6px auto 2px;">
-            <tr><td align="center" bgcolor="#1E7CFF" style="border-radius:11px;">
-              <a href="${ctaUrl}" style="display:inline-block;padding:15px 38px;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:11px;background:#1E7CFF;background:linear-gradient(135deg,#1E7CFF 0%,#1A6FEB 100%);">${ctaLabel} &rarr;</a>
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:8px auto 2px;">
+            <tr><td align="center" bgcolor="#B8860B" style="border-radius:12px;border:1px solid #96700A;">
+              <a href="${ctaUrl}" style="display:inline-block;padding:15px 42px;font-size:15px;font-weight:700;color:#FFFDF7;text-decoration:none;border-radius:12px;background:#B8860B;background:linear-gradient(135deg,#D2A02C 0%,#A87A16 100%);letter-spacing:0.02em;">${ctaLabel} &rarr;</a>
             </td></tr>
           </table>
 
           ${guideBlock}
 
-          <p style="margin:22px 0 0;font-size:12.5px;color:#7C8CA1;line-height:1.7;">
+          <p style="margin:24px 0 0;font-size:12.5px;color:#9A8B5E;line-height:1.7;">
             This invitation link expires in 48 hours. If the button doesn&rsquo;t work, copy and paste this secure link into your browser:<br />
-            <a href="${ctaUrl}" style="color:#1E7CFF;word-break:break-all;">${ctaUrl}</a>
+            <a href="${ctaUrl}" style="color:#A87A16;word-break:break-all;">${ctaUrl}</a>
           </p>
         </td></tr>
-        <tr><td style="padding:8px 44px 0;"><div style="height:1px;background:#EDF1F7;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
-        <tr><td style="padding:18px 44px 30px;text-align:center;">
-          <p style="margin:0;font-size:12px;font-weight:700;color:#5B6B80;">Beatrice Loving Heart</p>
-          <p style="margin:4px 0 0;font-size:11px;color:#9AA8BC;line-height:1.6;">CaseSync &amp; Workryn &middot; Secure system email &middot; Please do not share this link</p>
+        <tr><td style="padding:10px 46px 0;"><div style="height:1px;background:#EADFC2;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:18px 46px 32px;text-align:center;">
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:12.5px;font-weight:700;color:#6B5A32;">Beatrice Loving Heart</p>
+          <p style="margin:5px 0 0;font-size:11px;color:#AC9C74;line-height:1.6;">CaseSync &amp; Workryn &middot; Secure system email &middot; Please do not share this link</p>
         </td></tr>
       </table>
     </td></tr>
