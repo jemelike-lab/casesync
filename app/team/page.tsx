@@ -228,6 +228,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       clients={clients}
       allScopedClients={allScopedClients}
       planners={(planners as Profile[]) ?? []}
+      teamManagers={(teamManagers as Profile[]) ?? []}
       mode={isSupervisorLike(profile.role) ? 'supervisor' : 'team_manager'}
       fullFilterLabel={fullFilterLabel}
       currentFilter={derivedFilter === 'overdue' || derivedFilter === 'due_today' || derivedFilter === 'due_this_week' || derivedFilter === 'due_next_14_days' || derivedFilter === 'no_contact_7' || derivedFilter === 'all' ? derivedFilter : null}

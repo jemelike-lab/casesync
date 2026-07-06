@@ -12,8 +12,10 @@ import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
 import PremiumStatGrid from './PremiumStatGrid'
 
+// TEAM_OVERVIEW_FIXES: real stat values + always-visible queue chips (2026-07-06)
 interface Props {
   clients: Client[]
+  teamManagers?: Profile[]
   allScopedClients?: Client[]
   planners: Profile[]
   mode: 'supervisor' | 'team_manager'
@@ -83,7 +85,7 @@ function StatCard({ label, value, color, href, active, onClick }: { label: strin
   )
 }
 
-export default function SupervisorDashboardClient({ clients, allScopedClients, planners, mode, fullFilterLabel, currentFilter, plannerFilters = [], category, savedViews = [], activeSavedViewId = null }: Props) {
+export default function SupervisorDashboardClient({ clients, allScopedClients, planners, teamManagers = [], mode, fullFilterLabel, currentFilter, plannerFilters = [], category, savedViews = [], activeSavedViewId = null }: Props) {
   const plannerStats: PlannerStats[] = useMemo(() => {
     return planners.map(planner => {
       const pc = clients.filter(c => c.assigned_to === planner.id)
@@ -291,7 +293,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </div>
       </div>
 
-      {activeFilter && (
+      {(
         <>
           <TeamSavedViewsBar views={savedViews} activeSavedViewId={activeSavedViewId} />
           <div className="card" style={{ marginBottom: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.2)' }}>
@@ -299,7 +301,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
               Queue view
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
-              Working queue: <strong style={{ color: 'var(--text)' }}>{activeFilter === 'all' ? 'Active Clients' : activeFilter === 'overdue' ? 'Overdue' : activeFilter === 'due_today' ? 'Due Today' : activeFilter === 'due_this_week' ? 'Due This Week' : activeFilter === 'due_next_14_days' ? 'Next 14 Days' : activeFilter === 'no_contact_7' ? 'No Contact 7+ Days' : 'Filtered'}</strong>
+              Working queue: <strong style={{ color: 'var(--text)' }}>{activeFilter === 'all' ? 'Active Clients' : activeFilter === 'overdue' ? 'Overdue' : activeFilter === 'due_today' ? 'Due Today' : activeFilter === 'due_this_week' ? 'Due This Week' : activeFilter === 'due_next_14_days' ? 'Next 14 Days' : activeFilter === 'no_contact_7' ? 'No Contact 7+ Days' : 'None selected \u2014 pick a queue below or click a card'}</strong>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <QueueSwitchButton label="Active Clients" href="#" onClick={(e: React.MouseEvent) => { e.preventDefault(); setActiveFilter('all'); scrollToElement('tm-client-results') }} active={activeFilter === 'all'} />
@@ -318,10 +320,10 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         totalClients={totalStats.clients}
         overdue={totalStats.overdue}
         dueThisWeek={totalStats.dueThisWeek}
-        noContact={0}
+        noContact={totalStats.noContact7}
         plannerCount={planners.length}
-        tmCount={0}
-        unassignedPlanners={0}
+        tmCount={teamManagers.length}
+        unassignedPlanners={planners.filter(p => !(p as any).team_manager_id).length}
         activeFilter={activeFilter === 'all' ? 'all' : activeFilter === 'overdue' ? 'overdue' : activeFilter === 'due_this_week' ? 'due_this_week' : activeFilter === 'no_contact_7' ? 'no_contact_7' : undefined}
         onFilterClick={(f) => {
           setActiveFilter(activeFilter === f ? null : f as typeof activeFilter)
