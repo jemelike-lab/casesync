@@ -7,30 +7,14 @@ export function useCountUp(target: number, duration = 800): number {
 
   useEffect(() => {
     if (!hasMounted.current) {
-      // First mount: reset to 0 and animate up
+      // First mount: show the real value immediately — no 0->target intro.
+      // The intro animation left counters painted at 0 whenever a hydration
+      // failure (React #418) forced remount loops: each mount ran setCount(0)
+      // before the animation could complete. Correct numbers beat animation.
       hasMounted.current = true
       prevTarget.current = target
-
-      if (target === 0) { setCount(0); return }
-
-      // Respect reduced motion
-      if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        setCount(target)
-        return
-      }
-
-      setCount(0)
-      const start = Date.now()
-      let animId: number
-      const tick = () => {
-        const elapsed = Date.now() - start
-        const progress = Math.min(elapsed / duration, 1)
-        const eased = 1 - Math.pow(1 - progress, 3)
-        setCount(Math.round(target * eased))
-        if (progress < 1) animId = requestAnimationFrame(tick)
-      }
-      animId = requestAnimationFrame(tick)
-      return () => cancelAnimationFrame(animId)
+      setCount(target)
+      return
     }
 
     // Subsequent updates: animate from previous value to new target
