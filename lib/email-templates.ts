@@ -52,7 +52,7 @@ function ctaButton(href: string, label: string): string {
 // Human-friendly role label; keeps known acronyms uppercase (e.g. IT).
 function formatRoleLabel(role: string): string {
   if ((role ?? '').toLowerCase() === 'it') return 'IT'
-  return formatRoleLabel(role)
+  return role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 // INVITE_PREMIUM_LAYOUT — light, logo-forward layout used for invite + reminder.
