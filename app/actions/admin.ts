@@ -9,6 +9,7 @@ import { cookies } from 'next/headers'
 import { sendEmail } from '@/lib/email'
 import { brandedInviteEmail, inviteReminderEmail } from '@/lib/email-templates'
 import { buildAcceptInviteUrl, generateInviteToken, getInviteExpiryIso } from '@/lib/invites'
+import { getGuideAttachmentForRole } from '@/lib/guides/attachments'
 import { isSupervisorLike } from '@/lib/roles'
 
 // Admin Supabase client uses service role key for deterministic server-side writes
@@ -149,7 +150,15 @@ export async function inviteUser(email: string, role: string, fullName: string) 
       role,
       inviteUrl: inviteLink,
     })
-    await sendEmail({ to: normalizedEmail, subject, html })
+    // Attach the role-specific onboarding guide. Never let a guide problem
+    // block the invite itself — resolution returns null on any failure.
+    const guide = await getGuideAttachmentForRole(role)
+    await sendEmail({
+      to: normalizedEmail,
+      subject,
+      html,
+      attachments: guide ? [guide] : undefined,
+    })
   } catch (emailErr) {
     console.error('[inviteUser] branded email error:', emailErr)
     return { error: emailErr instanceof Error ? emailErr.message : 'Failed to send invite email' }
@@ -184,7 +193,13 @@ export async function resendInviteReminder(inviteId: string) {
       role: invite.role,
       inviteUrl: inviteLink,
     })
-    await sendEmail({ to: invite.email, subject, html })
+    const guide = await getGuideAttachmentForRole(invite.role)
+    await sendEmail({
+      to: invite.email,
+      subject,
+      html,
+      attachments: guide ? [guide] : undefined,
+    })
   } catch (emailErr: any) {
     console.error('[resendInviteReminder] email error:', emailErr)
     return { error: emailErr?.message ?? 'Failed to send reminder' }

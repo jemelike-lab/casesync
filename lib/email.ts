@@ -15,10 +15,12 @@ export async function sendEmail({
   to,
   subject,
   html,
+  attachments,
 }: {
   to: string
   subject: string
   html: string
+  attachments?: { filename: string; content: string }[]
 }) {
   const resend = getResend()
   if (!resend) {
@@ -30,5 +32,6 @@ export async function sendEmail({
     to,
     subject,
     html,
+    ...(attachments && attachments.length ? { attachments } : {}),
   })
 }
