@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
  * the PHI data plane. Elevated-only; safe to re-run any time.
  */
 export const POST = withAuth(
-  async () => {
+  async (_req, ctx) => {
     if (!isAzureConfigured()) {
       return NextResponse.json({ error: 'Azure data plane is not configured' }, { status: 400 })
     }
@@ -31,7 +31,7 @@ export const POST = withAuth(
     }
     const failed: string[] = []
     for (const p of profiles) {
-      const ok = await upsertAzureIdentity(p)
+      const ok = await upsertAzureIdentity(p, ctx.profile.id)
       if (!ok) failed.push(p.id)
     }
     console.log(`[reconcile-identities] total=${profiles.length} synced=${profiles.length - failed.length} failed=${failed.length}`)

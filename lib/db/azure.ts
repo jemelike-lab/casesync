@@ -163,29 +163,6 @@ export async function withAuditRole<T>(
 }
 
 /**
- * Identity-shim write path — Azure `profiles` upserts ONLY (lib/db/identity-sync).
- * Runs as the raw connection principal with NO role switch and NO app.user_id:
- * profile mirroring must succeed regardless of who (if anyone) is signed in —
- * invite acceptance runs before the new user can pass any RLS check. Relies on
- * the principal's table privileges / owner standing while FORCE ROW LEVEL
- * SECURITY is not yet enabled on the PHI plane.
- * COUPLING: the queued FORCE-RLS hardening pass MUST ship a SECURITY DEFINER
- * sync_user_identity() in the same csadmin session and repoint this helper,
- * or identity sync goes dark. Never use this for client/PHI tables.
- */
-export async function withIdentityShimWrite<T>(
-  fn: (sql: postgres.Sql) => Promise<T>,
-): Promise<T> {
-  const sql = isEntraDbConfigured() ? getEntraSql() : getSql()
-  const reserved = await sql.reserve()
-  try {
-    return await fn(reserved as unknown as postgres.Sql)
-  } finally {
-    reserved.release()
-  }
-}
-
-/**
  * Health probe: confirms a connection can be made and a trivial query succeeds.
  * Does NOT set any RLS context. Diagnostics only. Honors the same mode selection
  * and reuses the warm pool.

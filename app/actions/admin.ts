@@ -28,15 +28,16 @@ function createAdminClient() {
 }
 
 // Mirror a (possibly changed) Supabase profile into the Azure identity shim.
-// Reads via the service-role client so RLS can never hide the row.
-async function syncIdentityFromSupabase(userId: string) {
+// Reads via the service-role client so RLS can never hide the row; the write
+// runs under the ACTING user's context (sync_user_identity checks elevation).
+async function syncIdentityFromSupabase(userId: string, actorId: string) {
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
     .select('id, full_name, role, team_manager_id')
     .eq('id', userId)
     .single()
-  if (data) await upsertAzureIdentity(data)
+  if (data) await upsertAzureIdentity(data, actorId)
 }
 
 async function getCurrentUserId() {
@@ -145,7 +146,7 @@ export async function inviteUser(email: string, role: string, fullName: string) 
       team_manager_id: null,
     })
 
-    await syncIdentityFromSupabase(existingAuthUser.id)
+    await syncIdentityFromSupabase(existingAuthUser.id, caller.id)
   }
 
   const inviteRecord = {
@@ -299,7 +300,7 @@ export async function removePendingInvite(inviteId: string, email?: string) {
 
     if (profileDeleteError) return { error: profileDeleteError.message }
 
-    await deleteAzureIdentity(userId)
+    await deleteAzureIdentity(userId, caller.id)
 
     const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
     if (authDeleteError) return { error: authDeleteError.message }
@@ -325,7 +326,7 @@ export async function updateUserRole(userId: string, role: string) {
   )
   const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
   if (error) return { error: error.message }
-  await syncIdentityFromSupabase(userId)
+  await syncIdentityFromSupabase(userId, caller.id)
   return { success: true }
 }
 
@@ -335,7 +336,7 @@ export async function updateTeamManagerAssignment(userId: string, teamManagerId:
   const supabase = createAdminClient()
   const { error } = await supabase.from('profiles').update({ team_manager_id: teamManagerId }).eq('id', userId)
   if (error) return { error: error.message }
-  await syncIdentityFromSupabase(userId)
+  await syncIdentityFromSupabase(userId, caller.id)
   return { success: true }
 }
 
@@ -412,7 +413,7 @@ export async function removeUser(userId: string) {
 
   if (profileError) return { error: profileError.message }
 
-  await deleteAzureIdentity(userId)
+  await deleteAzureIdentity(userId, caller.id)
 
   const { error: authError } = await supabase.auth.admin.deleteUser(userId)
   if (authError) return { error: authError.message }
