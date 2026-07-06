@@ -152,7 +152,8 @@ export async function inviteUser(email: string, role: string, fullName: string) 
     })
     // Attach the role-specific onboarding guide. Never let a guide problem
     // block the invite itself — resolution returns null on any failure.
-    const guide = await getGuideAttachmentForRole(role)
+    const guide = getGuideAttachmentForRole(role)
+    console.log('[inviteUser] guide attachment:', guide ? `${guide.filename} (${guide.content.length} b64 chars)` : `none (role=${role})`)
     await sendEmail({
       to: normalizedEmail,
       subject,
@@ -193,7 +194,7 @@ export async function resendInviteReminder(inviteId: string) {
       role: invite.role,
       inviteUrl: inviteLink,
     })
-    const guide = await getGuideAttachmentForRole(invite.role)
+    const guide = getGuideAttachmentForRole(invite.role)
     await sendEmail({
       to: invite.email,
       subject,

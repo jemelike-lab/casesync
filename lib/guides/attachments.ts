@@ -1,38 +1,45 @@
 // Maps a CaseSync role to the correct onboarding guide PDF (base64) to attach
-// to invite / reminder emails. Resolution never throws — a missing or unknown
-// guide simply yields no attachment so the invite itself is never blocked.
+// to invite / reminder emails.
+//
+// Data modules are STATICALLY imported so they are always traced into the
+// serverless bundle on Vercel. (A prior dynamic-import version silently
+// resolved to null in production, so invites went out with no attachment.)
+// Resolution still never throws — on any unexpected error we return null so
+// the invite itself is never blocked.
+
+import * as SP from './data/support-planner'
+import * as TM from './data/team-manager'
+import * as SUP from './data/supervisor'
 
 export type GuideAttachment = { filename: string; content: string }
 
-function guideKeyForRole(role?: string | null): 'sp' | 'tm' | 'sup' {
+function guideModuleForRole(role?: string | null) {
   switch ((role ?? '').toLowerCase()) {
     case 'supervisor':
     case 'admin':
-      return 'sup'
+      return SUP
     case 'team_manager':
     case 'it':
     case 'admin_assistant':
-      return 'tm'
+      return TM
     case 'support_planner':
     case 'supports_planner':
-      return 'sp'
+      return SP
     default:
       // Unknown roles get the general Support Planner "getting started" guide.
-      return 'sp'
+      return SP
   }
 }
 
-export async function getGuideAttachmentForRole(
+export function getGuideAttachmentForRole(
   role?: string | null
-): Promise<GuideAttachment | null> {
+): GuideAttachment | null {
   try {
-    const key = guideKeyForRole(role)
-    const mod =
-      key === 'sup'
-        ? await import('./data/supervisor')
-        : key === 'tm'
-          ? await import('./data/team-manager')
-          : await import('./data/support-planner')
+    const mod = guideModuleForRole(role)
+    if (!mod?.B64 || !mod?.FILENAME) {
+      console.error('[guides] guide module missing data for role:', role)
+      return null
+    }
     return { filename: mod.FILENAME, content: mod.B64 }
   } catch (err) {
     console.error('[guides] attachment resolution failed:', err)

@@ -49,6 +49,97 @@ function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#007aff;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">${label}</a>`
 }
 
+// Human-friendly role label; keeps known acronyms uppercase (e.g. IT).
+function formatRoleLabel(role: string): string {
+  if ((role ?? '').toLowerCase() === 'it') return 'IT'
+  return formatRoleLabel(role)
+}
+
+// INVITE_PREMIUM_LAYOUT — light, logo-forward layout used for invite + reminder.
+function invitePremiumLayout({
+  eyebrow,
+  heading,
+  intro,
+  roleDisplay,
+  ctaUrl,
+  ctaLabel,
+  guideAttached,
+}: {
+  eyebrow: string
+  heading: string
+  intro: string
+  roleDisplay: string
+  ctaUrl: string
+  ctaLabel: string
+  guideAttached: boolean
+}): string {
+  const logo = `${BASE_URL}/email/blh-logo.png`
+  const guideBlock = guideAttached
+    ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0 2px;">
+        <tr><td style="background:#F2F8FF;border:1px solid #D8E8FF;border-radius:12px;padding:14px 16px;">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td valign="top" style="width:30px;font-size:18px;line-height:1;">&#128206;</td>
+            <td>
+              <div style="font-size:13.5px;font-weight:700;color:#0F1B2D;">Your ${roleDisplay} guide is attached</div>
+              <div style="font-size:12.5px;color:#5B6B80;line-height:1.6;margin-top:3px;">A plain-language PDF walkthrough of CaseSync &amp; Workryn, written for your role. Keep it handy for your first week.</div>
+            </td>
+          </tr></table>
+        </td></tr>
+      </table>`
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light only" />
+  <title>CaseSync</title>
+</head>
+<body bgcolor="#EEF3FB" style="margin:0;padding:0;background:#EEF3FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF3FB;padding:34px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E3EAF3;box-shadow:0 8px 30px rgba(15,27,45,0.08);">
+        <tr><td height="6" bgcolor="#1E7CFF" style="height:6px;line-height:6px;font-size:0;background:#1E7CFF;background:linear-gradient(90deg,#1E7CFF 0%,#2D8BFF 50%,#1A6FEB 100%);">&nbsp;</td></tr>
+        <tr><td align="center" style="padding:30px 32px 4px;">
+          <img src="${logo}" width="188" alt="Beatrice Loving Heart" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:188px;max-width:70%;" />
+        </td></tr>
+        <tr><td align="center" style="padding:6px 32px 0;">
+          <span style="font-size:19px;font-weight:800;color:#0F1B2D;letter-spacing:-0.3px;">Case<span style="color:#1E7CFF;">Sync</span> <span style="color:#9AA8BC;font-weight:600;">&amp; Workryn</span></span>
+        </td></tr>
+        <tr><td style="padding:18px 44px 0;"><div style="height:1px;background:#EDF1F7;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:24px 44px 6px;">
+          <p style="margin:0 0 10px;font-size:12px;font-weight:800;color:#1E7CFF;text-transform:uppercase;letter-spacing:0.12em;">${eyebrow}</p>
+          <h1 style="margin:0 0 8px;font-size:25px;font-weight:800;color:#0F1B2D;line-height:1.28;letter-spacing:-0.4px;">${heading}</h1>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 16px;"><tr>
+            <td style="background:#EAF2FF;border-radius:20px;padding:6px 14px;"><span style="font-size:12px;font-weight:700;color:#1A6FEB;letter-spacing:0.02em;">Role &middot; ${roleDisplay}</span></td>
+          </tr></table>
+          <p style="margin:0 0 18px;font-size:15px;color:#41506A;line-height:1.7;">${intro}</p>
+
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:6px auto 2px;">
+            <tr><td align="center" bgcolor="#1E7CFF" style="border-radius:11px;">
+              <a href="${ctaUrl}" style="display:inline-block;padding:15px 38px;font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:11px;background:#1E7CFF;background:linear-gradient(135deg,#1E7CFF 0%,#1A6FEB 100%);">${ctaLabel} &rarr;</a>
+            </td></tr>
+          </table>
+
+          ${guideBlock}
+
+          <p style="margin:22px 0 0;font-size:12.5px;color:#7C8CA1;line-height:1.7;">
+            This invitation link expires in 48 hours. If the button doesn&rsquo;t work, copy and paste this secure link into your browser:<br />
+            <a href="${ctaUrl}" style="color:#1E7CFF;word-break:break-all;">${ctaUrl}</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:8px 44px 0;"><div style="height:1px;background:#EDF1F7;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:18px 44px 30px;text-align:center;">
+          <p style="margin:0;font-size:12px;font-weight:700;color:#5B6B80;">Beatrice Loving Heart</p>
+          <p style="margin:4px 0 0;font-size:11px;color:#9AA8BC;line-height:1.6;">CaseSync &amp; Workryn &middot; Secure system email &middot; Please do not share this link</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+}
+
 // --------------------
 
 export function deadlineAlertEmail({
@@ -297,51 +388,21 @@ export function brandedInviteEmail({
   role: string
   inviteUrl: string
 }) {
-  const roleDisplay = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const roleDisplay = formatRoleLabel(role)
 
-  const content = `
-    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8ab4ff;text-transform:uppercase;letter-spacing:0.08em;">
-      You’re Invited
-    </p>
-    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#f5f5f7;line-height:1.3;">
-      Welcome to Beatrice Loving Heart CaseSync
-    </h1>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#b0b0b8;line-height:1.7;">
-      Hi ${fullName}, you’ve been invited to join <strong style="color:#ffffff;">CaseSync</strong> —
-      Beatrice Loving Heart’s secure portal for managing client load, tracking deadlines,
-      organizing documentation, and staying aligned with your team.
-    </p>
-
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:20px;margin-bottom:24px;">
-      <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
-          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Your role</span>
-          <span style="font-size:15px;font-weight:600;color:#8ab4ff;">${roleDisplay}</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:12px 0 4px 0;">
-          <span style="font-size:12px;color:#888;display:block;margin-bottom:6px;">What CaseSync is for</span>
-          <span style="font-size:14px;color:#d1d5db;line-height:1.7;display:block;">
-            View assigned clients, monitor upcoming tasks, manage case activity in one place,
-            and reduce the usual back-and-forth across spreadsheets, notes, and email.
-          </span>
-        </td>
-      </tr>
-    </table>
-
-    ${ctaButton(inviteUrl, 'Accept Invite')}
-
-    <p style="margin:24px 0 0;font-size:12px;color:#888;line-height:1.7;">
-      If the button doesn’t work, copy and paste this secure link into your browser:<br />
-      <a href="${inviteUrl}" style="color:#8ab4ff;word-break:break-all;">${inviteUrl}</a>
-    </p>
-  `
+  const html = invitePremiumLayout({
+    eyebrow: 'You\u2019re invited',
+    heading: `Welcome to CaseSync, ${fullName}`,
+    roleDisplay,
+    intro: `Beatrice Loving Heart has invited you to <strong style="color:#0F1B2D;">CaseSync</strong> \u2014 our secure portal for managing your caseload, tracking deadlines, and keeping documentation and your team in one place. Set up your account to get started.`,
+    ctaUrl: inviteUrl,
+    ctaLabel: 'Set up your account',
+    guideAttached: true,
+  })
 
   return {
-    subject: 'Beatrice Loving Heart invited you to CaseSync',
-    html: baseLayout(content),
+    subject: 'You\u2019re invited to Beatrice Loving Heart CaseSync',
+    html,
   }
 }
 
@@ -354,37 +415,21 @@ export function inviteReminderEmail({
   role: string
   inviteUrl: string
 }) {
-  const roleDisplay = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const roleDisplay = formatRoleLabel(role)
 
-  const content = `
-    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#8ab4ff;text-transform:uppercase;letter-spacing:0.08em;">
-      Reminder
-    </p>
-    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#f5f5f7;line-height:1.3;">
-      Your CaseSync invite is waiting
-    </h1>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#b0b0b8;line-height:1.7;">
-      Hi ${fullName}, this is a quick reminder that Beatrice Loving Heart invited you to join
-      <strong style="color:#ffffff;">CaseSync</strong> as a <strong style="color:#8ab4ff;">${roleDisplay}</strong>.
-    </p>
-
-    <p style="margin:0 0 20px;font-size:14px;color:#d1d5db;line-height:1.7;">
-      CaseSync helps your team manage client load, follow deadlines, organize documentation,
-      and keep day-to-day coordination in one secure place.
-    </p>
-
-    ${ctaButton(inviteUrl, 'Accept Invite')}
-
-    <p style="margin:24px 0 0;font-size:12px;color:#888;line-height:1.7;">
-      Direct link:<br />
-      <a href="${inviteUrl}" style="color:#8ab4ff;word-break:break-all;">${inviteUrl}</a>
-    </p>
-  `
+  const html = invitePremiumLayout({
+    eyebrow: 'Reminder',
+    heading: `Your CaseSync invite is waiting, ${fullName}`,
+    roleDisplay,
+    intro: `Just a friendly nudge \u2014 Beatrice Loving Heart invited you to join <strong style="color:#0F1B2D;">CaseSync</strong>. Your account is ready to set up whenever you are.`,
+    ctaUrl: inviteUrl,
+    ctaLabel: 'Set up your account',
+    guideAttached: true,
+  })
 
   return {
-    subject: 'Reminder: accept your Beatrice Loving Heart CaseSync invite',
-    html: baseLayout(content),
+    subject: 'Reminder: set up your Beatrice Loving Heart CaseSync account',
+    html,
   }
 }
 
@@ -397,7 +442,7 @@ export function welcomeEmail({
   role: string
   loginUrl?: string
 }) {
-  const roleDisplay = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const roleDisplay = formatRoleLabel(role)
   const loginLink = loginUrl || `${BASE_URL}/login`
 
   const content = `
