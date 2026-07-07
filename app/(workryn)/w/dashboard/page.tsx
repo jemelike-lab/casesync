@@ -169,7 +169,7 @@ export default async function DashboardPage() {
                 ('Doc MDH', c.doc_mdh_date),
                 ('SPM Next Due', c.spm_next_due)
               ) v(label, due_date)
-              WHERE v.due_date IS NOT NULL
+              WHERE v.due_date IS NOT NULL AND v.due_date >= t.today - 730
               ORDER BY v.due_date ASC
               LIMIT 1
             ) x ON true
