@@ -178,7 +178,7 @@ export async function GET(request: Request) {
     }
     try {
       clients = await withRlsContext(supervisorId, async (sql) => {
-        const rows = await sql`SELECT id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date FROM clients WHERE is_active = true AND client_classification = 'real' AND assigned_to IS NOT NULL`
+        const rows = await sql`SELECT id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date FROM clients WHERE is_active = true AND client_classification = 'real'`
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return rows as unknown as any[]
       })
@@ -196,7 +196,6 @@ export async function GET(request: Request) {
         .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
         .eq('is_active', true)
         .eq('client_classification', 'real')
-        .not('assigned_to', 'is', null)
         .order('id', { ascending: true })
         .range(from, from + PAGE - 1)
       if (error) {
@@ -284,6 +283,7 @@ export async function GET(request: Request) {
   let emailsSent = 0
   let digestsSent = 0
   let managerAlertsSent = 0
+  let unassignedAlertsSent = 0
 
   // ---- Pass 1: compute every candidate action deterministically ----
   type NotifRow = { user_id: string; title: string; body: string; link: string; read: boolean }
@@ -475,6 +475,97 @@ export async function GET(request: Request) {
     }
   }
 
+  // ---- UNASSIGNED CLIENT ESCALATIONS (supervisors) ----
+  // 2026-07-06 audit A2: unassigned clients were a reminder dead zone — the
+  // scan skipped them entirely, so imported-but-not-yet-reassigned clients
+  // (the highest-risk state in the system) generated zero reminders and zero
+  // escalations. Per-planner loops above still skip !assigned_to; this block
+  // makes the unassigned pool visible to supervisor-like staff instead.
+  // Deliberately NOT gated on notification prefs: an unassigned overdue
+  // client is an org-state anomaly, not a personal caseload preference.
+  const unassignedClients = (clients ?? []).filter(c => !c.assigned_to)
+  if (unassignedClients.length > 0) {
+    let unassignedOverdueCount = 0
+    let unassignedDueSoonCount = 0
+    let unassignedTopIssues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }> = []
+
+    for (const client of unassignedClients) {
+      let clientOverdue = false
+      let clientDueThisWeek = false
+      for (const { key, label } of DEADLINE_FIELDS) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dateStr = (client as any)[key] as string | null
+        if (!dateStr) continue
+        const diffDays = daysFromBusinessToday(dateStr)
+        if (diffDays === null) continue
+        if (diffDays < 0) {
+          clientOverdue = true
+          unassignedTopIssues.push({
+            clientName: `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`,
+            issue: `${label} overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'}`,
+            dueDate: dateStr,
+            severity: 0,
+          })
+        } else if (diffDays <= 7) {
+          clientDueThisWeek = true
+          unassignedTopIssues.push({
+            clientName: `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`,
+            issue: `${label} due in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
+            dueDate: dateStr,
+            severity: 1,
+          })
+        }
+      }
+      if (clientOverdue) unassignedOverdueCount++
+      else if (clientDueThisWeek) unassignedDueSoonCount++
+    }
+
+    unassignedTopIssues = unassignedTopIssues
+      .sort((a, b) => a.severity - b.severity || a.dueDate.localeCompare(b.dueDate))
+      .slice(0, 8)
+
+    if (unassignedOverdueCount > 0) {
+      const { data: supervisorProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['supervisor', 'administrator'])
+
+      for (const sup of supervisorProfiles ?? []) {
+        const supEmail = emailMap.get(sup.id)
+        if (!supEmail) continue
+
+        const alertKey = `sup-unassigned:${sup.id}:${todayStr}`
+        const claimed = await claimKeys(supabase, [alertKey])
+        if (!claimed.has(alertKey)) continue
+
+        try {
+          const { subject, html } = teamManagerPlannerAlertEmail({
+            managerName: sup.full_name?.split(' ')[0] ?? 'there',
+            plannerName: 'Unassigned clients',
+            overdueClientCount: unassignedOverdueCount,
+            dueSoonClientCount: unassignedDueSoonCount,
+            topIssues: unassignedTopIssues,
+            queueHref: '/team?filter=unassigned',
+          })
+          await sendEmail({ to: supEmail, subject, html })
+          unassignedAlertsSent++
+
+          const { error: supNotifErr } = await supabase.from('notifications').insert({
+            user_id: sup.id,
+            title: `⚠️ ${unassignedOverdueCount} unassigned client${unassignedOverdueCount === 1 ? '' : 's'} with overdue deadlines`,
+            body: `Unassigned clients receive no planner reminders — reassign to restore coverage.`,
+            link: `/team?filter=unassigned`,
+            read: false,
+          })
+          if (supNotifErr) console.error('[check-deadlines] unassigned notif insert error:', supNotifErr.message)
+          else notificationsInserted++
+        } catch (supErr) {
+          console.error('[check-deadlines] unassigned alert send error:', supErr)
+        }
+      }
+    }
+  }
+
   // ---- DAILY DIGEST (morning run only) ----
   if (isMorningRun) {
     const clientsByPlanner: Record<string, typeof clients> = {}
@@ -559,6 +650,8 @@ export async function GET(request: Request) {
     emailsSent,
     digestsSent,
     managerAlertsSent,
+    unassignedAlertsSent,
+    unassignedClients: (clients ?? []).filter(c => !c.assigned_to).length,
     timestamp: new Date().toISOString(),
   })
 }
