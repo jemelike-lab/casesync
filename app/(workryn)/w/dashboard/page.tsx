@@ -3,6 +3,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createClient } from '@/lib/supabase/server'
 import { getGlobalSummary } from '@/lib/dashboard-summary'
+import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import DashboardClient from '@/components/workryn/DashboardClient'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
   // CaseSync client alerts — role-scoped
   let csAlerts = { totalClients: 0, overdueClients: 0, dueThisWeek: 0, eligibilityEndingSoon: 0, noContact7Days: 0 }
   let csRole: string | null = null
+  let csPreview: { id: string; name: string; label: string; diffDays: number }[] = []
 
   try {
     const [tc, ot, weekEntries, al, rt, done, total, shifts] = await Promise.all([
@@ -135,6 +137,50 @@ export default async function DashboardPage() {
         eligibilityEndingSoon: summary.eligibility_ending_soon_clients,
         noContact7Days: summary.no_contact_7_days_clients,
       }
+
+      // Client status preview: the caller's 5 most-urgent clients by their
+      // earliest tracked deadline (13-field canon, America/New_York anchor).
+      // Same RLS scope as the tiles — SP sees own caseload, TM their team,
+      // supervisor-like everything — so the names shown are exactly the
+      // names that user can already open in CaseSync one click away.
+      if (isAzureConfigured() && csAlerts.totalClients > 0) {
+        const rows = await withRlsContext(authUser.id, async (sql) => {
+          return await sql`
+            WITH t AS (SELECT (now() at time zone 'America/New_York')::date AS today)
+            SELECT c.id::text AS id,
+                   (c.last_name || COALESCE(', ' || c.first_name, '')) AS name,
+                   x.label,
+                   (x.due_date - t.today)::int AS diff_days
+            FROM clients c
+            CROSS JOIN t
+            JOIN LATERAL (
+              SELECT v.label, v.due_date FROM (VALUES
+                ('Eligibility End', c.eligibility_end_date),
+                ('3-Month Visit', c.three_month_visit_due),
+                ('Quarterly Waiver', c.quarterly_waiver_date),
+                ('Med Tech Redet', c.med_tech_redet_date),
+                ('POS Deadline', c.pos_deadline),
+                ('Assessment', c.assessment_due),
+                ('30-Day Letter', c.thirty_day_letter_date),
+                ('CO Financial Redet', c.co_financial_redet_date),
+                ('CO App', c.co_app_date),
+                ('MFP Consent', c.mfp_consent_date),
+                ('257', c.two57_date),
+                ('Doc MDH', c.doc_mdh_date),
+                ('SPM Next Due', c.spm_next_due)
+              ) v(label, due_date)
+              WHERE v.due_date IS NOT NULL
+              ORDER BY v.due_date ASC
+              LIMIT 1
+            ) x ON true
+            WHERE c.is_active = true AND c.client_classification = 'real'
+            ORDER BY x.due_date ASC
+            LIMIT 5
+          `
+        })
+        csPreview = (rows as unknown as { id: string; name: string; label: string; diff_days: number }[])
+          .map(r => ({ id: r.id, name: r.name, label: r.label, diffDays: r.diff_days }))
+      }
     }
   } catch (csError) {
     console.error('[Workryn Dashboard] CaseSync alert query failed:', csError)
@@ -153,6 +199,7 @@ export default async function DashboardPage() {
       totalTaskCount={totalTaskCount}
       todayShifts={todayShifts}
       csAlerts={csAlerts}
+      csPreview={csPreview}
       csRole={csRole}
       bannerUrl={bannerUrl}
     />

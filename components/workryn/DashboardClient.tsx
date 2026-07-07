@@ -93,6 +93,7 @@ interface Props {
     eligibilityEndingSoon: number
     noContact7Days: number
   }
+  csPreview?: { id: string; name: string; label: string; diffDays: number }[]
   csRole?: string | null
 }
 
@@ -167,6 +168,7 @@ export default function DashboardClient({
   totalTaskCount,
   todayShifts,
   csAlerts,
+  csPreview,
   csRole,
   bannerUrl,
 }: Props & { bannerUrl?: string | null }) {
@@ -377,6 +379,57 @@ export default function DashboardClient({
                   <CsAlertTile href="/team?full=1&filter=eligibility_ending_soon" icon={CalendarDays}   count={animEligibility} label="Eligibility Ending" color="#06b6d4" />
                   <CsAlertTile href="/team?full=1&filter=no_contact_7"            icon={Users}          count={animNoContact}   label="No Contact 7d"     color="#94a3b8" />
                 </SimpleGrid>
+
+                {csPreview && csPreview.length > 0 && (
+                  <Stack gap={4} mt="md">
+                    <Text size="xs" fw={600} c="dimmed" tt="uppercase" style={{ letterSpacing: 0.5 }}>
+                      Most urgent
+                    </Text>
+                    {csPreview.map((client) => {
+                      const overdue = client.diffDays < 0
+                      const dueSoon = !overdue && client.diffDays <= 7
+                      const dotColor = overdue ? '#ef4444' : dueSoon ? '#f59e0b' : '#94a3b8'
+                      const statusText = overdue
+                        ? `${Math.abs(client.diffDays)}d overdue`
+                        : client.diffDays === 0
+                        ? 'due today'
+                        : `due in ${client.diffDays}d`
+                      return (
+                        <Link
+                          key={client.id}
+                          href={`/clients/${client.id}`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 10px',
+                            borderRadius: 10,
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            background: `${dotColor}0d`,
+                            border: `1px solid ${dotColor}26`,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: dotColor,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Text size="sm" fw={600} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {client.name}
+                          </Text>
+                          <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                            {client.label} · {statusText}
+                          </Text>
+                        </Link>
+                      )
+                    })}
+                  </Stack>
+                )}
 
                 <Group gap={6} mt="sm" c="dimmed">
                   <Users size={13} />
