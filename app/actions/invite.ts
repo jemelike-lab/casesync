@@ -153,8 +153,36 @@ export async function acceptInvite(_prevState: any, formData: FormData) {
     .select('id, full_name, role, team_manager_id')
     .eq('id', userId)
     .single()
-  if (freshProfile) {
-    await upsertAzureIdentity(freshProfile)
+  if (!freshProfile) {
+    // Audit U3: the profile UPDATE above matches 0 rows silently when the
+    // auth trigger ever fails — previously the chain soft-failed all the way
+    // to a "successful" acceptance with a user invisible on the data plane.
+    // Hard-stop BEFORE the invite is consumed so the token stays retryable.
+    return { error: 'Account provisioning is incomplete (profile record missing). Please try again or contact your administrator.' }
+  }
+  const identitySynced = await upsertAzureIdentity(freshProfile)
+  if (!identitySynced) {
+    // Audit U1: never silent. Acceptance still completes (the account is
+    // real and the morning reconcile self-heals), but supervisors get told
+    // immediately instead of discovering a blind user days later.
+    try {
+      const { data: elevated } = await admin
+        .from('profiles')
+        .select('id')
+        .in('role', ['supervisor', 'administrator'])
+      const alertRows = (elevated ?? []).map((profileRow) => ({
+        user_id: profileRow.id,
+        title: '⚠️ Identity sync failed for a new user',
+        body: `${invite.full_name ?? invite.email} accepted their invite but could not be provisioned on the data plane. They will see zero clients until the morning reconcile runs (or run it manually).`,
+        link: '/api/admin/identity-status',
+        read: false,
+      }))
+      if (alertRows.length > 0) {
+        await admin.from('notifications').insert(alertRows)
+      }
+    } catch (notifyErr) {
+      console.error('[acceptInvite] failed to notify supervisors about identity-sync failure:', notifyErr)
+    }
   }
 
   const { error: inviteUpdateError } = await admin
