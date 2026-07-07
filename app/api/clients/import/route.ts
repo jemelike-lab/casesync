@@ -56,13 +56,23 @@ async function getAuthorizedContext() {
 }
 
 function workbookToCsv(buffer: ArrayBuffer) {
-  const workbook = XLSX.read(Buffer.from(buffer), { type: 'buffer' })
+  // Audit B1: raw:false returned cells as DISPLAYED text, so Excel date
+  // cells arrived as M/D/YY and failed the strict ISO check on every row.
+  // cellDates + raw:true yields real Date objects, emitted as YYYY-MM-DD.
+  // (Server runs UTC, so toISOString cannot day-shift the parsed date.)
+  const workbook = XLSX.read(Buffer.from(buffer), { type: 'buffer', cellDates: true })
   const firstSheet = workbook.SheetNames[0]
   if (!firstSheet) throw new Error('Workbook has no sheets.')
   const worksheet = workbook.Sheets[firstSheet]
-  const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, raw: false, defval: '' }) as string[][]
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, raw: true, defval: '' }) as unknown[][]
   if (!rows.length) return ''
-  const [headers, ...dataRows] = rows.map(row => row.map(cell => String(cell ?? '').trim()))
+  const toCell = (cell: unknown): string => {
+    if (cell instanceof Date && !Number.isNaN(cell.getTime())) {
+      return cell.toISOString().slice(0, 10)
+    }
+    return String(cell ?? '').trim()
+  }
+  const [headers, ...dataRows] = rows.map(row => row.map(toCell))
   return parseDelimitedRowsToCsv(headers, dataRows)
 }
 
@@ -182,6 +192,24 @@ export async function POST(req: NextRequest) {
   )
 
   const allErrors = [...parseResult.parseErrors, ...parseResult.validationErrors]
+
+  // Audit B3: blank classification silently defaults to 'real' at insert
+  // time — correct for production sheets, dangerous for test sheets. Make
+  // the default visible before anyone clicks Import.
+  const rowsDefaultingToReal = parseResult.normalizedRows.filter(row => !row.client_classification).length
+  if (rowsDefaultingToReal > 0) {
+    parseResult.warnings.unshift({
+      rowNumber: 1,
+      column: 'client_classification',
+      message: `${rowsDefaultingToReal} row(s) have no client_classification and will import as 'real'.`,
+    })
+  }
+  const classificationCounts: Record<string, number> = {}
+  for (const row of parseResult.normalizedRows) {
+    const classificationKey = row.client_classification ?? 'real'
+    classificationCounts[classificationKey] = (classificationCounts[classificationKey] ?? 0) + 1
+  }
+
   const issueCsv = buildImportIssueCsv([...allErrors, ...parseResult.warnings])
   const importRunBase = {
     created_by: userId,
@@ -209,7 +237,7 @@ export async function POST(req: NextRequest) {
 
 
     // Audit: log bulk client import
-    await auditLog(req, { userId, action: 'client.create', resourceType: 'clients', details: { operation: 'bulk_import' } }).catch(() => {})
+    await auditLog(req, { userId, action: 'client.import.validate', resourceType: 'clients', details: { operation: 'bulk_import_validate', total_rows: parseResult.rows.length, valid_rows: parseResult.normalizedRows.length } }).catch(() => {})
     return NextResponse.json({
       mode,
       ok: allErrors.length === 0,
@@ -219,6 +247,7 @@ export async function POST(req: NextRequest) {
         skippedRows: parseResult.rows.length - parseResult.normalizedRows.length,
         errorCount: allErrors.length,
         warningCount: parseResult.warnings.length,
+        classificationCounts,
       },
       errors: allErrors,
       warnings: parseResult.warnings,
@@ -320,7 +349,16 @@ export async function POST(req: NextRequest) {
         return rows
       })
     } catch (e) {
-      insertError = { message: (e as Error).message }
+      const dbError = e as { code?: string; detail?: string; message: string }
+      if (dbError?.code === '23505') {
+        // Audit B6: the app-level dupe check can race a concurrent import or
+        // read a stale RLS-scoped view; the DB unique constraint is the real
+        // guard. Surface WHICH key collided instead of a bare 500.
+        const keyMatch = /\((.+?)\)=\((.+?)\)/.exec(dbError.detail ?? '')
+        insertError = { message: `Duplicate ${keyMatch?.[1] ?? 'key'} rejected by the database${keyMatch ? `: ${keyMatch[2]}` : ''}. Another import may have inserted it concurrently — re-run validation and retry.` }
+      } else {
+        insertError = { message: dbError.message }
+      }
     }
   } else {
     const { data, error } = await supabase
@@ -378,6 +416,10 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  // Audit A3: the PHI-minting operation itself was never audit-logged —
+  // only validate mode was. Fire-and-forget like every other audit write.
+  await auditLog(req, { userId, action: 'client.create', resourceType: 'clients', details: { operation: 'bulk_import', imported_rows: insertedRows?.length ?? 0, source_filename: sourceFileName, classification_counts: classificationCounts } }).catch(() => {})
+
   return NextResponse.json({
     mode,
     ok: true,
@@ -388,6 +430,7 @@ export async function POST(req: NextRequest) {
       skippedRows: parseResult.rows.length - parseResult.normalizedRows.length,
       errorCount: allErrors.length,
       warningCount: parseResult.warnings.length,
+      classificationCounts,
     },
     errors: allErrors,
     warnings: parseResult.warnings,
