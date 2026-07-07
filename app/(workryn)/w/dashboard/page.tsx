@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createClient } from '@/lib/supabase/server'
+import { getGlobalSummary } from '@/lib/dashboard-summary'
 import DashboardClient from '@/components/workryn/DashboardClient'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
@@ -106,82 +107,33 @@ export default async function DashboardPage() {
   }
 
   // ── CaseSync Client Alerts (role-scoped) ──
+  // 2026-07-07: this block previously queried the Supabase view
+  // client_status_summary_by_assignee directly — the plane real PHI left on
+  // 2026-06-28 — so the widget showed 0 across the board while CaseSync
+  // showed 53. It also counted only SP-ASSIGNED clients (unassigned pool
+  // invisible) and had no 'administrator' branch. getGlobalSummary() is the
+  // canonical Azure-backed aggregate: RLS scopes it to exactly what the
+  // caller can see (supervisor-like = all incl. unassigned, TM = own team,
+  // SP = own caseload), with the 13-field deadline canon and the
+  // America/New_York business date. One call replaces all three branches.
   try {
     const supabase = await createClient()
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (authUser) {
-      // Get CaseSync profile for role check
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, role, team_manager_id')
+        .select('id, role')
         .eq('id', authUser.id)
         .single()
-
       csRole = profile?.role ?? null
 
-      if (profile?.role === 'supervisor' || profile?.role === 'it') {
-        // Supervisors/IT: aggregate clients assigned to support planners only
-        // This matches how CaseSync Supervisor Overview computes its stats
-        const { data: spPlanners } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('role', 'supports_planner')
-        const plannerIds = (spPlanners ?? []).map(p => p.id)
-        if (plannerIds.length > 0) {
-          const { data: rows } = await supabase
-            .from('client_status_summary_by_assignee')
-            .select('*')
-            .in('assigned_to', plannerIds)
-          if (rows) {
-            csAlerts = rows.reduce((acc, row) => ({
-              totalClients: acc.totalClients + (row.total_clients ?? 0),
-              overdueClients: acc.overdueClients + (row.overdue_clients ?? 0),
-              dueThisWeek: acc.dueThisWeek + (row.due_this_week_clients ?? 0),
-              eligibilityEndingSoon: acc.eligibilityEndingSoon + (row.eligibility_ending_soon_clients ?? 0),
-              noContact7Days: acc.noContact7Days + (row.no_contact_7_days_clients ?? 0),
-            }), csAlerts)
-          }
-        }
-      } else if (profile?.role === 'team_manager') {
-        // Team Managers see aggregate for planners they manage
-        const { data: managedPlanners } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('team_manager_id', authUser.id)
-        const plannerIds = (managedPlanners ?? []).map(p => p.id)
-        // Include own clients too
-        plannerIds.push(authUser.id)
-        if (plannerIds.length > 0) {
-          const { data: rows } = await supabase
-            .from('client_status_summary_by_assignee')
-            .select('*')
-            .in('assigned_to', plannerIds)
-          if (rows) {
-            csAlerts = rows.reduce((acc, row) => ({
-              totalClients: acc.totalClients + (row.total_clients ?? 0),
-              overdueClients: acc.overdueClients + (row.overdue_clients ?? 0),
-              dueThisWeek: acc.dueThisWeek + (row.due_this_week_clients ?? 0),
-              eligibilityEndingSoon: acc.eligibilityEndingSoon + (row.eligibility_ending_soon_clients ?? 0),
-              noContact7Days: acc.noContact7Days + (row.no_contact_7_days_clients ?? 0),
-            }), csAlerts)
-          }
-        }
-      } else {
-        // Support Planners see only their own clients
-        const { data: row } = await supabase
-          .from('client_status_summary_by_assignee')
-          .select('*')
-          .eq('assigned_to', authUser.id)
-          .single()
-        if (row) {
-          csAlerts = {
-            totalClients: row.total_clients ?? 0,
-            overdueClients: row.overdue_clients ?? 0,
-            dueThisWeek: row.due_this_week_clients ?? 0,
-            eligibilityEndingSoon: row.eligibility_ending_soon_clients ?? 0,
-            noContact7Days: row.no_contact_7_days_clients ?? 0,
-          }
-        }
+      const summary = await getGlobalSummary()
+      csAlerts = {
+        totalClients: summary.total_clients,
+        overdueClients: summary.overdue_clients,
+        dueThisWeek: summary.due_this_week_clients,
+        eligibilityEndingSoon: summary.eligibility_ending_soon_clients,
+        noContact7Days: summary.no_contact_7_days_clients,
       }
     }
   } catch (csError) {

@@ -200,7 +200,7 @@ export default function DashboardClient({
   const spot = useMouseSpotlight()
 
   const showCsAlerts =
-    csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it')
+    csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it' || csRole === 'administrator')
 
   return (
     <>
