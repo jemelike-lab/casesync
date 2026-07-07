@@ -120,6 +120,49 @@ async function runReserved<T>(
 }
 
 /**
+ * Run `fn` inside a single BEGIN/COMMIT transaction on a RESERVED connection
+ * under the given user's RLS identity. Any throw rolls the whole unit back —
+ * used by multi-statement writes (batch client import) where partial state is
+ * worse than failure (2026-07-06 onboarding audit, finding A1). Context reset
+ * and release in `finally`, same leak-proofing as runReserved.
+ */
+export async function withRlsTransaction<T>(
+  userId: string,
+  fn: (sql: postgres.Sql) => Promise<T>,
+): Promise<T> {
+  if (!userId) {
+    throw new Error('withRlsTransaction requires a non-empty userId')
+  }
+  const sql = isEntraDbConfigured() ? getEntraSql() : getSql()
+  const reserved = await sql.reserve()
+  try {
+    await reserved`SET ROLE authenticated`
+    await reserved`SELECT set_config('app.user_id', ${userId}, false)`
+    await reserved`BEGIN`
+    try {
+      const result = await fn(reserved as unknown as postgres.Sql)
+      await reserved`COMMIT`
+      return result
+    } catch (err) {
+      try {
+        await reserved`ROLLBACK`
+      } catch {
+        // Rollback failed: connection is suspect; release still runs below.
+      }
+      throw err
+    }
+  } finally {
+    try {
+      await reserved`SELECT set_config('app.user_id', '', false)`
+      await reserved`RESET ROLE`
+    } catch {
+      // If reset fails the connection is suspect; release still runs below.
+    }
+    reserved.release()
+  }
+}
+
+/**
  * Run `fn` against a connection scoped to the given user's identity. Prefers the
  * Entra federated-token path (no stored secret) when configured, otherwise the
  * long-lived-password singleton. Both are warm pools reused across requests.

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { isSupervisorLike } from '@/lib/roles'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { auditLog } from '@/lib/audit'
-import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { isAzureConfigured, withRlsContext, withRlsTransaction } from '@/lib/db/azure'
 import {
   buildClientInsertPayload,
   buildImportIssueCsv,
@@ -284,10 +284,40 @@ export async function POST(req: NextRequest) {
   let insertedRows: { id: string; client_id: string }[] | null = null
   let insertError: { message: string } | null = null
   if (isAzureConfigured()) {
+    // 2026-07-06 audit A1: clients + notes + activity + run record commit as
+    // ONE transaction. A mid-import failure previously stranded clients
+    // without their notes and poisoned retries (dupe check rejected the
+    // whole file). Now it is all-or-nothing and a retry is always safe.
     try {
-      insertedRows = await withRlsContext(userId, async (sql) => {
-        const rows = await sql`INSERT INTO clients ${sql(payload as readonly object[])} RETURNING id, client_id`
-        return rows as unknown as { id: string; client_id: string }[]
+      insertedRows = await withRlsTransaction(userId, async (sql) => {
+        const rows = (await sql`INSERT INTO clients ${sql(payload as readonly object[])} RETURNING id, client_id`) as unknown as { id: string; client_id: string }[]
+
+        const byClientId = new Map(rows.map(client => [client.client_id, client.id]))
+        const txNotes = parseResult.normalizedRows
+          .filter(row => row.notes && byClientId.has(row.client_id))
+          .map(row => ({
+            client_id: byClientId.get(row.client_id)!,
+            author_id: userId,
+            content: row.notes!,
+          }))
+        if (txNotes.length > 0) {
+          await sql`INSERT INTO client_notes ${sql(txNotes, 'client_id', 'author_id', 'content')}`
+        }
+
+        const txActivity = rows.map((client) => ({
+          client_id: client.id,
+          user_id: userId,
+          action: 'Client created via batch import',
+          field_name: null,
+          old_value: null,
+          new_value: client.client_id,
+        }))
+        if (txActivity.length > 0) {
+          await sql`INSERT INTO activity_log ${sql(txActivity, 'client_id', 'user_id', 'action', 'field_name', 'old_value', 'new_value')}`
+        }
+
+        await sql`INSERT INTO client_import_runs ${sql({ ...importRunBase, imported_rows: rows.length })}`
+        return rows
       })
     } catch (e) {
       insertError = { message: (e as Error).message }
@@ -302,6 +332,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (insertError) {
+    // The failed-run record intentionally lives OUTSIDE the transaction: it
+    // must survive the rollback so the run history shows the attempt.
     if (isAzureConfigured()) {
       await withRlsContext(userId, (sql) => sql`INSERT INTO client_import_runs ${sql({ ...importRunBase, status: 'failed' })}`)
     } else {
@@ -310,44 +342,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
-  const insertedByClientId = new Map((insertedRows ?? []).map(client => [client.client_id, client.id]))
+  if (!isAzureConfigured()) {
+    // Supabase dev fallback (PostgREST — no client-side transaction):
+    // preserve the original sequential behavior.
+    const insertedByClientId = new Map((insertedRows ?? []).map(client => [client.client_id, client.id]))
 
-  const importedNotes = parseResult.normalizedRows
-    .filter(row => row.notes && insertedByClientId.has(row.client_id))
-    .map(row => ({
-      client_id: insertedByClientId.get(row.client_id)!,
-      author_id: userId,
-      content: row.notes!,
+    const importedNotes = parseResult.normalizedRows
+      .filter(row => row.notes && insertedByClientId.has(row.client_id))
+      .map(row => ({
+        client_id: insertedByClientId.get(row.client_id)!,
+        author_id: userId,
+        content: row.notes!,
+      }))
+
+    const activityRows = (insertedRows ?? []).map((client) => ({
+      client_id: client.id,
+      user_id: userId,
+      action: 'Client created via batch import',
+      field_name: null,
+      old_value: null,
+      new_value: client.client_id,
     }))
 
-  const activityRows = (insertedRows ?? []).map((client) => ({
-    client_id: client.id,
-    user_id: userId,
-    action: 'Client created via batch import',
-    field_name: null,
-    old_value: null,
-    new_value: client.client_id,
-  }))
-
-  if (importedNotes.length > 0) {
-    if (isAzureConfigured()) {
-      await withRlsContext(userId, (sql) => sql`INSERT INTO client_notes ${sql(importedNotes, 'client_id', 'author_id', 'content')}`)
-    } else {
+    if (importedNotes.length > 0) {
       await supabase.from('client_notes').insert(importedNotes)
     }
-  }
 
-  if (activityRows.length > 0) {
-    if (isAzureConfigured()) {
-      await withRlsContext(userId, (sql) => sql`INSERT INTO activity_log ${sql(activityRows, 'client_id', 'user_id', 'action', 'field_name', 'old_value', 'new_value')}`)
-    } else {
+    if (activityRows.length > 0) {
       await supabase.from('activity_log').insert(activityRows)
     }
-  }
 
-  if (isAzureConfigured()) {
-    await withRlsContext(userId, (sql) => sql`INSERT INTO client_import_runs ${sql({ ...importRunBase, imported_rows: insertedRows?.length ?? 0 })}`)
-  } else {
     await supabase.from('client_import_runs').insert({
       ...importRunBase,
       imported_rows: insertedRows?.length ?? 0,
