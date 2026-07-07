@@ -176,6 +176,7 @@ export interface ClientImportParseResult {
   headers: string[]
   rows: ClientImportParsedRow[]
   errors: ClientImportError[]
+  parseWarnings?: ClientImportError[]
 }
 
 export interface ClientImportValidationResult {
@@ -184,14 +185,18 @@ export interface ClientImportValidationResult {
   warnings: ClientImportError[]
 }
 
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = []
+function parseCsvRecords(text: string): string[][] {
+  // Full-text state machine (audit B4): a quoted field may contain commas
+  // AND newlines — the old line-splitter shredded notes with embedded line
+  // breaks. RFC-4180 quote semantics ("" = literal quote inside quotes).
+  const records: string[][] = []
+  let row: string[] = []
   let current = ''
   let inQuotes = false
 
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i]
-    const next = line[i + 1]
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]
+    const next = text[i + 1]
 
     if (char === '"') {
       if (inQuotes && next === '"') {
@@ -204,23 +209,36 @@ function splitCsvLine(line: string): string[] {
     }
 
     if (char === ',' && !inQuotes) {
-      cells.push(current)
+      row.push(current)
+      current = ''
+      continue
+    }
+
+    if (char === '\n' && !inQuotes) {
+      row.push(current)
+      records.push(row)
+      row = []
       current = ''
       continue
     }
 
     current += char
   }
-
-  cells.push(current)
-  return cells
+  row.push(current)
+  records.push(row)
+  return records
 }
 
 export function parseClientImportCsv(csvText: string): ClientImportParseResult {
   const normalized = csvText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-  const lines = normalized.split('\n').filter((line, index, all) => !(index === all.length - 1 && line.trim() === ''))
+  const records = parseCsvRecords(normalized)
 
-  if (lines.length === 0) {
+  // Drop trailing fully-empty records (files ending in newlines).
+  while (records.length > 0 && records[records.length - 1].every(cell => cell.trim() === '')) {
+    records.pop()
+  }
+
+  if (records.length === 0) {
     return {
       headers: [],
       rows: [],
@@ -228,27 +246,39 @@ export function parseClientImportCsv(csvText: string): ClientImportParseResult {
     }
   }
 
-  const headers = splitCsvLine(lines[0]).map(h => h.trim())
+  const headers = records[0].map(h => h.trim())
   const missingHeaders = CLIENT_IMPORT_REQUIRED_HEADERS.filter(header => !headers.includes(header))
   const errors: ClientImportError[] = missingHeaders.map(header => ({
     rowNumber: 1,
     column: header,
     message: `Missing required header: ${header}`,
   }))
+  const parseWarnings: ClientImportError[] = []
 
   const rows: ClientImportParsedRow[] = []
 
-  for (let lineIndex = 1; lineIndex < lines.length; lineIndex += 1) {
-    const line = lines[lineIndex]
-    if (!line.trim()) continue
+  for (let recordIndex = 1; recordIndex < records.length; recordIndex += 1) {
+    const values = records[recordIndex]
+    const rowNumber = recordIndex + 1
 
-    const values = splitCsvLine(line)
+    const hasAnyValue = values.some(value => value.trim() !== '')
+    if (!hasAnyValue) continue
+
     if (values.length > headers.length) {
       errors.push({
-        rowNumber: lineIndex + 1,
+        rowNumber,
         message: `Row has ${values.length} columns but header defines ${headers.length}.`,
       })
       continue
+    }
+
+    if (values.length < headers.length) {
+      // Audit B5: previously silent — a truncated export imported with
+      // blank trailing fields (exactly the CO-classification columns).
+      parseWarnings.push({
+        rowNumber,
+        message: `Row has ${values.length} of ${headers.length} columns; missing trailing fields imported as blank.`,
+      })
     }
 
     const raw: Record<string, string> = {}
@@ -256,13 +286,10 @@ export function parseClientImportCsv(csvText: string): ClientImportParseResult {
       raw[header] = (values[index] ?? '').trim()
     })
 
-    const hasAnyValue = Object.values(raw).some(value => value !== '')
-    if (!hasAnyValue) continue
-
-    rows.push({ rowNumber: lineIndex + 1, raw })
+    rows.push({ rowNumber, raw })
   }
 
-  return { headers, rows, errors }
+  return { headers, rows, errors, parseWarnings }
 }
 
 function normalizeText(value: string | undefined): string | null {
@@ -439,6 +466,16 @@ export function validateClientImportRows(
       errors.push({ rowNumber: row.rowNumber, column: 'last_name', message: 'Last name is required' })
     }
 
+    if (clientId && /^\d+$/.test(clientId)) {
+      // Audit B1: BLH MA#s contain letters; an all-digit id usually means an
+      // Excel numeric cell already stripped the leading zeros upstream.
+      warnings.push({
+        rowNumber: row.rowNumber,
+        column: 'client_id',
+        message: 'Client ID is all digits — if this came from Excel, leading zeros may have been stripped. Verify against the source sheet.',
+      })
+    }
+
     const category = normalizeCategory(raw.category)
     if (category.error) {
       errors.push({ rowNumber: row.rowNumber, column: 'category', message: category.error })
@@ -495,6 +532,21 @@ export function validateClientImportRows(
         return [field, normalizedValue.value]
       }),
     ) as Record<string, string | null>
+
+    // Audit B2: normalizeDate guarantees a real calendar date but not a
+    // PLAUSIBLE one — 1999-12-31 sentinels (Cobb class) sailed through.
+    // Warnings, not errors: the operator sees them in the issue CSV and
+    // decides; the offline transform remains the hard gate.
+    const currentYear = new Date().getFullYear()
+    for (const [field, value] of Object.entries(dateValues)) {
+      if (!value) continue
+      const year = Number(value.slice(0, 4))
+      if (year < 1900 || year > 2100) {
+        warnings.push({ rowNumber: row.rowNumber, column: field, message: `Date ${value} is outside 1900–2100 — likely a sentinel or typo.` })
+      } else if (Math.abs(year - currentYear) > 15) {
+        warnings.push({ rowNumber: row.rowNumber, column: field, message: `Date ${value} is more than 15 years from today — verify it is not a typo.` })
+      }
+    }
 
     const booleanSpmCompleted = normalizeBoolean(raw.spm_completed)
     if (booleanSpmCompleted.error) {
@@ -637,7 +689,7 @@ export function parseClientImportText(csvText: string, planners: Pick<Profile, '
     rows: parsed.rows,
     parseErrors: parsed.errors,
     validationErrors: validated.errors,
-    warnings: validated.warnings,
+    warnings: [...(parsed.parseWarnings ?? []), ...validated.warnings],
     normalizedRows: validated.normalizedRows,
   }
 }
