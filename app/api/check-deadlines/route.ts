@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { upsertAzureIdentity } from '@/lib/db/identity-sync'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } from '@/lib/email-templates'
 import { businessTodayStr, businessTodayEpoch, daysFromBusinessToday, DAY_MS } from '@/lib/business-date'
@@ -284,6 +285,8 @@ export async function GET(request: Request) {
   let digestsSent = 0
   let managerAlertsSent = 0
   let unassignedAlertsSent = 0
+  let identitiesReconciled = 0
+  let identityReconcileFailures = 0
 
   // ---- Pass 1: compute every candidate action deterministically ----
   type NotifRow = { user_id: string; title: string; body: string; link: string; read: boolean }
@@ -566,6 +569,38 @@ export async function GET(request: Request) {
     }
   }
 
+  // ---- IDENTITY RECONCILE (morning run only) ----
+  // Audit U2: /api/admin/reconcile-identities existed but nothing scheduled
+  // it, so a failed acceptance-time sync (audit U1) could leave a user blind
+  // on the PHI plane indefinitely. Idempotent upserts; elevated actor is the
+  // same resolved supervisor identity the deadline scan runs under.
+  if (isMorningRun && isAzureConfigured()) {
+    try {
+      const { data: reconcileActor } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'supervisor')
+        .order('created_at', { ascending: true })
+        .limit(1)
+      const actorId = reconcileActor?.[0]?.id
+      if (actorId) {
+        const { data: allProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, role, team_manager_id')
+        for (const profileRow of allProfiles ?? []) {
+          const synced = await upsertAzureIdentity(profileRow, actorId)
+          if (synced) identitiesReconciled++
+          else identityReconcileFailures++
+        }
+        if (identityReconcileFailures > 0) {
+          console.error(`[check-deadlines] identity reconcile: ${identityReconcileFailures} of ${(allProfiles ?? []).length} profiles failed to sync`)
+        }
+      }
+    } catch (reconcileErr) {
+      console.error('[check-deadlines] identity reconcile pass failed:', reconcileErr)
+    }
+  }
+
   // ---- DAILY DIGEST (morning run only) ----
   if (isMorningRun) {
     const clientsByPlanner: Record<string, typeof clients> = {}
@@ -651,6 +686,8 @@ export async function GET(request: Request) {
     digestsSent,
     managerAlertsSent,
     unassignedAlertsSent,
+    identitiesReconciled,
+    identityReconcileFailures,
     unassignedClients: (clients ?? []).filter(c => !c.assigned_to).length,
     timestamp: new Date().toISOString(),
   })
