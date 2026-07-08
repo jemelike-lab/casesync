@@ -149,10 +149,11 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
         </Stack>
         <Box
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.22)',
+            width: 64,
+            height: 64,
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.92)',
+            boxShadow: '0 6px 18px rgba(15,23,42,0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -345,6 +346,9 @@ function MyTeamCard({
             </Text>
           </Stack>
         </Group>
+        <Box visibleFrom="md" style={{ flexShrink: 0, filter: 'drop-shadow(0 12px 30px rgba(15,23,42,0.18))' }}>
+          <LottieBlock src={ANIM.gHeroScene} width={240} height={170} trigger="loop" label="Case management illustration" />
+        </Box>
         <Group gap="lg" wrap="nowrap" visibleFrom="sm">
           <Stack gap={0} align="flex-end">
             <Text fz={11} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
@@ -398,6 +402,7 @@ function TeamHealthSection({
     <SectionPaper
       eyebrow="Snapshot"
       title="Team Health Snapshot"
+      anim={ANIM.gChart}
       heroSrc="/heroes/evaluations.svg"
       rightSlot={
         <Badge size="sm" variant="light" color="emerald">
@@ -919,7 +924,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
               href="/team?filter=all"
               value={scopedSummary.total_clients}
               subtitle={`${planners.length} SP${planners.length === 1 ? '' : 's'}`}
-              icon={<Users size={20} color="#fff" />}
+              icon={<LottieBlock src={ANIM.gActive} size={52} trigger="loop" />}
               gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
               shadowColor="rgba(30,124,255,0.35)"
             />
@@ -930,7 +935,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
               href="/team?filter=overdue"
               value={scopedSummary.overdue_clients}
               subtitle="needs follow-up"
-              icon={<AlertTriangle size={20} color="#fff" />}
+              icon={<LottieBlock src={ANIM.gOverdue} size={52} trigger="loop" />}
               gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
               shadowColor="rgba(255,59,92,0.35)"
             />
@@ -941,7 +946,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
               href="/team?filter=due_this_week"
               value={scopedSummary.due_this_week_clients}
               subtitle="in next 7 days"
-              icon={<Clock size={20} color="#fff" />}
+              icon={<LottieBlock src={ANIM.gDueWeek} size={52} trigger="loop" />}
               gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
               shadowColor="rgba(255,169,64,0.35)"
             />
@@ -952,7 +957,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
               href="/team?filter=no_contact_7"
               value={scopedSummary.no_contact_7_days_clients}
               subtitle="in last 7 days"
-              icon={<PhoneOff size={20} color="#fff" />}
+              icon={<LottieBlock src={ANIM.gNoContact} size={52} trigger="loop" />}
               gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
               shadowColor="rgba(16,185,129,0.35)"
             />
