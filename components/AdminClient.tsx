@@ -5,6 +5,8 @@ import { useState, useTransition, useEffect } from 'react'
 import { Profile, Role, UserInvite, InviteStatus } from '@/lib/types'
 import { inviteUser, resendInviteReminder, removePendingInvite, updateUserRole, updateTeamManagerAssignment, deactivateUser } from '@/app/actions/admin'
 import Link from 'next/link'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface InternalDoc {
   name: string
@@ -236,7 +238,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>⚙️ Admin Panel</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.gSettings} size={50} trigger="mount" /> Admin Panel</h1>
         <Link href="/dashboard" style={{
           fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
           padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,

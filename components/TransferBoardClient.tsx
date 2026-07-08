@@ -8,6 +8,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { Client, Profile } from '@/lib/types'
 import { businessTodayStr, businessTodayEpoch, dateStrToEpoch, DAY_MS } from '@/lib/business-date'
 import { createClient } from '@/lib/supabase/client'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   clients: Client[]
@@ -1058,9 +1060,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
             <div className="card" style={{ display: 'grid', gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Clients</div>
               {mobileTransferClients.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  No clients match this search.
-                </div>
+                <EmptyState anim={ANIM.emptySearch} title="No clients match this search." compact size={84} />
               ) : mobileTransferClients.map(client => {
                 const isSelected = mobileSelectedClientId === client.id
                 return (

@@ -5,6 +5,8 @@ import { scrollToElement } from '@/lib/scroll'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Profile } from '@/lib/types'
 import { useTheme } from '@/hooks/useTheme'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 const GUIDES = [
   { key: 'supports_planner', label: 'Supports Planner', icon: '👤', role: 'supports_planner', url: '/api/guides?guide=supports-planner', filename: 'guide-supports-planner.txt' },
@@ -171,7 +173,7 @@ export default function HelpPageClient({ profile }: Props) {
           <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: lt ? 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(100,140,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Help Center</div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#fff' }}>📚 CaseSync User Guide</h1>
+            <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.gQuestion} size={52} trigger="mount" /> CaseSync User Guide</h1>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: '6px 0 0' }}>Select your role below for a tailored walkthrough</p>
           </div>
         </div>

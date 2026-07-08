@@ -29,6 +29,7 @@ import {
 } from '@/lib/types'
 import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
+import ClientListTable from './ClientListTable'
 import PinnedClients from './PinnedClients'
 import WeekStrip from './WeekStrip'
 import Confetti from './Confetti'
@@ -43,6 +44,8 @@ import ClientQuickSearch from './ClientQuickSearch'
 import BulkContactModal from './BulkContactModal'
 import PremiumStatGrid from './PremiumStatGrid'
 import { createSavedView, updateSavedView, deleteSavedView } from '@/app/actions/saved-views'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   profile: Profile | null
@@ -364,13 +367,18 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
       </div>
 
+      {/* Big scene animation — drastic pass: the hero owns the card's right side */}
+      <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', width: 'clamp(170px, 26vw, 260px)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.35))' }}>
+        <LottieBlock src={ANIM.gHeroScene} width={280} height={210} trigger="loop" label="Care team illustration" className="dash-hero-anim" />
+      </div>
+
       {/* Greeting */}
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 10 }}>
+      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.15, marginBottom: 10, maxWidth: '62%' }}>
         {greeting}, {firstName} 👋
       </div>
 
       {/* Summary */}
-      <div style={{ fontSize: 14, color: allCurrent ? 'rgba(100,220,140,0.8)' : 'rgba(200,210,255,0.7)', fontWeight: 600, marginBottom: 16 }}>
+      <div style={{ fontSize: 15, color: allCurrent ? 'rgba(100,220,140,0.8)' : 'rgba(200,210,255,0.7)', fontWeight: 600, marginBottom: 18, maxWidth: '62%' }}>
         {allCurrent ? '✅ ' : ''}{summaryHeadline}
       </div>
 
@@ -383,11 +391,14 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.12)',
                 border: activeFilter === 'overdue' ? '1px solid rgba(255,69,58,0.5)' : '1px solid rgba(255,69,58,0.25)',
-                borderRadius: 12, color: '#ff6b6b', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ff6b6b', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {overdueCount} overdue
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.gOverdue} size={34} trigger="loop" playKey={stats.overdue} />
+                {overdueCount} overdue
+              </span>
             </button>
           )}
           {stats.dueThisWeek > 0 && (
@@ -396,11 +407,14 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.1)',
                 border: activeFilter === 'due_this_week' ? '1px solid rgba(255,159,10,0.5)' : '1px solid rgba(255,159,10,0.2)',
-                borderRadius: 12, color: '#ffb340', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ffb340', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {dueCount} due this week
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.gDueWeek} size={34} trigger="loop" playKey={stats.dueThisWeek} />
+                {dueCount} due this week
+              </span>
             </button>
           )}
           {stats.noContact > 0 && (
@@ -409,11 +423,14 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.2)' : 'rgba(255,214,10,0.08)',
                 border: activeFilter === 'no_contact_7' ? '1px solid rgba(255,214,10,0.4)' : '1px solid rgba(255,214,10,0.15)',
-                borderRadius: 12, color: '#ffe066', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ffe066', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {noContactCount} no contact 7d+
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.gNoContact} size={34} trigger="loop" playKey={stats.noContact} />
+                {noContactCount} no contact 7d+
+              </span>
             </button>
           )}
         </div>
@@ -1991,24 +2008,26 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Results surface */}
       {viewMode === 'table' ? (
-        <ClientOpsTable
-          clients={filtered}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          showSelect={showSelect}
-          pinnedIds={pinnedIds}
-          onTogglePin={togglePin}
-          sortField={sortField}
-          sortDir={sortDir}
-          onSortChange={handleSortChange}
-          total={total}
-          page={page}
-          hasMore={hasMore}
-          onPrevPage={() => setPage(current => Math.max(0, current - 1))}
-          onNextPage={() => setPage(current => current + 1)}
-          activeFilterLabel={activeSavedViewId ? (savedViews.find(view => view.id === activeSavedViewId)?.name ?? 'Saved View') : (alertFilter ?? filter).replaceAll('_', ' ')}
-          searchLabel={debouncedSearch}
-        />
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 12, padding: '12px 14px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                {(activeSavedViewId ? (savedViews.find(view => view.id === activeSavedViewId)?.name ?? 'Saved View') : (alertFilter ?? filter).replaceAll('_', ' '))}
+              </span>
+              {debouncedSearch ? <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Search: “{debouncedSearch}”</span> : null}
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{total} matching</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={() => setPage(current => Math.max(0, current - 1))} disabled={page === 0}>← Prev</button>
+              <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={() => setPage(current => current + 1)} disabled={!hasMore}>Next →</button>
+            </div>
+          </div>
+          <ClientListTable
+            clients={filtered as any}
+            searchActive={Boolean(debouncedSearch)}
+            emptyTitle={debouncedSearch ? `No clients match “${debouncedSearch}”` : 'No clients in this view'}
+          />
+        </div>
       ) : (
         <ClientGrid
           clients={filtered}

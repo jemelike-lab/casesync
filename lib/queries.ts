@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Client, Profile } from '@/lib/types'
 
-const PROFILE_FIELDS = 'id, full_name, role, created_at, team_manager_id'
+const PROFILE_FIELDS = 'id, full_name, role, created_at, team_manager_id, avatar_url, job_title'
 const CLIENT_WITH_ASSIGNEE_FIELDS = `
   id,
   client_id,

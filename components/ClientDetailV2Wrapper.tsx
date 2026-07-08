@@ -293,7 +293,7 @@ function Breadcrumb({ client }: { client: Client }) {
         <Text fz={12} c="var(--v2-text-muted)" style={{ cursor: 'pointer' }} className="cs-crumb-link">Dashboard</Text>
       </Link>
       <Text fz={12} c="var(--v2-text-muted)">/</Text>
-      <Link href="/team?filter=all" style={{ textDecoration: 'none' }}>
+      <Link href="/clients" style={{ textDecoration: 'none' }}>
         <Text fz={12} c="var(--v2-text-muted)" style={{ cursor: 'pointer' }} className="cs-crumb-link">Clients</Text>
       </Link>
       <Text fz={12} c="var(--v2-text-muted)">/</Text>

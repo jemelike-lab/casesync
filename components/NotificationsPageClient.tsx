@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Profile } from '@/lib/types'
 import { useNotifications } from '@/hooks/useNotifications'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   userId: string
@@ -113,9 +115,12 @@ export default function NotificationsPageClient({ userId, profile }: Props) {
             Loading…
           </div>
         ) : visibleNotifications.length === 0 ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-            {activeTab === 'inbox' ? 'No unread notifications.' : 'No archived notifications yet.'}
-          </div>
+          <EmptyState
+            anim={ANIM.emptyNotifications}
+            title={activeTab === 'inbox' ? 'No unread notifications' : 'No archived notifications yet'}
+            description={activeTab === 'inbox' ? "You're all caught up." : undefined}
+            size={124}
+          />
         ) : (
           visibleNotifications.map((notification) => {
             const resolvedLink = resolveNotificationLink(notification.link, notification.title, notification.body)

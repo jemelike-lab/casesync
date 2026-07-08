@@ -52,6 +52,7 @@ import {
 } from 'lucide-react'
 import { formatDateTime, timeAgo, getInitials } from '@/lib/workryn/utils'
 import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
+import { ANIM } from '@/lib/animations'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -435,7 +436,7 @@ export default function EvaluationsClient({
       {/* ============ AURORA HERO ============ */}
       {bannerUrl ? (
         <>
-          <PageBanner bannerUrl={bannerUrl} />
+          <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />
           <Group justify="flex-end" mb="lg">
             {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
               <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>

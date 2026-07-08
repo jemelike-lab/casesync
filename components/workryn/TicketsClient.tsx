@@ -42,6 +42,8 @@ import {
 import { getPriorityColor, getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 // ---------- Types ----------
 
@@ -269,7 +271,7 @@ export default function TicketsClient({ initialTickets, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gChatBubble} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="tia-btn-primary">New Ticket</Button>
             </Group>
@@ -435,17 +437,17 @@ export default function TicketsClient({ initialTickets, users, departments, curr
 
           {/* List */}
           {filtered.length === 0 ? (
-            <Stack align="center" gap="xs" py={48}>
-              <ThemeIcon size={48} radius="xl" variant="light" color="orange">
-                <Inbox size={22} />
-              </ThemeIcon>
-              <Text c="dimmed">
-                {search || filterPriority || filterAssignee || filterDepartment
+            <Stack align="center" gap="xs" py={32}>
+              <EmptyState
+                anim={(search || filterPriority || filterAssignee || filterDepartment) ? ANIM.emptySearch : ANIM.emptyTickets}
+                size={124}
+                compact
+                title={search || filterPriority || filterAssignee || filterDepartment
                   ? 'No tickets match your filters'
                   : filterTab === 'ARCHIVED'
                   ? 'No archived tickets yet'
                   : 'No tickets yet — create your first one above'}
-              </Text>
+              />
             </Stack>
           ) : (
             <div className="tia-list">

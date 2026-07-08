@@ -25,7 +25,9 @@ const securityHeaders = [
       // weaken security for browsers that support CSP Level 2+. To fully remove it, migrate to
       // Next.js middleware-based dynamic nonce injection (see docs/csp-nonce-upgrade.md).
       // 'unsafe-eval' is intentionally omitted — it is not required by Next.js 16.
-      "script-src 'self' 'unsafe-inline'",
+      // 'wasm-unsafe-eval' allows WebAssembly compilation only (NOT JS eval) — required by the
+      // self-hosted dotLottie renderer (/animations/dotlottie-player.wasm). No external origins added.
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
       // Inline styles are required by React/Tailwind CSS-in-JS patterns.
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",

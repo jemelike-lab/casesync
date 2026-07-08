@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 const REASON_MESSAGES: Record<string, string> = {
   session_timeout: 'Your session has expired due to inactivity. Please sign in again.',

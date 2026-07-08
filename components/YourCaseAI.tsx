@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 type ActionProposal = {
   kind: 'log_contact' | 'add_note' | 'update_date'
@@ -878,8 +880,8 @@ export default function BLHAssistant() {
             <button
               onClick={handleOpen}
               style={{
-                width: 52,
-                height: 52,
+                width: 68,
+                height: 68,
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                 border: 'none',
@@ -904,7 +906,7 @@ export default function BLHAssistant() {
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(124, 58, 237, 0.4)'
               }}
             >
-              ✨
+              <LottieBlock src={ANIM.caseyFemale} size={54} trigger="loop" label="Casey" />
             </button>
             {/* Tooltip */}
             <div style={{
@@ -973,8 +975,9 @@ export default function BLHAssistant() {
                   justifyContent: 'center',
                   fontSize: 14,
                   flexShrink: 0,
+                  overflow: 'hidden',
                 }}>
-                  ✨
+                  <LottieBlock src={ANIM.caseyPanel} size={30} trigger="loop" label="Casey" />
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>Casey</div>

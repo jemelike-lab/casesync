@@ -385,7 +385,7 @@ export function formatDate(dateStr: string | null): string {
   return `${month}/${day}/${year}`
 }
 
-const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
+export const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
   'eligibility_end_date',
   'three_month_visit_due',
   'quarterly_waiver_date',
@@ -400,6 +400,23 @@ const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
   'doc_mdh_date',
   'spm_next_due',
 ]
+
+/** Human labels for the 13-field deadline canon — UI single source of truth. */
+export const PRIORITY_DATE_LABELS: Record<string, string> = {
+  eligibility_end_date: 'Eligibility End',
+  three_month_visit_due: '3-Month Visit',
+  quarterly_waiver_date: 'Quarterly Waiver',
+  med_tech_redet_date: 'Med Tech Redet.',
+  pos_deadline: 'POS Deadline',
+  assessment_due: 'Assessment',
+  thirty_day_letter_date: '30-Day Letter',
+  co_financial_redet_date: 'CO Financial Redet.',
+  co_app_date: 'CO Application',
+  mfp_consent_date: 'MFP Consent',
+  two57_date: '257 Date',
+  doc_mdh_date: 'DOC/MDH',
+  spm_next_due: 'SPM Next Due',
+}
 
 export function clientPriorityScore(client: Client): number {
   let score = 0

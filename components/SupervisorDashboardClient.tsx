@@ -11,6 +11,8 @@ import { scrollToElement } from '@/lib/scroll'
 import HealthScoreRing from './HealthScoreRing'
 import TeamSavedViewsBar from './TeamSavedViewsBar'
 import PremiumStatGrid from './PremiumStatGrid'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 // TEAM_OVERVIEW_FIXES: real stat values + always-visible queue chips (2026-07-06)
 interface Props {
@@ -447,7 +449,7 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
             </div>
           </div>
           {filteredClients.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No clients matched this queue.</div>
+            <EmptyState anim={ANIM.emptyCaseload} title="No clients matched this queue." compact size={104} />
           ) : (
             <ClientGrid clients={filteredClients} pinnedIds={[]} onTogglePin={() => {}} />
           )}

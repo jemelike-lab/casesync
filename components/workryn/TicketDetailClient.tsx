@@ -9,6 +9,8 @@ import {
   Edit2, Check, Sparkles, History,
 } from 'lucide-react'
 import { getInitials, timeAgo, formatDateTime, getPriorityColor } from '@/lib/workryn/utils'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 type Author = { id: string; name: string | null; avatarColor: string; role: string } | null
 
@@ -386,9 +388,8 @@ export default function TicketDetailClient({
           {/* Chat thread */}
           <div className="td-thread">
             {ticket.messages.length === 0 ? (
-              <div className="empty-state" style={{ padding: '40px 20px' }}>
-                <MessageSquare size={32} />
-                <p>No messages yet</p>
+              <div className="empty-state" style={{ padding: '28px 20px' }}>
+                <EmptyState anim={ANIM.emptyMessages} title="No messages yet" compact size={110} />
               </div>
             ) : (
               ticket.messages.map(msg => (

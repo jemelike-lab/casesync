@@ -2,6 +2,8 @@
 
 import { Client, SortField, SortDir, sortClients } from '@/lib/types'
 import ClientCard from './ClientCard'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   clients: Client[]
@@ -96,7 +98,9 @@ export default function ClientGrid({
         color: 'var(--text-secondary)',
         fontSize: 14,
       }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>📍</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <LottieBlock src={ANIM.emptySearch} size={124} trigger="mount" />
+        </div>
         <div>No clients match your search or filter.</div>
       </div>
     )
