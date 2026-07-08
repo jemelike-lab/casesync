@@ -43,6 +43,8 @@ import ClientQuickSearch from './ClientQuickSearch'
 import BulkContactModal from './BulkContactModal'
 import PremiumStatGrid from './PremiumStatGrid'
 import { createSavedView, updateSavedView, deleteSavedView } from '@/app/actions/saved-views'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   profile: Profile | null
@@ -387,7 +389,10 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {overdueCount} overdue
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.statOverdue} size={18} trigger="hover" playKey={stats.overdue} />
+                {overdueCount} overdue
+              </span>
             </button>
           )}
           {stats.dueThisWeek > 0 && (
@@ -400,7 +405,10 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {dueCount} due this week
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.statDueWeek} size={18} trigger="hover" playKey={stats.dueThisWeek} />
+                {dueCount} due this week
+              </span>
             </button>
           )}
           {stats.noContact > 0 && (
@@ -413,7 +421,10 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
                 padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
-              {noContactCount} no contact 7d+
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <LottieBlock src={ANIM.statNoContact} size={18} trigger="hover" playKey={stats.noContact} />
+                {noContactCount} no contact 7d+
+              </span>
             </button>
           )}
         </div>

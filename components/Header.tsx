@@ -213,6 +213,19 @@ export default function Header({ user, profile }: Props) {
               {roleName}
             </div>
           </div>
+          <Link
+            href="/profile"
+            aria-label="My profile"
+            title="My profile"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, fontWeight: 800, textDecoration: 'none', flex: 'none' }}
+          >
+            {(profile as any)?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={(profile as any).avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              (profile?.full_name ?? user?.email ?? '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
+            )}
+          </Link>
           <button
             onClick={handleLogout}
             className="btn-secondary header-signout"
