@@ -29,6 +29,7 @@ import {
 } from '@/lib/types'
 import FilterBar from './FilterBar'
 import ClientGrid from './ClientGrid'
+import ClientListTable from './ClientListTable'
 import PinnedClients from './PinnedClients'
 import WeekStrip from './WeekStrip'
 import Confetti from './Confetti'
@@ -368,7 +369,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
 
       {/* Big scene animation — drastic pass: the hero owns the card's right side */}
       <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', width: 'clamp(170px, 26vw, 260px)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.35))' }}>
-        <LottieBlock src={ANIM.dashScene} width={260} height={200} trigger="loop" label="Care team illustration" className="dash-hero-anim" />
+        <LottieBlock src={ANIM.gHeroScene} width={280} height={210} trigger="loop" label="Care team illustration" className="dash-hero-anim" />
       </div>
 
       {/* Greeting */}
@@ -395,7 +396,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statOverdue} size={30} trigger="hover" playKey={stats.overdue} />
+                <LottieBlock src={ANIM.gOverdue} size={34} trigger="loop" playKey={stats.overdue} />
                 {overdueCount} overdue
               </span>
             </button>
@@ -411,7 +412,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statDueWeek} size={30} trigger="hover" playKey={stats.dueThisWeek} />
+                <LottieBlock src={ANIM.gDueWeek} size={34} trigger="loop" playKey={stats.dueThisWeek} />
                 {dueCount} due this week
               </span>
             </button>
@@ -427,7 +428,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statNoContact} size={30} trigger="hover" playKey={stats.noContact} />
+                <LottieBlock src={ANIM.gNoContact} size={34} trigger="loop" playKey={stats.noContact} />
                 {noContactCount} no contact 7d+
               </span>
             </button>
@@ -2007,24 +2008,26 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
 
       {/* Results surface */}
       {viewMode === 'table' ? (
-        <ClientOpsTable
-          clients={filtered}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          showSelect={showSelect}
-          pinnedIds={pinnedIds}
-          onTogglePin={togglePin}
-          sortField={sortField}
-          sortDir={sortDir}
-          onSortChange={handleSortChange}
-          total={total}
-          page={page}
-          hasMore={hasMore}
-          onPrevPage={() => setPage(current => Math.max(0, current - 1))}
-          onNextPage={() => setPage(current => current + 1)}
-          activeFilterLabel={activeSavedViewId ? (savedViews.find(view => view.id === activeSavedViewId)?.name ?? 'Saved View') : (alertFilter ?? filter).replaceAll('_', ' ')}
-          searchLabel={debouncedSearch}
-        />
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 12, padding: '12px 14px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                {(activeSavedViewId ? (savedViews.find(view => view.id === activeSavedViewId)?.name ?? 'Saved View') : (alertFilter ?? filter).replaceAll('_', ' '))}
+              </span>
+              {debouncedSearch ? <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Search: “{debouncedSearch}”</span> : null}
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{total} matching</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={() => setPage(current => Math.max(0, current - 1))} disabled={page === 0}>← Prev</button>
+              <button className="btn-secondary" style={{ fontSize: 11, minHeight: 28 }} onClick={() => setPage(current => current + 1)} disabled={!hasMore}>Next →</button>
+            </div>
+          </div>
+          <ClientListTable
+            clients={filtered as any}
+            searchActive={Boolean(debouncedSearch)}
+            emptyTitle={debouncedSearch ? `No clients match “${debouncedSearch}”` : 'No clients in this view'}
+          />
+        </div>
       ) : (
         <ClientGrid
           clients={filtered}

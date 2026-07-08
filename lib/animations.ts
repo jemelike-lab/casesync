@@ -56,6 +56,32 @@ export const ANIM = {
   heroDepartments: '/animations/35-departments.lottie',
   heroProfile: '/animations/36-profile.lottie',
 
+  // ── Glassmorphism pass (Batch 6) — stronger visual identity ──────
+  gActive: '/animations/g-active.lottie',       // Verified User
+  gOverdue: '/animations/g-overdue.lottie',     // Alarm
+  gDueWeek: '/animations/g-dueweek.lottie',     // List
+  gNoContact: '/animations/g-nocontact.lottie', // Message
+  gChart: '/animations/g-chart.lottie',
+  gApprove: '/animations/g-approve.lottie',
+  gDone: '/animations/g-done.lottie',
+  gSearch: '/animations/g-search.lottie',
+  gNotification: '/animations/g-notification.lottie',
+  gEmail: '/animations/g-email.lottie',
+  gComputer: '/animations/g-computer.lottie',
+  gHeart: '/animations/g-heart.lottie',
+  gChat: '/animations/g-chat.lottie',
+  gDownload: '/animations/g-download.lottie',
+  gFilter: '/animations/g-filter.lottie',
+  gPlus: '/animations/g-plus.lottie',
+  gHome: '/animations/g-home.lottie',
+  gProfile: '/animations/g-profile.lottie',
+  gCall: '/animations/g-call.lottie',
+  gMail: '/animations/g-mail.lottie',
+  gGlobal: '/animations/g-global.lottie',
+  gLocation: '/animations/g-location.lottie',
+  gHeroScene: '/animations/g-hero-scene.lottie', // People Management — case-mgmt hero
+  gHeroAlt: '/animations/g-hero-alt.lottie',     // Office Interaction — alt
+
   // ── Drastic pass (Batch 5) ───────────────────────────────────────
   dashScene: '/animations/40-dash-scene.lottie',        // Medical team with tablet — hero band
   dashSceneAlt: '/animations/41-dash-scene-alt.lottie', // Team working in office — alt

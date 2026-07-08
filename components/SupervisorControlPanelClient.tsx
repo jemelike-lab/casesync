@@ -60,6 +60,7 @@ import type { AssigneeSummaryRow } from '@/lib/dashboard-summary'
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
 import LottieBlock from '@/components/ui/LottieBlock'
 import { ANIM } from '@/lib/animations'
+import ClientListTable from './ClientListTable'
 
 // ===========================================================================
 // Props — preserved EXACTLY from the legacy component (see
@@ -412,12 +413,14 @@ function SectionPaper({
   title,
   rightSlot,
   heroSrc,
+  anim,
   children,
 }: {
   eyebrow: string
   title: string
   rightSlot?: React.ReactNode
   heroSrc?: string
+  anim?: string
   children: React.ReactNode
 }) {
   return (
@@ -457,14 +460,21 @@ function SectionPaper({
       )}
       <Box style={{ position: 'relative', zIndex: 1 }}>
         <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
-          <Stack gap={2}>
-            <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
-              {eyebrow}
-            </Text>
-            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
-              {title}
-            </Title>
-          </Stack>
+          <Group gap="sm" wrap="nowrap" align="center">
+            {anim && (
+              <Box style={{ width: 52, height: 52, flexShrink: 0, background: 'rgba(30,124,255,0.08)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LottieBlock src={anim} size={42} trigger="loop" />
+              </Box>
+            )}
+            <Stack gap={2}>
+              <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                {eyebrow}
+              </Text>
+              <Title order={2} fz={18} fw={700} c="var(--v2-text)">
+                {title}
+              </Title>
+            </Stack>
+          </Group>
           {rightSlot}
         </Flex>
         {children}
@@ -516,6 +526,7 @@ function TeamHealthSection({
     <SectionPaper
       eyebrow="P1.2"
       title="Team Health Snapshot"
+      anim={ANIM.gChart}
       heroSrc="/heroes/evaluations.svg"
       rightSlot={
         <Badge size="sm" variant="light" color="emerald">
@@ -700,6 +711,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
     <SectionPaper
       eyebrow="P1.3"
       title="Client Drill-down"
+      anim={ANIM.gDueWeek}
       heroSrc="/heroes/tickets.svg"
       rightSlot={
         <Group gap="xs" wrap="nowrap">
@@ -723,81 +735,15 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
         mb="md"
         color="cobalt"
       />
-      {clients.length === 0 ? (
-        <Box
-          py="xl"
-          style={{
-            textAlign: 'center',
-            background: 'var(--v2-surface-tint)',
-            borderRadius: 12,
-            border: '1px dashed var(--v2-border-soft)',
-          }}
-        >
-          <Box style={{ width: 104, height: 104, margin: '0 auto 12px' }}>
-            <LottieBlock src={ANIM.emptyCaseload} size={104} trigger="mount" />
-          </Box>
-          <Text fz={14} fw={600} c="var(--v2-text)">
-            {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
-          </Text>
-          <Text fz={12} c="var(--v2-text-muted)" mt={4}>
-            {loading ? 'Just a moment…' : 'Try a different filter or check back later.'}
-          </Text>
-        </Box>
-      ) : (
-        <Stack gap={8}>
-          {clients.map((client) => {
-            const planner = planners.find((p) => p.id === client.assigned_to)
-            const fullName =
-              [client.first_name, client.last_name].filter(Boolean).join(' ') || client.client_id
-            return (
-              <Link
-                key={client.id}
-                href={`/clients/${client.id}`}
-                style={{ textDecoration: 'none' }}
-              >
-                <Box
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    background: `${filterMeta.color}08`,
-                    borderLeft: `3px solid ${filterMeta.color}`,
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
-                    <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-                      <Avatar
-                        size="sm"
-                        radius="xl"
-                        style={{ background: `${filterMeta.color}22`, color: filterMeta.color, fontSize: 11, fontWeight: 700 }}
-                      >
-                        {fullName
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((p) => p[0])
-                          .join('')
-                          .toUpperCase()}
-                      </Avatar>
-                      <Stack gap={2} style={{ minWidth: 0 }}>
-                        <Text fz={13} fw={700} c="var(--v2-text)" truncate>
-                          {fullName}
-                        </Text>
-                        <Text fz={11} c="var(--v2-text-muted)" truncate>
-                          {planner?.full_name ?? 'Unassigned'} · {client.category?.toUpperCase() ?? '—'}
-                        </Text>
-                      </Stack>
-                    </Group>
-                    <Badge size="xs" variant="light" style={{ background: `${filterMeta.color}1A`, color: filterMeta.color }}>
-                      {filterMeta.label}
-                    </Badge>
-                    <ChevronRight size={14} color="var(--v2-text-muted)" />
-                  </Flex>
-                </Box>
-              </Link>
-            )
-          })}
-        </Stack>
-      )}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--v2-border-soft)', borderRadius: 12 }}>
+        <ClientListTable
+          clients={clients as any}
+          loading={loading}
+          searchActive={false}
+          emptyTitle={`No clients match "${filterMeta.label}"`}
+          emptyDescription="Try a different filter or check back later."
+        />
+      </div>
     </SectionPaper>
   )
 }
@@ -843,6 +789,7 @@ function PlannerWorkloadSection({
     <SectionPaper
       eyebrow="P1.4"
       title="Planner Workload"
+      anim={ANIM.gActive}
       heroSrc="/heroes/tasks.svg"
       rightSlot={
         <Badge size="sm" variant="light" color="cobalt">
@@ -965,6 +912,7 @@ function TeamRosterSection({
     <SectionPaper
       eyebrow="P1.4"
       title="Team Roster"
+      anim={ANIM.gProfile}
       heroSrc="/heroes/profile.svg"
       rightSlot={
         <Group gap={6} wrap="nowrap">
@@ -1198,7 +1146,7 @@ function SupervisorControlPanelInner({
             </Text>
           </Stack>
           <Box visibleFrom="sm" style={{ flexShrink: 0, filter: 'drop-shadow(0 14px 34px rgba(15,23,42,0.25))' }}>
-            <LottieBlock src={ANIM.dashScene} width={300} height={210} trigger="loop" label="Care team illustration" />
+            <LottieBlock src={ANIM.gHeroScene} width={320} height={230} trigger="loop" label="Care team illustration" />
           </Box>
         </Flex>
       </Paper>
@@ -1211,7 +1159,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=all"
             value={scopedSummary.total_clients}
             subtitle={`across ${derivedTeams.length} teams`}
-            icon={<LottieBlock src={ANIM.statActive} size={54} trigger="loop" />}
+            icon={<LottieBlock src={ANIM.gActive} size={56} trigger="loop" />}
             gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
             shadowColor="rgba(30,124,255,0.35)"
           />
@@ -1222,7 +1170,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=overdue"
             value={scopedSummary.overdue_clients}
             subtitle="needs follow-up"
-            icon={<LottieBlock src={ANIM.statOverdue} size={54} trigger="loop" />}
+            icon={<LottieBlock src={ANIM.gOverdue} size={56} trigger="loop" />}
             gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
             shadowColor="rgba(255,59,92,0.35)"
           />
@@ -1233,7 +1181,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=due_this_week"
             value={scopedSummary.due_this_week_clients}
             subtitle="in next 7 days"
-            icon={<LottieBlock src={ANIM.statDueWeek} size={54} trigger="loop" />}
+            icon={<LottieBlock src={ANIM.gDueWeek} size={56} trigger="loop" />}
             gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
             shadowColor="rgba(255,169,64,0.35)"
           />
@@ -1244,7 +1192,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=no_contact_7"
             value={scopedSummary.no_contact_7_days_clients}
             subtitle="in last 7 days"
-            icon={<LottieBlock src={ANIM.statNoContact} size={54} trigger="loop" />}
+            icon={<LottieBlock src={ANIM.gNoContact} size={56} trigger="loop" />}
             gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
             shadowColor="rgba(16,185,129,0.35)"
           />
