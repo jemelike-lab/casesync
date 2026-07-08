@@ -1,25 +1,20 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUserAndProfile } from '@/lib/queries'
 import { isSupervisorLike } from '@/lib/roles'
+import ClientIndexClient from '@/components/ClientIndexClient'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * /clients redirect stub (2026-07-05).
- *
- * The clients namespace has always been detail-and-actions only
- * ([id], import, new) — a bare /clients 404'd even though the client-detail
- * breadcrumb implied it existed. Until the real client index ships
- * (planned post-onboarding: flat searchable RLS-scoped table), route the
- * guessable URL to each role's canonical list surface instead of a 404:
- * supervisor-likes and team managers get the /team queue views, everyone
- * else gets their dashboard caseload.
+ * /clients — the real client index (shipped 2026-07-08 with the facelift).
+ * Flat, searchable, RLS-scoped table; SPs default to "My caseload"
+ * (the 60-client-scroll concern), supervisor-likes default to All Active.
+ * All reads go through GET /api/clients — same predicates and scope as
+ * every other surface.
  */
-export default async function ClientsIndexRedirect() {
+export default async function ClientsIndexPage() {
   const { user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
-  if (isSupervisorLike(profile?.role) || profile?.role === 'team_manager') {
-    redirect('/team?filter=all')
-  }
-  redirect('/dashboard')
+  const elevated = isSupervisorLike(profile?.role) || profile?.role === 'team_manager'
+  return <ClientIndexClient userId={user.id} isPlannerRole={!elevated} />
 }
