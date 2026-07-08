@@ -75,6 +75,8 @@ import {
 import { timeAgo } from '@/lib/workryn/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 // ----------- Types (unchanged contract) -----------
 
@@ -293,7 +295,7 @@ export default function DashboardClient({
               hrefLabel="View all"
             >
               {formattedShifts.length === 0 ? (
-                <EmptyMini icon={CalendarDays} text="No shifts scheduled today" />
+                <EmptyMini icon={CalendarDays} text="No shifts scheduled today" anim={ANIM.emptyCalendar} />
               ) : (
                 <Stack gap="sm">
                   {formattedShifts.map((shift) => (
@@ -318,7 +320,7 @@ export default function DashboardClient({
               hrefLabel="View all"
             >
               {recentTasks.length === 0 ? (
-                <EmptyMini icon={Zap} text="No tasks yet — create one to get started" />
+                <EmptyMini icon={Zap} text="No tasks yet — create one to get started" anim={ANIM.emptyTasks} />
               ) : (
                 <Stack gap={6}>
                   {recentTasks.slice(0, 5).map((task) => (
@@ -984,15 +986,21 @@ function PanelCard({
 function EmptyMini({
   icon: Icon,
   text,
+  anim,
 }: {
   icon: React.ComponentType<{ size?: number }>
   text: string
+  anim?: string
 }) {
   return (
     <Stack align="center" gap="xs" py="lg">
-      <ThemeIcon size="xl" radius="xl" variant="light" color="violet">
-        <Icon size={20} />
-      </ThemeIcon>
+      {anim ? (
+        <LottieBlock src={anim} size={84} trigger="mount" />
+      ) : (
+        <ThemeIcon size="xl" radius="xl" variant="light" color="violet">
+          <Icon size={20} />
+        </ThemeIcon>
+      )}
       <Text size="sm" c="dimmed" ta="center">{text}</Text>
     </Stack>
   )

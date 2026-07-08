@@ -4,6 +4,8 @@ import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/l
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import MessageInput from './MessageInput'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface Message {
   id: string
@@ -257,9 +259,9 @@ export default function ChatWindow({ channelId, channelName, channelKind, curren
             Loading messages…
           </div>
         ) : messages.length === 0 ? (
-          <div style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginTop: 60, lineHeight: 1.8 }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>
-              {isDM ? '👤' : '💬'}
+          <div style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginTop: 44, lineHeight: 1.8 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <LottieBlock src={ANIM.emptyMessages} size={110} trigger="mount" />
             </div>
             {isDM && dmOtherUser
               ? `This is the beginning of your conversation with ${dmOtherUser.full_name ?? 'this person'}.`

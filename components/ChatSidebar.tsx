@@ -2,6 +2,8 @@
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
 import { useState } from 'react'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 interface UserInfo {
   id: string
@@ -390,9 +392,7 @@ export default function ChatSidebar({ channels, selectedId, onSelect, onNewDM, c
 
         {/* Empty state when searching */}
         {search && filterChannels([...dmChannels, ...teamChannels, ...clientChannels]).length === 0 && (
-          <div style={{ fontSize: 13, color: '#636366', textAlign: 'center', padding: '20px 0' }}>
-            No results for "{search}"
-          </div>
+          <EmptyState anim={ANIM.emptySearch} title={`No results for "${search}"`} compact size={92} />
         )}
       </div>
 

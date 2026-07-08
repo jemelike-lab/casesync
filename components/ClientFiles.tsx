@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Profile } from '@/lib/types'
 import { daysFromBusinessToday } from '@/lib/business-date'
+import EmptyState from '@/components/ui/EmptyState'
+import { ANIM } from '@/lib/animations'
 
 // Shape returned by GET /api/clients/[id]/files
 interface ClientFile {
@@ -714,9 +716,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
             ))}
           </div>
         ) : files.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '12px 0', textAlign: 'center' }}>
-            No files in CaseSync yet
-          </div>
+          <EmptyState anim={ANIM.emptyFiles} title="No files in CaseSync yet" description="Files uploaded to this client will appear here." compact size={112} />
         ) : (
           (() => {
             const q = fileQuery.trim().toLowerCase()

@@ -58,6 +58,8 @@ import {
 import { Profile, Client } from '@/lib/types'
 import type { AssigneeSummaryRow } from '@/lib/dashboard-summary'
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 // ===========================================================================
 // Props — preserved EXACTLY from the legacy component (see
@@ -730,15 +732,8 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
             border: '1px dashed var(--v2-border-soft)',
           }}
         >
-          <Box style={{ width: 96, height: 96, margin: '0 auto 12px' }}>
-            <Image
-              src="/heroes/empty-tickets.svg"
-              alt=""
-              width={96}
-              height={96}
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              unoptimized
-            />
+          <Box style={{ width: 104, height: 104, margin: '0 auto 12px' }}>
+            <LottieBlock src={ANIM.emptyCaseload} size={104} trigger="mount" />
           </Box>
           <Text fz={14} fw={600} c="var(--v2-text)">
             {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
