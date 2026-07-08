@@ -17,7 +17,13 @@ import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 
 const DotLottieReact = dynamic(
-  () => import('@lottiefiles/dotlottie-react').then(m => m.DotLottieReact),
+  () =>
+    import('@lottiefiles/dotlottie-react').then(m => {
+      // Self-hosted WASM renderer — the library defaults to a CDN fetch that our
+      // CSP (rightly) blocks. Same-origin keeps the zero-external-calls guarantee.
+      m.setWasmUrl('/animations/dotlottie-player.wasm')
+      return m.DotLottieReact
+    }),
   { ssr: false, loading: () => null },
 )
 
