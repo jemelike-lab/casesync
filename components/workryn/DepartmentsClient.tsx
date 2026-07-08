@@ -174,7 +174,7 @@ export default function DepartmentsClient({ initialDepartments, users, currentUs
         {/* ============ HERO (stats baked in) ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroDepartments} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gTeam} />
             {isAdmin && (
               <Group justify="flex-end" mb="lg">
                 <Button size="md" leftSection={<Plus size={16} />} onClick={openCreate} className="dpa-btn-primary">New Department</Button>

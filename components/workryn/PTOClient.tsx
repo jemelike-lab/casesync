@@ -307,7 +307,7 @@ export default function PTOClient({
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroPto} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gPiggy} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="ptoa-btn-primary">New Request</Button>
             </Group>

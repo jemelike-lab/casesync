@@ -271,7 +271,7 @@ export default function TicketsClient({ initialTickets, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroTickets} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gChatBubble} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="tia-btn-primary">New Ticket</Button>
             </Group>

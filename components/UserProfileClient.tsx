@@ -100,7 +100,7 @@ export default function UserProfileClient({
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '26px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <LottieBlock src={ANIM.heroProfile} size={40} trigger="mount" />
+        <LottieBlock src={ANIM.gProfile} size={52} trigger="mount" />
         <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>My Profile</h1>
       </div>
 

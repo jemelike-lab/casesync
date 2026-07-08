@@ -197,7 +197,7 @@ export default function AuditLogClient({ logs, users, currentUser, profile }: Pr
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.heroAudit} size={34} trigger="mount" /> HIPAA Audit Log</h1>
+            <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.gShield} size={52} trigger="mount" /> HIPAA Audit Log</h1>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               {filtered.length} of {logs.length} records
               {rebalanceOnly ? ' • recommended rebalance moves only' : ''}

@@ -82,6 +82,25 @@ export const ANIM = {
   gHeroScene: '/animations/g-hero-scene.lottie', // People Management — case-mgmt hero
   gHeroAlt: '/animations/g-hero-alt.lottie',     // Office Interaction — alt
 
+  // ── Glass page heroes (Batch 7 propagation) ─────────────────────
+  gCalendar: '/animations/g-calendar.lottie',
+  gFolder: '/animations/g-folder.lottie',
+  gDocuments: '/animations/g-documents.lottie',
+  gPiggy: '/animations/g-piggy.lottie',
+  gCreditCard: '/animations/g-creditcard.lottie',
+  gGallery: '/animations/g-gallery.lottie',
+  gCloud: '/animations/g-cloud.lottie',
+  gBookmark: '/animations/g-bookmark.lottie',
+  gChatBubble: '/animations/g-chatbubble.lottie',
+  gTeam: '/animations/g-team.lottie',
+  gSettings: '/animations/g-settings.lottie',
+  gShield: '/animations/g-shield.lottie',
+  gQuestion: '/animations/g-question.lottie',
+  gUpload: '/animations/g-upload.lottie',
+  gClock: '/animations/g-clock.lottie',
+  gGraduation: '/animations/g-graduation.lottie',
+  gStar: '/animations/g-star.lottie',
+
   // ── Drastic pass (Batch 5) ───────────────────────────────────────
   dashScene: '/animations/40-dash-scene.lottie',        // Medical team with tablet — hero band
   dashSceneAlt: '/animations/41-dash-scene-alt.lottie', // Team working in office — alt

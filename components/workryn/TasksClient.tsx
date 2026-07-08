@@ -264,7 +264,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroTasks} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gDueWeek} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={openCreate} className="tka-btn-primary">New Task</Button>
             </Group>

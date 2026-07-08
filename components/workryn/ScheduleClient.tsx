@@ -257,7 +257,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroSchedule} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.gCalendar} />
             <Group justify="space-between" align="center" wrap="wrap" gap="sm" mb="lg">
               <Group gap="sm" align="center">
                 <Group gap={4} align="center">

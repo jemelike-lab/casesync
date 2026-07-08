@@ -140,7 +140,7 @@ export default function ClientBatchImportClient({ planners, importRuns, mode = '
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 12 }}><LottieBlock src={ANIM.heroImport} size={38} trigger="mount" />{mode === 'planner' ? 'Import my clients' : 'Batch import clients for your team'}</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 12 }}><LottieBlock src={ANIM.gUpload} size={54} trigger="mount" />{mode === 'planner' ? 'Import my clients' : 'Batch import clients for your team'}</h1>
           <p style={{ color: '#98989d', fontSize: 14, margin: 0, maxWidth: 700 }}>
             {mode === 'planner'
               ? 'Planner upload lane for your own client sheet. Valid rows will be assigned to your planner account automatically at import time.'

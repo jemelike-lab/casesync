@@ -52,6 +52,7 @@ import type { AssigneeSummaryRow } from '@/lib/dashboard-summary'
 import CaseSyncV2MantineProvider from '@/components/casesync-v2/CaseSyncV2MantineProvider'
 import LottieBlock from '@/components/ui/LottieBlock'
 import { ANIM } from '@/lib/animations'
+import ClientListTable from './ClientListTable'
 
 // ===========================================================================
 // Props — the server pre-filters `planners` to this TM's direct reports and
@@ -191,12 +192,14 @@ function SectionPaper({
   title,
   rightSlot,
   heroSrc,
+  anim,
   children,
 }: {
   eyebrow: string
   title: string
   rightSlot?: React.ReactNode
   heroSrc?: string
+  anim?: string
   children: React.ReactNode
 }) {
   return (
@@ -235,14 +238,21 @@ function SectionPaper({
       )}
       <Box style={{ position: 'relative', zIndex: 1 }}>
         <Flex justify="space-between" align="flex-start" mb="md" gap="md" wrap="wrap">
-          <Stack gap={2}>
-            <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
-              {eyebrow}
-            </Text>
-            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
-              {title}
-            </Title>
-          </Stack>
+          <Group gap="sm" wrap="nowrap" align="center">
+            {anim && (
+              <Box style={{ width: 52, height: 52, flexShrink: 0, background: 'rgba(30,124,255,0.08)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LottieBlock src={anim} size={42} trigger="loop" />
+              </Box>
+            )}
+            <Stack gap={2}>
+              <Text fz={13} fw={600} c="var(--v2-text-muted)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                {eyebrow}
+              </Text>
+              <Title order={2} fz={18} fw={700} c="var(--v2-text)">
+                {title}
+              </Title>
+            </Stack>
+          </Group>
           {rightSlot}
         </Flex>
         {children}
@@ -551,6 +561,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
     <SectionPaper
       eyebrow="Caseload"
       title="Client Drill-down"
+      anim={ANIM.gDueWeek}
       heroSrc="/heroes/tickets.svg"
       rightSlot={
         <Group gap="xs" wrap="nowrap">
@@ -572,78 +583,17 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
         mb="md"
         color="cobalt"
       />
-      {clients.length === 0 ? (
-        <Box
-          py="xl"
-          style={{
-            textAlign: 'center',
-            background: 'var(--v2-surface-tint)',
-            borderRadius: 12,
-            border: '1px dashed var(--v2-border-soft)',
-          }}
-        >
-          <Box style={{ width: 104, height: 104, margin: '0 auto 12px' }}>
-            <LottieBlock src={ANIM.emptyCaseload} size={104} trigger="mount" />
-          </Box>
-          <Text fz={14} fw={600} c="var(--v2-text)">
-            {loading ? 'Loading clients…' : `No clients match "${filterMeta.label}"`}
-          </Text>
-          <Text fz={12} c="var(--v2-text-muted)" mt={4}>
-            {loading ? 'Just a moment…' : 'Try a different filter or check back later.'}
-          </Text>
-        </Box>
-      ) : (
-        <Stack gap={8}>
-          {clients.map((client) => {
-            const planner = planners.find((p) => p.id === client.assigned_to)
-            const fullName =
-              [client.first_name, client.last_name].filter(Boolean).join(' ') || client.client_id
-            return (
-              <Link
-                key={client.id}
-                href={`/clients/${client.id}`}
-                style={{ textDecoration: 'none' }}
-              >
-                <Box
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    background: `${filterMeta.color}08`,
-                    borderLeft: `3px solid ${filterMeta.color}`,
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
-                    <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-                      <Avatar
-                        size="sm"
-                        radius="xl"
-                        style={{ background: `${filterMeta.color}22`, color: filterMeta.color, fontSize: 11, fontWeight: 700 }}
-                      >
-                        {fullName.split(' ').slice(0, 2).map((p) => p[0]).join('').toUpperCase()}
-                      </Avatar>
-                      <Stack gap={2} style={{ minWidth: 0 }}>
-                        <Text fz={13} fw={700} c="var(--v2-text)" truncate>{fullName}</Text>
-                        <Text fz={11} c="var(--v2-text-muted)" truncate>
-                          {planner?.full_name ?? 'Unassigned'} · {client.category?.toUpperCase() ?? '—'}
-                        </Text>
-                      </Stack>
-                    </Group>
-                    <Badge size="xs" variant="light" style={{ background: `${filterMeta.color}1A`, color: filterMeta.color }}>
-                      {filterMeta.label}
-                    </Badge>
-                    <ChevronRight size={14} color="var(--v2-border-rail)" />
-                  </Flex>
-                </Box>
-              </Link>
-            )
-          })}
-        </Stack>
-      )}
+      <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--v2-border-soft)', borderRadius: 12 }}>
+        <ClientListTable
+          clients={clients as any}
+          loading={loading}
+          emptyTitle={`No clients match "${filterMeta.label}"`}
+          emptyDescription="Try a different filter or check back later."
+        />
+      </div>
     </SectionPaper>
   )
 }
-
 // ===========================================================================
 // PlannerWorkloadSection — per-planner cards. Same pattern as the supervisor
 // view but limited to the TM's direct reports.

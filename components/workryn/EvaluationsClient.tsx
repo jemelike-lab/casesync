@@ -436,7 +436,7 @@ export default function EvaluationsClient({
       {/* ============ AURORA HERO ============ */}
       {bannerUrl ? (
         <>
-          <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroEvaluations} />
+          <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />
           <Group justify="flex-end" mb="lg">
             {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
               <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>

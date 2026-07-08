@@ -156,7 +156,7 @@ export default function ClientIndexClient({
     <div style={{ maxWidth: 1220, margin: '0 auto', padding: '24px 20px' }}>
       {/* Page hero */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-        <LottieBlock src={ANIM.heroClients} size={44} trigger="mount" />
+        <LottieBlock src={ANIM.gTeam} size={54} trigger="mount" />
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', margin: 0 }}>Clients</h1>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>

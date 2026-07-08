@@ -102,7 +102,7 @@ export default function TeamQueuesClient({ clients, planners, mode }: Props) {
             Team Ops
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <LottieBlock src={ANIM.heroTeam} size={40} trigger="mount" />
+            <LottieBlock src={ANIM.gTeam} size={54} trigger="mount" />
             <h1 style={{ margin: 0, fontSize: 28, lineHeight: 1.1 }}>{title}</h1>
           </div>
           <div style={{ marginTop: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
