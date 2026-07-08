@@ -88,7 +88,11 @@ export default function SessionGuard() {
     const isStandalone =
       window.matchMedia?.('(display-mode: standalone)')?.matches === true ||
       (navigator as unknown as { standalone?: boolean }).standalone === true
-    const BACKGROUND_GRACE_MS = isStandalone ? 60 * 1000 : 5 * 60 * 1000
+    // 2026-07-08: browser grace 5min → 20min per Josh (pre-launch review confirmed
+    // the aggressive timeout was killing sessions during normal multi-tab work and
+    // caused the review crawler's 400/401/406 cascade). PWA stays tighter (5min)
+    // since installed-app kiosks are the higher shoulder-surf risk.
+    const BACKGROUND_GRACE_MS = isStandalone ? 5 * 60 * 1000 : 20 * 60 * 1000
     const HIDDEN_AT_KEY = 'cs_hidden_at'
 
     // ── Cold-relaunch guard (standalone PWA only) ──

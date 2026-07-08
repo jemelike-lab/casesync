@@ -205,7 +205,7 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div style={{
+      <main style={{
         minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
@@ -329,7 +329,7 @@ export default function LoginPage() {
             {`\u00A9 ${new Date().getFullYear()} VELOX "Automated Operations" LLC. All rights reserved.`}
           </p>
         </div>
-      </div>
+      </main>
     </>
   )
 }

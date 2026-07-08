@@ -270,7 +270,7 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
                             <Crown size={12} /> OWNER
                           </span>
                         ) : (
-                          <span className="badge" style={{ background: ROLE_COLORS[user.role] + '22', color: ROLE_COLORS[user.role], fontWeight: 700 }}>{user.role}</span>
+                          <span className="badge" style={{ background: ROLE_COLORS[user.role] + '22', color: ROLE_COLORS[user.role], fontWeight: 700 }}>{String(user.role).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</span>
                         )}
                       </td>
                       <td>
@@ -529,7 +529,7 @@ export default function AdminClient({ initialUsers, initialDepartments, auditLog
                     .filter(u => u.id !== currentUserId && u.isActive && u.role !== 'OWNER')
                     .map(u => (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.email}) · {u.role}
+                        {u.name} ({u.email}) · {String(u.role).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                       </option>
                     ))}
                 </select>

@@ -255,7 +255,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '8px 0' }}>Loading…</div>
         ) : internalDocs.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '8px 0' }}>
-            No documents uploaded yet. Use the Supabase Dashboard or upload script to add files to the internal-docs bucket.
+            No documents uploaded yet. Document uploads are managed by IT — contact your administrator to add internal documents.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

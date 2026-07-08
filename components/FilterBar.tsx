@@ -43,7 +43,7 @@ export default function FilterBar({ activeFilter, search, onFilterChange, onSear
             onChange={e => onPlannerChange(e.target.value || null)}
             style={{ minWidth: 220 }}
           >
-            <option value="">All Supports Planners</option>
+            <option value="">All Support Planners</option>
             {planners.map(p => (
               <option key={p.id} value={p.id}>{p.full_name ?? p.id}</option>
             ))}

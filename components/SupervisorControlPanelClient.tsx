@@ -245,6 +245,7 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
       p="lg"
       style={{
         background: gradient,
+          textShadow: '0 1px 2px rgba(0,0,0,0.30)',
         boxShadow: `0 12px 32px -10px ${shadowColor}, 0 4px 12px rgba(15,23,42,0.06)`,
         color: '#fff',
         overflow: 'hidden',
@@ -503,28 +504,25 @@ function TeamHealthSection({
   scopedSummary: ScopedSummary
   derivedTeams: DerivedTeam[]
 }) {
-  // Status breakdown for the donut. "Healthy" is the remainder when we treat
-  // overdue / due-week / no-contact as separate alert buckets. They can overlap
-  // in reality, so this is a visual snapshot rather than a strict partition.
-  const issuesSum =
-    scopedSummary.overdue_clients +
-    scopedSummary.due_this_week_clients +
-    scopedSummary.no_contact_7_days_clients
-  const healthy = Math.max(0, scopedSummary.total_clients - issuesSum)
-
-  const donutData = [
+  // Attention flags. These are OVERLAPPING alerts (one client can be overdue
+  // AND un-contacted), so we deliberately do NOT render them as a donut, which
+  // would imply a partition and double-count (pre-launch review finding #2).
+  // Each flag is an independent count out of total_clients.
+  const total = Math.max(1, scopedSummary.total_clients)
+  const flagData = [
     { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
     { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
     { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
-    { name: 'Healthy', value: healthy, color: '#10B981' },
-  ].filter((d) => d.value > 0)
+  ]
+  const healthy = Math.max(0, scopedSummary.total_clients - Math.max(...flagData.map(f => f.value)))
+  const donutData = flagData.filter((d) => d.value > 0)
 
   // Per-team caseload bars. Show every team; pending teams render as muted.
   const maxCaseload = Math.max(1, ...derivedTeams.map((t) => t.clientCount))
 
   return (
     <SectionPaper
-      eyebrow="P1.2"
+      eyebrow="Org Health"
       title="Team Health Snapshot"
       anim={ANIM.gChart}
       heroSrc="/heroes/evaluations.svg"
@@ -535,55 +533,44 @@ function TeamHealthSection({
       }
     >
       <Grid gap="lg">
-        {/* Donut + legend */}
+        {/* Attention flags — independent, overlapping alerts (NOT a partition).
+            Replaces the donut, which double-counted overlapping flags
+            (pre-launch review, launch blocker #1/#2). */}
         <Grid.Col span={{ base: 12, md: 5 }}>
-          <Stack align="center" gap="md">
-            <Box style={{ position: 'relative', width: 200, height: 200 }}>
-              <DonutChart
-                data={donutData.length > 0 ? donutData : [{ name: 'No data', value: 1, color: '#E5E7EB' }]}
-                size={200}
-                thickness={28}
-                withLabels={false}
-                withTooltip
-                paddingAngle={2}
-              />
-              <Stack
-                gap={0}
-                align="center"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <Text fz={28} fw={800} c="var(--v2-text)" lh={1}>
-                  {scopedSummary.total_clients.toLocaleString()}
-                </Text>
-                <Text fz={11} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
-                  active
-                </Text>
-              </Stack>
-            </Box>
-            <Stack gap={6} w="100%">
+          <Stack gap="md">
+            <Group gap={10} align="baseline">
+              <Text fz={30} fw={800} c="var(--v2-text)" lh={1}>
+                {scopedSummary.total_clients.toLocaleString()}
+              </Text>
+              <Text fz={12} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                active clients
+              </Text>
+            </Group>
+            <Stack gap={10} w="100%">
               {[
                 { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
                 { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
                 { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
-                { name: 'Healthy', value: healthy, color: '#10B981' },
+                { name: 'Healthy (no flags)', value: healthy, color: '#10B981' },
               ].map((row) => (
-                <Group key={row.name} gap={8} wrap="nowrap" justify="space-between">
-                  <Group gap={8} wrap="nowrap">
-                    <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
-                    <Text fz={12} c="var(--v2-text-muted)" fw={500}>
-                      {row.name}
+                <Stack key={row.name} gap={3}>
+                  <Group gap={8} wrap="nowrap" justify="space-between">
+                    <Group gap={8} wrap="nowrap">
+                      <Box style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
+                      <Text fz={12} c="var(--v2-text-muted)" fw={500}>{row.name}</Text>
+                    </Group>
+                    <Text fz={12} fw={700} c="var(--v2-text)">
+                      {row.value.toLocaleString()} / {scopedSummary.total_clients.toLocaleString()}
                     </Text>
                   </Group>
-                  <Text fz={12} fw={700} c="var(--v2-text)">
-                    {row.value.toLocaleString()}
-                  </Text>
-                </Group>
+                  <Box style={{ height: 7, borderRadius: 4, background: 'var(--v2-border-soft)', overflow: 'hidden' }}>
+                    <Box style={{ height: '100%', width: `${Math.min(100, Math.round((row.value / total) * 100))}%`, background: row.color, borderRadius: 4 }} />
+                  </Box>
+                </Stack>
               ))}
+              <Text fz={10.5} c="var(--v2-text-muted)">
+                Flags are independent — a client can appear in more than one.
+              </Text>
             </Stack>
           </Stack>
         </Grid.Col>
@@ -709,7 +696,7 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
 
   return (
     <SectionPaper
-      eyebrow="P1.3"
+      eyebrow="Clients"
       title="Client Drill-down"
       anim={ANIM.gDueWeek}
       heroSrc="/heroes/tickets.svg"
@@ -787,7 +774,7 @@ function PlannerWorkloadSection({
 
   return (
     <SectionPaper
-      eyebrow="P1.4"
+      eyebrow="Workload"
       title="Planner Workload"
       anim={ANIM.gActive}
       heroSrc="/heroes/tasks.svg"
@@ -910,7 +897,7 @@ function TeamRosterSection({
 
   return (
     <SectionPaper
-      eyebrow="P1.4"
+      eyebrow="Roster"
       title="Team Roster"
       anim={ANIM.gProfile}
       heroSrc="/heroes/profile.svg"
@@ -1160,7 +1147,7 @@ function SupervisorControlPanelInner({
             value={scopedSummary.total_clients}
             subtitle={`across ${derivedTeams.length} teams`}
             icon={<LottieBlock src={ANIM.gActive} size={56} trigger="loop" />}
-            gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
+            gradient="linear-gradient(135deg, #1663CC 0%, #1E7CFF 45%, #114FB0 100%)"
             shadowColor="rgba(30,124,255,0.35)"
           />
         </Grid.Col>
@@ -1171,7 +1158,7 @@ function SupervisorControlPanelInner({
             value={scopedSummary.overdue_clients}
             subtitle="needs follow-up"
             icon={<LottieBlock src={ANIM.gOverdue} size={56} trigger="loop" />}
-            gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
+            gradient="linear-gradient(135deg, #D91E42 0%, #E63350 45%, #B01633 100%)"
             shadowColor="rgba(255,59,92,0.35)"
           />
         </Grid.Col>
@@ -1182,7 +1169,7 @@ function SupervisorControlPanelInner({
             value={scopedSummary.due_this_week_clients}
             subtitle="in next 7 days"
             icon={<LottieBlock src={ANIM.gDueWeek} size={56} trigger="loop" />}
-            gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
+            gradient="linear-gradient(135deg, #C77414 0%, #D97F0E 45%, #A85E08 100%)"
             shadowColor="rgba(255,169,64,0.35)"
           />
         </Grid.Col>
@@ -1193,7 +1180,7 @@ function SupervisorControlPanelInner({
             value={scopedSummary.no_contact_7_days_clients}
             subtitle="in last 7 days"
             icon={<LottieBlock src={ANIM.gNoContact} size={56} trigger="loop" />}
-            gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
+            gradient="linear-gradient(135deg, #0B8A60 0%, #0EA372 45%, #04724F 100%)"
             shadowColor="rgba(16,185,129,0.35)"
           />
         </Grid.Col>

@@ -92,6 +92,7 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
       p="lg"
       style={{
         background: gradient,
+          textShadow: '0 1px 2px rgba(0,0,0,0.30)',
         boxShadow: `0 12px 32px -10px ${shadowColor}, 0 4px 12px rgba(15,23,42,0.06)`,
         color: '#fff',
         overflow: 'hidden',
@@ -115,11 +116,10 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
         </Stack>
         <Box
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.92)',
-            boxShadow: '0 6px 18px rgba(15,23,42,0.18)',
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.22)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -617,8 +617,15 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
                 {caseloadCopy}
               </Text>
             </Stack>
-            <Box visibleFrom="sm" style={{ flexShrink: 0, filter: 'drop-shadow(0 12px 30px rgba(15,23,42,0.18))' }}>
-              <LottieBlock src={ANIM.gHeroScene} width={260} height={185} trigger="loop" label="Case management illustration" />
+            <Box visibleFrom="sm" style={{ flexShrink: 0 }}>
+              <Image
+                src="/heroes/dashboard.svg"
+                alt=""
+                width={200}
+                height={120}
+                priority
+                unoptimized
+              />
             </Box>
           </Flex>
         </Paper>
@@ -631,8 +638,8 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
               href="/dashboard?full=1&filter=all"
               value={scopedSummary.total_clients}
               subtitle="active caseload"
-              icon={<LottieBlock src={ANIM.gActive} size={52} trigger="loop" />}
-              gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
+              icon={<Users size={20} color="#fff" />}
+              gradient="linear-gradient(135deg, #1663CC 0%, #1E7CFF 45%, #114FB0 100%)"
               shadowColor="rgba(30,124,255,0.35)"
             />
           </Grid.Col>
@@ -642,8 +649,8 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
               href="/dashboard?full=1&filter=overdue"
               value={scopedSummary.overdue_clients}
               subtitle="needs follow-up"
-              icon={<LottieBlock src={ANIM.gOverdue} size={52} trigger="loop" />}
-              gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
+              icon={<AlertTriangle size={20} color="#fff" />}
+              gradient="linear-gradient(135deg, #D91E42 0%, #E63350 45%, #B01633 100%)"
               shadowColor="rgba(255,59,92,0.35)"
             />
           </Grid.Col>
@@ -653,8 +660,8 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
               href="/dashboard?full=1&filter=due_this_week"
               value={scopedSummary.due_this_week_clients}
               subtitle="in next 7 days"
-              icon={<LottieBlock src={ANIM.gDueWeek} size={52} trigger="loop" />}
-              gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
+              icon={<Clock size={20} color="#fff" />}
+              gradient="linear-gradient(135deg, #C77414 0%, #D97F0E 45%, #A85E08 100%)"
               shadowColor="rgba(255,169,64,0.35)"
             />
           </Grid.Col>
@@ -664,8 +671,8 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
               href="/dashboard?full=1&filter=no_contact_7"
               value={scopedSummary.no_contact_7_days_clients}
               subtitle="in last 7 days"
-              icon={<LottieBlock src={ANIM.gNoContact} size={52} trigger="loop" />}
-              gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
+              icon={<PhoneOff size={20} color="#fff" />}
+              gradient="linear-gradient(135deg, #0B8A60 0%, #0EA372 45%, #04724F 100%)"
               shadowColor="rgba(16,185,129,0.35)"
             />
           </Grid.Col>

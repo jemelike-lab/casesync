@@ -381,12 +381,12 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
         </div>
       )}
 
-      {/* Compact planner list — appears when Supports Planners stat card is clicked */}
+      {/* Compact planner list — appears when Support Planners stat card is clicked */}
       {activeFilter === 'planners' && (
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20, borderLeft: '3px solid var(--accent)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Supports Planners</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Support Planners</span>
               <span style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 99, padding: '2px 8px' }}>
                 {plannerStats.length} planner{plannerStats.length !== 1 ? 's' : ''}
               </span>
@@ -554,11 +554,11 @@ export default function SupervisorDashboardClient({ clients, allScopedClients, p
           background: 'rgba(255,255,255,0.015)',
         }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Supports Planners
+            Support Planners
           </span>
         </div>
         {plannerStats.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No supports planners found.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No support planners found.</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
