@@ -257,9 +257,6 @@ export default function LoginPage() {
             }}>
               <Image src="/logo.png" alt="Beatrice Loving Heart" width={68} height={68} style={{ objectFit: 'contain', display: 'block' }} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-              <LottieBlock src={ANIM.loginHero} size={110} trigger="mount" label="Beatrice Loving Heart — care illustration" />
-            </div>
             <h1 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', color: '#f5f5f7', letterSpacing: '-0.02em' }}>CaseSync</h1>
             <p style={{ fontWeight: 600, fontSize: 14, margin: '0 0 4px', color: 'rgba(255,255,255,0.55)' }}>
               Beatrice Loving Heart
