@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 type ActionProposal = {
   kind: 'log_contact' | 'add_note' | 'update_date'
@@ -904,7 +906,7 @@ export default function BLHAssistant() {
                 ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(124, 58, 237, 0.4)'
               }}
             >
-              ✨
+              <LottieBlock src={ANIM.caseyBot} size={34} trigger="loop" label="Casey" />
             </button>
             {/* Tooltip */}
             <div style={{

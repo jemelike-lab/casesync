@@ -38,6 +38,7 @@ import {
 import { getInitials, timeAgo } from '@/lib/workryn/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useMouseSpotlight } from '@/hooks/workrynEffects'
+import { ANIM } from '@/lib/animations'
 
 // ---------- Types ----------
 
@@ -306,7 +307,7 @@ export default function PTOClient({
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroPto} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={() => { resetForm(); modal.open() }} className="ptoa-btn-primary">New Request</Button>
             </Group>

@@ -213,7 +213,7 @@ export default function DashboardClient({
         {/* ============================== HERO ============================== */}
         {bannerUrl ? (
           <>
-            <PageBanner title={greet(user.name ?? 'there')} bannerUrl={bannerUrl} />
+            <PageBanner title={greet(user.name ?? 'there')} bannerUrl={bannerUrl} anim={ANIM.heroWorkryn} />
             <Group justify="flex-end" mb="lg">
               <LiveClock />
             </Group>

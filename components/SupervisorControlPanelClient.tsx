@@ -1278,7 +1278,8 @@ function SupervisorControlPanelInner({
             >
               Org Overview
             </Text>
-            <Title order={2} fz={18} fw={700} c="var(--v2-text)">
+            <Title order={2} fz={18} fw={700} c="var(--v2-text)" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <LottieBlock src={ANIM.heroSupervisor} size={30} trigger="mount" />
               Team Overview · {derivedTeams.length} teams
             </Title>
           </Stack>

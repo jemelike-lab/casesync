@@ -70,6 +70,7 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/workryn/utils'
 import { useMouseSpotlight } from '@/hooks/workrynEffects'
+import { ANIM } from '@/lib/animations'
 
 // ---------- Types ----------
 
@@ -256,7 +257,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroSchedule} />
             <Group justify="space-between" align="center" wrap="wrap" gap="sm" mb="lg">
               <Group gap="sm" align="center">
                 <Group gap={4} align="center">

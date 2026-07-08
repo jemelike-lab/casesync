@@ -71,6 +71,7 @@ import {
 import { getPriorityColor, getInitials } from '@/lib/workryn/utils'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import { ANIM } from '@/lib/animations'
 
 // ---------- Types ----------
 
@@ -263,7 +264,7 @@ export default function TasksClient({ initialTasks, users, departments, currentU
         {/* ============ HERO ============ */}
         {bannerUrl ? (
           <>
-            <PageBanner bannerUrl={bannerUrl} />
+            <PageBanner bannerUrl={bannerUrl} anim={ANIM.heroTasks} />
             <Group justify="flex-end" mb="lg">
               <Button size="md" leftSection={<Plus size={16} />} onClick={openCreate} className="tka-btn-primary">New Task</Button>
             </Group>

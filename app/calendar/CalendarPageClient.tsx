@@ -5,6 +5,8 @@ import Header from '@/components/Header'
 import CalendarView from '@/components/CalendarView'
 import { Profile } from '@/lib/types'
 import { useTheme } from '@/hooks/useTheme'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 interface Props {
   userId: string
@@ -39,7 +41,7 @@ export default function CalendarPageClient({ userId, profile, canSeeAll }: Props
             <div style={{ fontSize: 12, fontWeight: 500, color: lt ? 'rgba(255,235,205,0.6)' : 'rgba(160,180,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
               Deadline Calendar
             </div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#fff' }}>📅 Calendar</h1>
+            <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.heroCalendar} size={36} trigger="mount" /> Calendar</h1>
             <p style={{ fontSize: 13, color: lt ? 'rgba(255,235,205,0.55)' : 'rgba(200,210,255,0.5)', margin: '6px 0 0' }}>
               All client deadlines at a glance — color-coded by urgency
             </p>

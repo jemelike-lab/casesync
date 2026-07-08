@@ -1,6 +1,8 @@
 'use client'
 
 import { Paper, Title } from '@mantine/core'
+import LottieBlock from '@/components/ui/LottieBlock'
+import { ANIM } from '@/lib/animations'
 
 /**
  * Full-bleed page banner: photo (cover) + page name, sized to match the
@@ -11,10 +13,13 @@ export default function PageBanner({
   title,
   bannerUrl,
   minHeight = 260,
+  anim,
 }: {
   title?: string
   bannerUrl: string
   minHeight?: number
+  /** ANIM manifest path — renders a glassy animated chip on the banner */
+  anim?: string
 }) {
   return (
     <Paper radius="lg" p={0} mb="md" style={{ position: 'relative', overflow: 'hidden', minHeight }}>
@@ -33,6 +38,11 @@ export default function PageBanner({
           <Title order={1} className="banner-heading" style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.01em', textShadow: '0 2px 18px rgba(0,0,0,0.55)' }}>
             {title}
           </Title>
+        </div>
+      ) : null}
+      {anim ? (
+        <div style={{ position: 'absolute', right: 24, bottom: 20, zIndex: 2, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', borderRadius: 16, padding: 8, boxShadow: '0 6px 22px rgba(0,0,0,0.35)' }}>
+          <LottieBlock src={anim} size={56} trigger="mount" />
         </div>
       ) : null}
     </Paper>
