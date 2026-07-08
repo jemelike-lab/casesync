@@ -366,13 +366,18 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
       </div>
 
+      {/* Big scene animation — drastic pass: the hero owns the card's right side */}
+      <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', width: 'clamp(170px, 26vw, 260px)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.35))' }}>
+        <LottieBlock src={ANIM.dashScene} width={260} height={200} trigger="loop" label="Care team illustration" className="dash-hero-anim" />
+      </div>
+
       {/* Greeting */}
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 10 }}>
+      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.15, marginBottom: 10, maxWidth: '62%' }}>
         {greeting}, {firstName} 👋
       </div>
 
       {/* Summary */}
-      <div style={{ fontSize: 14, color: allCurrent ? 'rgba(100,220,140,0.8)' : 'rgba(200,210,255,0.7)', fontWeight: 600, marginBottom: 16 }}>
+      <div style={{ fontSize: 15, color: allCurrent ? 'rgba(100,220,140,0.8)' : 'rgba(200,210,255,0.7)', fontWeight: 600, marginBottom: 18, maxWidth: '62%' }}>
         {allCurrent ? '✅ ' : ''}{summaryHeadline}
       </div>
 
@@ -385,12 +390,12 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'overdue' ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.12)',
                 border: activeFilter === 'overdue' ? '1px solid rgba(255,69,58,0.5)' : '1px solid rgba(255,69,58,0.25)',
-                borderRadius: 12, color: '#ff6b6b', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ff6b6b', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statOverdue} size={18} trigger="hover" playKey={stats.overdue} />
+                <LottieBlock src={ANIM.statOverdue} size={30} trigger="hover" playKey={stats.overdue} />
                 {overdueCount} overdue
               </span>
             </button>
@@ -401,12 +406,12 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'due_this_week' ? 'rgba(255,159,10,0.25)' : 'rgba(255,159,10,0.1)',
                 border: activeFilter === 'due_this_week' ? '1px solid rgba(255,159,10,0.5)' : '1px solid rgba(255,159,10,0.2)',
-                borderRadius: 12, color: '#ffb340', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ffb340', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statDueWeek} size={18} trigger="hover" playKey={stats.dueThisWeek} />
+                <LottieBlock src={ANIM.statDueWeek} size={30} trigger="hover" playKey={stats.dueThisWeek} />
                 {dueCount} due this week
               </span>
             </button>
@@ -417,12 +422,12 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
               style={{
                 background: activeFilter === 'no_contact_7' ? 'rgba(255,214,10,0.2)' : 'rgba(255,214,10,0.08)',
                 border: activeFilter === 'no_contact_7' ? '1px solid rgba(255,214,10,0.4)' : '1px solid rgba(255,214,10,0.15)',
-                borderRadius: 12, color: '#ffe066', fontSize: 13, fontWeight: 700,
-                padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                borderRadius: 12, color: '#ffe066', fontSize: 15, fontWeight: 750,
+                padding: '12px 20px', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <LottieBlock src={ANIM.statNoContact} size={18} trigger="hover" playKey={stats.noContact} />
+                <LottieBlock src={ANIM.statNoContact} size={30} trigger="hover" playKey={stats.noContact} />
                 {noContactCount} no contact 7d+
               </span>
             </button>

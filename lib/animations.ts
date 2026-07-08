@@ -56,6 +56,12 @@ export const ANIM = {
   heroDepartments: '/animations/35-departments.lottie',
   heroProfile: '/animations/36-profile.lottie',
 
+  // ── Drastic pass (Batch 5) ───────────────────────────────────────
+  dashScene: '/animations/40-dash-scene.lottie',        // Medical team with tablet — hero band
+  dashSceneAlt: '/animations/41-dash-scene-alt.lottie', // Team working in office — alt
+  caseyFemale: '/animations/42-casey-female.lottie',    // Female Virtual Assistant — launcher
+  caseyPanel: '/animations/43-casey-panel.lottie',      // Woman on customer support — chat header
+
   // ── Dashboard stat-card icons ────────────────────────────────────
   statOverdue: '/animations/s1-overdue.lottie',
   statDueWeek: '/animations/s2-dueweek.lottie',
