@@ -272,14 +272,15 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
         </Stack>
         <Box
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.22)',
+            width: 68,
+            height: 68,
+            borderRadius: 18,
+            background: 'rgba(255,255,255,0.92)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            boxShadow: '0 6px 18px rgba(15,23,42,0.18)',
           }}
         >
           {icon}
@@ -1196,15 +1197,8 @@ function SupervisorControlPanelInner({
               {activeTeamCount > 0 && ` · ${activeTeamCount} with live data`}.
             </Text>
           </Stack>
-          <Box visibleFrom="sm" style={{ flexShrink: 0 }}>
-            <Image
-              src="/heroes/schedule.svg"
-              alt=""
-              width={200}
-              height={120}
-              priority
-              unoptimized
-            />
+          <Box visibleFrom="sm" style={{ flexShrink: 0, filter: 'drop-shadow(0 14px 34px rgba(15,23,42,0.25))' }}>
+            <LottieBlock src={ANIM.dashScene} width={300} height={210} trigger="loop" label="Care team illustration" />
           </Box>
         </Flex>
       </Paper>
@@ -1217,7 +1211,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=all"
             value={scopedSummary.total_clients}
             subtitle={`across ${derivedTeams.length} teams`}
-            icon={<Users size={20} color="#fff" />}
+            icon={<LottieBlock src={ANIM.statActive} size={54} trigger="loop" />}
             gradient="linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)"
             shadowColor="rgba(30,124,255,0.35)"
           />
@@ -1228,7 +1222,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=overdue"
             value={scopedSummary.overdue_clients}
             subtitle="needs follow-up"
-            icon={<AlertTriangle size={20} color="#fff" />}
+            icon={<LottieBlock src={ANIM.statOverdue} size={54} trigger="loop" />}
             gradient="linear-gradient(135deg, #FF3B5C 0%, #FF5573 50%, #E63350 100%)"
             shadowColor="rgba(255,59,92,0.35)"
           />
@@ -1239,7 +1233,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=due_this_week"
             value={scopedSummary.due_this_week_clients}
             subtitle="in next 7 days"
-            icon={<Clock size={20} color="#fff" />}
+            icon={<LottieBlock src={ANIM.statDueWeek} size={54} trigger="loop" />}
             gradient="linear-gradient(135deg, #FFA940 0%, #FFB860 50%, #F59E0B 100%)"
             shadowColor="rgba(255,169,64,0.35)"
           />
@@ -1250,7 +1244,7 @@ function SupervisorControlPanelInner({
             href="/team?filter=no_contact_7"
             value={scopedSummary.no_contact_7_days_clients}
             subtitle="in last 7 days"
-            icon={<PhoneOff size={20} color="#fff" />}
+            icon={<LottieBlock src={ANIM.statNoContact} size={54} trigger="loop" />}
             gradient="linear-gradient(135deg, #10B981 0%, #1AC78A 50%, #059669 100%)"
             shadowColor="rgba(16,185,129,0.35)"
           />
