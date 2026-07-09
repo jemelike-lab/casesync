@@ -80,7 +80,7 @@ const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 
     name: 'Org Overdue',
     description: 'Starter operational queue for supervisors and IT focused on org-wide overdue work.',
     visibility_type: 'system',
-    allowed_roles: ['supervisor', 'it', 'administrator'],
+    allowed_roles: ['supervisor', 'administrator'],
     entity_type: 'clients',
     filter_definition: { ownershipScope: 'org', dueStates: ['overdue'] },
     sort_definition: { field: 'priority', dir: 'desc' },
@@ -90,7 +90,7 @@ const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 
     name: 'Org Due Next 14 Days',
     description: 'Starter operational queue for supervisors and IT focused on upcoming due work.',
     visibility_type: 'system',
-    allowed_roles: ['supervisor', 'it', 'administrator'],
+    allowed_roles: ['supervisor', 'administrator'],
     entity_type: 'clients',
     filter_definition: { ownershipScope: 'org', dueStates: ['due_next_14_days'] },
     sort_definition: { field: 'priority', dir: 'desc' },
@@ -100,7 +100,7 @@ const STARTER_SAVED_VIEWS: Array<Pick<SavedViewRecord, 'name' | 'description' | 
     name: 'Unassigned',
     description: 'Starter queue for users allowed to work unassigned cases.',
     visibility_type: 'system',
-    allowed_roles: ['team_manager', 'supervisor', 'it', 'administrator'],
+    allowed_roles: ['team_manager', 'supervisor', 'administrator'],
     entity_type: 'clients',
     filter_definition: { ownershipScope: 'org', assignmentStates: ['unassigned'] },
     sort_definition: { field: 'priority', dir: 'desc' },
@@ -136,7 +136,7 @@ export function isSavedViewsUnavailableError(error: { code?: string | null; mess
 export function getStarterViewNamesForRole(role?: Role | null): string[] {
   if (role === 'supports_planner') return ['My Clients', 'My Overdue', 'My Due This Week']
   if (role === 'team_manager') return ['Team Overdue', 'Team Due Next 14 Days', 'Unassigned']
-  if (role === 'supervisor' || role === 'it' || role === 'administrator') return ['Org Overdue', 'Org Due Next 14 Days', 'Unassigned']
+  if (role === 'supervisor' || role === 'administrator') return ['Org Overdue', 'Org Due Next 14 Days', 'Unassigned']
   return []
 }
 

@@ -10,7 +10,7 @@ export const revalidate = 0
 export default async function SupervisorPage() {
   const { supabase, user, profile } = await getCurrentUserAndProfile()
   if (!user) redirect('/login')
-  if (!(profile?.role === 'supervisor' || profile?.role === 'it')) redirect('/dashboard')
+  if (!(profile?.role === 'supervisor' || profile?.role === 'administrator')) redirect('/dashboard')
 
   const [planners, teamManagers] = await Promise.all([
     getPlanners(supabase),

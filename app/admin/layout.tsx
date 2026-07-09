@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import IdleTimeout from '@/components/IdleTimeout'
 import { enforceMfa } from '@/lib/enforce-mfa'
-import { isSupervisorLike } from '@/lib/roles'
+import { canAccessAdmin } from '@/lib/roles'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Fix 2026-05-22: defense-in-depth role gate at the layout level.
   // Individual /admin pages also check, but layout-level enforcement
   // means a forgotten check on a new sub-route can't leak.
-  if (!isSupervisorLike(profile?.role)) redirect('/dashboard')
+  if (!canAccessAdmin(profile?.role)) redirect('/dashboard')
 
   // Fix 2026-05-22: enforceMfa was missing — supervisors hitting /admin
   // directly skipped MFA enrollment. See AUDIT_2026-05-22.md §1B.

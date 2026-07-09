@@ -26,7 +26,7 @@ export const revalidate = 0;
 export default async function DashboardV2Page() {
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user) redirect('/login');
-  if (!(profile?.role === 'supervisor' || profile?.role === 'it')) {
+  if (!(profile?.role === 'supervisor' || profile?.role === 'administrator')) {
     redirect('/dashboard');
   }
 

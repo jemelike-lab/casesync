@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
     // PHI exports are supervisor/IT only
     const canSeePhi =
-      includePhi && ['supervisor', 'it', 'administrator'].includes(role)
+      includePhi && ['supervisor', 'administrator'].includes(role)
 
     let data: any[] = []
     if (isAzureConfigured()) {

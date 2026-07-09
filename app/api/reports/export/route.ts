@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
   // PHI exports are supervisor/IT only
   const canSeePhi =
-    includePhi && ['supervisor', 'it', 'administrator'].includes(profile.role ?? '')
+    includePhi && ['supervisor', 'administrator'].includes(profile.role ?? '')
 
   // M1: PHI exports require MFA to be enabled (HIPAA defense-in-depth)
   if (canSeePhi) {

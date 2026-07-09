@@ -204,7 +204,7 @@ export default function DashboardClient({
   const spot = useMouseSpotlight()
 
   const showCsAlerts =
-    csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'it' || csRole === 'administrator')
+    csAlerts && (csAlerts.totalClients > 0 || csRole === 'supervisor' || csRole === 'administrator')
 
   return (
     <>
@@ -362,7 +362,7 @@ export default function DashboardClient({
                     <Stack gap={0}>
                       <Text fw={700} size="md">CaseSync Alerts</Text>
                       <Text size="xs" c="dimmed">
-                        {csRole === 'supervisor' || csRole === 'it'
+                        {csRole === 'supervisor' || csRole === 'administrator'
                           ? 'All clients'
                           : csRole === 'team_manager'
                           ? 'Your team'

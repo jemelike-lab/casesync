@@ -282,7 +282,7 @@ function GreetingCard({ profile, stats, onFilter, activeFilter, showConfetti, on
   const noContactCount = useCountUp(stats.noContact)
 
   const role = profile?.role
-  const isSupervisorRole = role === 'supervisor' || role === 'it'
+  const isSupervisorRole = role === 'supervisor' || role === 'administrator'
   const isTeamManagerRole = role === 'team_manager'
 
   let summaryHeadline = ''
@@ -731,7 +731,7 @@ function NextBestMoveCard({ profile, stats, onFilter }: {
   }
 
   const role = profile?.role
-  const isSupervisorRole = role === 'supervisor' || role === 'it'
+  const isSupervisorRole = role === 'supervisor' || role === 'administrator'
   const isTeamManagerRole = role === 'team_manager'
 
   let title = isSupervisorRole ? 'Org-wide next best move' : isTeamManagerRole ? 'Team next best move' : 'Next best move'
@@ -1066,7 +1066,7 @@ function ClientOpsTable({
 export default function DashboardClient({ profile, currentUserId, planners = [], teamManagers = [], savedViews = [], hasProfile = true }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isSupervisor = profile?.role === 'supervisor' || profile?.role === 'it'
+  const isSupervisor = profile?.role === 'supervisor' || profile?.role === 'administrator'
   const isTeamManager = profile?.role === 'team_manager'
   const canSeeAll = isSupervisor || isTeamManager
   const canAddClient = isSupervisor || isTeamManager

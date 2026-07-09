@@ -80,7 +80,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .eq('role', 'supports_planner')
     const teamPlannerIds = new Set((teamPlanners ?? []).map((p) => p.id))
     if (!client.assigned_to || !teamPlannerIds.has(client.assigned_to)) notFound()
-  } else if (callerRole !== 'supervisor' && callerRole !== 'it') {
+  } else if (callerRole !== 'supervisor' && callerRole !== 'administrator') {
     notFound()
   }
 

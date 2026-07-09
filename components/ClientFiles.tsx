@@ -575,7 +575,7 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
   }
 
   const elevated =
-    currentProfile.role === 'supervisor' || currentProfile.role === 'it'
+    currentProfile.role === 'supervisor' || currentProfile.role === 'administrator'
   const canDelete = (f: ClientFile) =>
     elevated || f.uploaded_by === currentUserId
 

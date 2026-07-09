@@ -1,6 +1,6 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { isSupervisorLike } from '@/lib/roles'
+import { isSupervisorLike, canAccessAdmin } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +21,7 @@ export async function GET() {
       .eq('id', userId)
       .single()
 
-    if (profileErr || !profile || !(profile.role === 'team_manager' || isSupervisorLike(String(profile.role ?? '')))) {
+    if (profileErr || !profile || !(profile.role === 'team_manager' || canAccessAdmin(String(profile.role ?? '')))) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 })
     }
 

@@ -141,7 +141,7 @@ export async function GET(req: Request) {
           .from('profiles')
           .select('id, full_name, role, team_manager_id')
           .or(`full_name.ilike.%${qSafe}%`)
-          .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'it', 'administrator'] : ['supports_planner', 'team_manager', 'supervisor', 'it', 'administrator'])
+          .in('role', role === 'supports_planner' ? ['team_manager', 'supervisor', 'administrator'] : ['supports_planner', 'team_manager', 'supervisor', 'it', 'administrator'])
           .order('full_name')
           .limit(limit),
         listSavedViewsForCurrentUser(),
