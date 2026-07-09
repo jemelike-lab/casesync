@@ -883,7 +883,9 @@ export default function BLHAssistant() {
                 width: 68,
                 height: 68,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                background: 'linear-gradient(135deg, rgba(93,202,165,0.92), rgba(74,163,224,0.92))',
+                border: '1.5px solid rgba(255,255,255,0.5)',
+                backdropFilter: 'blur(8px)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -899,14 +901,14 @@ export default function BLHAssistant() {
               aria-label="Open Casey"
               onMouseEnter={e => {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'
-                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(124, 58, 237, 0.6)'
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(29, 158, 117, 0.55)'
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'
-                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(124, 58, 237, 0.4)'
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(29, 158, 117, 0.4)'
               }}
             >
-              <LottieBlock src={ANIM.caseyFemale} size={54} trigger="loop" label="Casey" />
+              <LottieBlock src={ANIM.caseyMint} size={46} trigger="loop" label="Casey" />
             </button>
             {/* Tooltip */}
             <div style={{
@@ -969,7 +971,8 @@ export default function BLHAssistant() {
                   width: 28,
                   height: 28,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  background: 'linear-gradient(135deg, rgba(93,202,165,0.9), rgba(74,163,224,0.9))',
+                  border: '1px solid rgba(255,255,255,0.45)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -977,7 +980,7 @@ export default function BLHAssistant() {
                   flexShrink: 0,
                   overflow: 'hidden',
                 }}>
-                  <LottieBlock src={ANIM.caseyPanel} size={30} trigger="loop" label="Casey" />
+                  <LottieBlock src={ANIM.caseyMint} size={30} trigger="loop" label="Casey" />
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>Casey</div>

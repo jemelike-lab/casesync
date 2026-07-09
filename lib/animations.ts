@@ -106,6 +106,7 @@ export const ANIM = {
   dashSceneAlt: '/animations/41-dash-scene-alt.lottie', // Team working in office — alt
   caseyFemale: '/animations/42-casey-female.lottie',    // Female Virtual Assistant — launcher
   caseyPanel: '/animations/43-casey-panel.lottie',      // Woman on customer support — chat header
+  caseyMint: '/animations/44-casey-mint.lottie',        // Female assistant (headset) — mint-glass, launcher + panel
 
   // ── Dashboard stat-card icons ────────────────────────────────────
   statOverdue: '/animations/s1-overdue.lottie',
