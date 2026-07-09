@@ -886,7 +886,6 @@ export default function BLHAssistant() {
                 background: 'linear-gradient(135deg, rgba(93,202,165,0.92), rgba(74,163,224,0.92))',
                 border: '1.5px solid rgba(255,255,255,0.5)',
                 backdropFilter: 'blur(8px)',
-                border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
