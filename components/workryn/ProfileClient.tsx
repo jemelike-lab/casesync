@@ -220,7 +220,7 @@ export default function ProfileClient({
             {/* layer 3: mouse spotlight (positioned via CSS vars from useMouseSpotlight) */}
             <div className="wp-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/profile.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
+            
             {/* layer 4: SVG grain texture for the "expensive" feel */}
             <svg className="wp-hero-grain" aria-hidden>
               <filter id="wp-grain">
@@ -401,10 +401,13 @@ export default function ProfileClient({
         .wp-hero {
           position: relative;
           overflow: hidden;
-          border: 1px solid rgba(124,58,237,0.35);
+          border: 1px solid rgba(124,58,237,0.45);
+          /* Force an opaque deep base so this dark-designed hero never washes
+             out on the light page surface (pre-launch review: profile hero
+             rendered pale-on-pale and the name was near-invisible). */
           background:
-            linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(251,113,133,0.12) 55%, rgba(52,211,153,0.06) 100%),
-            #0b0f1e;
+            linear-gradient(135deg, rgba(124,58,237,0.55) 0%, rgba(251,113,133,0.30) 55%, rgba(52,211,153,0.16) 100%),
+            #0b0f1e !important;
           box-shadow:
             0 1px 0 rgba(255,255,255,0.05) inset,
             0 20px 60px -20px rgba(124,58,237,0.40);
@@ -460,7 +463,7 @@ export default function ProfileClient({
           letter-spacing: -0.025em;
           line-height: 1.04;
           margin: 0;
-          background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #FB7185 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 45%, #fecdd3 100%);
           -webkit-background-clip: text; background-clip: text;
           -webkit-text-fill-color: transparent;
           filter: drop-shadow(0 2px 12px rgba(124,58,237,0.40));

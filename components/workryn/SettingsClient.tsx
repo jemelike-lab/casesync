@@ -174,7 +174,11 @@ export default function SettingsClient({ profile: initialProfile, departments }:
 
   // Lazy-load notification preferences on tab open
   useEffect(() => {
-    if (section !== 'notifications' || notifLoaded || notifLoading) return
+    // Only depend on `section` + `notifLoaded`. Depending on `notifLoading`
+    // caused a self-cancelling race: setNotifLoading(true) re-ran this effect,
+    // the guard then bailed, cleanup set cancelled=true, and the real response
+    // was discarded — leaving the panel stuck on "Loading preferences…".
+    if (section !== 'notifications' || notifLoaded) return
     let cancelled = false
     setNotifLoading(true)
     ;(async () => {
@@ -202,7 +206,7 @@ export default function SettingsClient({ profile: initialProfile, departments }:
       }
     })()
     return () => { cancelled = true }
-  }, [section, notifLoaded, notifLoading])
+  }, [section, notifLoaded])
 
   // DnD active indicator tick
   useEffect(() => {

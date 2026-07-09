@@ -497,20 +497,21 @@ export default function DashboardClient({
             <PanelCard title="Week at a Glance" icon={Timer} accentColor="mint">
               <Group align="flex-end" gap="xs" mb="sm" style={{ height: 120 }}>
                 {dayLabels.map(({ label, isToday }) => {
-                  const pct = isToday && stats.weeklyHours > 0
-                    ? Math.min(stats.weeklyHours * 12.5, 100)
-                    : (isToday ? 8 : 0)
+                  const hasHours = isToday && stats.weeklyHours > 0
+                  const pct = hasHours ? Math.min(stats.weeklyHours * 12.5, 100) : (isToday ? 10 : 6)
                   return (
                     <Stack key={label} gap={4} align="center" style={{ flex: 1, height: '100%' }}>
-                      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                      {/* every day gets a visible track so the chart never reads as blank */}
+                      <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end', background: 'rgba(148,163,184,0.10)', borderRadius: 6 }}>
                         <div
                           className="wd-week-bar"
                           style={{
                             height: `${pct}%`,
-                            background: isToday
+                            minHeight: 6,
+                            background: hasHours
                               ? 'linear-gradient(180deg, #6ee7b7, #10b981)'
-                              : 'rgba(255,255,255,0.04)',
-                            boxShadow: isToday ? '0 0 16px rgba(52,211,153,0.55)' : 'none',
+                              : (isToday ? 'rgba(52,211,153,0.45)' : 'rgba(148,163,184,0.28)'),
+                            boxShadow: hasHours ? '0 0 16px rgba(52,211,153,0.55)' : 'none',
                           }}
                         />
                       </div>
@@ -915,7 +916,7 @@ function StatCard({
             {label}
           </Text>
         </Stack>
-        {href && <ArrowUpRight size={16} style={{ opacity: 0.5, position: 'absolute', top: 12, right: 12 }} />}
+        {href && <ArrowUpRight size={13} aria-hidden style={{ opacity: 0.25, position: 'absolute', top: 12, right: 12 }} />}
       </Group>
     </Card>
   )
