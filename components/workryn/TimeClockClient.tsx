@@ -607,10 +607,15 @@ export default function TimeClockClient({
                             <Box
                               className="tca-bar"
                               style={{
-                                height: `${pct}%`,
-                                background: isToday
-                                  ? 'linear-gradient(180deg, #67e8f9, #06B6D4)'
-                                  : 'rgba(255,255,255,0.06)',
+                                // Pre-launch review: 0-minute days rendered 0-height bars,
+                                // leaving the whole chart blank. Give every day a visible stub.
+                                height: `${Math.max(pct, 4)}%`,
+                                minHeight: 4,
+                                background: mins > 0
+                                  ? (isToday
+                                      ? 'linear-gradient(180deg, #67e8f9, #06B6D4)'
+                                      : 'rgba(103,232,249,0.45)')
+                                  : 'rgba(255,255,255,0.10)',
                                 boxShadow: isToday ? '0 0 14px rgba(6,182,212,0.55)' : 'none',
                               }}
                             />
