@@ -6,6 +6,7 @@ import { Profile, Role, UserInvite, InviteStatus } from '@/lib/types'
 import { inviteUser, resendInviteReminder, removePendingInvite, updateUserRole, updateTeamManagerAssignment, deactivateUser } from '@/app/actions/admin'
 import Link from 'next/link'
 import LottieBlock from '@/components/ui/LottieBlock'
+import FeedbackAdminLink from '@/components/FeedbackAdminLink'
 import { ANIM } from '@/lib/animations'
 
 interface InternalDoc {
@@ -239,12 +240,15 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><LottieBlock src={ANIM.gSettings} size={50} trigger="mount" /> Admin Panel</h1>
-        <Link href="/dashboard" style={{
-          fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
-          padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
-        }}>
-          ← Dashboard
-        </Link>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <FeedbackAdminLink />
+          <Link href="/dashboard" style={{
+            fontSize: 13, color: 'var(--accent)', textDecoration: 'none',
+            padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6,
+          }}>
+            ← Dashboard
+          </Link>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>

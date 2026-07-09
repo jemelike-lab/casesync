@@ -11,6 +11,7 @@ import SessionGuard from '@/components/SessionGuard'
 import { ThemeProvider } from '@/components/workryn/ThemeProvider'
 import { Analytics } from '@vercel/analytics/next'
 import YourCaseAI from '@/components/YourCaseAI'
+import FeedbackTab from '@/components/FeedbackTab'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' })
 
@@ -81,6 +82,8 @@ export default function RootLayout({
           <InstallBanner />
           <Analytics />
           <YourCaseAI />
+          {/* Tester feedback / issue reporting — edge tab, all authenticated routes incl. Workryn */}
+          <FeedbackTab />
         </ThemeProvider>
       <script dangerouslySetInnerHTML={{__html: "if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});}"}} />
       </body>
