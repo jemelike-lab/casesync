@@ -138,6 +138,8 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
   const [cursor, setCursor] = useState(new Date())
   const [saving, setSaving] = useState(false)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const [copying, setCopying] = useState(false)
+  const [copyMsg, setCopyMsg] = useState('')
   const [modalOpened, modal] = useDisclosure(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<{
@@ -208,6 +210,33 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
   async function handleDelete(id: string) {
     await fetch(`/api/workryn/shifts/${id}`, { method: 'DELETE' })
     setShifts((p) => p.filter((s) => s.id !== id))
+  }
+
+  async function copyLastWeek() {
+    if (copying) return
+    setCopying(true)
+    setCopyMsg('')
+    try {
+      const res = await fetch('/api/workryn/shifts/copy-week', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetWeekStart: startOfWeek(cursor).toISOString() }),
+      })
+      if (!res.ok) {
+        setCopyMsg('Couldn\u2019t copy last week \u2014 try again.')
+      } else {
+        const data = await res.json()
+        if (!data.copied) {
+          setCopyMsg('Last week had no shifts to copy.')
+        } else {
+          setShifts((p) => [...p, ...data.shifts])
+        }
+      }
+    } catch {
+      setCopyMsg('Couldn\u2019t copy last week \u2014 try again.')
+    } finally {
+      setCopying(false)
+    }
   }
   function openNew(userId: string, date: Date) {
     if (!isManager) return
@@ -395,6 +424,9 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
               onCellAdd={openNew}
               onShiftClick={openEdit}
               onShiftDelete={handleDelete}
+              onCopyLastWeek={copyLastWeek}
+              copying={copying}
+              copyMsg={copyMsg}
             />
           )}
           {view === 'day' && (
@@ -831,6 +863,97 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
           color: rgba(148,163,184,0.65);
         }
 
+        /* -------- Empty-week composition: summary bar / coverage / quick-add / ghosts / overlay -------- */
+        .sca-sumbar {
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+          padding: 10px 16px;
+          border-bottom: 1px solid rgba(148,163,184,0.12);
+          font-size: 12.5px; color: rgba(148,163,184,0.9);
+        }
+        .sca-sumbar b { color: #e2e8f0; }
+        .sca-sumbar-spacer { flex: 1; }
+        .sca-sumbar-msg { color: #fbbf24; font-size: 12px; }
+        .sca-ghost-btn {
+          cursor: pointer; font: inherit; font-size: 12px; font-weight: 650;
+          color: #7dd3fc; padding: 7px 13px; border-radius: 9px;
+          background: rgba(14,165,233,0.10); border: 1px solid rgba(14,165,233,0.35);
+        }
+        .sca-ghost-btn:hover { background: rgba(14,165,233,0.18); }
+        .sca-ghost-btn:disabled { opacity: 0.55; cursor: default; }
+        .sca-mini-primary {
+          cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
+          color: #fff; padding: 7px 13px; border-radius: 9px; border: 0;
+          display: inline-flex; align-items: center; gap: 5px;
+          background: linear-gradient(135deg, #0EA5E9, #06B6D4);
+          box-shadow: 0 6px 16px -6px rgba(14,165,233,0.6);
+        }
+        .sca-mini-primary:hover { filter: brightness(1.08); }
+
+        .sca-cov-label, .sca-qs-label {
+          padding: 7px 8px 7px 16px;
+          display: flex; align-items: center; gap: 6px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+          color: rgba(100,116,139,0.9);
+          border-bottom: 1px solid rgba(148,163,184,0.10);
+        }
+        .sca-qs-label { color: #7dd3fc; }
+        .sca-cov-cell, .sca-qs-cell {
+          display: grid; place-items: center; padding: 6px 4px;
+          border-bottom: 1px solid rgba(148,163,184,0.10);
+          border-left: 1px solid rgba(148,163,184,0.06);
+        }
+        .sca-qs-cell { background: rgba(14,165,233,0.04); }
+        .sca-cov-pill {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+          padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+        }
+        .sca-cov-pill-zero { color: #fca5a5; background: rgba(248,113,113,0.10); border: 1px solid rgba(248,113,113,0.28); }
+        .sca-cov-pill-ok   { color: #6ee7b7; background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.30); }
+        .sca-cov-pill-info { color: #94a3b8; background: rgba(148,163,184,0.08); border: 1px solid rgba(148,163,184,0.20); }
+        .sca-qs-btn {
+          cursor: pointer; font: inherit; font-size: 11px; font-weight: 700;
+          color: #7dd3fc; background: transparent;
+          border: 1.5px dashed rgba(14,165,233,0.4); border-radius: 8px; padding: 4px 10px;
+        }
+        .sca-qs-btn:hover { background: rgba(14,165,233,0.12); }
+
+        .sca-cell-addable { cursor: pointer; }
+        .sca-cell-addable::after {
+          content: '+ Add';
+          position: absolute; inset: 5px;
+          display: grid; place-items: center;
+          border: 1.5px dashed rgba(14,165,233,0.35); border-radius: 8px;
+          color: rgba(125,211,252,0.9); font-size: 10.5px; font-weight: 700;
+          opacity: 0; transition: opacity 120ms ease; pointer-events: none;
+        }
+        .sca-cell-addable:hover::after { opacity: 1; }
+        .sca-cell-addable.sca-week-cell-today::after { opacity: 0.3; }
+        .sca-cell-addable.sca-week-cell-today:hover::after { opacity: 1; }
+
+        .sca-week-dim .sca-week-grid { opacity: 0.32; filter: saturate(0.6); pointer-events: none; }
+
+        .sca-empty-ovl {
+          position: absolute; inset: 0; z-index: 5;
+          display: grid; place-items: center; padding: 24px;
+        }
+        .sca-empty-card {
+          text-align: center; max-width: 400px; width: 100%;
+          background: rgba(13, 22, 40, 0.92);
+          backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(14,165,233,0.30); border-radius: 18px;
+          padding: 28px 28px 24px;
+          box-shadow: 0 24px 60px -20px rgba(0,0,0,0.7);
+        }
+        .sca-empty-card img { height: 104px; margin-bottom: 12px; }
+        .sca-empty-card h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+        .sca-empty-card p { margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: rgba(148,163,184,0.95); }
+        .sca-empty-acts { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .sca-empty-msg { margin-top: 12px; font-size: 12px; color: #fbbf24; }
+        @media (max-width: 640px) {
+          .sca-empty-card { padding: 22px 18px 18px; }
+          .sca-empty-card img { height: 80px; }
+        }
+
         /* Modal */
         .sca-modal-content {
           background: rgba(15, 23, 42, 0.85) !important;
@@ -909,7 +1032,7 @@ function MonthView({
 }
 
 function WeekView({
-  cursor, today, shifts, visibleUsers, isManager, onCellAdd, onShiftClick, onShiftDelete,
+  cursor, today, shifts, visibleUsers, isManager, onCellAdd, onShiftClick, onShiftDelete, onCopyLastWeek, copying, copyMsg,
 }: {
   cursor: Date; today: Date; shifts: Shift[]
   visibleUsers: StaffUser[]
@@ -917,70 +1040,153 @@ function WeekView({
   onCellAdd: (userId: string, date: Date) => void
   onShiftClick: (s: Shift) => void
   onShiftDelete: (id: string) => void
+  onCopyLastWeek: () => void
+  copying: boolean
+  copyMsg: string
 }) {
   const ws = startOfWeek(cursor)
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(ws, i))
   const unassignedThisWeek = shifts.filter(
     (s) => !s.user && weekDates.some((day) => sameDay(new Date(s.startTime), day))
   )
+  const dayCounts = weekDates.map(
+    (day) => shifts.filter((s) => sameDay(new Date(s.startTime), day)).length
+  )
+  const weekCount = dayCounts.reduce((a, b) => a + b, 0)
+  const isEmptyWeek = weekCount === 0
+  const addTarget = weekDates.find((d) => sameDay(d, today)) ?? weekDates[0]
 
   return (
-    <div className="sca-week-wrap">
-      <div className="sca-week-grid" style={{ gridTemplateColumns: `220px repeat(7, minmax(110px, 1fr))` }}>
-        {/* Header row */}
-        <div className="sca-week-corner">STAFF</div>
-        {weekDates.map((day, i) => {
-          const isToday = sameDay(day, today)
-          return (
-            <div key={i} className={`sca-week-col-head${isToday ? ' sca-week-col-today' : ''}`}>
-              <span>{DAYS_SHORT[day.getDay()]}</span>
-              <span className={`sca-week-col-num${isToday ? ' sca-week-col-num-today' : ''}`}>{day.getDate()}</span>
-            </div>
-          )
-        })}
+    <div className="sca-week-wrap" style={{ position: 'relative' }}>
+      {/* Summary bar (managers) */}
+      {isManager && (
+        <div className="sca-sumbar">
+          <span>
+            <b>{weekCount}</b> shift{weekCount === 1 ? '' : 's'} scheduled this week
+            {isEmptyWeek ? ' \u2014 click any cell to add one' : ''}
+          </span>
+          {copyMsg && <span className="sca-sumbar-msg">{copyMsg}</span>}
+          <span className="sca-sumbar-spacer" />
+          <button type="button" className="sca-ghost-btn" onClick={onCopyLastWeek} disabled={copying}>
+            {copying ? 'Copying\u2026' : 'Copy last week'}
+          </button>
+          <button type="button" className="sca-mini-primary" onClick={() => onCellAdd(visibleUsers[0]?.id ?? '', addTarget)}>
+            <Plus size={13} /> Add shift
+          </button>
+        </div>
+      )}
 
-        {/* Unassigned row */}
-        {unassignedThisWeek.length > 0 && (
-          <>
-            <div className="sca-week-user-cell">
-              <Avatar size="sm" radius="xl" color="gray">?</Avatar>
-              <Stack gap={0}>
-                <Text size="xs" fw={600}>Unassigned</Text>
-                <Text size="xs" c="dimmed">Open shifts</Text>
-              </Stack>
-            </div>
-            {weekDates.map((day, di) => {
-              const dayShifts = unassignedThisWeek.filter((s) => sameDay(new Date(s.startTime), day))
-              const isToday = sameDay(day, today)
-              return (
-                <div
-                  key={di}
-                  className={`sca-week-cell${isToday ? ' sca-week-cell-today' : ''}`}
-                  onClick={() => isManager && onCellAdd('', day)}
-                >
-                  {dayShifts.map((s) => (
-                    <ShiftChip key={s.id} shift={s} isManager={isManager} onClick={onShiftClick} onDelete={onShiftDelete} compact />
-                  ))}
+      <div className={isEmptyWeek ? 'sca-week-dim' : undefined}>
+        <div className="sca-week-grid" style={{ gridTemplateColumns: `220px repeat(7, minmax(110px, 1fr))` }}>
+          {/* Header row */}
+          <div className="sca-week-corner">STAFF</div>
+          {weekDates.map((day, i) => {
+            const isToday = sameDay(day, today)
+            return (
+              <div key={i} className={`sca-week-col-head${isToday ? ' sca-week-col-today' : ''}`}>
+                <span>{DAYS_SHORT[day.getDay()]}</span>
+                <span className={`sca-week-col-num${isToday ? ' sca-week-col-num-today' : ''}`}>{day.getDate()}</span>
+              </div>
+            )
+          })}
+
+          {/* Coverage strip */}
+          <div className="sca-cov-label">Coverage</div>
+          {weekDates.map((day, i) => {
+            const n = dayCounts[i]
+            const cls = n > 0 ? 'sca-cov-pill-ok' : isManager ? 'sca-cov-pill-zero' : 'sca-cov-pill-info'
+            const label = n > 0 ? `${n} scheduled` : isManager ? '0 scheduled' : 'No shifts'
+            return (
+              <div key={i} className="sca-cov-cell">
+                <span className={`sca-cov-pill ${cls}`}>{label}</span>
+              </div>
+            )
+          })}
+
+          {/* Quick-start row (managers, once the week has shifts) */}
+          {isManager && !isEmptyWeek && (
+            <>
+              <div className="sca-qs-label">Quick add</div>
+              {weekDates.map((day, i) => (
+                <div key={i} className="sca-qs-cell">
+                  <button type="button" className="sca-qs-btn" onClick={() => onCellAdd(visibleUsers[0]?.id ?? '', day)}>
+                    + Add
+                  </button>
                 </div>
-              )
-            })}
-          </>
-        )}
+              ))}
+            </>
+          )}
 
-        {/* User rows */}
-        {visibleUsers.map((u) => (
-          <UserWeekRow
-            key={u.id}
-            user={u} weekDates={weekDates} today={today} shifts={shifts}
-            isManager={isManager}
-            onCellAdd={onCellAdd} onShiftClick={onShiftClick} onShiftDelete={onShiftDelete}
-          />
-        ))}
+          {/* Unassigned row */}
+          {unassignedThisWeek.length > 0 && (
+            <>
+              <div className="sca-week-user-cell">
+                <Avatar size="sm" radius="xl" color="gray">?</Avatar>
+                <Stack gap={0}>
+                  <Text size="xs" fw={600}>Unassigned</Text>
+                  <Text size="xs" c="dimmed">Open shifts</Text>
+                </Stack>
+              </div>
+              {weekDates.map((day, di) => {
+                const dayShifts = unassignedThisWeek.filter((s) => sameDay(new Date(s.startTime), day))
+                const isToday = sameDay(day, today)
+                const addable = isManager && dayShifts.length === 0
+                return (
+                  <div
+                    key={di}
+                    className={`sca-week-cell${isToday ? ' sca-week-cell-today' : ''}${addable ? ' sca-cell-addable' : ''}`}
+                    onClick={() => isManager && onCellAdd('', day)}
+                  >
+                    {dayShifts.map((s) => (
+                      <ShiftChip key={s.id} shift={s} isManager={isManager} onClick={onShiftClick} onDelete={onShiftDelete} compact />
+                    ))}
+                  </div>
+                )
+              })}
+            </>
+          )}
 
-        {visibleUsers.length === 0 && unassignedThisWeek.length === 0 && (
-          <div style={{ gridColumn: '1 / -1' }} className="sca-empty">No staff to display.</div>
-        )}
+          {/* User rows */}
+          {visibleUsers.map((u) => (
+            <UserWeekRow
+              key={u.id}
+              user={u} weekDates={weekDates} today={today} shifts={shifts}
+              isManager={isManager}
+              onCellAdd={onCellAdd} onShiftClick={onShiftClick} onShiftDelete={onShiftDelete}
+            />
+          ))}
+
+          {visibleUsers.length === 0 && unassignedThisWeek.length === 0 && (
+            <div style={{ gridColumn: '1 / -1' }} className="sca-empty">No staff to display.</div>
+          )}
+        </div>
       </div>
+
+      {/* Empty-week overlay */}
+      {isEmptyWeek && (
+        <div className="sca-empty-ovl">
+          <div className="sca-empty-card">
+            <img src="/heroes/empty-schedule.svg" alt="" aria-hidden="true" />
+            <h3>Nothing scheduled this week</h3>
+            <p>
+              {isManager
+                ? 'Shifts you add appear on the grid instantly and staff see them right away.'
+                : 'Your manager hasn\u2019t published shifts for this week yet. You\u2019ll see them here as soon as they\u2019re added.'}
+            </p>
+            {isManager && (
+              <div className="sca-empty-acts">
+                <button type="button" className="sca-mini-primary" onClick={() => onCellAdd(visibleUsers[0]?.id ?? '', addTarget)}>
+                  <Plus size={13} /> Add first shift
+                </button>
+                <button type="button" className="sca-ghost-btn" onClick={onCopyLastWeek} disabled={copying}>
+                  {copying ? 'Copying\u2026' : 'Copy last week'}
+                </button>
+              </div>
+            )}
+            {copyMsg && isManager && <div className="sca-empty-msg">{copyMsg}</div>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1008,10 +1214,11 @@ function UserWeekRow({
       {weekDates.map((day, di) => {
         const dayShifts = shifts.filter((s) => s.user?.id === user.id && sameDay(new Date(s.startTime), day))
         const isToday = sameDay(day, today)
+        const addable = isManager && dayShifts.length === 0
         return (
           <div
             key={di}
-            className={`sca-week-cell${isToday ? ' sca-week-cell-today' : ''}`}
+            className={`sca-week-cell${isToday ? ' sca-week-cell-today' : ''}${addable ? ' sca-cell-addable' : ''}`}
             onClick={() => isManager && dayShifts.length === 0 && onCellAdd(user.id, day)}
           >
             {dayShifts.map((s) => (
