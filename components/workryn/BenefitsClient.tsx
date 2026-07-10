@@ -560,7 +560,7 @@ const HTML: Record<string, string> = {
           <li><svg class="b2-icon"><use href="#i-check"/></svg>Up to 55 hours per year</li>
           <li><svg class="b2-icon"><use href="#i-check"/></svg>Maximum balance of 64 hours</li>
         </ul>
-        <div class="b2-acts"><a class="b2-btn b2-pri" href="/w/pto">Manage my PTO <svg class="b2-icon"><use href="#i-arrow"/></svg></a></div>
+        <div class="b2-acts"><span class="b2-btn b2-gh" style="cursor:default;color:var(--faint);border-style:dashed">Self-service PTO tracking — coming soon</span></div>
       </div>
     </div>
   </div>`,

@@ -53,7 +53,7 @@ function hasElevatedAccess(role: string): boolean {
   return isManagerOrAbove(role)
 }
 
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }>; accent: AuroraAccent }
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }>; accent: AuroraAccent; soon?: boolean }
 
 const navItems: NavItem[] = [
   { href: '/w/dashboard',   label: 'Dashboard',   icon: LayoutGrid,      accent: 'violet' },
@@ -62,7 +62,7 @@ const navItems: NavItem[] = [
   { href: '/w/tickets',     label: 'Tickets',     icon: MessageCircle,   accent: 'orange' },
   { href: '/w/evaluations', label: 'Evaluations', icon: ClipboardCheck,  accent: 'fuchsia' },
   { href: '/w/schedule',    label: 'Schedule',    icon: CalendarDays,    accent: 'sky' },
-  { href: '/w/pto',         label: 'PTO',         icon: Umbrella,        accent: 'teal' },
+  { href: '/w/pto',         label: 'PTO',         icon: Umbrella,        accent: 'teal', soon: true },
   { href: '/w/benefits',    label: 'Benefits',    icon: HeartHandshake,  accent: 'rose' },
   { href: '/w/training',    label: 'Training',    icon: BookOpen,        accent: 'mint' },
   { href: '/w/departments', label: 'Departments', icon: Landmark,        accent: 'indigo' },
@@ -300,7 +300,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
         {/* Nav */}
         <nav className="aurora-nav">
           <div className="aurora-nav-label">Workspace</div>
-          {navItems.map(({ href, label, icon: Icon, accent }) => (
+          {navItems.map(({ href, label, icon: Icon, accent, soon }) => (
             <Link
               key={href}
               href={href}
@@ -314,6 +314,7 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
               <span className="aurora-nav-bar" aria-hidden />
               <Icon size={18} />
               <span className="aurora-nav-label-text">{label}</span>
+              {soon && <span className="aurora-soon-pill">Soon</span>}
               {isActive(href) && <span className="aurora-nav-dot" aria-hidden />}
             </Link>
           ))}
@@ -596,6 +597,18 @@ export default function WorkrynSidebar({ user }: WorkrynSidebarProps) {
           box-shadow: 0 0 8px var(--item-accent, #7C3AED);
         }
         .aurora-nav-label-text { flex: 1; }
+        .aurora-soon-pill {
+          padding: 2px 7px;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #5eead4;
+          background: rgba(45,212,191,0.12);
+          border: 1px solid rgba(45,212,191,0.3);
+          border-radius: 999px;
+          line-height: 1.4;
+        }
 
         /* ---------- Footer ---------- */
         .aurora-sidebar-footer {

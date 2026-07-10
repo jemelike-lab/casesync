@@ -2,15 +2,23 @@ import { redirect } from 'next/navigation'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import PTOClient from '@/components/workryn/PTOClient'
+import PTOComingSoon from '@/components/workryn/PTOComingSoon'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import { isSupervisorOrAbove } from '@/lib/workryn/permissions'
 
 
 export const metadata = { title: 'PTO - Workryn' }
 
+// Flip to false to re-enable the full PTO module (PTOClient + data fetches below).
+const PTO_COMING_SOON: boolean = true
+
 export default async function PTOPage() {
   const session = await getWorkrynSession()
   const { user } = session!
+
+  if (PTO_COMING_SOON) {
+    return <PTOComingSoon />
+  }
 
   const isElevated = isSupervisorOrAbove(user.role)
 
