@@ -57,15 +57,31 @@ const CSS = `
   .b2-stat span{font-size:11px;color:rgba(255,255,255,.82)}
   .b2-hero-art{position:relative;z-index:2;justify-self:center}
 
-  /* CHIP NAV */
-  .b2-chips{position:sticky;top:0;z-index:50;display:flex;gap:8px;overflow-x:auto;padding:13px 14px;
-    background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(9px);border-bottom:1px solid var(--border);scrollbar-width:thin}
-  .b2-chip{flex:0 0 auto;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--dim);
-    font-weight:650;font-size:12.5px;padding:8px 14px;border-radius:999px;white-space:nowrap;transition:.15s;display:inline-flex;gap:7px;align-items:center}
-  .b2-chip:hover{color:var(--text);border-color:var(--rose)}
-  .b2-chip .b2-icon{font-size:15px}
-
-  .b2-wrap{padding:8px 14px 20px}
+  /* SIDEBAR RAIL NAV */
+  .b2-shell{display:flex;align-items:flex-start;gap:16px;padding:8px 14px 30px}
+  .b2-rail{width:246px;flex:0 0 246px;position:sticky;top:12px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px;box-shadow:var(--shadow)}
+  .b2-railgroup{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:14px 10px 6px}
+  .b2-railgroup:first-child{margin-top:4px}
+  .b2-railitem{display:flex;width:100%;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;
+    color:var(--dim);margin-bottom:2px;border:1px solid transparent;background:transparent;font:inherit;text-align:left}
+  .b2-railitem:hover{background:var(--surface-2);color:var(--text)}
+  .b2-railitem.on{background:var(--surface-2);color:var(--text);box-shadow:inset 3px 0 0 var(--accent,var(--rose))}
+  .b2-railitem .ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;font-size:15px}
+  .b2-railitem .tt{flex:1;min-width:0}
+  .b2-railitem .tt b{display:block;font-size:12.5px;font-weight:650}
+  .b2-railitem .tt span{display:block;font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b2-railitem .tt span.done{color:var(--ok);font-weight:650}
+  .b2-content{flex:1;min-width:0}
+  .b2-content .b2-sec{margin-top:0}
+  @media(max-width:760px){
+    .b2-shell{flex-direction:column;padding:6px 10px 26px}
+    .b2-rail{position:static;width:100%;flex:0 0 auto;display:flex;overflow-x:auto;gap:4px;padding:8px;scrollbar-width:thin}
+    .b2-railgroup{display:none}
+    .b2-railitem{flex:0 0 auto;flex-direction:column;gap:4px;padding:9px 12px;min-width:66px;text-align:center}
+    .b2-railitem .tt span{display:none}
+    .b2-railitem .tt b{font-size:10.5px}
+  }
   .b2-sec{scroll-margin-top:62px;margin-top:34px}
   .b2-head{display:flex;align-items:center;gap:13px;margin:0 0 16px}
   .b2-head .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;font-size:21px}
@@ -1093,112 +1109,71 @@ function Rosters({ gym, retire }: { gym: GymRosterRow[]; retire: RetireRosterRow
   )
 }
 
-const CHIPS = [
-  { id: 'health', label: 'Health', icon: 'heart' },
-  { id: 'gym', label: 'Gym', icon: 'dumbbell' },
-  { id: 'rec', label: 'Recreation', icon: 'ticket' },
-  { id: 'retire', label: '401(k)', icon: 'sprout' },
-  { id: 'mileage', label: 'Mileage', icon: 'car' },
-  { id: 'referral', label: 'Referral', icon: 'gift' },
-  { id: 'pto', label: 'PTO', icon: 'sun' },
-  { id: 'more', label: 'More', icon: 'laptop' },
-]
-
-const CHIP_OPEN: Record<string, string> = { gym: 'gym-election', retire: 'retire', mileage: 'mileage' }
-
-const COLLAPSE_CSS = `
-  #ben2-app .b2-colhead{cursor:pointer;transition:border-color .15s}
-  #ben2-app .b2-colhead:hover{border-color:var(--rose)}
-  #ben2-app .b2-colhead:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
-  #ben2-app .b2-coltitle{flex:1;min-width:0}
-  #ben2-app .b2-colstatus{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;flex:0 0 auto;white-space:nowrap}
-  #ben2-app .b2-colchev{flex:0 0 auto;display:inline-flex;color:var(--dim);transition:transform .18s ease}
-  @media(max-width:600px){
-    #ben2-app .b2-colhead h2{font-size:18px}
-    #ben2-app .b2-colstatus{display:none}
-  }
-`
-
-function Collapse({ id, icon, iconBg, iconColor, title, sub, status, open, onToggle, children }: {
+interface SectionMeta {
   id: string
+  label: string
   icon: string
   iconBg: string
   iconColor: string
-  title: string
+  group: 'coverage' | 'elections' | 'admin'
   sub: string
-  status: { label: string; done: boolean }
-  open: boolean
-  onToggle: () => void
-  children: React.ReactNode
-}) {
-  const bodyId = `${id}-body`
-  return (
-    <div className="b2-sec" id={id}>
-      <div
-        className="b2-head b2-colhead"
-        role="button"
-        tabIndex={0}
-        aria-expanded={open}
-        aria-controls={bodyId}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onToggle()
-          }
-        }}
-        style={{ marginBottom: open ? '16px' : 0 }}
-      >
-        <div className="ico" style={{ background: iconBg, color: iconColor }}>
-          <Icon id={icon} style={{ fontSize: '22px' }} />
-        </div>
-        <div className="b2-coltitle">
-          <h2>{title}</h2>
-          <div className="sub">{sub}</div>
-        </div>
-        <span
-          className="b2-colstatus"
-          style={status.done ? { color: '#34d399', background: 'rgba(52,211,153,.14)', border: '1px solid rgba(52,211,153,.3)', padding: '5px 11px', borderRadius: '999px' } : { color: 'var(--dim)' }}
-        >
-          {status.done && <Icon id="check" style={{ fontSize: '14px' }} />}
-          {status.label}
-        </span>
-        <span className="b2-colchev" style={{ transform: open ? 'rotate(90deg)' : 'none' }} aria-hidden="true">
-          <Icon id="chev" style={{ fontSize: '20px' }} />
-        </span>
-      </div>
-      <div id={bodyId} style={{ display: open ? 'block' : 'none' }}>
-        {children}
-      </div>
-    </div>
-  )
 }
 
+const SECTIONS: SectionMeta[] = [
+  { id: 'health', label: 'Health', icon: 'heart', iconBg: 'rgba(13,148,136,.16)', iconColor: '#2dd4bf', group: 'coverage', sub: 'Medical, vision & dental' },
+  { id: 'rec', label: 'Recreation', icon: 'ticket', iconBg: 'rgba(234,88,12,.16)', iconColor: '#fb923c', group: 'coverage', sub: 'Tickets at Work discounts' },
+  { id: 'referral', label: 'Referral', icon: 'gift', iconBg: 'rgba(251,113,133,.16)', iconColor: '#fb7185', group: 'coverage', sub: '$800 per successful hire' },
+  { id: 'pto', label: 'PTO', icon: 'sun', iconBg: 'rgba(139,92,246,.16)', iconColor: '#a78bfa', group: 'coverage', sub: 'Accrual & balance' },
+  { id: 'more', label: 'More', icon: 'laptop', iconBg: 'rgba(100,116,139,.18)', iconColor: '#94a3b8', group: 'coverage', sub: 'Telework & other perks' },
+  { id: 'gym', label: 'Gym', icon: 'dumbbell', iconBg: 'rgba(244,114,182,.16)', iconColor: '#fb7185', group: 'elections', sub: 'Planet Fitness & LA Fitness' },
+  { id: 'retire', label: '401(k)', icon: 'sprout', iconBg: 'rgba(99,102,241,.16)', iconColor: '#818cf8', group: 'elections', sub: 'Profit-sharing plan (02J)' },
+  { id: 'mileage', label: 'Mileage', icon: 'car', iconBg: 'rgba(217,119,6,.16)', iconColor: '#fbbf24', group: 'elections', sub: 'Trip reimbursement' },
+]
+
+const ROSTERS_SECTION: SectionMeta = { id: 'rosters', label: 'Rosters', icon: 'shield', iconBg: 'rgba(244,63,94,.16)', iconColor: ROSE, group: 'admin', sub: 'Gym & 401(k) elections — team-wide' }
+
+const GROUP_LABEL: Record<SectionMeta['group'], string> = {
+  coverage: 'Coverage & perks',
+  elections: 'Your elections',
+  admin: 'Supervisor tools',
+}
+const GROUP_ORDER: SectionMeta['group'][] = ['coverage', 'elections', 'admin']
+const DEFAULT_SECTION = 'health'
+
 export default function BenefitsClient(props: Props) {
-  const [open, setOpen] = useState<Record<string, boolean>>({ 'gym-election': false, retire: false, mileage: false })
-  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }))
-  const openSection = (id: string) => setOpen((o) => (o[id] ? o : { ...o, [id]: true }))
+  const allSections = props.elevated ? [...SECTIONS, ROSTERS_SECTION] : SECTIONS
+  const [active, setActive] = useState<string>(DEFAULT_SECTION)
 
   useEffect(() => {
-    const openFromHash = () => {
+    const applyHash = () => {
       const h = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : ''
-      const target = CHIP_OPEN[h] ?? (h === 'retire' || h === 'mileage' || h === 'gym-election' ? h : '')
-      if (target) openSection(target)
+      if (h && allSections.some((s) => s.id === h)) setActive(h)
     }
-    openFromHash()
-    window.addEventListener('hashchange', openFromHash)
-    return () => window.removeEventListener('hashchange', openFromHash)
+    applyHash()
+    window.addEventListener('hashchange', applyHash)
+    return () => window.removeEventListener('hashchange', applyHash)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [props.elevated])
+
+  function selectSection(id: string) {
+    setActive(id)
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', `#${id}`)
+  }
 
   const retireStatus = props.ownRetirement ? { label: 'Election on file', done: true } : { label: 'Make your election', done: false }
   const gymStatus = props.ownGym ? { label: 'Election on file', done: true } : { label: 'Choose your plan', done: false }
   const mileageStatus = props.ownMileage.length > 0 ? { label: `${props.ownMileage.length} ${props.ownMileage.length === 1 ? 'trip' : 'trips'} logged`, done: true } : { label: 'Submit a trip', done: false }
 
+  function statusForId(id: string): { label: string; done: boolean } | null {
+    if (id === 'gym') return gymStatus
+    if (id === 'retire') return retireStatus
+    if (id === 'mileage') return mileageStatus
+    return null
+  }
+
   return (
     <div id="ben2-app">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <style dangerouslySetInnerHTML={{ __html: COLLAPSE_CSS }} />
       <div style={{ display: 'none' }} dangerouslySetInnerHTML={{ __html: SPRITE }} />
 
       {props.bannerUrl && (
@@ -1211,37 +1186,50 @@ export default function BenefitsClient(props: Props) {
         </div>
       )}
 
-      <div className="b2-chips">
-        {CHIPS.map((ch) => (
-          <a className="b2-chip" key={ch.id} href={`#${ch.id}`} onClick={() => { const t = CHIP_OPEN[ch.id]; if (t) openSection(t) }}>
-            <Icon id={ch.icon} />
-            <span>{ch.label}</span>
-          </a>
-        ))}
+      <div className="b2-shell">
+        <nav className="b2-rail" aria-label="Benefits sections">
+          {GROUP_ORDER.filter((g) => allSections.some((s) => s.group === g)).map((g) => (
+            <div key={g}>
+              <div className="b2-railgroup">{GROUP_LABEL[g]}</div>
+              {allSections.filter((s) => s.group === g).map((s) => {
+                const st = statusForId(s.id)
+                return (
+                  <button
+                    type="button"
+                    key={s.id}
+                    className={'b2-railitem' + (active === s.id ? ' on' : '')}
+                    style={active === s.id ? ({ '--accent': s.iconColor } as React.CSSProperties) : undefined}
+                    onClick={() => selectSection(s.id)}
+                  >
+                    <span className="ico" style={{ background: s.iconBg, color: s.iconColor }}><Icon id={s.icon} /></span>
+                    <span className="tt">
+                      <b>{s.label}</b>
+                      <span className={st?.done ? 'done' : undefined}>{st ? st.label : s.sub}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </nav>
+
+        <div className="b2-content">
+          {active === 'health' && <Static html={HTML.health} />}
+          {active === 'rec' && <Static html={HTML.rec} />}
+          {active === 'referral' && <Static html={HTML.referral} />}
+          {active === 'pto' && <Static html={HTML.pto} />}
+          {active === 'more' && <Static html={HTML.more} />}
+          {active === 'gym' && (
+            <>
+              <Static html={HTML.gym} />
+              <GymForm initial={props.ownGym} name={props.profile.name} />
+            </>
+          )}
+          {active === 'retire' && <RetirementForm initial={props.ownRetirement} profile={props.profile} />}
+          {active === 'mileage' && <MileageForm history={props.ownMileage} name={props.profile.name} />}
+          {active === 'rosters' && props.elevated && <Rosters gym={props.gymRoster} retire={props.retirementRoster} />}
+        </div>
       </div>
-
-      <Static html={HTML.health} />
-
-      <Static html={HTML.gym} />
-      <Collapse id="gym-election" icon="dumbbell" iconBg="rgba(244,63,94,.16)" iconColor="#fb7185" title="Gym Membership Election" sub="Choose your plan and enroll with your e-signature" status={gymStatus} open={!!open['gym-election']} onToggle={() => toggle('gym-election')}>
-        <GymForm initial={props.ownGym} name={props.profile.name} />
-      </Collapse>
-
-      <Static html={HTML.rec} />
-
-      <Collapse id="retire" icon="sprout" iconBg="rgba(99,102,241,.16)" iconColor="#818cf8" title="401(k) Profit-Sharing Plan" sub="Beatrice Loving Heart 401(k) PSP (02J) · make your election below" status={retireStatus} open={!!open.retire} onToggle={() => toggle('retire')}>
-        <RetirementForm initial={props.ownRetirement} profile={props.profile} />
-      </Collapse>
-
-      <Collapse id="mileage" icon="car" iconBg="rgba(217,119,6,.16)" iconColor="#fbbf24" title="Travel Mileage Reimbursement" sub="Track your miles and submit per trip" status={mileageStatus} open={!!open.mileage} onToggle={() => toggle('mileage')}>
-        <MileageForm history={props.ownMileage} name={props.profile.name} />
-      </Collapse>
-
-      <Static html={HTML.referral} />
-      <Static html={HTML.pto} />
-      <Static html={HTML.more} />
-
-      {props.elevated && <Rosters gym={props.gymRoster} retire={props.retirementRoster} />}
     </div>
   )
 }
