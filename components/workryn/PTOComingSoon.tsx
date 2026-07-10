@@ -76,17 +76,18 @@ export default function PTOComingSoon() {
           </div>
 
           <h1
+            className="ptocs-title"
             style={{
               margin: '0 0 12px',
               fontSize: 42,
               lineHeight: 1.05,
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              color: '#fff',
             }}
           >
             Coming soon
           </h1>
+          <style>{`.ptocs-title { color: #fff !important; }`}</style>
 
           <p style={{ margin: '0 0 22px', fontSize: 15, lineHeight: 1.6, color: 'rgba(226,232,240,0.75)' }}>
             PTO balances, requests, and approvals are being built right into Workryn. Until this launches, keep

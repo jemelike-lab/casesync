@@ -1131,4 +1131,82 @@
 }
 
 
+/* ═════════ 17. SCHEDULE EMPTY-WEEK COMPOSITION (overlay card, summary bar,
+   coverage strip, quick-add, ghost cells — dark-styled in component CSS;
+   this section re-skins them for light) ═════════ */
+
+/* Overlay card: white card + slate text in light (dark navy is dark-mode only) */
+[data-theme="light"] .w-app-shell .sca-empty-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(14, 165, 233, 0.35) !important;
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.25) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme="light"] .w-app-shell .sca-empty-card h3 { color: #0f172a !important; }
+[data-theme="light"] .w-app-shell .sca-empty-card p { color: #475569 !important; }
+[data-theme="light"] .w-app-shell .sca-empty-msg { color: #b45309 !important; }
+
+/* Summary bar */
+[data-theme="light"] .w-app-shell .sca-sumbar {
+  color: #475569 !important;
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+[data-theme="light"] .w-app-shell .sca-sumbar b { color: #0f172a !important; }
+[data-theme="light"] .w-app-shell .sca-sumbar-msg { color: #b45309 !important; }
+
+/* Primary + ghost buttons: pin white-on-gradient; darken cyan for white surfaces */
+[data-theme="light"] .w-app-shell .sca-mini-primary { color: #ffffff !important; }
+[data-theme="light"] .w-app-shell .sca-ghost-btn {
+  color: #0369a1 !important;
+  background: rgba(14, 165, 233, 0.08) !important;
+  border-color: rgba(2, 132, 199, 0.45) !important;
+}
+[data-theme="light"] .w-app-shell .sca-ghost-btn:hover { background: rgba(14, 165, 233, 0.16) !important; }
+
+/* Coverage strip */
+[data-theme="light"] .w-app-shell .sca-cov-label {
+  color: #64748b !important;
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+[data-theme="light"] .w-app-shell .sca-cov-cell {
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+  border-left-color: rgba(15, 23, 42, 0.05) !important;
+}
+[data-theme="light"] .w-app-shell .sca-cov-pill-zero {
+  color: #b91c1c !important;
+  background: rgba(248, 113, 113, 0.12) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+[data-theme="light"] .w-app-shell .sca-cov-pill-ok {
+  color: #047857 !important;
+  background: rgba(52, 211, 153, 0.14) !important;
+  border-color: rgba(5, 150, 105, 0.35) !important;
+}
+[data-theme="light"] .w-app-shell .sca-cov-pill-info {
+  color: #475569 !important;
+  background: rgba(100, 116, 139, 0.10) !important;
+  border-color: rgba(100, 116, 139, 0.30) !important;
+}
+
+/* Quick-add row */
+[data-theme="light"] .w-app-shell .sca-qs-label { color: #0369a1 !important; }
+[data-theme="light"] .w-app-shell .sca-qs-cell {
+  background: rgba(14, 165, 233, 0.05) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+  border-left-color: rgba(15, 23, 42, 0.05) !important;
+}
+[data-theme="light"] .w-app-shell .sca-qs-btn {
+  color: #0369a1 !important;
+  border-color: rgba(2, 132, 199, 0.45) !important;
+}
+[data-theme="light"] .w-app-shell .sca-qs-btn:hover { background: rgba(14, 165, 233, 0.10) !important; }
+
+/* Ghost "+ Add" cell targets */
+[data-theme="light"] .w-app-shell .sca-cell-addable::after {
+  color: #0369a1 !important;
+  border-color: rgba(2, 132, 199, 0.40) !important;
+}
+
+
 /* ═════════ END ═════════ */
