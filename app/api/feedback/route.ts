@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { isSupervisorLike } from '@/lib/roles'
+import { sendEmail } from '@/lib/email'
+import { feedbackReportEmail } from '@/lib/email-templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,6 +105,27 @@ export async function POST(req: NextRequest) {
       `
       return rows[0] as { id: string; created_at: string }
     })
+
+    // Email push to the triage owner. Awaited (Vercel may kill un-awaited
+    // work after the response), but NEVER fatal: a mail failure must not
+    // fail the submission — the report is already stored.
+    try {
+      const notifyTo = process.env.FEEDBACK_NOTIFY_EMAIL || 'Jemelike@blhnurses.com'
+      const { subject, html } = feedbackReportEmail({
+        reportType: type,
+        severity,
+        authorName: authorName ?? 'Unknown user',
+        authorRole: authorRole ?? 'unknown',
+        pagePath: pagePath ?? '—',
+        appCommit: appCommit ? appCommit.slice(0, 7) : '—',
+        viewport: viewport ?? '—',
+        message,
+      })
+      await sendEmail({ to: notifyTo, subject, html })
+    } catch (mailErr) {
+      console.error('[Feedback] notification email failed (report stored):', mailErr)
+    }
+
     return NextResponse.json({ ok: true, id: created.id })
   } catch (err) {
     console.error('[Feedback] create failed:', err)

@@ -485,3 +485,85 @@ export function welcomeEmail({
     html: baseLayout(content),
   }
 }
+
+// --------------------
+
+export function feedbackReportEmail({
+  reportType,
+  severity,
+  authorName,
+  authorRole,
+  pagePath,
+  appCommit,
+  viewport,
+  message,
+}: {
+  reportType: 'bug' | 'suggestion' | 'question'
+  severity: string | null
+  authorName: string
+  authorRole: string
+  pagePath: string
+  appCommit: string
+  viewport: string
+  message: string
+}) {
+  // User free text goes into HTML — escape it.
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+  const typeMeta = {
+    bug: { label: 'Bug report', icon: '&#128030;' },
+    suggestion: { label: 'Suggestion', icon: '&#128161;' },
+    question: { label: 'Question', icon: '&#10067;' },
+  }[reportType]
+
+  const sevColor =
+    severity === 'blocking' ? '#ff3b30' : severity === 'annoying' ? '#ff9500' : '#8e8e93'
+  const headline =
+    reportType === 'bug' && severity ? `${typeMeta.label} — ${severity.toUpperCase()}` : typeMeta.label
+
+  const content = `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${reportType === 'bug' ? sevColor : '#1E7CFF'};text-transform:uppercase;letter-spacing:0.08em;">
+      ${typeMeta.icon} ${headline}
+    </p>
+    <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
+      New feedback from ${esc(authorName)}
+    </h1>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
+          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Reporter</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${esc(authorName)} (${esc(authorRole)})</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
+          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Page</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${esc(pagePath)}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;">
+          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Build &middot; viewport</span>
+          <span style="font-size:15px;font-weight:600;color:#f5f5f7;">${esc(appCommit)} &middot; ${esc(viewport)}</span>
+        </td>
+      </tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-left:3px solid ${reportType === 'bug' ? sevColor : '#1E7CFF'};border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+      <tr>
+        <td>
+          <span style="font-size:14px;color:#d0d0d5;line-height:1.6;white-space:pre-wrap;">${esc(message)}</span>
+        </td>
+      </tr>
+    </table>
+
+    ${ctaButton(`${BASE_URL}/admin/feedback`, 'Open Triage')}
+  `
+
+  return {
+    subject: `-- Feedback: ${headline} from ${authorName} — ${pagePath}`,
+    html: baseLayout(content),
+  }
+}
