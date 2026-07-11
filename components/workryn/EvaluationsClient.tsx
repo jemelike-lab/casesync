@@ -7,16 +7,14 @@ import {
   Card,
   Container,
   Group,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
-  Title,
 } from '@mantine/core'
 import PageBanner from '@/components/workryn/PageBanner'
 import { useCountUp } from '@/hooks/useCountUp'
-import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
+import { useTilt } from '@/hooks/workrynEffects'
 import {
   Star,
   Award,
@@ -563,7 +561,6 @@ export default function EvaluationsClient({
   const [templates, setTemplates] = useState<Template[]>(initialTemplates)
   const isManager = canViewEvaluations(currentUser.role)
   const isAdmin = canManageEvaluations(currentUser.role)
-  const spot = useMouseSpotlight()
 
   const [tab, setTab] = useState<Tab>(isManager ? 'milestones' : 'mine')
   const [detailEval, setDetailEval] = useState<Evaluation | null>(null)
@@ -674,53 +671,6 @@ export default function EvaluationsClient({
     <Container size="xl" py="lg" w="100%" className="eva-root">
       {/* ============ PAGE BANNER ============ */}
       {bannerUrl && <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />}
-
-      {/* ============ AURORA HERO ============ */}
-      <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
-        <Paper radius="lg" p="lg" className="eva-hero">
-          <div className="eva-hero-mesh" aria-hidden />
-          <div className="eva-hero-orbs" aria-hidden>
-            <span className="eva-orb eva-orb-1" />
-            <span className="eva-orb eva-orb-2" />
-            <span className="eva-orb eva-orb-3" />
-          </div>
-          <div className="eva-hero-spotlight" aria-hidden />
-
-          <img src="/heroes/evaluations.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
-
-          <Group justify="space-between" align="center" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
-            <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
-              <Group gap={8} align="center">
-                <Award size={14} style={{ color: 'rgba(240,171,252,0.9)' }} />
-                <Text size="xs" tt="uppercase" fw={700} c="grape.3" style={{ letterSpacing: '0.12em' }}>
-                  Performance Evaluations
-                </Text>
-              </Group>
-              <Title order={1} className="eva-hero-title">
-                Evaluations
-              </Title>
-              <Text size="sm" c="dimmed">
-                {isManager
-                  ? `${animTotal} evaluation${animTotal === 1 ? '' : 's'} across the org · ${orgPendingAck} awaiting acknowledgement`
-                  : 'Your self-assessments and reviews from your evaluator'}
-              </Text>
-            </Stack>
-            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-              <Group gap="xs" wrap="nowrap">
-                <DueChip hireDate={currentUser.hireDate} />
-                <Button
-                  size="md"
-                  leftSection={<Edit2 size={16} />}
-                  onClick={() => setShowSelfAssessment(true)}
-                  className="eva-btn-primary"
-                >
-                  Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
-                </Button>
-              </Group>
-            )}
-          </Group>
-        </Paper>
-      </div>
 
       {/* ============ STAT TILES ============ */}
       <div className="eva2-stats">
