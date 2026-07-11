@@ -14,6 +14,7 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
+import PageBanner from '@/components/workryn/PageBanner'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
 import {
@@ -579,6 +580,9 @@ export default function EvaluationsClient({
 
   return (
     <Container size="xl" py="lg" w="100%" className="eva-root">
+      {/* ============ PAGE BANNER ============ */}
+      {bannerUrl && <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />}
+
       {/* ============ AURORA HERO ============ */}
       <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
         <Paper radius="lg" p="lg" className="eva-hero">
