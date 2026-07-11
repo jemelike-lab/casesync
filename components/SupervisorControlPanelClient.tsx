@@ -44,12 +44,10 @@ import {
   Stack,
   Text,
   Title,
-  UnstyledButton,
 } from '@mantine/core'
 import { DonutChart } from '@mantine/charts'
 import {
   AlertTriangle,
-  ChevronRight,
   Clock,
   Filter,
   PhoneOff,
@@ -310,9 +308,11 @@ function KpiTile({ label, value, icon, gradient, shadowColor, subtitle, href }: 
 }
 
 // ===========================================================================
-// TeamRow — mirrors the v2 north-star TeamRow component.
-// Pending teams show scaffold + "pending assignments"; active teams show
-// the OVERDUE / DUE-WEEK stats derived from summaryByAssignee.
+// TeamRosterTable — command-roster layout for the Team Overview section.
+// One dense row per team: emblem + name + program badge · lead · SPs ·
+// Clients · Overdue · Due wk · Status. Pending teams show em-dashes + an
+// amber "pending" chip; active teams show numbers from summaryByAssignee.
+// Theme-aware via --v2-* variables (works in light and dark).
 // ===========================================================================
 
 interface DerivedTeam {
@@ -325,82 +325,132 @@ interface DerivedTeam {
   pending: boolean
 }
 
-function TeamRow({ team }: { team: DerivedTeam }) {
-  const programColor = team.cfg.program === 'CFC' ? 'cobalt' : team.cfg.program === 'DDA' ? 'amber' : 'mauve'
-
+function TeamRosterTable({ teams }: { teams: DerivedTeam[] }) {
   return (
-    <UnstyledButton
-      style={{
-        display: 'block',
-        width: '100%',
-        padding: '14px 16px',
-        borderRadius: 12,
-        background: 'var(--v2-surface-tint)',
-        borderLeft: `4px solid ${team.cfg.accentColor}`,
-        transition: 'all 0.15s ease',
-      }}
-    >
-      <Flex justify="space-between" align="center" gap="md" wrap="nowrap">
-        <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-          <Box
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'var(--v2-surface)',
-              padding: 3,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: `0 2px 8px ${team.cfg.accentColor}26, inset 0 0 0 1.5px ${team.cfg.accentColor}33`,
-              flexShrink: 0,
-            }}
-          >
-            <Image
-              src={`/teams/${team.cfg.badgeSlug}.svg`}
-              alt={team.cfg.teamName}
-              width={38}
-              height={38}
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              unoptimized
-            />
-          </Box>
-          <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-            <Group gap={6} wrap="nowrap">
-              <Text fz={14} fw={700} c="var(--v2-text)" truncate>
-                {team.cfg.teamName}
-              </Text>
-              <Badge size="xs" variant="light" color={programColor}>
-                {team.cfg.program}
-              </Badge>
-            </Group>
-            <Text fz={11} c="var(--v2-text-muted)" truncate>
-              {team.cfg.leadName} · {team.cfg.leadTitle}
-              {!team.pending &&
-                ` · ${team.spCount} SP${team.spCount === 1 ? '' : 's'} · ${team.clientCount.toLocaleString()} clients`}
-              {team.pending && ' · pending assignments'}
-            </Text>
-          </Stack>
-        </Group>
-        {!team.pending ? (
-          <Group gap="lg" wrap="nowrap" visibleFrom="sm">
-            <Stack gap={0} align="flex-end">
-              <Text fz={11} c="var(--v2-text-muted)" fw={600}>OVERDUE</Text>
-              <Text fz={15} fw={700} c="#FF3B5C">{team.overdueCount}</Text>
-            </Stack>
-            <Stack gap={0} align="flex-end">
-              <Text fz={11} c="var(--v2-text-muted)" fw={600}>DUE WK</Text>
-              <Text fz={15} fw={700} c="#FFA940">{team.dueThisWeekCount}</Text>
-            </Stack>
-          </Group>
-        ) : (
-          <Text fz={11} c="var(--v2-text-muted)" fs="italic" visibleFrom="sm">
-            no data yet
-          </Text>
-        )}
-        <ChevronRight size={16} color="var(--v2-text-muted)" style={{ flexShrink: 0 }} />
-      </Flex>
-    </UnstyledButton>
+    <div className="tov-wrap">
+      <table className="tov-roster">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Lead</th>
+            <th className="tov-num">SPs</th>
+            <th className="tov-num">Clients</th>
+            <th className="tov-num">Overdue</th>
+            <th className="tov-num">Due wk</th>
+            <th className="tov-status">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((team) => {
+            const programColor =
+              team.cfg.program === 'CFC' ? 'cobalt' : team.cfg.program === 'DDA' ? 'amber' : 'mauve'
+            return (
+              <tr key={team.cfg.id}>
+                <td>
+                  <span className="tov-team">
+                    <span
+                      className="tov-emb"
+                      style={{ boxShadow: `inset 0 0 0 1.5px ${team.cfg.accentColor}55, 0 1px 4px ${team.cfg.accentColor}22` }}
+                    >
+                      <Image
+                        src={`/teams/${team.cfg.badgeSlug}.svg`}
+                        alt={team.cfg.teamName}
+                        width={26}
+                        height={26}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        unoptimized
+                      />
+                    </span>
+                    <Text component="span" fz={13} fw={700} c="var(--v2-text)" style={{ whiteSpace: 'nowrap' }}>
+                      {team.cfg.teamName}
+                    </Text>
+                    <Badge size="xs" variant="light" color={programColor}>
+                      {team.cfg.program}
+                    </Badge>
+                  </span>
+                </td>
+                <td>
+                  <Text component="span" fz={12.5} c="var(--v2-text)" style={{ display: 'block', lineHeight: 1.25 }}>
+                    {team.cfg.leadName}
+                  </Text>
+                  <Text component="span" fz={10.5} c="var(--v2-text-muted)" style={{ display: 'block' }}>
+                    {team.cfg.leadTitle}
+                  </Text>
+                </td>
+                {team.pending ? (
+                  <>
+                    <td className="tov-num"><span className="tov-dash">&mdash;</span></td>
+                    <td className="tov-num"><span className="tov-dash">&mdash;</span></td>
+                    <td className="tov-num"><span className="tov-dash">&mdash;</span></td>
+                    <td className="tov-num"><span className="tov-dash">&mdash;</span></td>
+                    <td className="tov-status">
+                      <Badge size="xs" variant="light" color="amber">pending</Badge>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="tov-num">
+                      <Text component="span" fz={13} fw={700} c="var(--v2-text)">{team.spCount}</Text>
+                    </td>
+                    <td className="tov-num">
+                      <Text component="span" fz={13} fw={700} c="var(--v2-text)">{team.clientCount.toLocaleString()}</Text>
+                    </td>
+                    <td className="tov-num">
+                      {team.overdueCount > 0 ? (
+                        <Text component="span" fz={13} fw={750} c="#FF3B5C">{team.overdueCount}</Text>
+                      ) : (
+                        <span className="tov-dash">0</span>
+                      )}
+                    </td>
+                    <td className="tov-num">
+                      {team.dueThisWeekCount > 0 ? (
+                        <Text component="span" fz={13} fw={750} c="#FFA940">{team.dueThisWeekCount}</Text>
+                      ) : (
+                        <span className="tov-dash">0</span>
+                      )}
+                    </td>
+                    <td className="tov-status">
+                      <Badge size="xs" variant="light" color="cobalt">active</Badge>
+                    </td>
+                  </>
+                )}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <style>{`
+        .tov-wrap { overflow-x: auto; }
+        .tov-roster { width: 100%; border-collapse: collapse; }
+        .tov-roster th {
+          text-align: left;
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          color: var(--v2-text-muted);
+          padding: 6px 10px;
+          border-bottom: 1px solid var(--v2-border-soft);
+          white-space: nowrap;
+        }
+        .tov-roster td {
+          padding: 9px 10px;
+          border-bottom: 1px solid var(--v2-border-soft);
+          vertical-align: middle;
+        }
+        .tov-roster tbody tr:last-child td { border-bottom: 0; }
+        .tov-roster tbody tr { transition: background 120ms ease; }
+        .tov-roster tbody tr:hover td { background: var(--v2-surface-tint); }
+        .tov-roster th.tov-num, .tov-roster td.tov-num { text-align: right; }
+        .tov-roster th.tov-status, .tov-roster td.tov-status { text-align: right; white-space: nowrap; }
+        .tov-team { display: inline-flex; align-items: center; gap: 9px; }
+        .tov-emb {
+          width: 30px; height: 30px; flex: 0 0 auto;
+          border-radius: 8px; padding: 2px;
+          background: var(--v2-surface);
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        .tov-dash { color: var(--v2-text-muted); opacity: 0.55; font-size: 13px; }
+      `}</style>
+    </div>
   )
 }
 
@@ -1221,11 +1271,7 @@ function SupervisorControlPanelInner({
             </Badge>
           </Group>
         </Flex>
-        <Stack gap={8}>
-          {derivedTeams.map((team) => (
-            <TeamRow key={team.cfg.id} team={team} />
-          ))}
-        </Stack>
+        <TeamRosterTable teams={derivedTeams} />
       </Paper>
 
       {/* ─────────── Section placeholders for P1.2–P1.5 ─────────── */}
