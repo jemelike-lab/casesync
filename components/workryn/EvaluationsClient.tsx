@@ -298,6 +298,9 @@ function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
               {summary.notStarted > 0 && <span className="msr-sum-chip">{summary.notStarted} not started</span>}
             </span>
           )}
+          <a className="msr-cal" href="/w/county-preference">
+            County Preference Form →
+          </a>
           <a
             className="msr-cal"
             href="https://calendly.com/sabbott-9/evaluations"
