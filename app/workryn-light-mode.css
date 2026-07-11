@@ -1258,4 +1258,46 @@
 [data-theme="light"] .w-app-shell .eva-due-chip.over { color: #ffffff !important; background: #dc2626 !important; border-color: #dc2626 !important; }
 
 
+/* ═════════ 19. EVALUATIONS MOCK-MATCH (stat tiles, pill tabs, milestone rows) ═════════ */
+
+[data-theme="light"] .w-app-shell .eva2-stat {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+[data-theme="light"] .w-app-shell .eva2-stat b { color: #0f172a !important; }
+[data-theme="light"] .w-app-shell .eva2-stat span { color: #64748b !important; }
+[data-theme="light"] .w-app-shell .eva2-stat.hot b { color: #c026d3 !important; }
+[data-theme="light"] .w-app-shell .eva2-tabb { color: #64748b !important; }
+[data-theme="light"] .w-app-shell .eva2-tabb:hover { color: #0f172a !important; background: rgba(147, 51, 234, 0.08) !important; }
+[data-theme="light"] .w-app-shell .eva2-tabb.on {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #9333ea, #db2777) !important;
+}
+[data-theme="light"] .w-app-shell .eva2-tab-ct { background: rgba(15, 23, 42, 0.08) !important; color: #475569 !important; }
+[data-theme="light"] .w-app-shell .eva2-tabb.on .eva2-tab-ct { background: rgba(255, 255, 255, 0.28) !important; color: #ffffff !important; }
+[data-theme="light"] .w-app-shell .msr-head h4 { color: #0f172a !important; }
+[data-theme="light"] .w-app-shell .msr-head p { color: #64748b !important; }
+[data-theme="light"] .w-app-shell .msr-row {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+[data-theme="light"] .w-app-shell .msr-nm b { color: #0f172a !important; }
+[data-theme="light"] .w-app-shell .msr-nm span { color: #64748b !important; }
+[data-theme="light"] .w-app-shell .msr-dot { color: #64748b !important; }
+[data-theme="light"] .w-app-shell .msr-dot i { border-color: rgba(15, 23, 42, 0.25) !important; }
+[data-theme="light"] .w-app-shell .msr-dot.done i { background: #9333ea !important; border-color: #9333ea !important; box-shadow: 0 0 8px rgba(147, 51, 234, 0.45) !important; }
+[data-theme="light"] .w-app-shell .msr-dot.now i { border-color: #c026d3 !important; }
+[data-theme="light"] .w-app-shell .msr-act {
+  color: #7e22ce !important;
+  border-color: rgba(147, 51, 234, 0.45) !important;
+}
+[data-theme="light"] .w-app-shell .msr-act:hover { background: rgba(147, 51, 234, 0.08) !important; }
+[data-theme="light"] .w-app-shell .msr-act.urgent { color: #b91c1c !important; border-color: rgba(220, 38, 38, 0.45) !important; }
+[data-theme="light"] .w-app-shell .msr-done-chip {
+  color: #047857 !important;
+  background: rgba(52, 211, 153, 0.14) !important;
+  border-color: rgba(5, 150, 105, 0.35) !important;
+}
+
+
 /* ═════════ END ═════════ */

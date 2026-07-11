@@ -1,6 +1,5 @@
 'use client'
 import { useMemo, useRef, useState, useEffect } from 'react'
-import MilestoneDashboard from './MilestoneDashboard'
 import {
   Avatar as MAvatar,
   Badge,
@@ -11,12 +10,10 @@ import {
   Paper,
   SimpleGrid,
   Stack,
-  Tabs as MTabs,
   Text,
   ThemeIcon,
   Title,
 } from '@mantine/core'
-import PageBanner from '@/components/workryn/PageBanner'
 import { useCountUp } from '@/hooks/useCountUp'
 import { useTilt, useMouseSpotlight } from '@/hooks/workrynEffects'
 import {
@@ -198,6 +195,131 @@ function DueChip({ hireDate }: { hireDate?: string }) {
   return <span className={`eva-due-chip ${cls}`}>{txt}</span>
 }
 
+// ── Milestones tab: per-hire rows with 10/30/90 step dots + one action ──
+
+type MilestonePerson = {
+  id: string
+  name: string | null
+  avatarColor: string | null
+  daysEmployed: number
+  milestone: string
+  status: string
+  selfAssessmentDone: boolean
+}
+
+const MSR_DOT_KEYS = ['10-day', '30-day', '90-day']
+const MSR_ORDER = ['10-day', '30-day', '90-day', '6-month', '1-year', 'annual']
+const MSR_LABELS: Record<string, string> = {
+  '10-day': '10-Day', '30-day': '30-Day', '90-day': '90-Day',
+  '6-month': '6-Month', '1-year': '1-Year', annual: 'Annual',
+}
+
+function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
+  const [rows, setRows] = useState<MilestonePerson[] | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [sent, setSent] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/workryn/evaluations/milestones')
+        if (!alive) return
+        if (res.ok) {
+          const data = await res.json()
+          const staff: MilestonePerson[] = data.allStaff ?? []
+          setRows(staff)
+          onCount?.(staff.length)
+        } else {
+          setRows([])
+          onCount?.(0)
+        }
+      } catch {
+        if (alive) { setRows([]); onCount?.(0) }
+      }
+    })()
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function act(userId: string, action: 'start' | 'remind' | 'nudge') {
+    if (busy) return
+    setBusy(userId)
+    try {
+      const res = await fetch('/api/workryn/evaluations/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action }),
+      })
+      if (res.ok) setSent((p) => ({ ...p, [userId]: true }))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="msr-wrap">
+      <div className="msr-head">
+        <h4>Onboarding milestones</h4>
+        <p>New hires in their 10 / 30 / 90-day windows, with send / remind actions per hire.</p>
+      </div>
+      {rows === null ? (
+        <>
+          <div className="msr-row msr-skel" />
+          <div className="msr-row msr-skel" />
+        </>
+      ) : rows.length === 0 ? (
+        <EmptyEvalState isManager tab="milestones" />
+      ) : (
+        rows.map((p) => {
+          const curIdx = MSR_ORDER.indexOf(p.milestone)
+          const initials = (p.name ?? '?').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+          const isSent = !!sent[p.id]
+          const actionLabel = isSent
+            ? 'Sent ✓'
+            : p.status === 'NOT_STARTED' ? 'Send link'
+            : p.status === 'OVERDUE' ? 'Nudge'
+            : 'Remind'
+          const action: 'start' | 'remind' | 'nudge' =
+            p.status === 'NOT_STARTED' ? 'start' : p.status === 'OVERDUE' ? 'nudge' : 'remind'
+          return (
+            <div key={p.id} className="msr-row">
+              <span className="msr-av" style={{ background: p.avatarColor ?? '#a855f7' }}>{initials}</span>
+              <span className="msr-nm">
+                <b>{p.name ?? 'Unnamed'}</b>
+                <span>Day {p.daysEmployed} · {MSR_LABELS[p.milestone] ?? p.milestone} window</span>
+              </span>
+              <span className="msr-dots">
+                {MSR_DOT_KEYS.map((key, idx) => {
+                  const done = idx < curIdx || curIdx > 2 || (idx === curIdx && p.selfAssessmentDone)
+                  const now = idx === curIdx && !done
+                  return (
+                    <span key={key} className={`msr-dot${done ? ' done' : ''}${now ? ' now' : ''}`}>
+                      <i />{MSR_LABELS[key]}
+                    </span>
+                  )
+                })}
+              </span>
+              {p.status === 'COMPLETED' ? (
+                <span className="msr-done-chip">Complete</span>
+              ) : (
+                <button
+                  type="button"
+                  className={`msr-act${p.status === 'OVERDUE' && !isSent ? ' urgent' : ''}`}
+                  disabled={busy === p.id || isSent}
+                  onClick={() => act(p.id, action)}
+                >
+                  {busy === p.id ? 'Sending…' : actionLabel}
+                </button>
+              )}
+            </div>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
 // ── Small primitives ─────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -360,6 +482,7 @@ export default function EvaluationsClient({
   const [manageTab, setManageTab] = useState<'templates' | 'question-bank'>('templates')
   const [evalFilter, setEvalFilter] = useState<'all' | 'byme' | 'pending'>('all')
   const [evalSearch, setEvalSearch] = useState('')
+  const [hiresInWindow, setHiresInWindow] = useState<number | null>(null)
 
   // ── Filters per tab ──
   const visible = useMemo(() => {
@@ -453,26 +576,12 @@ export default function EvaluationsClient({
   // Count-ups for hero/stats
   const animTotal       = useCountUp(evaluations.length, 800)
   const animPending     = useCountUp(pendingAck, 800)
-  const animTemplates   = useCountUp(activeTemplateCount, 800)
 
   return (
     <Container size="xl" py="lg" w="100%" className="eva-root">
       {/* ============ AURORA HERO ============ */}
-      {bannerUrl ? (
-        <>
-          <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />
-          <Group justify="flex-end" mb="lg">
-            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-              <>
-                <DueChip hireDate={currentUser.hireDate} />
-                <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>
-              </>
-            )}
-          </Group>
-        </>
-      ) : (
       <div ref={spot.ref} onMouseMove={spot.onMouseMove} style={{ marginBottom: 20 }}>
-        <Paper radius="lg" p="xl" className="eva-hero">
+        <Paper radius="lg" p="lg" className="eva-hero">
           <div className="eva-hero-mesh" aria-hidden />
           <div className="eva-hero-orbs" aria-hidden>
             <span className="eva-orb eva-orb-1" />
@@ -481,10 +590,10 @@ export default function EvaluationsClient({
           </div>
           <div className="eva-hero-spotlight" aria-hidden />
 
-            <img src="/heroes/evaluations.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
+          <img src="/heroes/evaluations.svg" alt="" aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", height: "70%", zIndex: 0, opacity: 0.22, pointerEvents: "none" }} />
 
-          <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
-            <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+          <Group justify="space-between" align="center" wrap="wrap" gap="lg" style={{ position: 'relative', zIndex: 2 }}>
+            <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
               <Group gap={8} align="center">
                 <Award size={14} style={{ color: 'rgba(240,171,252,0.9)' }} />
                 <Text size="xs" tt="uppercase" fw={700} c="grape.3" style={{ letterSpacing: '0.12em' }}>
@@ -492,74 +601,76 @@ export default function EvaluationsClient({
                 </Text>
               </Group>
               <Title order={1} className="eva-hero-title">
-                {animTotal} {animTotal === 1 ? 'evaluation' : 'evaluations'}
+                Evaluations
               </Title>
               <Text size="sm" c="dimmed">
                 {isManager
-                  ? `Review and author performance evaluations for your team.${pendingAck > 0 ? ` ${pendingAck} pending acknowledgement.` : ''}`
-                  : 'Complete self-assessments and view evaluations from your supervisor.'}
+                  ? `${animTotal} evaluation${animTotal === 1 ? '' : 's'} across the org · ${orgPendingAck} awaiting acknowledgement`
+                  : 'Your self-assessments and reviews from your evaluator'}
               </Text>
-              <Group gap="xs" mt="sm">
-                {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-                  <>
-                    <Button
-                      size="md"
-                      leftSection={<Edit2 size={16} />}
-                      onClick={() => setShowSelfAssessment(true)}
-                      className="eva-btn-primary"
-                    >
-                      Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
-                    </Button>
-                    <DueChip hireDate={currentUser.hireDate} />
-                  </>
-                )}
-              </Group>
             </Stack>
+            {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
+              <Group gap="xs" wrap="nowrap">
+                <DueChip hireDate={currentUser.hireDate} />
+                <Button
+                  size="md"
+                  leftSection={<Edit2 size={16} />}
+                  onClick={() => setShowSelfAssessment(true)}
+                  className="eva-btn-primary"
+                >
+                  Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
+                </Button>
+              </Group>
+            )}
           </Group>
         </Paper>
       </div>
-      )}
 
-      {/* ============ STAT CARDS ============ */}
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">
-        <EvaStatCard label={isManager ? 'Org Evaluations' : 'My Evaluations'} value={String(animTotal)} icon={BarChart3} theme="fuchsia" delay={0} />
-        <EvaStatCard label={isManager ? 'Org Avg Rating' : 'My Avg Rating'} value={avgRating} icon={Star} theme="amber" delay={80} />
-        <EvaStatCard
-          label={isManager ? 'Awaiting Acknowledgement' : 'Needs My Acknowledgement'}
-          value={String(isManager ? orgPendingAck : animPending)}
-          icon={Clock}
-          theme={(isManager ? orgPendingAck : pendingAck) > 0 ? 'red' : 'mint'}
-          delay={160}
-        />
+      {/* ============ STAT TILES ============ */}
+      <div className="eva2-stats">
+        <div className="eva2-stat">
+          <b>{animTotal}</b>
+          <span>{isManager ? 'Org evaluations' : 'My evaluations'}</span>
+        </div>
+        <div className="eva2-stat">
+          <b>{avgRating}</b>
+          <span>{isManager ? 'Org avg rating' : 'My avg rating'}</span>
+        </div>
+        <div className={`eva2-stat${(isManager ? orgPendingAck : pendingAck) > 0 ? ' hot' : ''}`}>
+          <b>{isManager ? orgPendingAck : animPending}</b>
+          <span>{isManager ? 'Awaiting acknowledgement' : 'Needs my acknowledgement'}</span>
+        </div>
         {isManager ? (
-          <EvaStatCard label="Active Templates" value={String(animTemplates)} icon={ClipboardCheck} theme="violet" delay={240} />
+          <div className="eva2-stat">
+            <b>{hiresInWindow ?? '—'}</b>
+            <span>Hires in milestone window</span>
+          </div>
         ) : (
-          <EvaStatCard label="Employment Day" value={`Day ${getDaysSinceHire(currentUser.hireDate)}`} icon={TrendingUp} theme="violet" delay={240} />
+          <div className="eva2-stat">
+            <b>Day {getDaysSinceHire(currentUser.hireDate)}</b>
+            <span>Next: {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} milestone</span>
+          </div>
         )}
-      </SimpleGrid>
+      </div>
 
       {/* ============ TAB BAR ============ */}
       {isManager && (
         <Card radius="lg" p={0} withBorder className="eva-tabs-wrap" mb="md">
           <div className="eva-tabbar-row">
-            <MTabs value={tab} onChange={(v) => v && setTab(v as Tab)} classNames={{ list: 'eva-tabs-list' }} style={{ flex: 1, minWidth: 0 }}>
-              <MTabs.List>
-                {tabs.map((t) => (
-                  <MTabs.Tab
-                    key={t.id}
-                    value={t.id}
-                    leftSection={<t.icon size={14} />}
-                    rightSection={
-                      <Badge size="xs" variant="light" color={tab === t.id ? 'grape' : 'gray'}>
-                        {t.count}
-                      </Badge>
-                    }
-                  >
-                    {t.label}
-                  </MTabs.Tab>
-                ))}
-              </MTabs.List>
-            </MTabs>
+            <div className="eva2-tabs">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`eva2-tabb${tab === t.id ? ' on' : ''}`}
+                  onClick={() => setTab(t.id)}
+                >
+                  <t.icon size={14} />
+                  {t.label}
+                  <span className="eva2-tab-ct">{t.count}</span>
+                </button>
+              ))}
+            </div>
             {isAdmin && (
               <button
                 type="button"
@@ -578,8 +689,8 @@ export default function EvaluationsClient({
       {/* ── Content ── */}
       <div className="eval-content">
         {isManager && tab === 'milestones' ? (
-          /* ── Manager view: Milestone Dashboard ── */
-          <MilestoneDashboard />
+          /* ── Manager view: milestone rows ── */
+          <MilestoneRows onCount={setHiresInWindow} />
         ) : isManager && tab === 'evaluations' ? (
           /* ── Manager view: the full evaluations list ── */
           <>
@@ -658,7 +769,7 @@ export default function EvaluationsClient({
                           <p className="sa-cta-desc">
                             You are <strong>Day {getDaysSinceHire(currentUser.hireDate)}</strong> of your employment.
                             Complete and submit your self-assessment questionnaire
-                            <strong> at least one week before</strong> your scheduled meeting with Sarah Abbott.
+                            <strong> at least one week before</strong> your evaluation meeting with your assigned evaluator.
                           </p>
                         </div>
                       </div>
@@ -869,6 +980,82 @@ export default function EvaluationsClient({
         }
 
         /* ── Tab Bar ── */
+        .eva2-stats {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 8px; margin-bottom: 14px;
+        }
+        @media (max-width: 780px) { .eva2-stats { grid-template-columns: repeat(2, 1fr); } }
+        .eva2-stat {
+          border: 1px solid var(--border-subtle); border-radius: 12px;
+          padding: 12px 14px; background: var(--glass-bg);
+        }
+        .eva2-stat b { display: block; font-size: 19px; font-weight: 800; color: var(--text-primary); line-height: 1.15; }
+        .eva2-stat span {
+          font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: var(--text-muted);
+        }
+        .eva2-stat.hot b { color: #f0abfc; }
+        .eva2-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px; flex: 1; min-width: 0; flex-wrap: wrap; }
+        .eva2-tabb {
+          cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 650;
+          color: var(--text-muted); padding: 7px 13px; border-radius: 9px; border: 0;
+          background: transparent; display: inline-flex; gap: 7px; align-items: center;
+        }
+        .eva2-tabb:hover { color: var(--text-primary); background: rgba(168, 85, 247, 0.08); }
+        .eva2-tabb.on {
+          color: #fff;
+          background: linear-gradient(135deg, rgba(168, 85, 247, 0.38), rgba(236, 72, 153, 0.28));
+        }
+        .eva2-tab-ct {
+          font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 999px;
+          background: rgba(148, 163, 184, 0.15); color: var(--text-secondary);
+        }
+        .eva2-tabb.on .eva2-tab-ct { background: rgba(255, 255, 255, 0.22); color: #fff; }
+        .msr-head { margin: 2px 0 12px; }
+        .msr-head h4 { margin: 0; font-size: 14.5px; font-weight: 750; color: var(--text-primary); }
+        .msr-head p { margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted); }
+        .msr-row {
+          display: flex; align-items: center; gap: 12px;
+          border: 1px solid var(--border-subtle); border-radius: 11px;
+          padding: 11px 14px; margin-bottom: 8px; background: var(--glass-bg);
+          flex-wrap: wrap;
+        }
+        .msr-skel { min-height: 56px; opacity: 0.4; animation: pulse 1.4s ease infinite; }
+        .msr-av {
+          width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto;
+          display: grid; place-items: center;
+          font-size: 11px; font-weight: 800; color: #fff;
+        }
+        .msr-nm { min-width: 0; }
+        .msr-nm b { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+        .msr-nm span { display: block; font-size: 10px; color: var(--text-muted); }
+        .msr-dots { display: flex; gap: 14px; margin-left: auto; }
+        .msr-dot {
+          text-align: center; font-size: 8.5px; font-weight: 700;
+          color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .msr-dot i {
+          display: block; width: 17px; height: 17px; border-radius: 50%;
+          margin: 0 auto 3px; border: 2px solid rgba(148, 163, 184, 0.35);
+        }
+        .msr-dot.done i { background: #a855f7; border-color: #a855f7; box-shadow: 0 0 9px rgba(168, 85, 247, 0.6); }
+        .msr-dot.now i { border-color: #f0abfc; }
+        .msr-act {
+          cursor: pointer; font: inherit; font-size: 10.5px; font-weight: 700;
+          color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.4);
+          background: transparent; border-radius: 7px; padding: 4px 12px;
+          margin-left: 12px; white-space: nowrap;
+        }
+        .msr-act:hover { background: rgba(168, 85, 247, 0.12); }
+        .msr-act:disabled { opacity: 0.55; cursor: default; }
+        .msr-act.urgent { color: #fca5a5; border-color: rgba(248, 113, 113, 0.45); }
+        .msr-act.urgent:hover { background: rgba(248, 113, 113, 0.12); }
+        .msr-done-chip {
+          font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+          margin-left: 12px; color: #6ee7b7; background: rgba(52, 211, 153, 0.12);
+          border: 1px solid rgba(52, 211, 153, 0.3); white-space: nowrap;
+        }
+        @media (max-width: 700px) { .msr-dots { margin-left: 0; width: 100%; } }
         .eva-tabbar-row {
           display: flex; align-items: center; gap: 10px;
           padding-right: 10px; flex-wrap: wrap;
