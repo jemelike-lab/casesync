@@ -39,7 +39,6 @@ import {
   Grid,
   Group,
   Paper,
-  Progress,
   SegmentedControl,
   Stack,
   Text,
@@ -49,7 +48,6 @@ import { DonutChart } from '@mantine/charts'
 import {
   AlertTriangle,
   Clock,
-  Filter,
   PhoneOff,
   Users,
 } from 'lucide-react'
@@ -786,8 +784,9 @@ function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
 }
 
 // ===========================================================================
-// PlannerWorkloadSection — per-planner cards in a Grid.
-// Replaces the P1.4 placeholder (planners side). Uses real summaryByAssignee.
+// PlannerWorkloadSection — ranked pressure leaderboard.
+// One slim row per planner: stacked caseload bar (overdue / due-wk / on-track
+// segments, width proportional to caseload) + right-aligned numbers.
 // Sorted by overdue desc so the most-pressured planners surface first.
 // ===========================================================================
 
@@ -835,13 +834,25 @@ function PlannerWorkloadSection({
       }
     >
       {rows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
-          <Users size={32} color="var(--v2-text-muted)" style={{ margin: '0 auto 8px' }} />
-          <Text fz={14} fw={600} c="var(--v2-text)">No Support Planners loaded</Text>
-          <Text fz={12} c="var(--v2-text-muted)" mt={4}>Planners will appear here once they're added to the org.</Text>
-        </Box>
+        <Flex align="center" gap={14} style={{ padding: '16px 18px', border: '1px dashed var(--v2-border-soft)', borderRadius: 12, background: 'var(--v2-surface-tint)' }}>
+          <Box style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--v2-surface)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <Users size={20} color="var(--v2-text-muted)" />
+          </Box>
+          <Stack gap={1} style={{ minWidth: 0 }}>
+            <Text fz={13.5} fw={700} c="var(--v2-text)">No Support Planners yet</Text>
+            <Text fz={12} c="var(--v2-text-muted)">Workload bars appear the moment planners are invited and clients are assigned.</Text>
+          </Stack>
+          <Link href="/admin" style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: '#1E7CFF', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Invite from Admin →
+          </Link>
+        </Flex>
       ) : (
-        <Grid gap="md">
+        <div className="pwl-wrap">
+          <div className="pwl-legend">
+            <span><i style={{ background: '#FF3B5C' }} />Overdue</span>
+            <span><i style={{ background: '#FFA940' }} />Due this week</span>
+            <span><i style={{ background: '#10B981' }} />On track</span>
+          </div>
           {rows.map(({ planner, tm, caseload, overdue, dueWeek, quiet }) => {
             const initials = (planner.full_name ?? '?')
               .split(' ')
@@ -849,74 +860,81 @@ function PlannerWorkloadSection({
               .map((p) => p[0])
               .join('')
               .toUpperCase()
-            const pressurePct = maxCaseload > 0 ? (caseload / maxCaseload) * 100 : 0
-            const pressureColor = overdue >= 5 ? '#FF3B5C' : overdue >= 2 ? '#FFA940' : '#10B981'
+            const widthPct = maxCaseload > 0 ? Math.max((caseload / maxCaseload) * 100, caseload > 0 ? 6 : 0) : 0
+            const overduePct = caseload > 0 ? (overdue / caseload) * 100 : 0
+            const duePct = caseload > 0 ? (dueWeek / caseload) * 100 : 0
             return (
-              <Grid.Col key={planner.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                <Box
-                  style={{
-                    padding: 14,
-                    borderRadius: 12,
-                    background: 'var(--v2-surface)',
-                    border: '1px solid var(--v2-border-soft)',
-                    borderLeft: `4px solid ${pressureColor}`,
-                  }}
-                >
-                  <Group gap="sm" wrap="nowrap" mb="sm">
-                    <Avatar size="md" radius="xl" style={{ background: '#1E7CFF', color: '#fff', fontWeight: 700, fontSize: 14 }}>
-                      {initials}
-                    </Avatar>
-                    <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-                      <Text fz={13} fw={700} c="var(--v2-text)" truncate>
-                        {planner.full_name ?? 'Unnamed'}
-                      </Text>
-                      <Text fz={11} c="var(--v2-text-muted)" truncate>
-                        {tm ? `${tm.full_name} · TM` : 'Unassigned'}
-                      </Text>
-                    </Stack>
-                  </Group>
-                  <Group justify="space-between" gap={4} mb={6}>
-                    <Stack gap={0}>
-                      <Text fz={20} fw={800} c="var(--v2-text)" lh={1}>{caseload}</Text>
-                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Clients</Text>
-                    </Stack>
-                    <Stack gap={0} align="center">
-                      <Text fz={20} fw={800} c="#FF3B5C" lh={1}>{overdue}</Text>
-                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Overdue</Text>
-                    </Stack>
-                    <Stack gap={0} align="center">
-                      <Text fz={20} fw={800} c="#FFA940" lh={1}>{dueWeek}</Text>
-                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Due Wk</Text>
-                    </Stack>
-                    <Stack gap={0} align="flex-end">
-                      <Text fz={20} fw={800} c="#1E7CFF" lh={1}>{quiet}</Text>
-                      <Text fz={10} c="var(--v2-text-muted)" fw={600} tt="uppercase" style={{ letterSpacing: '0.06em' }}>Quiet</Text>
-                    </Stack>
-                  </Group>
-                  <Progress value={pressurePct} size="xs" color={pressureColor === '#FF3B5C' ? 'coral' : pressureColor === '#FFA940' ? 'amber' : 'emerald'} mt={4} />
-                </Box>
-              </Grid.Col>
+              <div key={planner.id} className="pwl-row">
+                <div className="pwl-who">
+                  <Avatar size={30} radius="xl" style={{ background: '#10B981', color: '#fff', fontWeight: 700, fontSize: 11 }}>
+                    {initials}
+                  </Avatar>
+                  <Stack gap={0} style={{ minWidth: 0 }}>
+                    <Text fz={13} fw={700} c="var(--v2-text)" truncate>{planner.full_name ?? 'Unnamed'}</Text>
+                    {tm ? (
+                      <Text fz={10.5} c="var(--v2-text-muted)" truncate>{tm.full_name} · TM</Text>
+                    ) : (
+                      <Text fz={10.5} c="#FFA940" fw={650} truncate>Unassigned — needs a TM</Text>
+                    )}
+                  </Stack>
+                </div>
+                <div className="pwl-barlane">
+                  <div className="pwl-bar" style={{ width: `${widthPct}%` }}>
+                    <i style={{ width: `${overduePct}%`, background: '#FF3B5C' }} />
+                    <i style={{ width: `${duePct}%`, background: '#FFA940' }} />
+                    <i style={{ flex: 1, background: '#10B981' }} />
+                  </div>
+                </div>
+                <div className="pwl-nums">
+                  <span className="pwl-n"><b style={{ color: 'var(--v2-text)' }}>{caseload}</b><span>Clients</span></span>
+                  <span className="pwl-n"><b style={{ color: overdue > 0 ? '#FF3B5C' : 'var(--v2-text-muted)' }}>{overdue}</b><span>Overdue</span></span>
+                  <span className="pwl-n"><b style={{ color: dueWeek > 0 ? '#FFA940' : 'var(--v2-text-muted)' }}>{dueWeek}</b><span>Due wk</span></span>
+                  <span className="pwl-n"><b style={{ color: quiet > 0 ? '#1E7CFF' : 'var(--v2-text-muted)' }}>{quiet}</b><span>Quiet</span></span>
+                </div>
+              </div>
             )
           })}
-        </Grid>
+          <style>{`
+            .pwl-legend { display: flex; gap: 14px; font-size: 11px; color: var(--v2-text-muted); margin: 2px 0 10px; }
+            .pwl-legend span { display: inline-flex; align-items: center; }
+            .pwl-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; }
+            .pwl-row {
+              display: grid; grid-template-columns: 230px 1fr 244px;
+              gap: 14px; align-items: center;
+              padding: 9px 4px;
+              border-bottom: 1px solid var(--v2-border-soft);
+            }
+            .pwl-row:last-of-type { border-bottom: 0; }
+            .pwl-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+            .pwl-barlane { min-width: 0; }
+            .pwl-bar {
+              height: 16px; border-radius: 999px;
+              background: var(--v2-surface-tint);
+              overflow: hidden; display: flex; min-width: 2px;
+            }
+            .pwl-bar i { display: block; height: 100%; }
+            .pwl-nums { display: flex; gap: 14px; justify-content: flex-end; }
+            .pwl-n { text-align: right; min-width: 42px; }
+            .pwl-n b { display: block; font-size: 14px; font-weight: 800; line-height: 1.05; }
+            .pwl-n span { font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; color: var(--v2-text-muted); text-transform: uppercase; }
+            @media (max-width: 760px) {
+              .pwl-row { grid-template-columns: 1fr; gap: 8px; }
+              .pwl-nums { justify-content: flex-start; }
+            }
+          `}</style>
+        </div>
       )}
     </SectionPaper>
   )
 }
 
 // ===========================================================================
-// TeamRosterSection — filter chips + roster cards.
-// Replaces the P1.4 placeholder (roster side). Uses planners + teamManagers.
+// TeamRosterSection — grouped by Team Manager.
+// Each TM renders as a header row (team accent + name + team badge) with
+// their Support Planners as chips beneath. Planners without a TM collect in
+// an amber "Unassigned · Needs a TM" group. No filters — the org structure
+// is the view. Theme-aware via --v2-* variables.
 // ===========================================================================
-
-type RosterFilter = 'all' | 'planners' | 'team_managers' | 'unassigned_planners'
-
-const ROSTER_FILTERS: { value: RosterFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'team_managers', label: 'Team Managers' },
-  { value: 'planners', label: 'Support Planners' },
-  { value: 'unassigned_planners', label: 'Unassigned' },
-]
 
 function TeamRosterSection({
   planners,
@@ -925,25 +943,25 @@ function TeamRosterSection({
   planners: Profile[]
   teamManagers: Profile[]
 }) {
-  const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all')
+  const unassigned = planners.filter((p) => !p.team_manager_id)
+  const isEmpty = teamManagers.length === 0 && planners.length === 0
 
-  const filteredRows = useMemo(() => {
-    if (rosterFilter === 'team_managers') {
-      return teamManagers.map((p) => ({ profile: p, kind: 'tm' as const }))
-    }
-    if (rosterFilter === 'planners') {
-      return planners.map((p) => ({ profile: p, kind: 'sp' as const }))
-    }
-    if (rosterFilter === 'unassigned_planners') {
-      return planners
-        .filter((p) => !p.team_manager_id)
-        .map((p) => ({ profile: p, kind: 'sp' as const }))
-    }
-    return [
-      ...teamManagers.map((p) => ({ profile: p, kind: 'tm' as const })),
-      ...planners.map((p) => ({ profile: p, kind: 'sp' as const })),
-    ]
-  }, [planners, teamManagers, rosterFilter])
+  const initialsOf = (name: string | null | undefined) =>
+    (name ?? '?')
+      .split(' ')
+      .slice(0, 2)
+      .map((p) => p[0])
+      .join('')
+      .toUpperCase()
+
+  const spChip = (p: Profile) => (
+    <span key={p.id} className="tro-chip">
+      <Avatar size={20} radius="xl" style={{ background: '#10B981', color: '#fff', fontWeight: 700, fontSize: 8.5 }}>
+        {initialsOf(p.full_name)}
+      </Avatar>
+      {p.full_name ?? 'Unnamed'}
+    </span>
+  )
 
   return (
     <SectionPaper
@@ -962,62 +980,89 @@ function TeamRosterSection({
         </Group>
       }
     >
-      <SegmentedControl
-        value={rosterFilter}
-        onChange={(v) => setRosterFilter(v as RosterFilter)}
-        data={ROSTER_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
-        size="sm"
-        fullWidth
-        mb="md"
-        color="cobalt"
-      />
-      {filteredRows.length === 0 ? (
-        <Box py="xl" style={{ textAlign: 'center', background: 'var(--v2-surface-tint)', borderRadius: 12, border: '1px dashed var(--v2-border-soft)' }}>
-          <Filter size={32} color="var(--v2-text-muted)" style={{ margin: '0 auto 8px' }} />
-          <Text fz={14} fw={600} c="var(--v2-text)">No one in this slice</Text>
-          <Text fz={12} c="var(--v2-text-muted)" mt={4}>Try a different filter.</Text>
-        </Box>
+      {isEmpty ? (
+        <Flex align="center" gap={14} style={{ padding: '16px 18px', border: '1px dashed var(--v2-border-soft)', borderRadius: 12, background: 'var(--v2-surface-tint)' }}>
+          <Box style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--v2-surface)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <Users size={20} color="var(--v2-text-muted)" />
+          </Box>
+          <Stack gap={1} style={{ minWidth: 0 }}>
+            <Text fz={13.5} fw={700} c="var(--v2-text)">Roster is empty</Text>
+            <Text fz={12} c="var(--v2-text-muted)">Team Managers and Support Planners show up here as they accept their invites.</Text>
+          </Stack>
+          <Link href="/admin" style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: '#1E7CFF', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Invite from Admin →
+          </Link>
+        </Flex>
       ) : (
-        <Grid gap="sm">
-          {filteredRows.map(({ profile, kind }) => {
-            const initials = (profile.full_name ?? '?')
-              .split(' ')
-              .slice(0, 2)
-              .map((p) => p[0])
-              .join('')
-              .toUpperCase()
-            const isTM = kind === 'tm'
-            const accent = isTM ? '#1E7CFF' : '#10B981'
-            const label = isTM ? 'Team Manager' : 'Support Planner'
+        <div className="tro-wrap">
+          {teamManagers.map((tm) => {
+            const teamCfg = TEAMS.find((t) => t.leadFullName === tm.full_name)
+            const kids = planners.filter((p) => p.team_manager_id === tm.id)
             return (
-              <Grid.Col key={profile.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
-                <Group
-                  gap="sm"
-                  wrap="nowrap"
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    background: 'var(--v2-surface)',
-                    border: '1px solid var(--v2-border-soft)',
-                    borderLeft: `3px solid ${accent}`,
-                  }}
-                >
-                  <Avatar size="sm" radius="xl" style={{ background: accent, color: '#fff', fontWeight: 700, fontSize: 11 }}>
-                    {initials}
+              <div key={tm.id} className="tro-group">
+                <div className="tro-ghead">
+                  <Avatar size={26} radius="xl" style={{ background: teamCfg?.accentColor ?? '#1E7CFF', color: '#fff', fontWeight: 700, fontSize: 10 }}>
+                    {initialsOf(tm.full_name)}
                   </Avatar>
-                  <Stack gap={0} style={{ minWidth: 0, flex: 1 }}>
-                    <Text fz={12} fw={700} c="var(--v2-text)" truncate>
-                      {profile.full_name ?? 'Unnamed'}
-                    </Text>
-                    <Text fz={10} c="var(--v2-text-muted)" truncate>
-                      {label}
-                    </Text>
-                  </Stack>
-                </Group>
-              </Grid.Col>
+                  <Text fz={12.5} fw={700} c="var(--v2-text)" truncate>
+                    {tm.full_name ?? 'Unnamed'}
+                  </Text>
+                  <Badge size="xs" variant="light" color="cobalt">
+                    {teamCfg ? `TM · ${teamCfg.teamName}` : 'Team Manager'}
+                  </Badge>
+                  <Text fz={11} fw={700} c="var(--v2-text-muted)" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+                    {kids.length} SP{kids.length === 1 ? '' : 's'}
+                  </Text>
+                </div>
+                {kids.length > 0 ? (
+                  <div className="tro-chips">{kids.map(spChip)}</div>
+                ) : (
+                  <Text fz={11.5} c="var(--v2-text-muted)" style={{ padding: '4px 0 4px 12px' }}>
+                    No planners assigned yet
+                  </Text>
+                )}
+              </div>
             )
           })}
-        </Grid>
+          {unassigned.length > 0 && (
+            <div className="tro-group">
+              <div className="tro-ghead tro-ghead-warn">
+                <Avatar size={26} radius="xl" style={{ background: '#FFA940', color: '#fff', fontWeight: 700, fontSize: 12 }}>
+                  ?
+                </Avatar>
+                <Text fz={12.5} fw={700} c="var(--v2-text)">Unassigned</Text>
+                <Badge size="xs" variant="light" color="amber">Needs a TM</Badge>
+                <Text fz={11} fw={700} c="var(--v2-text-muted)" style={{ marginLeft: 'auto' }}>
+                  {unassigned.length}
+                </Text>
+              </div>
+              <div className="tro-chips">{unassigned.map(spChip)}</div>
+            </div>
+          )}
+          <style>{`
+            .tro-group { margin-bottom: 12px; }
+            .tro-group:last-of-type { margin-bottom: 0; }
+            .tro-ghead {
+              display: flex; align-items: center; gap: 9px;
+              padding: 8px 10px;
+              background: var(--v2-surface-tint);
+              border-radius: 9px;
+              margin-bottom: 6px;
+              min-width: 0;
+            }
+            .tro-ghead-warn { background: rgba(245, 158, 11, 0.10); }
+            .tro-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 12px; }
+            .tro-chip {
+              display: inline-flex; align-items: center; gap: 7px;
+              border: 1px solid var(--v2-border-soft);
+              border-radius: 999px;
+              padding: 5px 12px 5px 6px;
+              background: var(--v2-surface);
+              font-size: 12px; font-weight: 600;
+              color: var(--v2-text);
+            }
+          `}</style>
+        </div>
       )}
     </SectionPaper>
   )
