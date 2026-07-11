@@ -205,8 +205,17 @@ type MilestonePerson = {
   daysEmployed: number
   milestone: string
   status: string
+  countyDone: boolean
+  countyData: { residenceCounty: string; preferredCounties: string; submittedAt: string } | null
   selfAssessmentDone: boolean
+  selfAssessment: { id: string; templateName: string; createdAt: string; answeredCount: number; totalQuestions: number } | null
+  supervisorReviewDone: boolean
+  supervisorReview: { id: string; overallRating: number | null; createdAt: string } | null
+  remindersCount: number
+  remindersPending: number
 }
+
+type MilestoneSummary = { totalStaff: number; completed: number; inProgress: number; overdue: number; notStarted: number }
 
 const MSR_DOT_KEYS = ['10-day', '30-day', '90-day']
 const MSR_ORDER = ['10-day', '30-day', '90-day', '6-month', '1-year', 'annual']
@@ -214,11 +223,16 @@ const MSR_LABELS: Record<string, string> = {
   '10-day': '10-Day', '30-day': '30-Day', '90-day': '90-Day',
   '6-month': '6-Month', '1-year': '1-Year', annual: 'Annual',
 }
+const MSR_DUE_DAYS: Record<string, number> = {
+  '10-day': 10, '30-day': 30, '90-day': 90, '6-month': 180, '1-year': 365, annual: 730,
+}
 
 function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
   const [rows, setRows] = useState<MilestonePerson[] | null>(null)
+  const [summary, setSummary] = useState<MilestoneSummary | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [sent, setSent] = useState<Record<string, boolean>>({})
+  const [open, setOpen] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let alive = true
@@ -230,6 +244,7 @@ function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
           const data = await res.json()
           const staff: MilestonePerson[] = data.allStaff ?? []
           setRows(staff)
+          setSummary(data.summary ?? null)
           onCount?.(staff.length)
         } else {
           setRows([])
@@ -258,11 +273,40 @@ function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
     }
   }
 
+  function toggle(id: string) {
+    setOpen((p) => {
+      const n = new Set(p)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+
   return (
     <div className="msr-wrap">
       <div className="msr-head">
-        <h4>Onboarding milestones</h4>
-        <p>New hires in their 10 / 30 / 90-day windows, with send / remind actions per hire.</p>
+        <div>
+          <h4>Onboarding milestones</h4>
+          <p>New hires in their 10 / 30 / 90-day windows — expand a row for county preference, self-assessment, and review progress.</p>
+        </div>
+        <div className="msr-head-right">
+          {summary && summary.totalStaff > 0 && (
+            <span className="msr-sum">
+              {summary.completed > 0 && <span className="msr-sum-chip ok">{summary.completed} complete</span>}
+              {summary.inProgress > 0 && <span className="msr-sum-chip">{summary.inProgress} in progress</span>}
+              {summary.overdue > 0 && <span className="msr-sum-chip bad">{summary.overdue} overdue</span>}
+              {summary.notStarted > 0 && <span className="msr-sum-chip">{summary.notStarted} not started</span>}
+            </span>
+          )}
+          <a
+            className="msr-cal"
+            href="https://calendly.com/sabbott-9/evaluations"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Calendly — Sarah Abbott ↗
+          </a>
+        </div>
       </div>
       {rows === null ? (
         <>
@@ -276,6 +320,9 @@ function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
           const curIdx = MSR_ORDER.indexOf(p.milestone)
           const initials = (p.name ?? '?').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
           const isSent = !!sent[p.id]
+          const isOpen = open.has(p.id)
+          const dueDay = MSR_DUE_DAYS[p.milestone] ?? 365
+          const daysUntilDue = dueDay - p.daysEmployed
           const actionLabel = isSent
             ? 'Sent ✓'
             : p.status === 'NOT_STARTED' ? 'Send link'
@@ -284,34 +331,76 @@ function MilestoneRows({ onCount }: { onCount?: (n: number) => void }) {
           const action: 'start' | 'remind' | 'nudge' =
             p.status === 'NOT_STARTED' ? 'start' : p.status === 'OVERDUE' ? 'nudge' : 'remind'
           return (
-            <div key={p.id} className="msr-row">
-              <span className="msr-av" style={{ background: p.avatarColor ?? '#a855f7' }}>{initials}</span>
-              <span className="msr-nm">
-                <b>{p.name ?? 'Unnamed'}</b>
-                <span>Day {p.daysEmployed} · {MSR_LABELS[p.milestone] ?? p.milestone} window</span>
-              </span>
-              <span className="msr-dots">
-                {MSR_DOT_KEYS.map((key, idx) => {
-                  const done = idx < curIdx || curIdx > 2 || (idx === curIdx && p.selfAssessmentDone)
-                  const now = idx === curIdx && !done
-                  return (
-                    <span key={key} className={`msr-dot${done ? ' done' : ''}${now ? ' now' : ''}`}>
-                      <i />{MSR_LABELS[key]}
+            <div key={p.id} className={`msr-card${isOpen ? ' open' : ''}`}>
+              <div className="msr-row" onClick={() => toggle(p.id)} role="button" tabIndex={0}>
+                <ChevronDown size={14} className="msr-chev" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                <span className="msr-av" style={{ background: p.avatarColor ?? '#a855f7' }}>{initials}</span>
+                <span className="msr-nm">
+                  <b>{p.name ?? 'Unnamed'}</b>
+                  <span>
+                    Day {p.daysEmployed} · {MSR_LABELS[p.milestone] ?? p.milestone} window
+                    {p.status !== 'COMPLETED' && (
+                      daysUntilDue < 0
+                        ? <em className="msr-due bad"> · {Math.abs(daysUntilDue)}d overdue</em>
+                        : <em className="msr-due"> · {daysUntilDue}d remaining</em>
+                    )}
+                  </span>
+                </span>
+                <span className="msr-dots">
+                  {MSR_DOT_KEYS.map((key, idx) => {
+                    const done = idx < curIdx || curIdx > 2 || (idx === curIdx && p.selfAssessmentDone)
+                    const now = idx === curIdx && !done
+                    return (
+                      <span key={key} className={`msr-dot${done ? ' done' : ''}${now ? ' now' : ''}`}>
+                        <i />{MSR_LABELS[key]}
+                      </span>
+                    )
+                  })}
+                </span>
+                {p.status === 'COMPLETED' ? (
+                  <span className="msr-done-chip">Complete</span>
+                ) : (
+                  <button
+                    type="button"
+                    className={`msr-act${p.status === 'OVERDUE' && !isSent ? ' urgent' : ''}`}
+                    disabled={busy === p.id || isSent}
+                    onClick={(ev) => { ev.stopPropagation(); act(p.id, action) }}
+                  >
+                    {busy === p.id ? 'Sending…' : actionLabel}
+                  </button>
+                )}
+              </div>
+              {isOpen && (
+                <div className="msr-detail">
+                  <div className="msr-steps">
+                    <span className={`msr-step${p.countyDone ? ' done' : ''}`}>
+                      <i>{p.countyDone ? '✓' : '○'}</i> County Preference
                     </span>
-                  )
-                })}
-              </span>
-              {p.status === 'COMPLETED' ? (
-                <span className="msr-done-chip">Complete</span>
-              ) : (
-                <button
-                  type="button"
-                  className={`msr-act${p.status === 'OVERDUE' && !isSent ? ' urgent' : ''}`}
-                  disabled={busy === p.id || isSent}
-                  onClick={() => act(p.id, action)}
-                >
-                  {busy === p.id ? 'Sending…' : actionLabel}
-                </button>
+                    <span className={`msr-step${p.selfAssessmentDone ? ' done' : ''}`}>
+                      <i>{p.selfAssessmentDone ? '✓' : '○'}</i> Self-Assessment
+                    </span>
+                    <span className={`msr-step${p.supervisorReviewDone ? ' done' : ''}`}>
+                      <i>{p.supervisorReviewDone ? '✓' : '○'}</i> Supervisor Review
+                    </span>
+                  </div>
+                  <div className="msr-chips">
+                    {p.countyDone && p.countyData && (
+                      <span className="msr-chip">Resides: {p.countyData.residenceCounty}{p.countyData.preferredCounties ? ` · Prefers: ${p.countyData.preferredCounties}` : ''}</span>
+                    )}
+                    {!p.countyDone && (
+                      <span className="msr-chip dim">County preference not submitted</span>
+                    )}
+                    {p.selfAssessment && (
+                      <span className="msr-chip">{p.selfAssessment.templateName}: {p.selfAssessment.answeredCount}/{p.selfAssessment.totalQuestions} answered</span>
+                    )}
+                    {p.supervisorReview?.overallRating != null && (
+                      <span className="msr-chip">Rating: {p.supervisorReview.overallRating}/5</span>
+                    )}
+                    {p.remindersCount > 0 && (
+                      <span className="msr-chip dim">{p.remindersCount} reminder{p.remindersCount === 1 ? '' : 's'} scheduled · {p.remindersPending} pending</span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )
@@ -1015,9 +1104,54 @@ export default function EvaluationsClient({
           background: rgba(148, 163, 184, 0.15); color: var(--text-secondary);
         }
         .eva2-tabb.on .eva2-tab-ct { background: rgba(255, 255, 255, 0.22); color: #fff; }
-        .msr-head { margin: 2px 0 12px; }
+        .msr-head { margin: 2px 0 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         .msr-head h4 { margin: 0; font-size: 14.5px; font-weight: 750; color: var(--text-primary); }
         .msr-head p { margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted); }
+        .msr-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .msr-sum { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+        .msr-sum-chip {
+          font-size: 9.5px; font-weight: 750; padding: 2px 8px; border-radius: 999px;
+          color: var(--text-secondary); background: rgba(148, 163, 184, 0.10);
+          border: 1px solid rgba(148, 163, 184, 0.22); white-space: nowrap;
+        }
+        .msr-sum-chip.ok { color: #6ee7b7; background: rgba(52, 211, 153, 0.10); border-color: rgba(52, 211, 153, 0.3); }
+        .msr-sum-chip.bad { color: #fca5a5; background: rgba(248, 113, 113, 0.10); border-color: rgba(248, 113, 113, 0.3); }
+        .msr-cal {
+          font-size: 10.5px; font-weight: 700; color: #c4b5fd; text-decoration: none;
+          border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 7px; padding: 4px 10px;
+          white-space: nowrap;
+        }
+        .msr-cal:hover { background: rgba(168, 85, 247, 0.12); }
+        .msr-card { margin-bottom: 8px; }
+        .msr-card .msr-row { margin-bottom: 0; cursor: pointer; }
+        .msr-card.open .msr-row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-color: transparent; }
+        .msr-chev { color: var(--text-muted); flex-shrink: 0; transition: transform 0.15s ease; }
+        .msr-due { font-style: normal; color: var(--text-muted); }
+        .msr-due.bad { color: #fca5a5; font-weight: 700; }
+        .msr-detail {
+          border: 1px solid var(--border-subtle); border-top: 0;
+          border-radius: 0 0 11px 11px; padding: 10px 14px 12px 40px;
+          background: var(--glass-bg);
+        }
+        .msr-steps { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+        .msr-step {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 11px; font-weight: 650; color: var(--text-muted);
+        }
+        .msr-step i {
+          font-style: normal; width: 16px; height: 16px; border-radius: 50%;
+          display: inline-grid; place-items: center; font-size: 9px; font-weight: 800;
+          border: 1.5px solid rgba(148, 163, 184, 0.35); color: var(--text-muted);
+        }
+        .msr-step.done { color: var(--text-secondary); }
+        .msr-step.done i { background: #a855f7; border-color: #a855f7; color: #fff; }
+        .msr-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .msr-chip {
+          font-size: 10px; font-weight: 650; padding: 3px 9px; border-radius: 999px;
+          color: var(--text-secondary); background: rgba(148, 163, 184, 0.09);
+          border: 1px solid rgba(148, 163, 184, 0.20);
+        }
+        .msr-chip.dim { color: var(--text-muted); }
         .msr-row {
           display: flex; align-items: center; gap: 12px;
           border: 1px solid var(--border-subtle); border-radius: 11px;
