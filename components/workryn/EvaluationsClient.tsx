@@ -41,6 +41,7 @@ import {
   Clock,
   Sparkles,
   Target,
+  ChevronDown,
   Zap,
   BookOpen,
   MessageSquare,
@@ -2545,12 +2546,27 @@ function QuestionBankView({ templates }: { templates: Template[] }) {
 
 // ── Templates grid ──
 
+const TPL_MILESTONE_ORDER: { label: string; keywords: string[] }[] = [
+  { label: '10-Day', keywords: ['10-Day', '10 Day'] },
+  { label: '30-Day', keywords: ['30-Day', '30 Day'] },
+  { label: '90-Day', keywords: ['90-Day', '90 Day'] },
+  { label: '6-Month', keywords: ['6-Month', '6 Month'] },
+  { label: '1-Year', keywords: ['1-Year', '1 Year'] },
+  { label: 'Annual', keywords: ['Annual'] },
+]
+
+function tplMilestoneIndex(name: string): number {
+  return TPL_MILESTONE_ORDER.findIndex((m) => m.keywords.some((k) => name.includes(k)))
+}
+
 function TemplatesGrid({
   templates, isAdmin, onEdit, onDelete,
 }: {
   templates: Template[]; isAdmin: boolean; onEdit: (t: Template) => void; onDelete: (id: string) => void
 }) {
+  const [openId, setOpenId] = useState<string | null>(null)
   const active = templates.filter((t) => t.isActive)
+
   if (active.length === 0) {
     return (
       <div className="eval-empty animate-slide-up">
@@ -2560,44 +2576,120 @@ function TemplatesGrid({
       </div>
     )
   }
-  return (
-    <div className="eval-grid">
-      {active.map((t, i) => (
-        <div key={t.id} className="glass-card template-card animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ paddingTop: 6 }}>
-              <h3 style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Target size={16} color="#a78bfa" />{t.name}
-              </h3>
-              {t.description && <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{t.description}</p>}
+
+  const milestone = active
+    .filter((t) => tplMilestoneIndex(t.name) >= 0)
+    .sort((a, b) => tplMilestoneIndex(a.name) - tplMilestoneIndex(b.name) || a.name.localeCompare(b.name))
+  const general = active
+    .filter((t) => tplMilestoneIndex(t.name) < 0)
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  const renderRow = (t: Template) => {
+    const isOpen = openId === t.id
+    return (
+      <div key={t.id} className={`tpl-row${isOpen ? ' open' : ''}`}>
+        <button type="button" className="tpl-row-head focus-ring" onClick={() => setOpenId(isOpen ? null : t.id)}>
+          <ChevronDown size={15} className="tpl-chevron" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+          <Target size={14} color="#a78bfa" style={{ flexShrink: 0 }} />
+          <span className="tpl-name">{t.name}</span>
+          {t.description && !isOpen && <span className="tpl-desc-inline">{t.description}</span>}
+          <span className="tpl-meta">
+            <span className="tpl-meta-chip">{t.criteria.length} question{t.criteria.length === 1 ? '' : 's'}</span>
+            {typeof t._count?.evaluations === 'number' && t._count.evaluations > 0 && (
+              <span className="tpl-meta-chip">used {t._count.evaluations}×</span>
+            )}
+            {t.documentUrl && <Paperclip size={12} style={{ color: 'var(--text-muted)' }} />}
+          </span>
+          {isAdmin && (
+            <span className="tpl-actions" onClick={(ev) => ev.stopPropagation()}>
+              <button className="btn btn-icon btn-ghost focus-ring" onClick={() => onEdit(t)} type="button" aria-label="Edit template" title="Edit"><Edit2 size={13} /></button>
+              <button className="btn btn-icon btn-ghost focus-ring" onClick={() => onDelete(t.id)} type="button" aria-label="Archive template" title="Archive"><Trash2 size={13} /></button>
+            </span>
+          )}
+        </button>
+        {isOpen && (
+          <div className="tpl-row-body">
+            {t.description && <p className="tpl-desc-full">{t.description}</p>}
+            <div className="tpl-q-list">
+              {t.criteria.map((c) => (
+                <div key={c.id} className="template-criterion-chip">
+                  <span style={{ color: 'var(--text-secondary)' }}>{c.label}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>1 – {c.maxScore}</span>
+                </div>
+              ))}
             </div>
-            {isAdmin && (
-              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                <button className="btn btn-icon btn-ghost focus-ring" onClick={() => onEdit(t)} type="button" aria-label="Edit template" title="Edit"><Edit2 size={14} /></button>
-                <button className="btn btn-icon btn-ghost focus-ring" onClick={() => onDelete(t.id)} type="button" aria-label="Archive template" title="Archive"><Trash2 size={14} /></button>
-              </div>
+            {t.documentUrl && (
+              <a href={t.documentUrl} target="_blank" rel="noopener noreferrer" className="template-doc-link focus-ring">
+                <Paperclip size={12} /><span>{t.documentName ?? 'Reference form'}</span>
+              </a>
             )}
           </div>
-          <div className="template-criteria-list">
-            {t.criteria.map((c) => (
-              <div key={c.id} className="template-criterion-chip">
-                <span style={{ color: 'var(--text-secondary)' }}>{c.label}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>1 – {c.maxScore}</span>
-              </div>
-            ))}
-          </div>
-          {t.documentUrl && (
-            <a href={t.documentUrl} target="_blank" rel="noopener noreferrer" className="template-doc-link focus-ring">
-              <Paperclip size={12} /><span>{t.documentName ?? 'Reference form'}</span>
-            </a>
-          )}
-          {typeof t._count?.evaluations === 'number' && (
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <BarChart3 size={12} />Used in {t._count.evaluations} {t._count.evaluations === 1 ? 'evaluation' : 'evaluations'}
-            </div>
-          )}
-        </div>
-      ))}
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="tpl-rows">
+      {milestone.length > 0 && (
+        <>
+          <div className="tpl-group-label">Milestone check-ins <span>{milestone.length}</span></div>
+          {milestone.map(renderRow)}
+        </>
+      )}
+      {general.length > 0 && (
+        <>
+          <div className="tpl-group-label" style={{ marginTop: milestone.length > 0 ? 14 : 0 }}>Review templates <span>{general.length}</span></div>
+          {general.map(renderRow)}
+        </>
+      )}
+      <style>{`
+        .tpl-rows { display: flex; flex-direction: column; gap: 6px; }
+        .tpl-group-label {
+          font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--text-muted);
+          padding: 2px 4px 4px; display: flex; align-items: center; gap: 7px;
+        }
+        .tpl-group-label span {
+          font-size: 0.625rem; font-weight: 700; padding: 1px 7px; border-radius: 99px;
+          background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+        }
+        .tpl-row {
+          border: 1px solid var(--border-subtle); border-radius: 10px;
+          background: var(--glass-bg); overflow: hidden;
+        }
+        .tpl-row.open { border-color: rgba(167, 139, 250, 0.45); }
+        .tpl-row-head {
+          display: flex; align-items: center; gap: 9px; width: 100%;
+          padding: 10px 12px; border: 0; background: transparent; cursor: pointer;
+          font: inherit; text-align: left; min-width: 0;
+        }
+        .tpl-row-head:hover { background: var(--bg-hover); }
+        .tpl-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.15s ease; }
+        .tpl-name {
+          font-size: 0.8438rem; font-weight: 700; color: var(--text-primary);
+          white-space: nowrap; flex-shrink: 0;
+        }
+        .tpl-desc-inline {
+          font-size: 0.75rem; color: var(--text-muted); min-width: 0; flex: 1;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tpl-meta { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+        .tpl-desc-inline + .tpl-meta { margin-left: 8px; }
+        .tpl-meta-chip {
+          font-size: 0.6563rem; font-weight: 700; color: var(--text-muted);
+          background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+          padding: 2px 8px; border-radius: 99px; white-space: nowrap;
+        }
+        .tpl-actions { display: inline-flex; gap: 2px; flex-shrink: 0; }
+        .tpl-row-body { padding: 2px 14px 12px 36px; }
+        .tpl-desc-full { margin: 0 0 10px; font-size: 0.8125rem; color: var(--text-muted); line-height: 1.55; }
+        .tpl-q-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        @media (max-width: 700px) {
+          .tpl-desc-inline { display: none; }
+          .tpl-name { white-space: normal; }
+        }
+      `}</style>
     </div>
   )
 }
