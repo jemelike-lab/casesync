@@ -122,7 +122,7 @@ interface Props {
   currentUser: { id: string; name: string; role: string; avatarColor: string; hireDate?: string }
 }
 
-type Tab = 'received' | 'given' | 'all' | 'templates' | 'question-bank'
+type Tab = 'milestones' | 'evaluations' | 'mine'
 
 // ── Employment milestone → template matcher ─────────────────
 // Returns the single self-assessment template appropriate for this user's tenure.
@@ -169,6 +169,32 @@ function getMilestoneLabel(days: number): string {
   if (days <= 210) return '6-Month'
   if (days <= 395) return '1-Year'
   return 'Annual'
+}
+
+// Due-date math for the built-in reminder chip. Mirrors the server's
+// dueDays map in /api/workryn/evaluations/onboarding + /milestones.
+const MILESTONE_DUE_DAYS: Record<string, number> = {
+  '10-Day': 10, '30-Day': 30, '90-Day': 90, '6-Month': 180, '1-Year': 365, Annual: 730,
+}
+
+function getMilestoneDueInfo(hireDate?: string): { dueDate: Date; daysLeft: number; label: string } | null {
+  if (!hireDate) return null
+  const days = getDaysSinceHire(hireDate)
+  const label = getMilestoneLabel(days)
+  const dueDay = MILESTONE_DUE_DAYS[label] ?? 365
+  const dueDate = new Date(hireDate)
+  dueDate.setDate(dueDate.getDate() + dueDay)
+  return { dueDate, daysLeft: dueDay - days, label }
+}
+
+function DueChip({ hireDate }: { hireDate?: string }) {
+  const d = getMilestoneDueInfo(hireDate)
+  if (!d) return null
+  const cls = d.daysLeft < 0 ? 'over' : d.daysLeft <= 3 ? 'red' : d.daysLeft <= 7 ? 'amber' : ''
+  const txt = d.daysLeft < 0
+    ? `Overdue by ${Math.abs(d.daysLeft)} day${Math.abs(d.daysLeft) === 1 ? '' : 's'}`
+    : `Due ${d.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${d.daysLeft} day${d.daysLeft === 1 ? '' : 's'} left`
+  return <span className={`eva-due-chip ${cls}`}>{txt}</span>
 }
 
 // ── Small primitives ─────────────────────────────────────────
@@ -323,23 +349,24 @@ export default function EvaluationsClient({
   const isAdmin = canManageEvaluations(currentUser.role)
   const spot = useMouseSpotlight()
 
-  const [tab, setTab] = useState<Tab>(isManager ? 'given' : 'received')
+  const [tab, setTab] = useState<Tab>(isManager ? 'milestones' : 'mine')
   const [detailEval, setDetailEval] = useState<Evaluation | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false)
   const [templateToEdit, setTemplateToEdit] = useState<Template | null>(null)
   const [showSelfAssessment, setShowSelfAssessment] = useState(false)
+  const [showManage, setShowManage] = useState(false)
+  const [manageTab, setManageTab] = useState<'templates' | 'question-bank'>('templates')
+  const [evalFilter, setEvalFilter] = useState<'all' | 'byme' | 'pending'>('all')
+  const [evalSearch, setEvalSearch] = useState('')
 
   // ── Filters per tab ──
   const visible = useMemo(() => {
     if (!isManager) {
       return evaluations.filter((e) => e.agentId === currentUser.id)
     }
-    if (tab === 'received') {
+    if (tab === 'mine') {
       return evaluations.filter((e) => e.agentId === currentUser.id && !e.isPrivate)
-    }
-    if (tab === 'given') {
-      return evaluations.filter((e) => e.evaluatorId === currentUser.id)
     }
     return evaluations
   }, [evaluations, tab, isManager, currentUser.id])
@@ -408,21 +435,17 @@ export default function EvaluationsClient({
   }
 
   // ── Tab config ──
-  const givenCount = evaluations.filter((e) => e.evaluatorId === currentUser.id).length
   const receivedCount = evaluations.filter((e) => e.agentId === currentUser.id && !e.isPrivate).length
   const activeTemplateCount = templates.filter((t) => t.isActive).length
+  const orgPendingAck = evaluations.filter((e) => !e.acknowledgedAt && !e.isPrivate).length
 
   type TabConfig = { id: Tab; label: string; icon: typeof Award; count: number }
   const totalCriteria = templates.reduce((sum, t) => sum + t.criteria.length, 0)
   const tabs: TabConfig[] = isManager
     ? [
-        { id: 'given', label: 'Onboarding', icon: TrendingUp, count: staffUsers.length },
-        { id: 'received', label: 'My Reviews', icon: Star, count: receivedCount },
-        ...(isAdmin ? [
-          { id: 'all' as Tab, label: 'All Staff', icon: Users, count: evaluations.length },
-          { id: 'templates' as Tab, label: 'Templates', icon: ClipboardCheck, count: activeTemplateCount },
-          { id: 'question-bank' as Tab, label: 'Question Bank', icon: BookOpen, count: totalCriteria },
-        ] : []),
+        { id: 'milestones', label: 'Milestones', icon: TrendingUp, count: staffUsers.length },
+        { id: 'evaluations', label: 'Evaluations', icon: BarChart3, count: evaluations.length },
+        { id: 'mine', label: 'My Reviews', icon: Star, count: receivedCount },
       ]
     : []
 
@@ -439,10 +462,10 @@ export default function EvaluationsClient({
           <PageBanner bannerUrl={bannerUrl} anim={ANIM.gStar} />
           <Group justify="flex-end" mb="lg">
             {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-              <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>
-            )}
-            {isAdmin && tab === 'templates' && (
-              <Button size="md" leftSection={<Plus size={16} />} onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }} className="eva-btn-primary">New Template</Button>
+              <>
+                <DueChip hireDate={currentUser.hireDate} />
+                <Button size="md" leftSection={<Edit2 size={16} />} onClick={() => setShowSelfAssessment(true)} className="eva-btn-primary">Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</Button>
+              </>
             )}
           </Group>
         </>
@@ -477,24 +500,17 @@ export default function EvaluationsClient({
               </Text>
               <Group gap="xs" mt="sm">
                 {!isManager && getApplicableTemplate(templates, currentUser.hireDate) && (
-                  <Button
-                    size="md"
-                    leftSection={<Edit2 size={16} />}
-                    onClick={() => setShowSelfAssessment(true)}
-                    className="eva-btn-primary"
-                  >
-                    Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
-                  </Button>
-                )}
-                {isAdmin && tab === 'templates' && (
-                  <Button
-                    size="md"
-                    leftSection={<Plus size={16} />}
-                    onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }}
-                    className="eva-btn-primary"
-                  >
-                    New Template
-                  </Button>
+                  <>
+                    <Button
+                      size="md"
+                      leftSection={<Edit2 size={16} />}
+                      onClick={() => setShowSelfAssessment(true)}
+                      className="eva-btn-primary"
+                    >
+                      Start {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment
+                    </Button>
+                    <DueChip hireDate={currentUser.hireDate} />
+                  </>
                 )}
               </Group>
             </Stack>
@@ -505,33 +521,54 @@ export default function EvaluationsClient({
 
       {/* ============ STAT CARDS ============ */}
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm" mb="md">
-        <EvaStatCard label="Total Evaluations" value={String(animTotal)}     icon={BarChart3}      theme="fuchsia" delay={0}   />
-        <EvaStatCard label="Avg Rating"        value={avgRating}              icon={Star}           theme="amber"   delay={80}  />
-        <EvaStatCard label="Pending Review"    value={String(animPending)}    icon={Clock}          theme={pendingAck > 0 ? 'red' : 'mint'} delay={160} />
-        <EvaStatCard label="Active Templates"  value={String(animTemplates)}  icon={ClipboardCheck} theme="violet"  delay={240} />
+        <EvaStatCard label={isManager ? 'Org Evaluations' : 'My Evaluations'} value={String(animTotal)} icon={BarChart3} theme="fuchsia" delay={0} />
+        <EvaStatCard label={isManager ? 'Org Avg Rating' : 'My Avg Rating'} value={avgRating} icon={Star} theme="amber" delay={80} />
+        <EvaStatCard
+          label={isManager ? 'Awaiting Acknowledgement' : 'Needs My Acknowledgement'}
+          value={String(isManager ? orgPendingAck : animPending)}
+          icon={Clock}
+          theme={(isManager ? orgPendingAck : pendingAck) > 0 ? 'red' : 'mint'}
+          delay={160}
+        />
+        {isManager ? (
+          <EvaStatCard label="Active Templates" value={String(animTemplates)} icon={ClipboardCheck} theme="violet" delay={240} />
+        ) : (
+          <EvaStatCard label="Employment Day" value={`Day ${getDaysSinceHire(currentUser.hireDate)}`} icon={TrendingUp} theme="violet" delay={240} />
+        )}
       </SimpleGrid>
 
       {/* ============ TAB BAR ============ */}
       {isManager && (
         <Card radius="lg" p={0} withBorder className="eva-tabs-wrap" mb="md">
-          <MTabs value={tab} onChange={(v) => v && setTab(v as Tab)} classNames={{ list: 'eva-tabs-list' }}>
-            <MTabs.List>
-              {tabs.map((t) => (
-                <MTabs.Tab
-                  key={t.id}
-                  value={t.id}
-                  leftSection={<t.icon size={14} />}
-                  rightSection={
-                    <Badge size="xs" variant="light" color={tab === t.id ? 'grape' : 'gray'}>
-                      {t.count}
-                    </Badge>
-                  }
-                >
-                  {t.label}
-                </MTabs.Tab>
-              ))}
-            </MTabs.List>
-          </MTabs>
+          <div className="eva-tabbar-row">
+            <MTabs value={tab} onChange={(v) => v && setTab(v as Tab)} classNames={{ list: 'eva-tabs-list' }} style={{ flex: 1, minWidth: 0 }}>
+              <MTabs.List>
+                {tabs.map((t) => (
+                  <MTabs.Tab
+                    key={t.id}
+                    value={t.id}
+                    leftSection={<t.icon size={14} />}
+                    rightSection={
+                      <Badge size="xs" variant="light" color={tab === t.id ? 'grape' : 'gray'}>
+                        {t.count}
+                      </Badge>
+                    }
+                  >
+                    {t.label}
+                  </MTabs.Tab>
+                ))}
+              </MTabs.List>
+            </MTabs>
+            {isAdmin && (
+              <button
+                type="button"
+                className={`eva-manage-btn${showManage ? ' on' : ''}`}
+                onClick={() => setShowManage((s) => !s)}
+              >
+                <ClipboardCheck size={13} /> Manage templates
+              </button>
+            )}
+          </div>
         </Card>
       )}
 
@@ -539,18 +576,68 @@ export default function EvaluationsClient({
 
       {/* ── Content ── */}
       <div className="eval-content">
-        {tab === 'question-bank' && isAdmin ? (
-          <QuestionBankView templates={templates} />
-        ) : tab === 'templates' && isAdmin ? (
-          <TemplatesGrid
-            templates={templates}
-            isAdmin={isAdmin}
-            onEdit={(t) => { setTemplateToEdit(t); setShowTemplateBuilder(true) }}
-            onDelete={handleDeleteTemplate}
-          />
-        ) : isManager && (tab === 'given' || tab === 'all') ? (
+        {isManager && tab === 'milestones' ? (
           /* ── Manager view: Milestone Dashboard ── */
           <MilestoneDashboard />
+        ) : isManager && tab === 'evaluations' ? (
+          /* ── Manager view: the full evaluations list ── */
+          <>
+            <div className="eva-list-head">
+              <div className="eva-filter-chips">
+                {([['all', 'All'], ['byme', 'By me'], ['pending', 'Pending ack']] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`eva-filter-chip${evalFilter === id ? ' on' : ''}`}
+                    onClick={() => setEvalFilter(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="eva-search"
+                placeholder="Search people or templates…"
+                value={evalSearch}
+                onChange={(e) => setEvalSearch(e.target.value)}
+              />
+              <Button size="xs" leftSection={<Plus size={14} />} className="eva-btn-primary" onClick={() => setShowCreate(true)}>
+                New Evaluation
+              </Button>
+            </div>
+            {(() => {
+              const q = evalSearch.trim().toLowerCase()
+              const list = evaluations.filter((e) => {
+                if (evalFilter === 'byme' && e.evaluatorId !== currentUser.id) return false
+                if (evalFilter === 'pending' && (e.acknowledgedAt || e.isPrivate)) return false
+                if (q) {
+                  const hay = `${e.agent?.name ?? ''} ${e.evaluator?.name ?? ''} ${e.template?.name ?? ''}`.toLowerCase()
+                  if (!hay.includes(q)) return false
+                }
+                return true
+              })
+              return list.length === 0 ? (
+                <EmptyEvalState isManager={isManager} tab={tab} />
+              ) : (
+                <div className="eval-grid">
+                  {list.map((e, i) => (
+                    <EvaluationCard key={e.id} evaluation={e} currentUserId={currentUser.id} index={i} onOpen={() => setDetailEval(e)} />
+                  ))}
+                </div>
+              )
+            })()}
+          </>
+        ) : isManager && tab === 'mine' ? (
+          /* ── Manager view: reviews I've received ── */
+          visible.length === 0 ? (
+            <EmptyEvalState isManager={isManager} tab={tab} />
+          ) : (
+            <div className="eval-grid">
+              {visible.map((e, i) => (
+                <EvaluationCard key={e.id} evaluation={e} currentUserId={currentUser.id} index={i} onOpen={() => setDetailEval(e)} />
+              ))}
+            </div>
+          )
         ) : (
           /* ── Staff view: Self-Assessment + Supervisor Reviews ── */
           <>
@@ -566,7 +653,7 @@ export default function EvaluationsClient({
                       <div className="sa-cta-left">
                         <div className="sa-cta-icon"><Edit2 size={24} /></div>
                         <div>
-                          <h3 className="sa-cta-title">Complete Your {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment</h3>
+                          <h3 className="sa-cta-title">Complete Your {getMilestoneLabel(getDaysSinceHire(currentUser.hireDate))} Self-Assessment <DueChip hireDate={currentUser.hireDate} /></h3>
                           <p className="sa-cta-desc">
                             You are <strong>Day {getDaysSinceHire(currentUser.hireDate)}</strong> of your employment.
                             Complete and submit your self-assessment questionnaire
@@ -637,6 +724,53 @@ export default function EvaluationsClient({
               )
             })()}
           </>
+        )}
+
+        {/* ── Manage drawer (admin): Templates & Question Bank live here now ── */}
+        {isAdmin && isManager && showManage && (
+          <div className="eva-manage-drawer">
+            <div className="eva-manage-head">
+              <span className="eva-manage-title"><ClipboardCheck size={15} /> Manage — admin only</span>
+              <div className="eva-manage-ctrls">
+                <div className="eva-subtabs">
+                  <button
+                    type="button"
+                    className={manageTab === 'templates' ? 'on' : ''}
+                    onClick={() => setManageTab('templates')}
+                  >
+                    Templates <span>{activeTemplateCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={manageTab === 'question-bank' ? 'on' : ''}
+                    onClick={() => setManageTab('question-bank')}
+                  >
+                    Question Bank <span>{totalCriteria}</span>
+                  </button>
+                </div>
+                {manageTab === 'templates' && (
+                  <Button
+                    size="xs"
+                    leftSection={<Plus size={14} />}
+                    className="eva-btn-primary"
+                    onClick={() => { setTemplateToEdit(null); setShowTemplateBuilder(true) }}
+                  >
+                    New Template
+                  </Button>
+                )}
+              </div>
+            </div>
+            {manageTab === 'templates' ? (
+              <TemplatesGrid
+                templates={templates}
+                isAdmin={isAdmin}
+                onEdit={(t) => { setTemplateToEdit(t); setShowTemplateBuilder(true) }}
+                onDelete={handleDeleteTemplate}
+              />
+            ) : (
+              <QuestionBankView templates={templates} />
+            )}
+          </div>
         )}
       </div>
 
@@ -734,6 +868,85 @@ export default function EvaluationsClient({
         }
 
         /* ── Tab Bar ── */
+        .eva-tabbar-row {
+          display: flex; align-items: center; gap: 10px;
+          padding-right: 10px; flex-wrap: wrap;
+        }
+        .eva-manage-btn {
+          cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 700;
+          color: #c4b5fd; padding: 6px 12px; border-radius: 8px;
+          border: 1.5px dashed rgba(168, 85, 247, 0.45); background: transparent;
+          display: inline-flex; gap: 6px; align-items: center; white-space: nowrap;
+        }
+        .eva-manage-btn:hover { background: rgba(168, 85, 247, 0.12); }
+        .eva-manage-btn.on { background: rgba(168, 85, 247, 0.18); border-style: solid; color: #e9d5ff; }
+        .eva-manage-drawer {
+          margin-top: 20px; padding: 16px;
+          border-left: 3px solid #a855f7; border-radius: 12px;
+          background: rgba(88, 28, 135, 0.10);
+          border-top: 1px solid rgba(168, 85, 247, 0.25);
+          border-right: 1px solid rgba(168, 85, 247, 0.25);
+          border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+        }
+        .eva-manage-head {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+        }
+        .eva-manage-title {
+          display: inline-flex; align-items: center; gap: 7px;
+          font-size: 13px; font-weight: 750; color: var(--text-primary);
+        }
+        .eva-manage-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .eva-subtabs {
+          display: inline-flex; background: rgba(148, 163, 184, 0.10);
+          border-radius: 9px; padding: 3px;
+        }
+        .eva-subtabs button {
+          cursor: pointer; font: inherit; font-size: 11px; font-weight: 650;
+          color: var(--text-muted); padding: 5px 13px; border-radius: 7px; border: 0;
+          background: transparent; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .eva-subtabs button span {
+          font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+          background: rgba(148, 163, 184, 0.18);
+        }
+        .eva-subtabs button.on { color: #fff; background: rgba(168, 85, 247, 0.4); }
+        .eva-subtabs button.on span { background: rgba(255, 255, 255, 0.22); }
+        .eva-list-head {
+          display: flex; align-items: center; gap: 10px;
+          flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .eva-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .eva-filter-chip {
+          cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 650;
+          color: var(--text-muted); background: rgba(148, 163, 184, 0.09);
+          border: 1px solid rgba(148, 163, 184, 0.20); border-radius: 999px; padding: 5px 13px;
+        }
+        .eva-filter-chip:hover { color: var(--text-primary); }
+        .eva-filter-chip.on {
+          color: #fff; background: rgba(168, 85, 247, 0.32);
+          border-color: rgba(168, 85, 247, 0.55);
+        }
+        .eva-search {
+          font: inherit; font-size: 12px; color: var(--text-primary);
+          background: rgba(148, 163, 184, 0.08);
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          border-radius: 9px; padding: 6px 13px; min-width: 200px;
+          flex: 1; max-width: 320px;
+        }
+        .eva-search::placeholder { color: var(--text-muted); }
+        .eva-search:focus { outline: none; border-color: rgba(168, 85, 247, 0.55); }
+        .eva-due-chip {
+          display: inline-flex; align-items: center;
+          font-size: 10.5px; font-weight: 750; letter-spacing: 0.02em;
+          padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+          vertical-align: middle; margin-left: 8px;
+          color: #a5b4fc; background: rgba(99, 102, 241, 0.12);
+          border: 1px solid rgba(99, 102, 241, 0.35);
+        }
+        .eva-due-chip.amber { color: #fbbf24; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); }
+        .eva-due-chip.red { color: #fca5a5; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.4); }
+        .eva-due-chip.over { color: #fff; background: rgba(220, 38, 38, 0.55); border-color: rgba(248, 113, 113, 0.6); }
         .eval-tab-bar {
           display: flex; gap: 8px; flex-wrap: wrap;
           padding-bottom: 22px; border-bottom: 1px solid var(--border-subtle);
@@ -1456,20 +1669,20 @@ function EmptyEvalState({ isManager, tab }: {
   isManager: boolean; tab: Tab
 }) {
   const messages: Record<string, { title: string; desc: string }> = {
-    given: {
-      title: 'No submitted self-assessments to review',
-      desc: 'When support planners complete their self-assessments, they will appear here for your review. Use the onboarding workflow above to send reminders.',
+    milestones: {
+      title: 'No active support planners',
+      desc: 'Staff members appear here once onboarded. Milestone tracking starts automatically from each hire date.',
     },
-    received: {
+    evaluations: {
+      title: 'No evaluations found',
+      desc: 'Nothing matches the current filter or search. Clear filters, or create a new evaluation to get started.',
+    },
+    mine: {
       title: 'No evaluations received',
       desc: 'Your supervisor hasn\'t shared any evaluations with you yet. They\'ll appear here when ready.',
     },
-    all: {
-      title: 'No evaluations found',
-      desc: 'No evaluations or self-assessments have been submitted yet.',
-    },
   }
-  const m = messages[tab] ?? messages.all
+  const m = messages[tab] ?? messages.evaluations
   const msg = !isManager
     ? { title: 'No evaluations yet', desc: 'Your supervisor has not shared any evaluations yet. They\'ll appear here when ready.' }
     : m
