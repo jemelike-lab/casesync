@@ -3,7 +3,7 @@ import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/workryn/db'
-import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
+import { PLANNER_ROLES, canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
 import dynamic from 'next/dynamic'
 
 const EvaluationsClient = dynamic(
@@ -58,7 +58,7 @@ export default async function EvaluationsPage() {
       { AND: [{ agentId: userId }, { isPrivate: false }] },
     ]
     if (me?.departmentId) {
-      orClauses.push({ agent: { departmentId: me.departmentId, role: 'STAFF' } })
+      orClauses.push({ agent: { departmentId: me.departmentId, role: { in: PLANNER_ROLES } } })
     }
     evaluationsWhere = { OR: orClauses }
   } else {

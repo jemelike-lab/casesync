@@ -170,7 +170,7 @@ export async function GET(request: Request) {
     const { data: sup } = await supabase
       .from('profiles')
       .select('id')
-      .eq('role', 'supervisor')
+      .in('role', ['supervisor', 'administrator'])
       .order('created_at', { ascending: true })
       .limit(1)
     const supervisorId = sup?.[0]?.id
@@ -579,7 +579,7 @@ export async function GET(request: Request) {
       const { data: reconcileActor } = await supabase
         .from('profiles')
         .select('id')
-        .eq('role', 'supervisor')
+        .in('role', ['supervisor', 'administrator'])
         .order('created_at', { ascending: true })
         .limit(1)
       const actorId = reconcileActor?.[0]?.id

@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
+import { businessDayStartInstant, businessWeekStartStr, dateStrAddDays, dateToBusinessStr } from '@/lib/business-date'
 
+// ET-anchored (payroll timezone), not server-UTC — 2026-07-12 audit, P1-10.
 function getWeekStart(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d
+  return businessDayStartInstant(businessWeekStartStr(date))
 }
 
 export async function GET(req: NextRequest) {
@@ -30,8 +27,7 @@ export async function GET(req: NextRequest) {
     weekStart = getWeekStart(new Date())
   }
 
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 7)
+  const weekEnd = businessDayStartInstant(dateStrAddDays(dateToBusinessStr(weekStart), 7))
 
   const entries = await db.timeEntry.findMany({
     where: {
@@ -49,8 +45,7 @@ export async function GET(req: NextRequest) {
   let totalMinutes = 0
 
   for (const e of entries) {
-    const d = new Date(e.clockInAt)
-    daysSet.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`)
+    daysSet.add(dateToBusinessStr(new Date(e.clockInAt)))
 
     if (e.status === 'ACTIVE') {
       const total = Math.max(

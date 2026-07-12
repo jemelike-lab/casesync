@@ -16,6 +16,7 @@ const SAFE_USER_SELECT = {
   mfaEnabled: true,
   isActive: true,
   lastLogin: true,
+  hireDate: true,
   createdAt: true,
   updatedAt: true,
   departmentId: true,
@@ -30,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params
   const body = await req.json()
-  const { name, email, role, jobTitle, departmentId, avatarColor, isActive } = body
+  const { name, email, role, jobTitle, departmentId, avatarColor, isActive, hireDate } = body
 
   const existing = await db.user.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -91,6 +92,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (departmentId !== undefined) data.departmentId = departmentId || null
   if (avatarColor !== undefined) data.avatarColor = avatarColor
   if (isActive !== undefined) data.isActive = isActive
+  if (hireDate !== undefined) {
+    if (hireDate === null || hireDate === '') {
+      data.hireDate = null
+    } else {
+      const parsed = new Date(hireDate)
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Invalid hireDate' }, { status: 400 })
+      }
+      data.hireDate = parsed
+    }
+  }
 
   const user = await db.user.update({
     where: { id },

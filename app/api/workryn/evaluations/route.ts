@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { canManageEvaluations, canViewEvaluations, outranks } from '@/lib/workryn/permissions'
+import { PLANNER_ROLES, canManageEvaluations, canViewEvaluations, outranks } from '@/lib/workryn/permissions'
 
 type ScoreInput = {
   criterionId?: string
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     ]
     if (me?.departmentId) {
       orClauses.push({
-        agent: { departmentId: me.departmentId, role: 'STAFF' },
+        agent: { departmentId: me.departmentId, role: { in: PLANNER_ROLES } },
       })
     }
     where.OR = orClauses

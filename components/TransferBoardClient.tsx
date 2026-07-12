@@ -227,15 +227,12 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           c.two57_date,
           c.doc_mdh_date,
         ].filter(Boolean)
-        const today = new Date().toISOString().split('T')[0]
+        const today = businessTodayStr()
         return dates.some(date => String(date) < today)
       }).length
       const dueThisWeek = plannerClients.filter(c => {
-        const today = new Date()
-        const start = new Date(today)
-        start.setHours(0, 0, 0, 0)
-        const end = new Date(start)
-        end.setDate(end.getDate() + 7)
+        const startEpoch = businessTodayEpoch()
+        const endEpoch = startEpoch + 7 * DAY_MS
         const dates = [
           c.eligibility_end_date,
           c.three_month_visit_due,
@@ -252,8 +249,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
           c.doc_mdh_date,
         ].filter(Boolean)
         return dates.some(date => {
-          const d = new Date(String(date))
-          return d >= start && d <= end
+          const e = dateStrToEpoch(String(date))
+          return e !== null && e >= startEpoch && e <= endEpoch
         })
       }).length
       const pressureScore = overdue * 5 + dueThisWeek * 2 + Math.max(0, plannerClients.length - 35)
@@ -294,15 +291,12 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         c.two57_date,
         c.doc_mdh_date,
       ].filter(Boolean)
-      const today = new Date().toISOString().split('T')[0]
+      const today = businessTodayStr()
       return dates.some(date => String(date) < today)
     }).length
     const dueThisWeek = plannerClients.filter(c => {
-      const today = new Date()
-      const start = new Date(today)
-      start.setHours(0, 0, 0, 0)
-      const end = new Date(start)
-      end.setDate(end.getDate() + 7)
+      const startEpoch = businessTodayEpoch()
+      const endEpoch = startEpoch + 7 * DAY_MS
       const dates = [
         c.eligibility_end_date,
         c.three_month_visit_due,
@@ -319,8 +313,8 @@ export default function TransferBoardClient({ clients: initialClients, planners 
         c.doc_mdh_date,
       ].filter(Boolean)
       return dates.some(date => {
-        const d = new Date(String(date))
-        return d >= start && d <= end
+        const e = dateStrToEpoch(String(date))
+        return e !== null && e >= startEpoch && e <= endEpoch
       })
     }).length
     const clientCount = plannerClients.length

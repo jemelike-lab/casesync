@@ -3,7 +3,7 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
 import { createNotification } from '@/lib/workryn/notifications'
 import { sendEmail } from '@/lib/workryn/email'
-import { canViewEvaluations } from '@/lib/workryn/permissions'
+import { canViewEvaluations, effectiveHireDate } from '@/lib/workryn/permissions'
 
 const CALENDLY_URL = 'https://calendly.com/sabbott-9/evaluations'
 const COUNTY_FORM_URL = 'https://www.blhcasesync.com/w/county-preference'
@@ -125,12 +125,13 @@ export async function POST(req: NextRequest) {
   const { userId, action = 'start' } = body
   if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 })
 
-  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, createdAt: true } })
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, createdAt: true, hireDate: true } })
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const userName = user.name ?? 'Team Member'
   const userEmail = user.email ?? ''
-  const daysEmployed = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+  const hired = effectiveHireDate(user)
+  const daysEmployed = Math.floor((Date.now() - hired.getTime()) / (1000 * 60 * 60 * 24))
   const milestoneKey = body.milestone ?? getMilestoneKey(daysEmployed)
   const ms = MILESTONES[milestoneKey]
   if (!ms) return NextResponse.json({ error: `Unknown milestone: ${milestoneKey}` }, { status: 400 })
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
     const now = new Date()
     const reminders: { title: string; note: string; dueAt: Date }[] = []
     for (const daysBefore of ms.reminderDaysBefore) {
-      const d = new Date(user.createdAt); d.setDate(d.getDate() + ms.dueDay - daysBefore)
+      const d = new Date(hired); d.setDate(d.getDate() + ms.dueDay - daysBefore)
       if (d > now) {
         const icon = daysBefore <= 1 ? '🚨' : daysBefore <= 3 ? '🔔' : '⏰'
         reminders.push({

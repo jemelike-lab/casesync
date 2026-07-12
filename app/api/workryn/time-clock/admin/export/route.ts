@@ -3,20 +3,15 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { businessDayStartInstant, businessWeekStartStr, dateStrAddDays, dateToBusinessStr } from '@/lib/business-date'
 
+// ET-anchored (payroll timezone), not server-UTC — 2026-07-12 audit, P1-10.
 function getWeekStart(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d
+  return businessDayStartInstant(businessWeekStartStr(date))
 }
 
 function getWeekEnd(weekStart: Date): Date {
-  const d = new Date(weekStart)
-  d.setDate(d.getDate() + 7)
-  return d
+  return businessDayStartInstant(dateStrAddDays(dateToBusinessStr(weekStart), 7))
 }
 
 function escapeCsv(value: string): string {
@@ -28,12 +23,12 @@ function escapeCsv(value: string): string {
 }
 
 function formatDateCell(d: Date): string {
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/New_York' })
 }
 
 function formatTimeCell(d: Date | null): string {
   if (!d) return ''
-  return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' })
 }
 
 export async function GET(req: NextRequest) {
@@ -101,7 +96,7 @@ export async function GET(req: NextRequest) {
 
   const csv = rows.join('\r\n')
   const nameSlug = (user?.name || 'all').replace(/[^a-z0-9]+/gi, '-').toLowerCase()
-  const weekSlug = weekStart.toISOString().slice(0, 10)
+  const weekSlug = dateToBusinessStr(weekStart)
   const filename = `timesheet-${nameSlug}-${weekSlug}.csv`
 
   return new NextResponse(csv, {

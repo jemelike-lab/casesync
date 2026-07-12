@@ -28,6 +28,10 @@ model User {
   mfaSecret     String?
   isActive      Boolean   @default(true)
   lastLogin     DateTime?
+  // Actual employment start date (admin-set). Milestone math uses
+  // hireDate ?? createdAt — createdAt alone made every invited long-tenured
+  // employee a "day-0 hire" (2026-07-12 audit, P0-6).
+  hireDate      DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

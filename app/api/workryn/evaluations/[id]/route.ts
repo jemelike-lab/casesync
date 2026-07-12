@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { canManageEvaluations, canViewEvaluations } from '@/lib/workryn/permissions'
+import { canManageEvaluations, canViewEvaluations, isPlannerRole } from '@/lib/workryn/permissions'
 
 type ScoreInput = {
   criterionId?: string
@@ -44,7 +44,7 @@ async function canUserView(
   if (canViewEvaluations(role)) {
     // Manager can see STAFF evaluations within their department.
     const me = await db.user.findUnique({ where: { id: userId }, select: { departmentId: true } })
-    if (me?.departmentId && evaluation.agent.departmentId === me.departmentId && evaluation.agent.role === 'STAFF') {
+    if (me?.departmentId && evaluation.agent.departmentId === me.departmentId && isPlannerRole(evaluation.agent.role)) {
       return true
     }
   }

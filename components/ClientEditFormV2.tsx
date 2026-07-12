@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Save, X } from 'lucide-react'
 import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
 import type { Client, Profile } from '@/lib/types'
+import { businessDateOffsetStr } from '@/lib/business-date'
 
 // ---------------------------------------------------------------------------
 // ClientEditFormV2 — Phase A Batch 3.5
@@ -92,8 +93,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
     if (field === 'spm_completed') {
       const checked = Boolean(value)
       if (checked) {
-        const d = new Date(); d.setDate(d.getDate() + 30)
-        setFormData(prev => ({ ...prev, spm_completed: true, spm_next_due: d.toISOString().split('T')[0] }))
+        setFormData(prev => ({ ...prev, spm_completed: true, spm_next_due: businessDateOffsetStr(30) }))
       } else {
         setFormData(prev => ({ ...prev, spm_completed: false }))
       }

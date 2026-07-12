@@ -3,21 +3,15 @@ import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
 import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { businessDayStartInstant, businessWeekStartStr, dateStrAddDays, dateToBusinessStr } from '@/lib/business-date'
 
-// Monday 00:00 of the ISO week containing `date`
+// ET-anchored (payroll timezone), not server-UTC — 2026-07-12 audit, P1-10.
 function getWeekStart(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay() // 0 = Sunday, 1 = Monday
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d
+  return businessDayStartInstant(businessWeekStartStr(date))
 }
 
 function getWeekEnd(weekStart: Date): Date {
-  const d = new Date(weekStart)
-  d.setDate(d.getDate() + 7)
-  return d
+  return businessDayStartInstant(dateStrAddDays(dateToBusinessStr(weekStart), 7))
 }
 
 type EntryWithBreaks = {

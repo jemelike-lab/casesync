@@ -10,6 +10,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/workryn/db'
+import { mapCaseSyncRoleToWorkryn, effectiveHireDate } from '@/lib/workryn/permissions'
 
 export interface WorkrynUser {
   id: string
@@ -63,15 +64,7 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
         // Fix 2026-05-22: supervisor previously mapped to ADMIN, which gave
         // CaseSync supervisors *less* privilege in Workryn than they should
         // have had. See AUDIT_2026-05-22.md §2B.
-        const roleMap: Record<string, string> = {
-          administrator: 'ADMINISTRATOR',
-          supervisor: 'SUPERVISOR',
-          team_manager: 'MANAGER',
-          supports_planner: 'STAFF',
-          it: 'IT',
-          admin_assistant: 'ADMIN_ASSISTANT',
-        }
-        const wRole = roleMap[profile.role] ?? 'STAFF'
+        const wRole = mapCaseSyncRoleToWorkryn(profile.role)
 
         // Generate a random avatar color
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#14b8a6']
@@ -112,7 +105,9 @@ export async function getWorkrynSession(): Promise<WorkrynSession | null> {
       jobTitle: wUser.jobTitle ?? undefined,
       avatarColor: wUser.avatarColor,
       image: wUser.image ?? null,
-      createdAt: wUser.createdAt?.toISOString(),
+      // Milestone consumers read this as the hire date; prefer the
+      // admin-set hireDate over the account-creation timestamp.
+      createdAt: effectiveHireDate(wUser).toISOString(),
     },
   }
 }

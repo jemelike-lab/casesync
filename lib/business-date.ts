@@ -88,6 +88,49 @@ export function businessDateOffsetStr(offsetDays: number, now: Date = new Date()
   return epochToDateStr(businessTodayEpoch(now) + offsetDays * DAY_MS)
 }
 
+/** 'YYYY-MM-DD' plus n days (exact math on UTC-midnight epochs; DST-proof). */
+export function dateStrAddDays(dateStr: string, days: number): string {
+  const epoch = dateStrToEpoch(dateStr)
+  if (epoch === null) throw new Error(`dateStrAddDays: unusable date string "${dateStr}"`)
+  return epochToDateStr(epoch + days * DAY_MS)
+}
+
+const businessHourFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: BUSINESS_TZ,
+  hour: '2-digit',
+  hourCycle: 'h23',
+})
+
+/**
+ * The UTC instant at which the given ET calendar date begins (ET midnight).
+ * ET is only ever UTC-4 (EDT) or UTC-5 (EST); we test both candidates against
+ * the formatter instead of hardcoding DST transition rules.
+ */
+export function businessDayStartInstant(dateStr: string): Date {
+  for (const offset of [4, 5]) {
+    const candidate = new Date(`${dateStr}T0${offset}:00:00Z`)
+    if (
+      businessDayFormatter.format(candidate) === dateStr &&
+      businessHourFormatter.format(candidate) === '00'
+    ) {
+      return candidate
+    }
+  }
+  // Unreachable for America/New_York; conservative fallback (EST).
+  return new Date(`${dateStr}T05:00:00Z`)
+}
+
+/**
+ * Monday 'YYYY-MM-DD' of the ET business week containing the given instant.
+ * Payroll weeks are Monday-anchored — matches the time-clock routes.
+ */
+export function businessWeekStartStr(now: Date = new Date()): string {
+  const epoch = businessTodayEpoch(now)
+  const dow = new Date(epoch).getUTCDay() // ET weekday: epoch is UTC-midnight of the ET date
+  const diff = dow === 0 ? -6 : 1 - dow
+  return epochToDateStr(epoch + diff * DAY_MS)
+}
+
 /**
  * SQL expression for today's ET calendar date on Azure Postgres (session TZ is
  * UTC there, so bare `current_date` flips a day early every evening ET).

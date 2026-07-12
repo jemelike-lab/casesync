@@ -70,7 +70,51 @@ export function isManagerOrAbove(role: string | undefined | null): boolean {
 }
 
 export function isStaffOrAbove(role: string | undefined | null): boolean {
-  return isManagerOrAbove(role) || role === 'ADMIN_ASSISTANT' || role === 'STAFF'
+  return isManagerOrAbove(role) || role === 'ADMIN_ASSISTANT' || role === 'STAFF' || role === 'SUPPORT_PLANNER'
+}
+
+/**
+ * Both planner-tier role spellings that exist in w_user rows. Historical
+ * provisioning paths disagreed ('STAFF' via lib/workryn/auth.ts,
+ * 'SUPPORT_PLANNER' via invite acceptance and the layout upsert), so every
+ * planner-scoped query MUST match both — filtering on 'STAFF' alone made the
+ * evaluation milestone sweep, milestones page, and training roster silently
+ * skip every invited planner (2026-07-12 audit, P0-2).
+ */
+export const PLANNER_ROLES: string[] = ['STAFF', 'SUPPORT_PLANNER']
+
+export function isPlannerRole(role: string | undefined | null): boolean {
+  return role === 'STAFF' || role === 'SUPPORT_PLANNER'
+}
+
+/**
+ * THE canonical CaseSync profile.role → Workryn role map. All provisioning
+ * paths (lib/workryn/auth.ts, app/actions/invite.ts, app/(workryn)/layout.tsx)
+ * import this — the three previously-divergent local maps dropped
+ * 'administrator' to the default planner tier (2026-07-12 audit, P0-3).
+ */
+export function mapCaseSyncRoleToWorkryn(csRole?: string | null): Role {
+  switch ((csRole ?? '').toLowerCase()) {
+    case 'administrator':     return 'ADMINISTRATOR'
+    case 'supervisor':        return 'SUPERVISOR'
+    case 'it':                return 'IT'
+    case 'admin':             return 'ADMIN'
+    case 'team_manager':      return 'TEAM_MANAGER'
+    case 'admin_assistant':   return 'ADMIN_ASSISTANT'
+    case 'support_planner':
+    case 'supports_planner':  return 'SUPPORT_PLANNER'
+    default:                  return 'SUPPORT_PLANNER'
+  }
+}
+
+/**
+ * Effective hire date for milestone math: the admin-set hireDate when present,
+ * else the account-creation date (legacy behavior). u is typed structurally so
+ * it works with any Prisma selection that includes the two fields.
+ */
+export function effectiveHireDate(u: { hireDate?: Date | string | null; createdAt: Date | string }): Date {
+  const h = (u as { hireDate?: Date | string | null }).hireDate
+  return new Date(h ?? u.createdAt)
 }
 
 /** True if actor outranks target */

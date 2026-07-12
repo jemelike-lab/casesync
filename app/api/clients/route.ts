@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     // and calendar deadlineDate clicks (added 2026-07-06 - these previously
     // fell through to the abandoned Supabase table and returned 0 rows).
     // The Supabase path below survives only as the non-Azure dev fallback.
-    const AZURE_FILTERS = new Set(['all', 'co', 'cfc', 'cpas', 'overdue', 'due_today', 'due_this_week', 'due_next_14_days'])
+    const AZURE_FILTERS = new Set(['all', 'co', 'cfc', 'cpas', 'overdue', 'due_today', 'due_this_week', 'due_next_14_days', 'no_contact_7', 'eligibility_ending_soon'])
     if (isAzureConfigured() && (AZURE_FILTERS.has(filter) || deadlineDate)) {
       return await handleClientsViaAzure(req)
     }
@@ -186,6 +186,18 @@ export async function GET(req: NextRequest) {
     } else if (filter === 'due_next_14_days') {
       const tw = twoWeeksLater.toISOString().split('T')[0]
       query = query.or(deadlineFields.map(f => `and(${f}.gte.${now},${f}.lte.${tw})`).join(','))
+    } else if (filter === 'no_contact_7') {
+      // Canonical null-inclusive semantics (lib/types isNoContact7Days):
+      // never-contacted counts as no-contact.
+      const cutoff = new Date(todayStart)
+      cutoff.setDate(cutoff.getDate() - 7)
+      const cutoffStr = cutoff.toISOString().split('T')[0]
+      query = query.or(`last_contact_date.is.null,last_contact_date.lte.${cutoffStr}`)
+    } else if (filter === 'eligibility_ending_soon') {
+      const soon = new Date(todayStart)
+      soon.setDate(soon.getDate() + 30)
+      const soonStr = soon.toISOString().split('T')[0]
+      query = query.gte('eligibility_end_date', now).lte('eligibility_end_date', soonStr)
     } else if (filter === 'co') {
       query = query.eq('category', 'co')
     } else if (filter === 'cfc') {
@@ -249,7 +261,7 @@ export async function GET(req: NextRequest) {
       eligibilitySoon: allClients.filter(isEligibilityEndingSoon).length,
       noContact: allClients.filter(client => {
         const days = getDaysSinceContact(client.last_contact_date)
-        return days !== null && days >= 7
+        return days === null || days >= 7
       }).length,
     }
 
@@ -261,7 +273,7 @@ export async function GET(req: NextRequest) {
       eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
       noContact: pageClients.filter(client => {
         const days = getDaysSinceContact(client.last_contact_date)
-        return days !== null && days >= 7
+        return days === null || days >= 7
       }).length,
     } : fullSummary
 

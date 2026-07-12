@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { createClient } from '@/lib/supabase/server'
 import { enforceMfa } from '@/lib/enforce-mfa'
 import { getWorkrynSession } from '@/lib/workryn/auth'
+import { mapCaseSyncRoleToWorkryn } from '@/lib/workryn/permissions'
 import { db } from '@/lib/workryn/db'
 import WorkrynSidebar from '@/components/workryn/WorkrynSidebar'
 import WorkrynOnboardingTour from '@/components/workryn/WorkrynOnboardingTour'
@@ -24,17 +25,7 @@ import './aurora.css'
  * Maps CaseSync profile role → Workryn role.
  * CaseSync roles (from profiles table): supervisor, team_manager, support_planner, it, admin
  */
-function mapRole(csRole?: string | null): string {
-  switch (csRole?.toLowerCase()) {
-    case 'supervisor':       return 'SUPERVISOR'
-    case 'it':               return 'ADMIN'
-    case 'admin':            return 'ADMIN'
-    case 'team_manager':     return 'TEAM_MANAGER'
-    case 'support_planner':
-    case 'supports_planner': return 'SUPPORT_PLANNER'
-    default:                 return 'SUPPORT_PLANNER'
-  }
-}
+const mapRole = mapCaseSyncRoleToWorkryn
 
 export default async function WorkrynLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()

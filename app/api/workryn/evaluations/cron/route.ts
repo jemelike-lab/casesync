@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/workryn/db'
 import { createNotification } from '@/lib/workryn/notifications'
 import { sendEmail } from '@/lib/workryn/email'
+import { PLANNER_ROLES, effectiveHireDate } from '@/lib/workryn/permissions'
 
 const EVAL_URL = 'https://www.blhcasesync.com/w/evaluations'
 const CALENDLY_URL = 'https://calendly.com/sabbott-9/evaluations'
@@ -31,13 +32,12 @@ function sweepMilestoneFor(daysEmployed: number) {
  * Protected by CRON_SECRET header or Vercel's internal auth.
  */
 export async function GET(req: NextRequest) {
-  // Vercel cron sends an Authorization header; also accept CRON_SECRET
+  // Hardened 2026-07-12 (audit P1-9): require the cron bearer secret
+  // outright. The old x-vercel-cron header bypass was client-settable, and an
+  // unset CRON_SECRET left the route fully open. Mirrors /api/check-deadlines.
   const authHeader = req.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  const isVercelCron = authHeader === `Bearer ${cronSecret}`
-  const isInternalCall = req.headers.get('x-vercel-cron') === '1'
-
-  if (!isVercelCron && !isInternalCall && cronSecret) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -89,8 +89,8 @@ export async function GET(req: NextRequest) {
 
     try {
       const staff = await db.user.findMany({
-        where: { isActive: true, role: 'STAFF' },
-        select: { id: true, name: true, email: true, createdAt: true },
+        where: { isActive: true, role: { in: PLANNER_ROLES } },
+        select: { id: true, name: true, email: true, createdAt: true, hireDate: true },
       })
       sweepChecked = staff.length
 
@@ -110,10 +110,11 @@ export async function GET(req: NextRequest) {
         const digest: DigestEntry[] = []
 
         for (const person of staff) {
-          const daysEmployed = Math.floor((now.getTime() - new Date(person.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+          const hired = effectiveHireDate(person)
+          const daysEmployed = Math.floor((now.getTime() - hired.getTime()) / (1000 * 60 * 60 * 24))
           const ms = sweepMilestoneFor(daysEmployed)
           const daysLeft = ms.dueDay - daysEmployed
-          const dueDate = new Date(person.createdAt)
+          const dueDate = new Date(hired)
           dueDate.setDate(dueDate.getDate() + ms.dueDay)
 
           const submitted = selfEvals.some(
@@ -125,7 +126,7 @@ export async function GET(req: NextRequest) {
           const inHorizon = daysLeft <= maxAlert
           if (!inHorizon) continue
 
-          const windowStart = new Date(person.createdAt)
+          const windowStart = hired
           const scheduledReminders = await db.reminder.count({
             where: { userId: person.id, dueAt: { gte: windowStart, lte: dueDate } },
           })

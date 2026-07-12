@@ -105,7 +105,7 @@ export async function getAssigneeSummaryMap(assignedTo?: string[]) {
             c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date < t.today - 7
+            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7
           ))::int AS no_contact_7_days_clients
         FROM clients c CROSS JOIN t
         WHERE ${whereSql}
@@ -179,7 +179,7 @@ export async function getGlobalSummary(): Promise<GlobalSummaryRow> {
             c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date < t.today - 7
+            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7
           ))::int AS no_contact_7_days_clients
         FROM clients c CROSS JOIN t
         WHERE c.is_active = true AND c.client_classification = 'real'

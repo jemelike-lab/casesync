@@ -7,6 +7,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { getInviteExpiryIso } from '@/lib/invites'
 import { upsertAzureIdentity } from '@/lib/db/identity-sync'
+import { mapCaseSyncRoleToWorkryn } from '@/lib/workryn/permissions'
 
 function createAdminClient() {
   return createSupabaseAdminClient(
@@ -62,18 +63,7 @@ export async function getInviteByToken(token: string) {
 }
 
 
-function mapCsRoleToWorkryn(csRole?: string | null): string {
-  switch (csRole?.toLowerCase()) {
-    case 'supervisor':       return 'SUPERVISOR'
-    case 'it':
-    case 'admin':            return 'ADMIN'
-    case 'team_manager':     return 'TEAM_MANAGER'
-    case 'admin_assistant':  return 'ADMIN_ASSISTANT'
-    case 'support_planner':
-    case 'supports_planner': return 'SUPPORT_PLANNER'
-    default:                 return 'SUPPORT_PLANNER'
-  }
-}
+const mapCsRoleToWorkryn = mapCaseSyncRoleToWorkryn
 
 export async function acceptInvite(_prevState: any, formData: FormData) {
   const token = String(formData.get('token') || '').trim()

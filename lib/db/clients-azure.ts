@@ -153,6 +153,14 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
         deadlinePred = sql`${anyDeadline((col) => sql`c.${col} BETWEEN ${today}::date AND ${today}::date + 7`)})`
       } else if (filter === 'due_next_14_days') {
         deadlinePred = sql`${anyDeadline((col) => sql`c.${col} BETWEEN ${today}::date AND ${today}::date + 14`)})`
+      } else if (filter === 'no_contact_7') {
+        // Canonical null-inclusive semantics (lib/types isNoContact7Days):
+        // never-contacted counts as no-contact. 2026-07-12: this filter (and
+        // eligibility_ending_soon) previously fell through to the abandoned
+        // Supabase table and returned 0 rows in production.
+        deadlinePred = sql`(c.last_contact_date IS NULL OR c.last_contact_date <= ${today}::date - 7)`
+      } else if (filter === 'eligibility_ending_soon') {
+        deadlinePred = sql`(c.eligibility_end_date BETWEEN ${today}::date AND ${today}::date + 30)`
       }
 
       // --- search (ilike across the same fields as route.ts) ---
@@ -314,7 +322,7 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
           eligibilitySoon: pageClients.filter(isEligibilityEndingSoon).length,
           noContact: pageClients.filter((client) => {
             const days = getDaysSinceContact(client.last_contact_date)
-            return days !== null && days >= 7
+            return days === null || days >= 7
           }).length,
         }
       : fullSummary

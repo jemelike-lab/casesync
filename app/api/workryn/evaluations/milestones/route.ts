@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkrynSession } from '@/lib/workryn/auth'
 import { db } from '@/lib/workryn/db'
-import { canViewEvaluations } from '@/lib/workryn/permissions'
+import { canViewEvaluations, PLANNER_ROLES, effectiveHireDate } from '@/lib/workryn/permissions'
 
 /**
  * Returns all active STAFF users grouped by their onboarding milestone,
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   const staff = await db.user.findMany({
-    where: { isActive: true, role: 'STAFF' },
+    where: { isActive: true, role: { in: PLANNER_ROLES } },
     select: {
       id: true,
       name: true,
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       jobTitle: true,
       avatarColor: true,
       createdAt: true,
+      hireDate: true,
       countyPreference: {
         select: { id: true, residenceCounty: true, preferredCounties: true, submittedAt: true },
       },
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
   const now = Date.now()
 
   const staffWithStats = staff.map(u => {
-    const daysEmployed = Math.floor((now - new Date(u.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+    const daysEmployed = Math.floor((now - effectiveHireDate(u).getTime()) / (1000 * 60 * 60 * 24))
 
     // Determine which milestone bracket
     let milestone: string
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
       email: u.email,
       jobTitle: u.jobTitle,
       avatarColor: u.avatarColor,
-      hireDate: u.createdAt,
+      hireDate: effectiveHireDate(u),
       daysEmployed,
       milestone,
       status,

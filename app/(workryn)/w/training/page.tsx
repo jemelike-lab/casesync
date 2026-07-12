@@ -1,7 +1,7 @@
 import { getWorkrynSession } from '@/lib/workryn/auth'
 
 import { db } from '@/lib/workryn/db'
-import { isManagerOrAbove } from '@/lib/workryn/permissions'
+import { PLANNER_ROLES, isManagerOrAbove } from '@/lib/workryn/permissions'
 import TrainingClient from '@/components/workryn/TrainingClient'
 import { getPageBannerUrl } from '@/lib/workryn/pageBanner'
 import type { Metadata } from 'next'
@@ -39,7 +39,7 @@ export default async function TrainingPage() {
     // Only fetch users for managers (for assign modal)
     isManager
       ? db.user.findMany({
-          where: { role: 'STAFF' },
+          where: { role: { in: PLANNER_ROLES } },
           select: { id: true, name: true, email: true, avatarColor: true, departmentId: true, jobTitle: true },
           orderBy: { name: 'asc' },
         })
