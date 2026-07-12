@@ -484,7 +484,10 @@ export default function BLHAssistant() {
   // panel opens. The server route is deterministic and reuses the five readiness gates.
   useEffect(() => {
     if (!open || isClientPage) return
-    const today = new Date().toISOString().slice(0, 10)
+    // Local day key (2026-07-12 audit, P3): the UTC day flips at 8pm ET,
+    // which reset the once-per-day briefing gate every evening.
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     try {
       if (localStorage.getItem('blh-briefing-date') === today) return
     } catch {

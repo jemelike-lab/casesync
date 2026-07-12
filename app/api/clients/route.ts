@@ -173,6 +173,15 @@ export async function GET(req: NextRequest) {
     // deadlineDate filter uses the same set for calendar day-click
     const deadlineDateFields = deadlineFields
 
+    // Counter↔drill-down parity for the dev fallback too (2026-07-12 audit,
+    // P3; mirrors the Azure path's P2-12 fix): deadline-derived filters count
+    // client_classification = 'real' only.
+    const isDeadlineDerived = Boolean(deadlineDate) ||
+      ['overdue', 'due_today', 'due_this_week', 'due_next_14_days', 'no_contact_7', 'eligibility_ending_soon'].includes(filter)
+    if (isDeadlineDerived) {
+      query = query.eq('client_classification', 'real')
+    }
+
     if (deadlineDate) {
       query = query.or(deadlineDateFields.map(f => `${f}.eq.${deadlineDate}`).join(','))
     } else if (filter === 'overdue') {

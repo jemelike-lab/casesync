@@ -42,13 +42,26 @@ const CHIPS: { key: string; label: string; filter: string; mineOnly?: boolean }[
 ]
 
 function nextDeadline(c: Client): { date: string; label: string } | null {
-  let best: { date: string; label: string } | null = null
+  // "Next deadline" semantics (2026-07-12 audit, P3): prefer the earliest
+  // UPCOMING deadline (>= today); when every tracked date is past, show the
+  // most RECENT overdue one. The previous lexicographic min surfaced
+  // decades-old sentinel dates (e.g. 1999-12-31) as "thousands of days ago".
+  // Local-date anchor matches relativeDays() below (client component).
+  const t = new Date()
+  const todayStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+  let upcoming: { date: string; label: string } | null = null
+  let recentPast: { date: string; label: string } | null = null
   for (const f of PRIORITY_DATE_FIELDS) {
     const d = c[f] as string | null
     if (!d) continue
-    if (!best || d < best.date) best = { date: d, label: PRIORITY_DATE_LABELS[f as string] ?? String(f) }
+    const label = PRIORITY_DATE_LABELS[f as string] ?? String(f)
+    if (d >= todayStr) {
+      if (!upcoming || d < upcoming.date) upcoming = { date: d, label }
+    } else {
+      if (!recentPast || d > recentPast.date) recentPast = { date: d, label }
+    }
   }
-  return best
+  return upcoming ?? recentPast
 }
 
 function relativeDays(dateStr: string): string {

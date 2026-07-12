@@ -9,7 +9,10 @@ interface Props {
 }
 
 function toDateKey(date: Date): string {
-  return date.toISOString().split('T')[0]
+  // Local-date key (2026-07-12 audit, P3): toISOString() derives the UTC
+  // day, which shifts a day for users east of UTC. Format from local
+  // getters so the key always matches the day the strip renders.
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 export default function WeekStrip({ countsByDate = {}, onDayFilter, activeDayFilter }: Props) {

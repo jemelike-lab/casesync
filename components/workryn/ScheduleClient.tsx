@@ -238,11 +238,16 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
       setCopying(false)
     }
   }
+  // Local-date string (2026-07-12 audit, P3): toISOString() takes the UTC
+  // day; the form's times are local, so the date must be local too.
+  function localDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
   function openNew(userId: string, date: Date) {
     if (!isManager) return
     setForm({
       userId, title: 'Shift',
-      date: date.toISOString().split('T')[0],
+      date: localDateStr(date),
       startTime: '09:00', endTime: '17:00',
       color: SHIFT_COLORS[Math.floor(Math.random() * SHIFT_COLORS.length)],
       departmentId: '', notes: '',
@@ -255,7 +260,7 @@ export default function ScheduleClient({ initialShifts, users, departments, curr
     setForm({
       userId: s.user?.id ?? '',
       title: s.title,
-      date: d.toISOString().split('T')[0],
+      date: localDateStr(d),
       startTime: d.toTimeString().slice(0, 5),
       endTime: new Date(s.endTime).toTimeString().slice(0, 5),
       color: s.color,
