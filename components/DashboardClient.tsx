@@ -1174,7 +1174,10 @@ export default function DashboardClient({ profile, currentUserId, planners = [],
     const controller = new AbortController()
     const params = new URLSearchParams()
     params.set('page', String(page))
-    params.set('limit', fullMode ? '250' : (activeDayFilter ? '50' : '24'))
+    // API caps limit at 100 (route.ts Math.min) — requesting 250 was
+    // silently truncated (2026-07-12 audit, P2-17). Request the real max;
+    // hasMore/Next pagination covers the rest.
+    params.set('limit', fullMode ? '100' : (activeDayFilter ? '50' : '24'))
     params.set('filter', activeDayFilter ? 'all' : (alertFilter ?? filter))
     params.set('search', debouncedSearch)
     params.set('sortField', sortField)

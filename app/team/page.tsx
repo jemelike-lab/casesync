@@ -97,6 +97,15 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   // Keep unfiltered clients for accurate stat card counts
   const allScopedClients = clients
 
+  // Counter↔drill-down parity (2026-07-12 audit, P2-12): compliance counters
+  // count client_classification = 'real' only, so deadline-derived queue
+  // views must filter to the same population. 'all' keeps test clients
+  // visible (documented intent in lib/db/clients-azure.ts).
+  const DEADLINE_DERIVED = new Set(['overdue', 'due_today', 'due_this_week', 'no_contact_7', 'due_next_14_days'])
+  if (derivedFilter && DEADLINE_DERIVED.has(derivedFilter)) {
+    clients = clients.filter(client => client.client_classification === 'real')
+  }
+
   if (derivedFilter === 'overdue') {
     clients = clients.filter(client => {
       const categoryOk = !derivedCategory || client.category === derivedCategory

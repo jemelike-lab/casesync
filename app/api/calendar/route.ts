@@ -73,7 +73,9 @@ export async function GET(req: Request) {
         if (role === 'supports_planner') {
           scope = sql`AND c.assigned_to = ${userId}`
         } else if (role === 'team_manager') {
-          const planners = await sql`SELECT id FROM profiles WHERE role = 'supports_planner' AND team_manager_id = ${userId}`
+          // Scope by team_manager_id alone (2026-07-12 audit, P2-14) — the
+          // role filter dropped planners stored with a variant role spelling.
+          const planners = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
           const plannerIds = (planners as unknown as Array<{ id: string }>).map((pl) => pl.id).filter(Boolean)
           if (assignedTo) {
             scope = sql`AND c.assigned_to = ${assignedTo}`
@@ -119,7 +121,6 @@ export async function GET(req: Request) {
         const { data: planners, error: plannerErr } = await admin
           .from('profiles')
           .select('id')
-          .eq('role', 'supports_planner')
           .eq('team_manager_id', userId)
 
         if (plannerErr) {

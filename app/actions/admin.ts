@@ -12,6 +12,8 @@ import { buildAcceptInviteUrl, generateInviteToken, getInviteExpiryIso } from '@
 import { getGuideAttachmentForRole } from '@/lib/guides/attachments'
 import { isSupervisorLike } from '@/lib/roles'
 import { upsertAzureIdentity, deleteAzureIdentity } from '@/lib/db/identity-sync'
+import { db as workrynDb } from '@/lib/workryn/db'
+import { mapCaseSyncRoleToWorkryn } from '@/lib/workryn/permissions'
 
 // Admin Supabase client uses service role key for deterministic server-side writes
 function createAdminClient() {
@@ -327,6 +329,20 @@ export async function updateUserRole(userId: string, role: string) {
   const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
   if (error) return { error: error.message }
   await syncIdentityFromSupabase(userId, caller.id)
+
+  // Propagate to Workryn (2026-07-12 audit, P2-13): the Workryn layout only
+  // provisions a w_user once and never refreshes its role, so a CaseSync role
+  // change previously left the Workryn role stale forever. Best-effort and
+  // non-fatal; a manually-granted OWNER is never overwritten (the CaseSync
+  // map cannot produce OWNER). No-op if the user has never opened Workryn.
+  try {
+    await workrynDb.user.updateMany({
+      where: { supabaseId: userId, role: { not: 'OWNER' } },
+      data: { role: mapCaseSyncRoleToWorkryn(role) },
+    })
+  } catch (err) {
+    console.error('[updateUserRole] Workryn role sync failed (non-fatal):', err)
+  }
   return { success: true }
 }
 

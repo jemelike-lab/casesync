@@ -80,11 +80,40 @@ export async function POST(req: NextRequest) {
 
     const trimmedNote = note ? String(note).slice(0, 1000).trim() : ''
 
-    // RLS scoping: planners can only update their assigned clients
-    const canSeeAll = isSupervisorLike(profile.role) || profile.role === 'team_manager'
+    // RLS scoping (tightened 2026-07-12 audit, P2-16): supervisors act
+    // org-wide; team managers only on their own team's clients or unassigned
+    // ones (matching what /team shows them); planners only on their assigned
+    // clients. Previously TMs could log contact on any client org-wide.
+    const canSeeAll = isSupervisorLike(profile.role)
+    const isTeamManager = profile.role === 'team_manager'
 
     let scopedIds = clientIds
-    if (!canSeeAll) {
+    if (isTeamManager) {
+      if (isAzureConfigured()) {
+        const owned = await withRlsContext(userId, async (sql) => {
+          const rows = await sql`SELECT c.id FROM clients c WHERE c.id = ANY(${clientIds}::uuid[]) AND c.is_active = true AND (c.assigned_to IS NULL OR c.assigned_to IN (SELECT p.id FROM profiles p WHERE p.team_manager_id = ${userId}))`
+          return rows as unknown as { id: string }[]
+        })
+        scopedIds = owned.map((c) => c.id)
+      } else {
+        const { data: planners } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('team_manager_id', userId)
+        const plannerIds = (planners ?? []).map((p: { id: string }) => p.id)
+        const { data: owned } = await supabase
+          .from('clients')
+          .select('id, assigned_to')
+          .in('id', clientIds)
+          .eq('is_active', true)
+        scopedIds = (owned ?? [])
+          .filter((c: { id: string; assigned_to: string | null }) => c.assigned_to === null || plannerIds.includes(c.assigned_to))
+          .map((c: { id: string }) => c.id)
+      }
+      if (scopedIds.length === 0) {
+        return Response.json({ error: 'No matching team clients found' }, { status: 403 })
+      }
+    } else if (!canSeeAll) {
       // Fetch assigned clients for this planner to verify ownership
       if (isAzureConfigured()) {
         const owned = await withRlsContext(userId, async (sql) => {

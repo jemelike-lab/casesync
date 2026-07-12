@@ -177,7 +177,16 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       // Compose WHERE from the active predicates.
       const preds = [sql`c.is_active = true`, scope]
       if (categoryPred) preds.push(categoryPred)
-      if (deadlinePred) preds.push(deadlinePred)
+      if (deadlinePred) {
+        preds.push(deadlinePred)
+        // Counter↔drill-down parity (2026-07-12 audit, P2-12): every
+        // compliance counter is client_classification = 'real' only, so
+        // deadline-derived drill-downs must match — otherwise a test client
+        // with dates makes a list disagree with the card that opened it.
+        // General lists (all / category / search) intentionally keep test
+        // clients visible.
+        preds.push(sql`c.client_classification = 'real'`)
+      }
       if (searchPred) preds.push(searchPred)
       const whereSql = preds.reduce((acc, p, i) => (i === 0 ? sql`${p}` : sql`${acc} AND ${p}`), sql``)
 

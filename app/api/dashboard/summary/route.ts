@@ -61,7 +61,22 @@ export async function GET(req: Request) {
         let scope = sql``
         if (role === 'supports_planner') {
           scope = sql`AND assigned_to = ${userId}`
-        } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
+        } else if (role === 'team_manager') {
+          // TM auto-scope (2026-07-12 audit, P2-15): a TM with no assignedTo
+          // previously received org-wide agenda counts. Mirror the
+          // /api/clients TM scope: own team's planners only; an assignedTo
+          // outside the team falls back to team-wide; an empty team gets a
+          // never-matching sentinel (zero counts).
+          const planners = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+          const plannerIds = (planners as unknown as Array<{ id: string }>).map((p) => p.id).filter(Boolean)
+          if (assignedTo && plannerIds.includes(assignedTo)) {
+            scope = sql`AND assigned_to = ${assignedTo}`
+          } else if (plannerIds.length > 0) {
+            scope = sql`AND assigned_to = ANY(${plannerIds}::uuid[])`
+          } else {
+            scope = sql`AND assigned_to = ${'00000000-0000-0000-0000-000000000000'}`
+          }
+        } else if (isSupervisorLike(role) && assignedTo) {
           scope = sql`AND assigned_to = ${assignedTo}`
         }
         const rows = await sql`
@@ -87,7 +102,25 @@ export async function GET(req: Request) {
 
       if (role === 'supports_planner') {
         query = query.eq('assigned_to', userId)
-      } else if ((role === 'team_manager' || isSupervisorLike(role)) && assignedTo) {
+      } else if (role === 'team_manager') {
+        // TM auto-scope — see the Azure branch above (P2-15).
+        const { data: planners, error: plannerErr } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('team_manager_id', userId)
+        if (plannerErr) {
+          return new Response(JSON.stringify({ error: plannerErr.message }), { status: 500 })
+        }
+        const plannerIds = (planners ?? []).map((p) => p.id as string).filter(Boolean)
+        if (assignedTo && plannerIds.includes(assignedTo)) {
+          query = query.eq('assigned_to', assignedTo)
+        } else if (plannerIds.length > 0) {
+          query = query.in('assigned_to', plannerIds)
+        } else {
+          // Empty team → never-matching sentinel → zero counts.
+          query = query.eq('assigned_to', '00000000-0000-0000-0000-000000000000')
+        }
+      } else if (isSupervisorLike(role) && assignedTo) {
         query = query.eq('assigned_to', assignedTo)
       }
 
