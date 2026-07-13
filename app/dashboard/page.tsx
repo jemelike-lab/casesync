@@ -5,6 +5,7 @@ import DashboardClient from '@/components/DashboardClient'
 import SupervisorControlPanelClient from '@/components/SupervisorControlPanelClient'
 import TeamManagerControlPanelClient from '@/components/TeamManagerControlPanelClient'
 import SupportPlannerControlPanelClient from '@/components/SupportPlannerControlPanelClient'
+import PilotChecklistCard from '@/components/PilotChecklistCard'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
@@ -100,11 +101,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const mySummary = summaryMap.get(profile.id) ?? null
 
     return (
-      <SupportPlannerControlPanelClient
-        profile={profile as Profile}
-        myTeamManager={myTeamManager}
-        mySummary={mySummary}
-      />
+      <>
+        <PilotChecklistCard />
+        <SupportPlannerControlPanelClient
+          profile={profile as Profile}
+          myTeamManager={myTeamManager}
+          mySummary={mySummary}
+        />
+      </>
     )
   }
 

@@ -58,6 +58,22 @@ export default function FeedbackTab() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
+  // Other surfaces (pilot checklist card) open this modal pre-tagged via:
+  //   window.dispatchEvent(new CustomEvent('cs:open-feedback', { detail: { context } }))
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<{ context?: string }>).detail
+      if (detail?.context) {
+        setMessage(prev => (prev.trim() ? prev : `[${detail.context}] `))
+      }
+      setSent(false)
+      setError(null)
+      setOpen(true)
+    }
+    window.addEventListener('cs:open-feedback', onOpen)
+    return () => window.removeEventListener('cs:open-feedback', onOpen)
+  }, [])
+
   const handleSubmit = async () => {
     const trimmed = message.trim()
     if (!trimmed || sending) return
