@@ -70,6 +70,7 @@ export default function Header({ user, profile }: Props) {
   const roleName = getRoleLabel(role)
   const dashboardActive = pathname === '/' || pathname?.startsWith('/dashboard')
   const teamActive = pathname?.startsWith('/team') ?? false
+  const clientsActive = pathname?.startsWith('/clients') ?? false
   const documentsActive = pathname?.startsWith('/documents') ?? false
   const supervisorActive = pathname?.startsWith('/supervisor') ?? false
   const adminActive = pathname === '/admin'
@@ -108,6 +109,7 @@ export default function Header({ user, profile }: Props) {
           {/* Nav links - desktop only */}
           <nav style={{ display: 'flex', gap: 'clamp(1px, 0.22vw, 4px)' }} className="desktop-nav">
             <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
+            <NavLink href="/clients" label="Clients" active={clientsActive} />
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
             )}
@@ -330,6 +332,7 @@ export default function Header({ user, profile }: Props) {
         boxSizing: 'border-box',
       }}>
         <MobileNavItem href="/dashboard" icon="🏠" label="Home" active={dashboardActive} />
+        <MobileNavItem href="/clients" icon="🗂️" label="Clients" active={clientsActive} />
         <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} accent />
         {(role === 'team_manager' || isSupervisorLike(role)) && (
           <MobileNavItem href="/team" icon="👥" label="Team" active={teamActive} />

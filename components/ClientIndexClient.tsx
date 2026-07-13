@@ -37,6 +37,8 @@ const CHIPS: { key: string; label: string; filter: string; mineOnly?: boolean }[
   { key: 'overdue', label: 'Overdue', filter: 'overdue' },
   { key: 'due_this_week', label: 'Due This Week', filter: 'due_this_week' },
   { key: 'due_next_14_days', label: 'Due Next 14', filter: 'due_next_14_days' },
+  { key: 'no_contact_7', label: 'No Contact 7+', filter: 'no_contact_7' },
+  { key: 'eligibility_ending_soon', label: 'Elig Ending Soon', filter: 'eligibility_ending_soon' },
   { key: 'co', label: 'CO', filter: 'co' },
   { key: 'cfc', label: 'CFC', filter: 'cfc' },
 ]
@@ -105,6 +107,8 @@ export default function ClientIndexClient({
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [pinned, setPinned] = useState<Set<string>>(new Set())
+  const [sortField, setSortField] = useState<'name' | 'last_contact_date'>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -113,11 +117,13 @@ export default function ClientIndexClient({
   }, [search])
 
   const buildUrl = useCallback(
-    (chipKey: string, p: number, limit: number, q: string) => {
+    (chipKey: string, p: number, limit: number, q: string, sf?: string, sd?: string) => {
       const def = CHIPS.find(c => c.key === chipKey) ?? CHIPS[1]
       const params = new URLSearchParams({ filter: def.filter, page: String(p), limit: String(limit) })
       if (q) params.set('search', q)
       if (def.mineOnly) params.set('assignedTo', userId)
+      if (sf === 'last_contact_date') params.set('sortField', sf)
+      if (sd) params.set('sortDir', sd)
       return `/api/clients?${params.toString()}`
     },
     [userId],
@@ -129,7 +135,7 @@ export default function ClientIndexClient({
     const ac = new AbortController()
     abortRef.current = ac
     setLoading(true)
-    fetch(buildUrl(chip, page, PAGE_SIZE, debounced), { signal: ac.signal })
+    fetch(buildUrl(chip, page, PAGE_SIZE, debounced, sortField, sortDir), { signal: ac.signal })
       .then(r => r.json())
       .then(d => {
         setRows(Array.isArray(d.clients) ? d.clients : [])
@@ -138,7 +144,7 @@ export default function ClientIndexClient({
       })
       .catch(e => { if (e?.name !== 'AbortError') setLoading(false) })
     return () => ac.abort()
-  }, [chip, page, debounced, buildUrl])
+  }, [chip, page, debounced, sortField, sortDir, buildUrl])
 
   // chip counts — one lightweight limit=1 call per chip
   useEffect(() => {
@@ -229,9 +235,38 @@ export default function ClientIndexClient({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
               <thead>
                 <tr>
-                  {['', 'Client', 'Program', 'Next Deadline', 'Deadline Type', 'Assigned To', 'Status', 'Last Contact'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 700, padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                  ))}
+                  {([
+                    ['', null],
+                    ['Client', 'name'],
+                    ['Program', null],
+                    ['Next Deadline', null],
+                    ['Deadline Type', null],
+                    ['Assigned To', null],
+                    ['Status', null],
+                    ['Last Contact', 'last_contact_date'],
+                  ] as [string, 'name' | 'last_contact_date' | null][]).map(([h, sf]) => {
+                    const isSortable = sf !== null
+                    const isActive = isSortable && sortField === sf
+                    return (
+                      <th
+                        key={h || 'pin'}
+                        onClick={isSortable ? () => {
+                          if (sortField === sf) { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')) }
+                          else { setSortField(sf as 'name' | 'last_contact_date'); setSortDir('asc') }
+                          setPage(0)
+                        } : undefined}
+                        title={isSortable ? `Sort by ${h}` : undefined}
+                        style={{ textAlign: 'left', fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase', color: isActive ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 700, padding: '11px 14px', borderBottom: '1px solid var(--border)', cursor: isSortable ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}
+                      >
+                        {h}
+                        {isSortable ? (
+                          <span style={{ marginLeft: 5, fontSize: 9, opacity: isActive ? 1 : 0.35 }}>
+                            {isActive ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u2195'}
+                          </span>
+                        ) : null}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>
