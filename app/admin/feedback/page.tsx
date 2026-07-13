@@ -29,12 +29,13 @@ export default async function FeedbackAdminPage() {
   let unavailable = false
   if (isAzureConfigured()) {
     try {
+      // SELECT * deliberately (matches /api/feedback GET): the board shows the
+      // whole row, RLS gates access, and * survives the close-loop migration
+      // window — response-loop columns simply appear once applied. Reopened
+      // reports sort first: the reporter bounced them back, they're hottest.
       const rows = await withRlsContext(user.id, (sql) => sql`
-        SELECT id, created_at, updated_at, user_id, author_name, author_role,
-               type, severity, message, page_path, app_commit, user_agent,
-               viewport, status, resolution_note, resolved_by, resolved_at
-        FROM feedback_reports
-        ORDER BY created_at DESC
+        SELECT * FROM feedback_reports
+        ORDER BY CASE WHEN status = 'reopened' THEN 0 ELSE 1 END, created_at DESC
         LIMIT 500
       `)
       reports = rows as unknown as FeedbackReport[]

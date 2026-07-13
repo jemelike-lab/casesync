@@ -1,9 +1,10 @@
 'use client'
 
 // FeedbackAdminLink — "Feedback & Issues" entry on the Admin Panel header with
-// a live new-report count. Self-contained so AdminClient only needs a one-line
-// mount. Hides itself when the count endpoint returns 403 (IT can open /admin
-// but has no feedback triage scope — Tier 1 IT scope-down).
+// a live needs-attention count (status new OR reopened — reopened means the
+// reporter bounced a "resolved" report back). Self-contained so AdminClient
+// only needs a one-line mount. Hides itself when the count endpoint returns
+// 403 (IT can open /admin but has no feedback triage scope — Tier 1 scope-down).
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'

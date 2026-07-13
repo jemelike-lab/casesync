@@ -567,3 +567,124 @@ export function feedbackReportEmail({
     html: baseLayout(content),
   }
 }
+
+// ── Feedback response loop ──────────────────────────────────────────────────
+// feedbackClosedEmail → the REPORTER when their report is resolved/won't-fix.
+// feedbackReopenedEmail → the triage inbox when a reporter says "still broken".
+// Reporter free text and resolution notes go into HTML — always escaped.
+
+export function feedbackClosedEmail({
+  reportType,
+  closedAs,
+  message,
+  resolutionNote,
+}: {
+  reportType: 'bug' | 'suggestion' | 'question'
+  closedAs: 'resolved' | 'wont_fix'
+  message: string
+  resolutionNote: string | null
+}) {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+  const typeLabel = { bug: 'bug report', suggestion: 'suggestion', question: 'question' }[reportType]
+  const resolved = closedAs === 'resolved'
+
+  const content = `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${resolved ? '#30d158' : '#8e8e93'};text-transform:uppercase;letter-spacing:0.08em;">
+      ${resolved ? '&#9989; Resolved' : 'Update'}
+    </p>
+    <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
+      ${resolved ? `Your ${typeLabel} has been resolved` : `An update on your ${typeLabel}`}
+    </h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#d0d0d5;line-height:1.6;">
+      ${
+        resolved
+          ? 'The team marked the report below as resolved. Please take a moment to check it on your end — open the Feedback tab in CaseSync and either <strong style="color:#f5f5f7;">confirm it&rsquo;s fixed</strong> or let us know it&rsquo;s <strong style="color:#f5f5f7;">still broken</strong> so it goes straight back to the team.'
+          : 'The team reviewed the report below and closed it as &ldquo;won&rsquo;t fix&rdquo; for now. The note below explains the reasoning — if it still blocks you, reply through the Feedback tab with more detail and it will be looked at again.'
+      }
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-left:3px solid #3a3a3f;border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+      <tr><td>
+        <span style="font-size:11px;color:#888;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Your report</span>
+        <span style="font-size:13.5px;color:#d0d0d5;line-height:1.6;white-space:pre-wrap;">${esc(message)}</span>
+      </td></tr>
+    </table>
+
+    ${
+      resolutionNote
+        ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#12241a;border-left:3px solid #30d158;border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+            <tr><td>
+              <span style="font-size:11px;color:#7bd89f;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Note from the team</span>
+              <span style="font-size:13.5px;color:#d0d0d5;line-height:1.6;white-space:pre-wrap;">${esc(resolutionNote)}</span>
+            </td></tr>
+          </table>`
+        : ''
+    }
+
+    ${resolved ? ctaButton(`${BASE_URL}/dashboard?feedback=mine`, 'Review &amp; Confirm') : ctaButton(`${BASE_URL}/dashboard?feedback=mine`, 'View My Reports')}
+  `
+
+  return {
+    subject: resolved
+      ? 'Your CaseSync report was resolved — please confirm'
+      : 'An update on your CaseSync report',
+    html: baseLayout(content),
+  }
+}
+
+export function feedbackReopenedEmail({
+  authorName,
+  message,
+  reporterNote,
+  pagePath,
+  reopenCount,
+}: {
+  authorName: string
+  message: string
+  reporterNote: string | null
+  pagePath: string
+  reopenCount: number
+}) {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+  const content = `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#ff453a;text-transform:uppercase;letter-spacing:0.08em;">
+      &#8630; Reopened${reopenCount > 1 ? ` (&times;${reopenCount})` : ''}
+    </p>
+    <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#f5f5f7;line-height:1.3;">
+      ${esc(authorName)} says this is still broken
+    </h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#d0d0d5;line-height:1.6;">
+      A report marked resolved failed the reporter&rsquo;s check on <strong style="color:#f5f5f7;">${esc(pagePath)}</strong>.
+      It is back in the triage queue as <strong style="color:#ff453a;">Reopened</strong>.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-left:3px solid #3a3a3f;border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+      <tr><td>
+        <span style="font-size:11px;color:#888;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Original report</span>
+        <span style="font-size:13.5px;color:#d0d0d5;line-height:1.6;white-space:pre-wrap;">${esc(message)}</span>
+      </td></tr>
+    </table>
+
+    ${
+      reporterNote
+        ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#2a1214;border-left:3px solid #ff453a;border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+            <tr><td>
+              <span style="font-size:11px;color:#ff8f8a;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Reporter&rsquo;s note</span>
+              <span style="font-size:13.5px;color:#d0d0d5;line-height:1.6;white-space:pre-wrap;">${esc(reporterNote)}</span>
+            </td></tr>
+          </table>`
+        : ''
+    }
+
+    ${ctaButton(`${BASE_URL}/admin/feedback`, 'Open Triage')}
+  `
+
+  return {
+    subject: `-- Reopened: ${authorName} says an issue is not fixed — ${pagePath}`,
+    html: baseLayout(content),
+  }
+}

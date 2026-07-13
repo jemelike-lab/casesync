@@ -4,7 +4,7 @@
 // app/admin/feedback/page.tsx for the access model). Follows AdminClient's
 // inline-style conventions and the shared CSS theme variables.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { getRoleLabel } from '@/lib/roles'
 
@@ -22,19 +22,34 @@ export interface FeedbackReport {
   app_commit: string | null
   user_agent: string | null
   viewport: string | null
-  status: 'new' | 'in_progress' | 'resolved' | 'wont_fix'
+  status: 'new' | 'in_progress' | 'resolved' | 'confirmed' | 'reopened' | 'wont_fix'
   resolution_note: string | null
   resolved_by: string | null
   resolved_at: string | null
+  // Response-loop fields (azure_feedback_close_loop.sql) — optional so rows
+  // render fine during the migration window.
+  assigned_to?: string | null
+  assigned_to_name?: string | null
+  reporter_note?: string | null
+  confirmed_at?: string | null
+  reopen_count?: number
 }
 
-type StatusFilter = 'new' | 'in_progress' | 'resolved' | 'wont_fix' | 'all'
+interface Assignee {
+  id: string
+  full_name: string | null
+  role: string | null
+}
+
+type StatusFilter = 'new' | 'reopened' | 'in_progress' | 'resolved' | 'confirmed' | 'wont_fix' | 'all'
 type TypeFilter = 'all' | 'bug' | 'suggestion' | 'question'
 
 const STATUS_LABELS: Record<FeedbackReport['status'], string> = {
   new: 'New',
   in_progress: 'In progress',
   resolved: 'Resolved',
+  confirmed: 'Confirmed ✓',
+  reopened: 'Reopened',
   wont_fix: "Won't fix",
 }
 
@@ -42,6 +57,8 @@ const STATUS_COLORS: Record<FeedbackReport['status'], string> = {
   new: 'var(--accent)',
   in_progress: 'var(--orange)',
   resolved: 'var(--green)',
+  confirmed: '#30d158',
+  reopened: 'var(--red)',
   wont_fix: 'var(--text-secondary)',
 }
 
@@ -84,10 +101,26 @@ export default function FeedbackAdminClient({
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [assignees, setAssignees] = useState<Assignee[]>([])
+
+  // Triager candidates for the assignment dropdown (best-effort).
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/feedback?assignees=1')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.assignees)) setAssignees(d.assignees as Assignee[])
+      })
+      .catch(() => { /* dropdown just stays empty */ })
+    return () => { cancelled = true }
+  }, [])
 
   const counts = useMemo(() => {
-    const c: Record<StatusFilter, number> = { new: 0, in_progress: 0, resolved: 0, wont_fix: 0, all: reports.length }
-    for (const r of reports) c[r.status] += 1
+    const c: Record<StatusFilter, number> = {
+      new: 0, reopened: 0, in_progress: 0, resolved: 0, confirmed: 0, wont_fix: 0,
+      all: reports.length,
+    }
+    for (const r of reports) if (c[r.status] !== undefined) c[r.status] += 1
     return c
   }, [reports])
 
@@ -101,7 +134,10 @@ export default function FeedbackAdminClient({
     [reports, statusFilter, typeFilter],
   )
 
-  const setStatus = async (report: FeedbackReport, status: FeedbackReport['status']) => {
+  const setStatus = async (
+    report: FeedbackReport,
+    status: 'new' | 'in_progress' | 'resolved' | 'wont_fix',
+  ) => {
     setSavingId(report.id)
     setSaveError(null)
     try {
@@ -115,17 +151,11 @@ export default function FeedbackAdminClient({
       })
       const d = await res.json().catch(() => null)
       if (!res.ok) throw new Error(d?.error ?? 'Update failed')
+      // The PATCH returns the full row — merge it so response-loop fields
+      // (reporter_note, reopen_count, assignment) stay current too.
       setReports((prev) =>
         prev.map((r) =>
-          r.id === report.id
-            ? {
-                ...r,
-                status,
-                resolution_note: (d?.report?.resolution_note as string | null) ?? null,
-                resolved_by: (d?.report?.resolved_by as string | null) ?? null,
-                resolved_at: (d?.report?.resolved_at as string | null) ?? null,
-              }
-            : r,
+          r.id === report.id ? { ...r, ...(d?.report as Partial<FeedbackReport> | undefined) } : r,
         ),
       )
     } catch (e) {
@@ -135,10 +165,35 @@ export default function FeedbackAdminClient({
     }
   }
 
+  const setAssignee = async (report: FeedbackReport, assignedTo: string | null) => {
+    setSavingId(report.id)
+    setSaveError(null)
+    try {
+      const res = await fetch(`/api/feedback/${report.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assigned_to: assignedTo }),
+      })
+      const d = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(d?.error ?? 'Assignment failed')
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === report.id ? { ...r, ...(d?.report as Partial<FeedbackReport> | undefined) } : r,
+        ),
+      )
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Assignment failed')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const filterTabs: { value: StatusFilter; label: string }[] = [
     { value: 'new', label: `New (${counts.new})` },
+    { value: 'reopened', label: `Reopened (${counts.reopened})` },
     { value: 'in_progress', label: `In progress (${counts.in_progress})` },
-    { value: 'resolved', label: `Resolved (${counts.resolved})` },
+    { value: 'resolved', label: `Awaiting confirm (${counts.resolved})` },
+    { value: 'confirmed', label: `Confirmed (${counts.confirmed})` },
     { value: 'wont_fix', label: `Won't fix (${counts.wont_fix})` },
     { value: 'all', label: `All (${counts.all})` },
   ]
@@ -255,13 +310,32 @@ export default function FeedbackAdminClient({
                   }}>
                     {r.message}
                   </span>
+                  {(r.reopen_count ?? 0) > 1 && (
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 700, padding: '2px 6px', borderRadius: 999,
+                      border: '1px solid var(--red)', color: 'var(--red)', flexShrink: 0,
+                    }} title={`Reopened ${r.reopen_count} times`}>
+                      ×{r.reopen_count}
+                    </span>
+                  )}
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                    border: `1px solid ${STATUS_COLORS[r.status]}`, color: STATUS_COLORS[r.status],
+                    border: `1px solid ${STATUS_COLORS[r.status] ?? 'var(--border)'}`,
+                    color: STATUS_COLORS[r.status] ?? 'var(--text-secondary)',
                     flexShrink: 0,
                   }}>
-                    {STATUS_LABELS[r.status]}
+                    {STATUS_LABELS[r.status] ?? r.status}
                   </span>
+                  {r.assigned_to_name && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                      background: 'var(--surface-2, rgba(255,255,255,0.06))',
+                      border: '1px solid var(--border)', color: 'var(--text-secondary)',
+                      flexShrink: 0, whiteSpace: 'nowrap',
+                    }} title={`Assigned to ${r.assigned_to_name}`}>
+                      → {r.assigned_to_name}
+                    </span>
+                  )}
                   <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
                     {r.author_name ?? 'Unknown'} · {timeAgo(r.created_at)}
                   </span>
@@ -284,6 +358,46 @@ export default function FeedbackAdminClient({
                       </div>
                     )}
 
+                    {r.reporter_note && (
+                      <div style={{
+                        marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+                        borderLeft: `3px solid ${r.status === 'confirmed' ? 'var(--green)' : 'var(--red)'}`,
+                        background: 'var(--bg)', fontSize: 12.5, lineHeight: 1.5,
+                        color: 'var(--text)', whiteSpace: 'pre-wrap',
+                      }}>
+                        <strong style={{ color: r.status === 'confirmed' ? 'var(--green)' : 'var(--red)' }}>
+                          {r.status === 'confirmed' ? 'Reporter confirmed:' : 'Reporter says it’s still broken:'}
+                        </strong>{' '}
+                        {r.reporter_note}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Assigned to</span>
+                      <select
+                        value={r.assigned_to ?? ''}
+                        disabled={savingId === r.id}
+                        onChange={(e) => setAssignee(r, e.target.value || null)}
+                        style={{
+                          padding: '6px 10px', borderRadius: 8, fontSize: 12.5,
+                          background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)',
+                          cursor: savingId === r.id ? 'wait' : 'pointer',
+                        }}
+                      >
+                        <option value="">Unassigned</option>
+                        {assignees.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.full_name ?? a.id}{a.role ? ` (${getRoleLabel(a.role)})` : ''}
+                          </option>
+                        ))}
+                        {/* Keep a stale assignment visible even if the assignee
+                            list didn't load or no longer includes them. */}
+                        {r.assigned_to && !assignees.some((a) => a.id === r.assigned_to) && (
+                          <option value={r.assigned_to}>{r.assigned_to_name ?? 'Assigned user'}</option>
+                        )}
+                      </select>
+                    </div>
+
                     <textarea
                       value={noteDrafts[r.id] ?? r.resolution_note ?? ''}
                       onChange={(e) =>
@@ -299,23 +413,34 @@ export default function FeedbackAdminClient({
                       }}
                     />
 
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {r.status !== 'in_progress' && (
-                        <TriageButton label="Mark in progress" color="var(--orange)" disabled={savingId === r.id} onClick={() => setStatus(r, 'in_progress')} />
-                      )}
-                      {r.status !== 'resolved' && (
-                        <TriageButton label="Resolve" color="var(--green)" disabled={savingId === r.id} onClick={() => setStatus(r, 'resolved')} />
-                      )}
-                      {r.status !== 'wont_fix' && (
-                        <TriageButton label="Won't fix" color="var(--text-secondary)" disabled={savingId === r.id} onClick={() => setStatus(r, 'wont_fix')} />
-                      )}
-                      {r.status !== 'new' && (
-                        <TriageButton label="Reopen" color="var(--accent)" disabled={savingId === r.id} onClick={() => setStatus(r, 'new')} />
-                      )}
-                      {savingId === r.id && (
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>Saving…</span>
-                      )}
-                    </div>
+                    {r.status === 'confirmed' ? (
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        Closed — the reporter confirmed the fix{r.confirmed_at ? ` ${timeAgo(r.confirmed_at)}` : ''}. Nothing left to do. 🎉
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {r.status !== 'in_progress' && (
+                          <TriageButton label="Mark in progress" color="var(--orange)" disabled={savingId === r.id} onClick={() => setStatus(r, 'in_progress')} />
+                        )}
+                        {r.status !== 'resolved' && (
+                          <TriageButton
+                            label={r.status === 'reopened' ? 'Resolve again (re-notifies reporter)' : 'Resolve (notifies reporter)'}
+                            color="var(--green)"
+                            disabled={savingId === r.id}
+                            onClick={() => setStatus(r, 'resolved')}
+                          />
+                        )}
+                        {r.status !== 'wont_fix' && (
+                          <TriageButton label="Won't fix (notifies reporter)" color="var(--text-secondary)" disabled={savingId === r.id} onClick={() => setStatus(r, 'wont_fix')} />
+                        )}
+                        {r.status !== 'new' && (
+                          <TriageButton label="Back to new" color="var(--accent)" disabled={savingId === r.id} onClick={() => setStatus(r, 'new')} />
+                        )}
+                        {savingId === r.id && (
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>Saving…</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
