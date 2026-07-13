@@ -5,6 +5,7 @@ import { Profile } from '@/lib/types'
 import { daysFromBusinessToday } from '@/lib/business-date'
 import EmptyState from '@/components/ui/EmptyState'
 import { ANIM } from '@/lib/animations'
+import { CATEGORY_LABELS, UPLOAD_CATEGORIES, FILE_FOLDERS, folderOf } from '@/lib/document-folders'
 
 // Shape returned by GET /api/clients/[id]/files
 interface ClientFile {
@@ -28,73 +29,9 @@ interface Props {
   currentProfile: Profile
 }
 
-// Display labels for every category value that may appear on a row — legacy
-// human values, the bot's `ltss`, and the new folder-aligned values. Existing
-// rows keep their original granular label; only the upload picker is narrowed.
-const CATEGORY_LABELS: Record<string, string> = {
-  general: 'General',
-  intake: 'Intake',
-  plan: 'Plan',
-  assessment: 'Assessment',
-  consent_form: 'Consent Form',
-  letter: 'Letter',
-  authorization: 'Authorization',
-  correspondence: 'Correspondence',
-  medical: 'Medical',
-  financial: 'Financial',
-  other: 'Other',
-  ltss: 'LTSS',
-  co: 'CO',
-  forms_signatures: 'Forms & Signatures',
-  reporting_review: 'Reporting & Reviews',
-}
-
-// Options the upload picker offers — 1:1 with the seven file folders.
-const UPLOAD_CATEGORIES = [
-  { value: 'intake',           label: 'Intake' },
-  { value: 'co',               label: 'CO' },
-  { value: 'plan',             label: 'Plans' },
-  { value: 'forms_signatures', label: 'Forms & Signatures' },
-  { value: 'authorization',    label: 'Authorizations' },
-  { value: 'reporting_review', label: 'Reporting & Reviews' },
-  { value: 'other',            label: 'Other' },
-]
-
-// File folders shown in the Client Files accordion, in display order. Every
-// category value (legacy, bot-written, or folder-aligned) resolves to exactly
-// one folder via folderOf(); anything unmapped falls through to Other.
-const FILE_FOLDERS: { key: string; label: string }[] = [
-  { key: 'intake',           label: 'Intake' },
-  { key: 'co',               label: 'CO' },
-  { key: 'plan',             label: 'Plans' },
-  { key: 'forms_signatures', label: 'Forms & Signatures' },
-  { key: 'authorization',    label: 'Authorizations' },
-  { key: 'reporting_review', label: 'Reporting & Reviews' },
-  { key: 'other',            label: 'Other' },
-]
-
-// category value -> folder key (mirrors the approved Batch 3 mapping)
-const CATEGORY_TO_FOLDER: Record<string, string> = {
-  intake: 'intake',
-  co: 'co',
-  plan: 'plan',
-  assessment: 'plan',
-  forms_signatures: 'forms_signatures',
-  consent_form: 'forms_signatures',
-  authorization: 'authorization',
-  reporting_review: 'reporting_review',
-  correspondence: 'reporting_review',
-  letter: 'reporting_review',
-  other: 'other',
-  general: 'other',
-  medical: 'other',
-  financial: 'other',
-  ltss: 'other',
-}
-
-function folderOf(category: string): string {
-  return CATEGORY_TO_FOLDER[category] ?? 'other'
-}
+// Category labels, upload options, folders, and the category→folder mapping
+// now live in lib/document-folders — the single source of truth shared with
+// the upload APIs, the ZIP bulk download, and the /documents overview.
 
 function formatFileSize(bytes: number | null): string {
   if (!bytes) return '—'
@@ -746,6 +683,13 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                     </button>
                   ))}
                 </div>
+                <button
+                  onClick={() => window.open(`/api/clients/${clientId}/files/zip?folder=all`, '_blank')}
+                  title="Download every file for this client as a ZIP"
+                  style={{ fontSize: 12, padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  ⬇ Download all
+                </button>
               </div>
             )
             if (visible.length === 0) {
@@ -786,19 +730,30 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                     const isOpen = openFolders[fld.key] ?? rows.length > 0
                     return (
                       <div key={fld.key} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-                        <button
-                          onClick={() => setOpenFolders(s => ({ ...s, [fld.key]: !isOpen }))}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                            background: 'var(--surface-2)', border: 'none', cursor: 'pointer',
-                            padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text)',
-                          }}
-                        >
-                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>▶</span>
-                          <span style={{ fontSize: 16 }}>📁</span>
-                          <span>{fld.label}</span>
-                          <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 10, padding: '1px 8px' }}>{rows.length}</span>
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'stretch', background: 'var(--surface-2)' }}>
+                          <button
+                            onClick={() => setOpenFolders(s => ({ ...s, [fld.key]: !isOpen }))}
+                            style={{
+                              flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+                              background: 'transparent', border: 'none', cursor: 'pointer',
+                              padding: '10px 14px', fontSize: 13, fontWeight: 600, color: 'var(--text)',
+                            }}
+                          >
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>▶</span>
+                            <span style={{ fontSize: 16 }}>📁</span>
+                            <span>{fld.label}</span>
+                            <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 10, padding: '1px 8px' }}>{rows.length}</span>
+                          </button>
+                          {rows.length > 0 && (
+                            <button
+                              onClick={() => window.open(`/api/clients/${clientId}/files/zip?folder=${fld.key}`, '_blank')}
+                              title={`Download all ${fld.label} files as a ZIP`}
+                              style={{ background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)', cursor: 'pointer', padding: '0 14px', fontSize: 14, color: 'var(--text-secondary)' }}
+                            >
+                              ⬇
+                            </button>
+                          )}
+                        </div>
                         {isOpen && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 10px', background: 'var(--surface)' }}>
                             {rows.length > 0 ? rows.map(renderRow) : (

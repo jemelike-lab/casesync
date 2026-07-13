@@ -70,6 +70,7 @@ export default function Header({ user, profile }: Props) {
   const roleName = getRoleLabel(role)
   const dashboardActive = pathname === '/' || pathname?.startsWith('/dashboard')
   const teamActive = pathname?.startsWith('/team') ?? false
+  const documentsActive = pathname?.startsWith('/documents') ?? false
   const supervisorActive = pathname?.startsWith('/supervisor') ?? false
   const adminActive = pathname === '/admin'
   const auditActive = pathname?.startsWith('/admin/audit') ?? false
@@ -109,6 +110,9 @@ export default function Header({ user, profile }: Props) {
             <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
+            )}
+            {(role === 'team_manager' || isSupervisorLike(role)) && (
+              <NavLink href="/documents" label="Documents" active={documentsActive} />
             )}
             {isSupervisorLike(role) && (
               <NavLink href="/supervisor" label="Supervisor" active={supervisorActive} />
@@ -329,6 +333,9 @@ export default function Header({ user, profile }: Props) {
         <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} accent />
         {(role === 'team_manager' || isSupervisorLike(role)) && (
           <MobileNavItem href="/team" icon="👥" label="Team" active={teamActive} />
+        )}
+        {(role === 'team_manager' || isSupervisorLike(role)) && (
+          <MobileNavItem href="/documents" icon="📁" label="Docs" active={documentsActive} />
         )}
         <MobileNavItem href="/calendar" icon="📅" label="Cal" active={pathname?.startsWith('/calendar') ?? false} />
         {isSupervisorLike(role) && (

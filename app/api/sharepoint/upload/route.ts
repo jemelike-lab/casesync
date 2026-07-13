@@ -5,12 +5,9 @@ import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/audit'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 
-// Allowed categories — mirrors the bot/human upload routes (7 folders + legacy).
-const ALLOWED_CATEGORIES = new Set<string>([
-  'general', 'consent_form', 'assessment', 'letter', 'authorization',
-  'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
-  'co', 'forms_signatures', 'reporting_review',
-])
+// Allowed categories — single source of truth in lib/document-folders
+// (also enforced by the client_documents_category_check DB constraint).
+import { ALLOWED_CATEGORIES } from '@/lib/document-folders'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'

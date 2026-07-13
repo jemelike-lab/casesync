@@ -17,14 +17,9 @@ const ALLOWED_MIME = new Set<string>([
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ])
-const ALLOWED_CATEGORIES = new Set<string>([
-  'general', 'consent_form', 'assessment', 'letter', 'authorization',
-  'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
-  // Batch 3: folder-aligned values, mirrored from the bot upload route so the
-  // human upload modal's CO / Forms & Signatures / Reporting & Reviews picks
-  // round-trip to their own folders instead of being coerced into Other.
-  'co', 'forms_signatures', 'reporting_review',
-])
+// Allowed categories — single source of truth in lib/document-folders
+// (also enforced by the client_documents_category_check DB constraint).
+import { ALLOWED_CATEGORIES } from '@/lib/document-folders'
 
 const BUCKET = 'client-documents'
 
