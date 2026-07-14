@@ -567,7 +567,7 @@ export default function AdminClient({ users: initialUsers, teamManagers, invites
                         >
                           <option value="">None</option>
                           {teamManagers.map(t => (
-                            <option key={t.id} value={t.id}>{t.full_name}</option>
+                            <option key={t.id} value={t.id}>{t.full_name}{t.role === 'supervisor' ? ' (Supervisor)' : ''}</option>
                           ))}
                         </select>
                       ) : (

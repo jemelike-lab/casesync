@@ -59,7 +59,7 @@ export default async function AdminPage() {
       joined_at: joinedAtByUserId.get(u.id) ?? null,
     }))
 
-  const teamManagers = normalizedUsers.filter((u) => u.role === 'team_manager') as Profile[]
+  const teamManagers = normalizedUsers.filter((u) => u.role === 'team_manager' || u.role === 'supervisor') as Profile[]
 
   return (
     <AdminClient

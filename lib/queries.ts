@@ -85,7 +85,7 @@ export async function getTeamManagers(supabase: Awaited<ReturnType<typeof create
   const { data } = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
-    .eq('role', 'team_manager')
+    .in('role', ['team_manager', 'supervisor'])
     .order('full_name')
 
   return (data as Profile[]) ?? []
