@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
                a.details, a.created_at, p.full_name
         FROM audit_logs a
         LEFT JOIN profiles p ON p.id = a.user_id
+        WHERE a.action <> 'admin.activity_monitor.view'
         ORDER BY a.created_at DESC
         LIMIT 60
       `

@@ -1,6 +1,7 @@
 'use client'
 
 import { isSupervisorLike, canManageTeam, getRoleLabel, getRoleColor } from '@/lib/roles'
+import { canViewActivityMonitor } from '@/lib/monitor-access'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -72,6 +73,7 @@ export default function Header({ user, profile }: Props) {
   const dashboardActive = pathname === '/' || pathname?.startsWith('/dashboard')
   const teamActive = pathname?.startsWith('/team') ?? false
   const clientsActive = pathname?.startsWith('/clients') ?? false
+  const monitorActive = pathname?.startsWith('/admin/activity') ?? false
   const documentsActive = pathname?.startsWith('/documents') ?? false
   const supervisorActive = pathname?.startsWith('/supervisor') ?? false
   const adminActive = pathname === '/admin'
@@ -112,6 +114,9 @@ export default function Header({ user, profile }: Props) {
           <nav style={{ display: 'flex', gap: 'clamp(1px, 0.22vw, 4px)' }} className="desktop-nav">
             <NavLink href="/dashboard" label="Dashboard" active={dashboardActive} />
             <NavLink href="/clients" label="Clients" active={clientsActive} />
+            {canViewActivityMonitor(user?.id) && (
+              <NavLink href="/admin/activity" label="Monitor" active={monitorActive} />
+            )}
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
             )}
@@ -335,6 +340,9 @@ export default function Header({ user, profile }: Props) {
       }}>
         <MobileNavItem href="/dashboard" icon="🏠" label="Home" active={dashboardActive} />
         <MobileNavItem href="/clients" icon="🗂️" label="Clients" active={clientsActive} />
+        {canViewActivityMonitor(user?.id) && (
+          <MobileNavItem href="/admin/activity" icon="📡" label="Monitor" active={monitorActive} />
+        )}
         <MobileNavItem href="/w/dashboard" icon="⇄" label="Workryn" active={false} accent />
         {(role === 'team_manager' || isSupervisorLike(role)) && (
           <MobileNavItem href="/team" icon="👥" label="Team" active={teamActive} />
