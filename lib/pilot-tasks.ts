@@ -13,6 +13,7 @@ export interface PilotGroup {
   name: string
   color: string
   icon: string
+  managerOnly?: boolean
   tasks: PilotTask[]
 }
 
@@ -58,6 +59,19 @@ export const PILOT_GROUPS: PilotGroup[] = [
       { key: 'tell.bug', t: 'File at least one bug with the blue Feedback tab' },
       { key: 'tell.suggestion', t: 'File at least one suggestion \u2014 big or small' },
       { key: 'tell.rls', t: 'If you ever see a client who isn\u2019t yours, report it immediately', s: 'Even once. That one outranks everything else on this list.' },
+    ],
+  },
+  {
+    name: 'See your team from above',
+    color: 'linear-gradient(135deg,#4F46E5,#4338CA)',
+    icon: '5',
+    managerOnly: true,
+    tasks: [
+      { key: 'team.numbers', t: 'Open the Team and Supervisor views. Do the numbers match what you already know about your people?' },
+      { key: 'team.drilldown', t: 'Click into a count and drill down. Is that the right list of clients?' },
+      { key: 'team.nocontact', t: 'Check the no-contact queue. Is that actually who has gone quiet?', s: 'A queue you cannot trust is worse than no queue.' },
+      { key: 'team.monday', t: 'Could you run your Monday morning from this instead of your spreadsheet?', s: 'If not, tell us exactly what is missing.' },
+      { key: 'team.blindspots', t: 'What can you NOT see here that you need to see? Flag it.' },
     ],
   },
 ]

@@ -65,11 +65,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const summaryMap = await getAssigneeSummaryMap(myPlanners.map((p) => p.id))
 
     return (
-      <TeamManagerControlPanelClient
-        profile={profile as Profile}
-        planners={myPlanners}
-        summaryByAssignee={Object.fromEntries(summaryMap)}
-      />
+      <>
+        <PilotChecklistCard />
+        <TeamManagerControlPanelClient
+          profile={profile as Profile}
+          planners={myPlanners}
+          summaryByAssignee={Object.fromEntries(summaryMap)}
+        />
+      </>
     )
   }
 

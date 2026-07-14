@@ -8,7 +8,7 @@
 // cs:open-feedback window event.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PILOT_GROUPS, PILOT_TOTAL_TASKS } from '@/lib/pilot-tasks'
+import { PILOT_GROUPS } from '@/lib/pilot-tasks'
 
 const RING_C = 169.6 // 2\u03c0r, r=27
 const PHASE_LABELS = ['Verify', 'Live', 'Wrap'] as const
@@ -19,6 +19,8 @@ export default function PilotChecklistCard() {
   const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [caseload, setCaseload] = useState<number | null>(null)
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set([0]))
+  const [isManager, setIsManager] = useState(false)
+  const [teamUnlocked, setTeamUnlocked] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -29,6 +31,8 @@ export default function PilotChecklistCard() {
         setInPilot(Boolean(d.inPilot))
         setStartedAt(typeof d.startedAt === 'string' ? d.startedAt : null)
         setCompleted(new Set(Array.isArray(d.completed) ? d.completed : []))
+        setIsManager(Boolean(d.isManager))
+        setTeamUnlocked(Boolean(d.teamUnlocked))
       })
       .catch(() => { if (alive) setInPilot(false) })
     fetch('/api/clients?filter=all&page=0&limit=1')
@@ -71,7 +75,11 @@ export default function PilotChecklistCard() {
 
   if (!inPilot) return null
 
-  const pct = Math.round((completed.size / PILOT_TOTAL_TASKS) * 100)
+  const visibleGroups = PILOT_GROUPS.filter(g => !g.managerOnly || isManager)
+  const countedTasks = visibleGroups
+    .filter(g => !g.managerOnly || teamUnlocked)
+    .reduce((n, g) => n + g.tasks.length, 0)
+  const pct = Math.round((completed.size / Math.max(1, countedTasks)) * 100)
 
   return (
     <div style={{ maxWidth: 1220, margin: '0 auto', padding: '20px 20px 0' }}>
@@ -108,23 +116,24 @@ export default function PilotChecklistCard() {
 
         {/* Groups */}
         <div>
-          {PILOT_GROUPS.map((g, gi) => {
+          {visibleGroups.map((g, gi) => {
+            const locked = Boolean(g.managerOnly && !teamUnlocked)
             const isOpen = openGroups.has(gi)
             const doneCt = g.tasks.filter(t => completed.has(t.key)).length
             return (
-              <div key={g.name} style={{ borderBottom: gi === PILOT_GROUPS.length - 1 ? 'none' : '1px solid var(--border)' }}>
+              <div key={g.name} style={{ borderBottom: gi === visibleGroups.length - 1 ? 'none' : '1px solid var(--border)' }}>
                 <div
-                  onClick={() => setOpenGroups(prev => { const n = new Set(prev); n.has(gi) ? n.delete(gi) : n.add(gi); return n })}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 20px', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={locked ? undefined : () => setOpenGroups(prev => { const n = new Set(prev); n.has(gi) ? n.delete(gi) : n.add(gi); return n })}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 20px', cursor: locked ? 'default' : 'pointer', userSelect: 'none', opacity: locked ? 0.62 : 1 }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,113,227,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
                   <div style={{ width: 24, height: 24, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', background: g.color }}>{g.icon}</div>
                   <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 750, flex: 1, color: 'var(--text)' }}>{g.name}</h3>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>{doneCt}/{g.tasks.length}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', transition: 'transform .18s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>\u25b6</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>{locked ? 'Unlocks when your planners are added' : doneCt + '/' + g.tasks.length}</span>
+                  {locked ? <span style={{ fontSize: 12 }}>{'\ud83d\udd12'}</span> : <span style={{ fontSize: 11, color: 'var(--text-secondary)', transition: 'transform .18s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>{'\u25b6'}</span>}
                 </div>
-                {isOpen && (
+                {isOpen && !locked && (
                   <div style={{ padding: '2px 20px 12px' }}>
                     {g.tasks.map((t, ti) => {
                       const done = completed.has(t.key)

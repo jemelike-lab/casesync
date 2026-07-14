@@ -81,7 +81,15 @@ export async function GET(req: NextRequest) {
         completed: (rows as unknown as { task_key: string }[]).map(r => r.task_key),
       }
     })
-    return NextResponse.json(state)
+    if (!state.inPilot) return NextResponse.json(state)
+    // Manager-group visibility: role + whether any planners report to them yet.
+    const [{ data: prof }, { count: reportCount }] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', userId).single(),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('team_manager_id', userId),
+    ])
+    const role = String(prof?.role ?? '').toLowerCase()
+    const isManager = role === 'team_manager' || isSupervisorLike(role)
+    return NextResponse.json({ ...state, isManager, teamUnlocked: isManager && (reportCount ?? 0) > 0 })
   } catch (err) {
     console.error('[Pilot] checklist GET failed:', err)
     return NextResponse.json({ inPilot: false })

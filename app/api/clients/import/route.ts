@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
   if (isAzureConfigured()) {
     try {
       const ctx = await withRlsContext(userId, async (sql) => {
-        const p = await sql`SELECT id, full_name FROM profiles WHERE role = 'supports_planner' ORDER BY full_name`
+        const p = await sql`SELECT id, full_name FROM profiles WHERE role IN ('supports_planner', 'team_manager') ORDER BY full_name`
         const e = await sql`SELECT client_id FROM clients`
         return { p, e }
       })
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
       supabase
         .from('profiles')
         .select('id, full_name')
-        .eq('role', 'supports_planner')
+        .in('role', ['supports_planner', 'team_manager'])
         .order('full_name'),
       supabase
         .from('clients')
