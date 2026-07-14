@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useState } from 'react'
 import { LogOut } from 'lucide-react'
 import OnboardingTour from './OnboardingTour'
+import PresenceHeartbeat from './PresenceHeartbeat'
 import GlobalSearch from './GlobalSearch'
 
 interface Props {
@@ -80,6 +81,7 @@ export default function Header({ user, profile }: Props) {
 
   return (
     <>
+      <PresenceHeartbeat />
       <header style={{
         background: 'linear-gradient(135deg, #1E7CFF 0%, #2D8BFF 50%, #1A6FEB 100%)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
