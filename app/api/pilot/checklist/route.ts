@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       }
       const members = await withRlsContext(userId, async (sql) => {
         const roster = await sql`
-          SELECT r.user_id, r.cohort, r.started_at, r.ended_at, p.full_name
+          SELECT r.user_id, r.cohort, r.started_at, r.ended_at, p.full_name, p.role
           FROM pilot_roster r
           LEFT JOIN profiles p ON p.id = r.user_id
           WHERE r.ended_at IS NULL
@@ -47,19 +47,35 @@ export async function GET(req: NextRequest) {
         const progress = await sql`
           SELECT user_id, task_key, completed_at FROM pilot_checklist_progress
         `
+        // Pilot-tagged feedback counts (flag buttons prefix the message).
+        const flags = await sql`
+          SELECT user_id, count(*)::int AS n FROM feedback_reports
+          WHERE message LIKE '[Pilot task%'
+          GROUP BY user_id
+        `
+        const flagMap = new Map<string, number>()
+        for (const f of flags as unknown as { user_id: string; n: number }[]) flagMap.set(f.user_id, f.n)
         const byUser = new Map<string, { task_key: string; completed_at: string }[]>()
         for (const row of progress as unknown as { user_id: string; task_key: string; completed_at: string }[]) {
           const list = byUser.get(row.user_id) ?? []
           list.push({ task_key: row.task_key, completed_at: row.completed_at })
           byUser.set(row.user_id, list)
         }
-        return (roster as unknown as { user_id: string; cohort: string; started_at: string; full_name: string | null }[]).map(r => ({
-          userId: r.user_id,
-          name: r.full_name,
-          cohort: r.cohort,
-          startedAt: r.started_at,
-          completed: (byUser.get(r.user_id) ?? []).map(x => x.task_key),
-        }))
+        return (roster as unknown as { user_id: string; cohort: string; started_at: string; full_name: string | null; role: string | null }[]).map(r => {
+          const list = byUser.get(r.user_id) ?? []
+          const lastActive = list.length ? list.map(x => x.completed_at).sort().slice(-1)[0] : null
+          return {
+            userId: r.user_id,
+            name: r.full_name,
+            role: r.role,
+            cohort: r.cohort,
+            startedAt: r.started_at,
+            completed: list.map(x => x.task_key),
+            completedAt: Object.fromEntries(list.map(x => [x.task_key, x.completed_at])),
+            lastActive,
+            flags: flagMap.get(r.user_id) ?? 0,
+          }
+        })
       })
       return NextResponse.json({ members })
     }
@@ -72,13 +88,15 @@ export async function GET(req: NextRequest) {
       `
       if (!roster.length) return { inPilot: false as const }
       const rows = await sql`
-        SELECT task_key FROM pilot_checklist_progress WHERE user_id = ${userId}
+        SELECT task_key, completed_at FROM pilot_checklist_progress WHERE user_id = ${userId}
       `
+      const list = rows as unknown as { task_key: string; completed_at: string }[]
       return {
         inPilot: true as const,
         cohort: (roster[0] as { cohort: string }).cohort,
         startedAt: (roster[0] as unknown as { started_at: string }).started_at,
-        completed: (rows as unknown as { task_key: string }[]).map(r => r.task_key),
+        completed: list.map(r => r.task_key),
+        lastCompletedAt: list.length ? list.map(r => r.completed_at).sort().slice(-1)[0] : null,
       }
     })
     if (!state.inPilot) return NextResponse.json(state)

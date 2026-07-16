@@ -82,7 +82,7 @@ export default function PilotChecklistCard() {
   const pct = Math.round((completed.size / Math.max(1, countedTasks)) * 100)
 
   return (
-    <div style={{ maxWidth: 1220, margin: '0 auto', padding: '20px 20px 0' }}>
+    <div id="pilot-hq" style={{ maxWidth: 1220, margin: '0 auto', padding: '20px 20px 0' }}>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 18px rgba(15,23,42,.07)' }}>
 
         {/* Hero */}
@@ -102,6 +102,23 @@ export default function PilotChecklistCard() {
           <div style={{ marginLeft: 'auto', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.35)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: '5px 13px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
             Week {week} of 3 {'\u00b7'} {PHASE_LABELS[week - 1]}
           </div>
+        </div>
+
+        {/* Personal scoreboard strip \u2014 fill the row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 20px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+          {visibleGroups.flatMap(g => g.tasks.map(t => {
+            const cellLocked = Boolean(g.managerOnly && !teamUnlocked)
+            const cellDone = completed.has(t.key)
+            return (
+              <div key={t.key} title={cellLocked ? 'Unlocks when your planners are added' : t.t}
+                style={{ width: 20, height: 20, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, color: '#fff', background: cellDone ? 'linear-gradient(135deg,#22C55E,#16A34A)' : cellLocked ? 'repeating-linear-gradient(45deg,#F1F5FA,#F1F5FA 4px,#E8EEF6 4px,#E8EEF6 8px)' : '#EEF3F9', border: cellDone || cellLocked ? 'none' : '1px solid var(--border)' }}>
+                {cellDone ? '\u2713' : ''}
+              </div>
+            )
+          }))}
+          <span style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            {countedTasks - completed.size > 0 ? `${countedTasks - completed.size} to go \u2014 fill the row` : 'Row complete!'}
+          </span>
         </div>
 
         {/* Verify counter */}

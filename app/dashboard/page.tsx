@@ -6,6 +6,7 @@ import SupervisorControlPanelClient from '@/components/SupervisorControlPanelCli
 import TeamManagerControlPanelClient from '@/components/TeamManagerControlPanelClient'
 import SupportPlannerControlPanelClient from '@/components/SupportPlannerControlPanelClient'
 import PilotChecklistCard from '@/components/PilotChecklistCard'
+import PilotNudge from '@/components/PilotNudge'
 import { getCurrentUserAndProfile, getPlanners, getTeamManagers } from '@/lib/queries'
 import { getAssigneeSummaryMap, getGlobalSummary } from '@/lib/dashboard-summary'
 import { listSavedViewsForCurrentUser } from '@/lib/saved-views'
@@ -66,6 +67,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     return (
       <>
+        <PilotNudge />
         <PilotChecklistCard />
         <TeamManagerControlPanelClient
           profile={profile as Profile}
@@ -105,6 +107,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     return (
       <>
+        <PilotNudge />
         <PilotChecklistCard />
         <SupportPlannerControlPanelClient
           profile={profile as Profile}

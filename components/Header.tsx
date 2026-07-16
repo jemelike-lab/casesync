@@ -74,6 +74,7 @@ export default function Header({ user, profile }: Props) {
   const teamActive = pathname?.startsWith('/team') ?? false
   const clientsActive = pathname?.startsWith('/clients') ?? false
   const monitorActive = pathname?.startsWith('/admin/activity') ?? false
+  const pilotActive = pathname?.startsWith('/admin/pilot') ?? false
   const documentsActive = pathname?.startsWith('/documents') ?? false
   const supervisorActive = pathname?.startsWith('/supervisor') ?? false
   const adminActive = pathname === '/admin'
@@ -116,6 +117,9 @@ export default function Header({ user, profile }: Props) {
             <NavLink href="/clients" label="Clients" active={clientsActive} />
             {canViewActivityMonitor(user?.id) && (
               <NavLink href="/admin/activity" label="Monitor" active={monitorActive} />
+            )}
+            {isSupervisorLike(role) && (
+              <NavLink href="/admin/pilot" label="Pilot" active={pilotActive} />
             )}
             {(role === 'team_manager' || isSupervisorLike(role)) && (
               <NavLink href="/team" label="Team" active={teamActive} />
