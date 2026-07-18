@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { Brain, X, Calendar, User } from 'lucide-react'
-import { AIAskClient, AISummary } from '@/components/AIIntelligencePanel'
+import { AIAskClient, AISummary, PrevisitBrief } from '@/components/AIIntelligencePanel'
 import type { Client, Profile } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -140,6 +140,7 @@ function RailBody({ client, planners }: { client: Client; planners: Profile[] })
 
       <Card accent={PURPLE} label="AI Intelligence" icon={<Brain size={14} />}>
         <AIAskClient clientId={client.id} />
+        <PrevisitBrief clientId={client.id} />
         <AISummary clientId={client.id} />
       </Card>
     </>
@@ -163,6 +164,7 @@ export default function ClientAIRail({ client, planners = [] }: { client: Client
               <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--v2-text-muted)', cursor: 'pointer', display: 'flex' }}><X size={16} /></button>
             </div>
             <AIAskClient clientId={client.id} />
+            <PrevisitBrief clientId={client.id} />
         <AISummary clientId={client.id} />
           </div>
         )}
