@@ -260,56 +260,80 @@ export function clientAssignedEmail({
 export function dailyDigestEmail({
   userName,
   date,
-  overdueCount,
-  dueThisWeekCount,
-  recentActivity,
+  counts,
+  focus,
+  caughtUp,
 }: {
   userName: string
   date: string
-  overdueCount: number
-  dueThisWeekCount: number
-  recentActivity: Array<{ clientName: string; action: string; when: string }>
+  counts: { overdue: number; due_today: number; due_this_week: number; no_contact_7: number }
+  focus: Array<{ id: string; name: string; reasons: string[] }>
+  caughtUp: boolean
 }) {
-  const activityRows = recentActivity.length > 0
-    ? recentActivity.map(a => `
+  const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  const tile = (value: number, label: string, color: string) => `
+        <td width="23%" style="background:#1a1a1e;border-radius:8px;padding:16px 4px;text-align:center;">
+          <span style="font-size:28px;font-weight:700;color:${value > 0 ? color : '#4a4a4e'};">${value}</span>
+          <p style="margin:4px 0 0;font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:0.05em;">${label}</p>
+        </td>`
+
+  const focusRows = focus.length > 0
+    ? focus.map(f => `
         <tr>
-          <td style="padding:8px 0;border-bottom:1px solid #2a2a2e;">
-            <span style="font-size:13px;font-weight:600;color:#f5f5f7;">${a.clientName}</span>
-            <span style="font-size:12px;color:#888;display:block;">${a.action} &middot; ${a.when}</span>
+          <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
+            <a href="${BASE_URL}/clients/${f.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(f.name)}</a>
+            <span style="font-size:12px;color:#888;display:block;">${esc(f.reasons.join(' \u00b7 '))}</span>
           </td>
-        </tr>
-      `).join('')
-    : '<tr><td style="padding:12px 0;font-size:13px;color:#888;">No recent activity.</td></tr>'
+        </tr>`).join('')
+    : '<tr><td style="padding:12px 0;font-size:13px;color:#888;">Nothing needs attention right now.</td></tr>'
+
+  const hero = caughtUp
+    ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="background:#0f2418;border:1px solid #1d4b30;border-radius:8px;padding:18px 20px;">
+          <span style="font-size:15px;font-weight:700;color:#30d158;">You're caught up &#127881;</span>
+          <p style="margin:4px 0 0;font-size:13px;color:#9ad7ae;">Nothing overdue and nothing due today. Great work.</p>
+        </td>
+      </tr>
+    </table>`
+    : ''
+
+  const focusSection = caughtUp && focus.length === 0
+    ? ''
+    : `
+    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;">Top priorities today</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;margin-bottom:8px;">
+      ${focusRows}
+    </table>`
 
   const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#007aff;text-transform:uppercase;letter-spacing:0.08em;">
-      &#128202; Daily Digest
+      &#9728;&#65039; Your Morning Digest
     </p>
     <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#f5f5f7;">
-      Good morning, ${userName}
+      Good morning, ${esc(userName)}
     </h1>
     <p style="margin:0 0 24px;font-size:14px;color:#888;">${date}</p>
 
+    ${hero}
+
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <tr>
-        <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
-          <span style="font-size:36px;font-weight:700;color:#ff3b30;">${overdueCount}</span>
-          <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Overdue</p>
-        </td>
-        <td width="4%"></td>
-        <td width="48%" style="background:#1a1a1e;border-radius:8px;padding:20px;text-align:center;">
-          <span style="font-size:36px;font-weight:700;color:#ffcc00;">${dueThisWeekCount}</span>
-          <p style="margin:4px 0 0;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Due This Week</p>
-        </td>
+        ${tile(counts.overdue, 'Overdue', '#ff3b30')}
+        <td width="2%"></td>
+        ${tile(counts.due_today, 'Due Today', '#ff9f0a')}
+        <td width="2%"></td>
+        ${tile(counts.due_this_week, 'Due This Week', '#ffcc00')}
+        <td width="2%"></td>
+        ${tile(counts.no_contact_7, 'No Contact 7+', '#bf5af2')}
       </tr>
     </table>
 
-    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;">Recent Activity</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;">
-      ${activityRows}
-    </table>
+    ${focusSection}
 
-    ${ctaButton(`${BASE_URL}/dashboard`, 'Open Dashboard')}
+    ${ctaButton(`${BASE_URL}/dashboard`, 'Open Your Today View')}
   `
 
   return {

@@ -4,6 +4,7 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { upsertAzureIdentity } from '@/lib/db/identity-sync'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } from '@/lib/email-templates'
+import { computeTodayPacket } from '@/lib/today'
 import { businessTodayStr, businessTodayEpoch, daysFromBusinessToday, DAY_MS } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
@@ -617,26 +618,15 @@ export async function GET(request: Request) {
       const profile = profileMap.get(plannerId)
       if (!profile?.email) continue
 
-      let overdueCount = 0
-      let dueThisWeekCount = 0
+      // Phase 3: shared Today engine — the EXACT math behind the in-app
+      // Today card (/api/today), so the inbox and the dashboard can never
+      // disagree. Counts keep the historical semantics (due_this_week
+      // excludes already-overdue clients).
+      const packet = computeTodayPacket(plannerClients ?? [], todayStr)
+      const overdueCount = packet.counts.overdue
+      const dueThisWeekCount = packet.counts.due_this_week
 
-      for (const client of plannerClients ?? []) {
-        let clientOverdue = false
-        let clientDueThisWeek = false
-        for (const { key } of DEADLINE_FIELDS) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const dateStr = (client as any)[key] as string | null
-          if (!dateStr) continue
-          const diffDays = daysFromBusinessToday(dateStr)
-          if (diffDays === null) continue
-          if (diffDays < 0) clientOverdue = true
-          else if (diffDays <= 7) clientDueThisWeek = true
-        }
-        if (clientOverdue) overdueCount++
-        else if (clientDueThisWeek) dueThisWeekCount++
-      }
-
-      const digestEnabled = profile.prefs.daily_digest === true || overdueCount > 0
+      const digestEnabled = profile.prefs.daily_digest === true || overdueCount > 0 || packet.counts.due_today > 0
       if (!digestEnabled) continue
 
       const userName = profile.full_name?.split(' ')[0] ?? 'there'
@@ -650,12 +640,14 @@ export async function GET(request: Request) {
       const { html } = dailyDigestEmail({
         userName,
         date: dateDisplay,
-        overdueCount,
-        dueThisWeekCount,
-        recentActivity: [],
+        counts: packet.counts,
+        focus: packet.focus,
+        caughtUp: packet.caught_up,
       })
 
-      const finalSubject = `📋 Good morning ${userName} — ${totalNeedAttention > 0 ? `${totalNeedAttention} clients need attention today` : 'All clients current'}`
+      const finalSubject = packet.caught_up
+        ? `☀️ Good morning ${userName} — you're caught up`
+        : `📋 Good morning ${userName} — ${totalNeedAttention} clients need attention today`
 
       digestJobs.push({
         dedupeKey: `digest:${plannerId}:${todayStr}`,
