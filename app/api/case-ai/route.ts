@@ -9,6 +9,7 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 import { ensureConversation, persistExchange } from '@/lib/bot-persistence'
 import { getBotKnowledgeSection } from '@/lib/bot-knowledge'
+import { assemblePrevisitPacket, PREVISIT_DEADLINE_FIELDS, deadlineLabel } from '@/lib/previsit'
 import { businessTodayStr, businessDateOffsetStr } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
@@ -1321,6 +1322,34 @@ const BOT_TOOLS = [
       },
       required: ["client_id", "field", "new_date"] as string[]
     }
+  },
+  {
+    name: "get_previsit_brief" as const,
+    description: "THE pre-visit preparation tool. One call bundles EVERYTHING on a client: identity snapshot, all 13 deadline fields with overdue/upcoming status, contact recency, POS submission readiness (five gates), recent case notes, and the document inventory. Use whenever the user wants to be briefed before a visit or call, asks what they need to know before seeing a client, or wants the full picture on one client. Do NOT chain get_client_notes + get_client_files + evaluate_client_readiness for pre-visit prep — this tool replaces all three in one round. Requires the client's uuid id. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        client_id: {
+          type: "string" as const,
+          description: "The client's uuid id field (from CURRENT CLIENT CONTEXT or search_clients results)."
+        }
+      },
+      required: ["client_id"] as string[]
+    }
+  },
+  {
+    name: "get_week_ahead" as const,
+    description: "Caseload week-ahead view: every in-scope client with any of the 13 deadline fields overdue or due within the window (default 7 days, max 14), most urgent first, with days since last contact. Use for 'what is due this week', 'what is coming up', or planning the next few days across the caseload. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        days: {
+          type: "number" as const,
+          description: "Look-ahead window in days (1-14, default 7)."
+        }
+      },
+      required: [] as string[]
+    }
   }
 ];
 
@@ -1626,6 +1655,125 @@ function buildReadinessPayload(client: Record<string, unknown>, hasSignatureDoc:
     blocking,
     manual_reminders: result.reminders,
   };
+}
+
+async function executeGetPrevisitBrief(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const packet = await assemblePrevisitPacket(supabase, String(input.client_id ?? ''), userRole, userId)
+  return JSON.stringify(packet)
+}
+
+async function executeGetWeekAhead(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const days = Math.min(Math.max(Math.trunc(Number(input.days)) || 7, 1), 14)
+  const today = businessTodayStr()
+  const horizon = businessDateOffsetStr(days)
+  const ROW_CAP = 200
+  const RETURN_CAP = 40
+
+  // Classify fetched rows against the window using date-only string compares
+  // (YYYY-MM-DD sorts lexically = chronologically).
+  const classify = (rows: Record<string, unknown>[]) => {
+    const clients = rows
+      .map((r) => {
+        const due: Array<{ field: string; label: string; date: string; status: string }> = []
+        for (const f of PREVISIT_DEADLINE_FIELDS) {
+          const v = (r[f] as string | null) ?? null
+          if (!v) continue
+          const d = String(v).slice(0, 10)
+          if (d > horizon) continue
+          due.push({
+            field: f,
+            label: deadlineLabel(f),
+            date: d,
+            status: d < today ? 'overdue' : d === today ? 'due_today' : 'due_in_window',
+          })
+        }
+        if (!due.length) return null
+        due.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0))
+        const lc = (r.last_contact_date as string | null) ?? null
+        return {
+          id: r.id,
+          client_id: r.client_id,
+          name: [r.first_name, r.last_name].filter(Boolean).join(' ').trim(),
+          last_contact_date: lc ? String(lc).slice(0, 10) : null,
+          earliest_due: due[0].date,
+          overdue_count: due.filter((x) => x.status === 'overdue').length,
+          due: due.slice(0, 6),
+        }
+      })
+      .filter(Boolean) as Array<{ earliest_due: string; overdue_count: number }>
+    clients.sort((a, b) => (a.earliest_due < b.earliest_due ? -1 : a.earliest_due > b.earliest_due ? 1 : 0))
+    return {
+      window: { from: today, to: horizon, days },
+      client_count: clients.length,
+      total_overdue_items: clients.reduce((acc, c) => acc + c.overdue_count, 0),
+      truncated: rows.length >= ROW_CAP,
+      clients: clients.slice(0, RETURN_CAP),
+    }
+  }
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sqlAny = sql as any
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      // OR-composition over the 13 deadline columns and a LEAST() urgency sort
+      // via postgres.js identifier fragments (typed any — sql-tagged
+      // compositions do not narrow under Vercel type-check).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dueAny: any = PREVISIT_DEADLINE_FIELDS
+        .map((f) => sqlAny`c.${sqlAny(f)} <= ${horizon}`)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .reduce((a: any, b: any) => sqlAny`${a} OR ${b}`)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const colsAny: any = PREVISIT_DEADLINE_FIELDS
+        .map((f) => sqlAny`c.${sqlAny(f)}`)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .reduce((a: any, b: any) => sqlAny`${a}, ${b}`)
+      const rows = await sqlAny`SELECT c.id, c.client_id, c.first_name, c.last_name, c.last_contact_date, ${colsAny} FROM clients c WHERE c.is_active = true AND c.client_classification = 'real' ${scope} AND (${dueAny}) ORDER BY LEAST(${colsAny}) ASC LIMIT ${ROW_CAP}`
+      return JSON.stringify(classify(rows as unknown as Record<string, unknown>[]))
+    });
+  }
+
+  // Supabase fallback (non-Azure dev only): fetch scoped active rows with a
+  // fresh builder per page (fetchAllRows convention) and classify in JS.
+  let teamIds: string[] | null = null
+  if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
+    teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
+    teamIds.push(userId);
+  }
+  const rows = await fetchAllRows(() => {
+    let q = supabase.from('clients').select(
+      'id, client_id, first_name, last_name, last_contact_date, ' + PREVISIT_DEADLINE_FIELDS.join(', ')
+    ).eq('is_active', true).eq('client_classification', 'real');
+    if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+      q = q.eq('assigned_to', userId);
+    } else if (teamIds) {
+      q = q.in('assigned_to', teamIds);
+    }
+    return q;
+  })
+  return JSON.stringify(classify(rows))
 }
 
 function executeComputeDeadline(input: Record<string, unknown>) {
@@ -2356,6 +2504,8 @@ TOOL 8 - propose_log_contact: When the user asks to log, record, or note a conta
 TOOL 9 - propose_add_note: When the user asks to add or save a case note for a client. Pass the uuid id and the exact note content.
 TOOL 10 - propose_update_date: When the user asks to set, change, or update a deadline/date field for a client. Pass the uuid id, the exact field name, and new_date (YYYY-MM-DD).
 TOOL 11 - evaluate_client_readiness: Use when the user asks whether a client is ready to submit, what is blocking a POS, or what still needs doing before submission. Deterministic five-gate check plus manual reminders. Pass the uuid id. NEVER assess readiness yourself — always call this tool.
+TOOL 12 - get_previsit_brief: THE pre-visit tool. When the user asks to be briefed before a visit or call, "prep me for X", "what do I need to know before I see X", or wants the full picture of one client, call this ONCE — it bundles the snapshot, all 13 deadlines with status, contact recency, submission readiness, recent notes, and the document inventory in a single call. Do NOT chain get_client_notes + get_client_files + evaluate_client_readiness for pre-visit prep. Pass the uuid id.
+TOOL 13 - get_week_ahead: Use for "what's due this week", "what's coming up", or planning the next few days across the caseload. Returns every in-scope client with any deadline field overdue or due within the window (default 7 days, max 14), most urgent first. Role-scoped automatically.
 
 ACTION RULES (TOOLS 8-10 — CRITICAL):
 - These tools only PROPOSE a change. NOTHING is saved until the user taps the Confirm button that appears under your reply.
@@ -2496,6 +2646,8 @@ RULES:
         if (name === 'get_assignment_history') return await executeGetAssignmentHistory(supabase, input, userRole, userId)
         if (name === 'get_planner_workload') return await executeGetPlannerWorkload(supabase, userRole, userId)
         if (name === 'evaluate_client_readiness') return await executeEvaluateClientReadiness(supabase, input, userRole, userId)
+        if (name === 'get_previsit_brief') return await executeGetPrevisitBrief(supabase, input, userRole, userId)
+        if (name === 'get_week_ahead') return await executeGetWeekAhead(supabase, input, userRole, userId)
         if (name === 'propose_log_contact' || name === 'propose_add_note' || name === 'propose_update_date') {
           return await executeProposeAction(supabase, name, input, userRole, userId, proposalHolder)
         }

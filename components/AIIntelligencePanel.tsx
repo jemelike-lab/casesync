@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type CSSProperties } from 'react'
-import { Brain, Zap, RefreshCw } from 'lucide-react'
+import { Brain, Zap, RefreshCw, ClipboardList } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // AIIntelligencePanel — Phase A Batch 3d
@@ -132,6 +132,61 @@ export function AISummary({ clientId }: { clientId: string }) {
   )
 }
 
+export function PrevisitBrief({ clientId }: { clientId: string }) {
+  const [brief, setBrief] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const generate = async () => {
+    setLoading(true); setError(null); setBrief(null)
+    try {
+      let res = await fetch('/api/case-ai/previsit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ clientId }),
+      })
+
+      // Auto-retry on 401: refresh the session token and try once more
+      if (res.status === 401) {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { error: refreshErr } = await supabase.auth.refreshSession()
+        if (!refreshErr) {
+          res = await fetch('/api/case-ai/previsit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ clientId }),
+          })
+        }
+      }
+
+      if (res.status === 401) {
+        throw new Error('Session expired — please refresh the page and sign in again')
+      }
+
+      if (res.status === 429) {
+        throw new Error('Casey is busy — please wait a moment and try again')
+      }
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setBrief(data.brief)
+    } catch (err: any) { setError(err.message) } finally { setLoading(false) }
+  }
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button onClick={generate} disabled={loading} style={{
+        background: 'rgba(191,90,242,0.08)', border: '1px solid rgba(191,90,242,0.15)', borderRadius: 8,
+        color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1,
+      }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> Preparing brief…</> : <><ClipboardList size={12} /> Pre-visit Brief</>}</button>
+      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
+      {brief && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>{brief}</div>}
+    </div>
+  )
+}
+
 export default function AIIntelligencePanel({ clientId }: { clientId: string }) {
   return (
     <div>
@@ -140,6 +195,7 @@ export default function AIIntelligencePanel({ clientId }: { clientId: string }) 
         <span style={{ fontSize: 12, fontWeight: 700, color: '#bf5af2', textTransform: 'uppercase', letterSpacing: '0.04em' }}>AI Intelligence</span>
       </div>
       <AIAskClient clientId={clientId} />
+      <PrevisitBrief clientId={clientId} />
       <AISummary clientId={clientId} />
     </div>
   )
