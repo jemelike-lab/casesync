@@ -1760,7 +1760,7 @@ async function executeGetWeekAhead(
   if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
     const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId);
     teamIds = (teamMembers || []).map((m: { id: string }) => m.id);
-    teamIds.push(userId);
+    teamIds!.push(userId);
   }
   const rows = await fetchAllRows(() => {
     let q = supabase.from('clients').select(
