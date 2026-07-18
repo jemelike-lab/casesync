@@ -1350,6 +1350,20 @@ const BOT_TOOLS = [
       },
       required: [] as string[]
     }
+  },
+  {
+    name: "get_caseload_changes" as const,
+    description: "Caseload change feed: everything that changed on in-scope clients within the window (default 7 days, max 30) - deadline/date field edits with old and new values, contacts logged, case notes added, documents uploaded, and reassignments - grouped per client, newest first. Use for 'what changed', 'what's new on my caseload', 'catch me up', or returning from time away. Results are scoped by role automatically.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        days: {
+          type: "number" as const,
+          description: "Look-back window in days (1-30, default 7). Convert phrases like 'since Friday' into a day count."
+        }
+      },
+      required: [] as string[]
+    }
   }
 ];
 
@@ -1774,6 +1788,161 @@ async function executeGetWeekAhead(
     return q;
   })
   return JSON.stringify(classify(rows))
+}
+
+// ---- get_caseload_changes ----
+
+type ChangeEvent = {
+  client_id: string
+  client_name: string
+  at: string
+  kind: 'field_change' | 'contact' | 'note' | 'file' | 'reassignment'
+  summary: string
+  actor: string | null
+}
+
+function buildCaseloadChanges(days: number, events: ChangeEvent[]) {
+  const CLIENT_CAP = 30
+  const EVENTS_PER_CLIENT = 8
+  const totals = {
+    field_changes: events.filter((e) => e.kind === 'field_change').length,
+    contacts_logged: events.filter((e) => e.kind === 'contact').length,
+    notes_added: events.filter((e) => e.kind === 'note').length,
+    files_uploaded: events.filter((e) => e.kind === 'file').length,
+    reassignments: events.filter((e) => e.kind === 'reassignment').length,
+  }
+  const byClient = new Map<string, { client_id: string; name: string; latest: string; events: ChangeEvent[] }>()
+  for (const ev of events) {
+    const g = byClient.get(ev.client_id) ?? { client_id: ev.client_id, name: ev.client_name, latest: ev.at, events: [] }
+    g.events.push(ev)
+    if (ev.at > g.latest) g.latest = ev.at
+    byClient.set(ev.client_id, g)
+  }
+  const clients = Array.from(byClient.values())
+    .sort((x, y) => (x.latest > y.latest ? -1 : x.latest < y.latest ? 1 : 0))
+    .slice(0, CLIENT_CAP)
+    .map((g) => ({
+      id: g.client_id,
+      name: g.name,
+      latest_change: g.latest,
+      event_count: g.events.length,
+      events: g.events
+        .sort((x, y) => (x.at > y.at ? -1 : x.at < y.at ? 1 : 0))
+        .slice(0, EVENTS_PER_CLIENT)
+        .map(({ at, kind, summary, actor }) => ({ at, kind, summary, actor })),
+    }))
+  return {
+    window_days: days,
+    total_events: events.length,
+    totals,
+    clients_changed: byClient.size,
+    clients,
+    truncated: byClient.size > CLIENT_CAP,
+  }
+}
+
+const evName = (first: unknown, last: unknown) => [first, last].filter(Boolean).join(' ').trim() || 'client'
+const evTrim = (v: unknown, n: number) => String(v ?? '').slice(0, n)
+
+async function executeGetCaseloadChanges(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  input: Record<string, unknown>,
+  userRole: string,
+  userId: string
+) {
+  const days = Math.min(Math.max(Math.trunc(Number(input.days)) || 7, 1), 30)
+  const events: ChangeEvent[] = []
+
+  const pushActivity = (r: Record<string, unknown>, name: string, actor: string | null) => {
+    const isContact = String(r.field_name ?? '') === 'last_contact_date'
+    const base = evTrim(r.action, 120)
+    const detail = r.field_name && !isContact
+      ? `${String(r.field_name).replace(/_/g, ' ')}: ${evTrim(r.old_value, 40) || 'not set'} \u2192 ${evTrim(r.new_value, 40) || 'not set'}`
+      : ''
+    events.push({
+      client_id: String(r.client_id), client_name: name,
+      at: String(r.created_at), kind: isContact ? 'contact' : 'field_change',
+      summary: detail ? `${base} (${detail})` : base, actor,
+    })
+  }
+
+  if (isAzureConfigured()) {
+    return await withRlsContext(userId, async (sql) => {
+      let scope = sql``
+      if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+        scope = sql`AND c.assigned_to = ${userId}`
+      } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+        const tm = await sql`SELECT id FROM profiles WHERE team_manager_id = ${userId}`
+        const ids = (tm as unknown as { id: string }[]).map((m) => m.id)
+        ids.push(userId)
+        scope = sql`AND c.assigned_to = ANY(${ids}::uuid[])`
+      }
+      const acts = await sql`SELECT a.client_id, c.first_name, c.last_name, p.full_name AS actor, a.action, a.field_name, a.old_value, a.new_value, a.created_at FROM activity_log a JOIN clients c ON c.id = a.client_id LEFT JOIN profiles p ON p.id = a.user_id WHERE a.created_at >= now() - make_interval(days => ${days}) ${scope} ORDER BY a.created_at DESC LIMIT 150`
+      const notes = await sql`SELECT n.client_id, c.first_name, c.last_name, p.full_name AS actor, n.content, n.created_at FROM client_notes n JOIN clients c ON c.id = n.client_id LEFT JOIN profiles p ON p.id = n.author_id WHERE n.created_at >= now() - make_interval(days => ${days}) ${scope} ORDER BY n.created_at DESC LIMIT 100`
+      const files = await sql`SELECT d.client_id, c.first_name, c.last_name, d.file_name, d.category, d.created_at FROM client_documents d JOIN clients c ON c.id = d.client_id WHERE d.created_at >= now() - make_interval(days => ${days}) ${scope} ORDER BY d.created_at DESC LIMIT 100`
+      const moves = await sql`SELECT h.client_id, c.first_name, c.last_name, h.occurred_at, h.reason, pf.full_name AS from_planner, pt.full_name AS to_planner, pb.full_name AS reassigned_by FROM client_assignment_history h JOIN clients c ON c.id = h.client_id LEFT JOIN profiles pf ON pf.id = h.from_planner_id LEFT JOIN profiles pt ON pt.id = h.to_planner_id LEFT JOIN profiles pb ON pb.id = h.reassigned_by WHERE h.occurred_at >= now() - make_interval(days => ${days}) ${scope} ORDER BY h.occurred_at DESC LIMIT 50`
+
+      for (const r of acts as unknown as Record<string, unknown>[]) {
+        pushActivity(r, evName(r.first_name, r.last_name), (r.actor as string | null) ?? null)
+      }
+      for (const r of notes as unknown as Record<string, unknown>[]) {
+        events.push({ client_id: String(r.client_id), client_name: evName(r.first_name, r.last_name), at: String(r.created_at), kind: 'note', summary: `Note added: "${evTrim(r.content, 200)}"`, actor: (r.actor as string | null) ?? null })
+      }
+      for (const r of files as unknown as Record<string, unknown>[]) {
+        events.push({ client_id: String(r.client_id), client_name: evName(r.first_name, r.last_name), at: String(r.created_at), kind: 'file', summary: `Document uploaded: ${evTrim(r.file_name, 80)} (${evTrim(r.category, 40) || 'uncategorized'})`, actor: null })
+      }
+      for (const r of moves as unknown as Record<string, unknown>[]) {
+        events.push({ client_id: String(r.client_id), client_name: evName(r.first_name, r.last_name), at: String(r.occurred_at), kind: 'reassignment', summary: `Reassigned ${evTrim(r.from_planner, 60) || 'Unassigned'} \u2192 ${evTrim(r.to_planner, 60) || 'Unassigned'}${r.reason ? ' (' + evTrim(r.reason, 80) + ')' : ''}`, actor: (r.reassigned_by as string | null) ?? null })
+      }
+      return JSON.stringify(buildCaseloadChanges(days, events))
+    });
+  }
+
+  // Supabase fallback (non-Azure dev only). Planner/TM scope via an explicit
+  // in-scope client-id list; org-wide roles query unscoped under dev RLS.
+  let clientFilterIds: string[] | null = null
+  if (userRole === 'supports_planner' || userRole === 'SUPPORT_PLANNER' || userRole === 'STAFF') {
+    const rows = await fetchAllRows(() => supabase.from('clients').select('id').eq('assigned_to', userId))
+    clientFilterIds = rows.map((r) => String(r.id))
+  } else if (userRole === 'team_manager' || userRole === 'TEAM_MANAGER' || userRole === 'MANAGER') {
+    const { data: teamMembers } = await supabase.from('profiles').select('id').eq('team_manager_id', userId)
+    const teamIds = ((teamMembers || []) as { id: string }[]).map((m) => m.id)
+    teamIds.push(userId)
+    const rows = await fetchAllRows(() => supabase.from('clients').select('id').in('assigned_to', teamIds))
+    clientFilterIds = rows.map((r) => String(r.id))
+  }
+  const sinceIso = new Date(Date.now() - days * 86400000).toISOString()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const applyScope = (q: any) => (clientFilterIds ? q.in('client_id', clientFilterIds) : q)
+
+  const { data: acts } = await applyScope(
+    supabase.from('activity_log').select('client_id, action, field_name, old_value, new_value, created_at, profiles(full_name), clients(first_name, last_name)').gte('created_at', sinceIso)
+  ).order('created_at', { ascending: false }).limit(150)
+  const { data: notes } = await applyScope(
+    supabase.from('client_notes').select('client_id, content, created_at, profiles(full_name), clients(first_name, last_name)').gte('created_at', sinceIso)
+  ).order('created_at', { ascending: false }).limit(100)
+  const { data: files } = await applyScope(
+    supabase.from('client_documents').select('client_id, file_name, category, created_at, clients(first_name, last_name)').gte('created_at', sinceIso)
+  ).order('created_at', { ascending: false }).limit(100)
+  const { data: moves } = await applyScope(
+    supabase.from('client_assignment_history').select('client_id, occurred_at, reason, clients(first_name, last_name)').gte('occurred_at', sinceIso)
+  ).order('occurred_at', { ascending: false }).limit(50)
+
+  type Joined = Record<string, unknown> & { profiles?: { full_name?: string | null } | null; clients?: { first_name?: string | null; last_name?: string | null } | null }
+  for (const r of ((acts || []) as Joined[])) {
+    pushActivity(r, evName(r.clients?.first_name, r.clients?.last_name), r.profiles?.full_name ?? null)
+  }
+  for (const r of ((notes || []) as Joined[])) {
+    events.push({ client_id: String(r.client_id), client_name: evName(r.clients?.first_name, r.clients?.last_name), at: String(r.created_at), kind: 'note', summary: `Note added: "${evTrim(r.content, 200)}"`, actor: r.profiles?.full_name ?? null })
+  }
+  for (const r of ((files || []) as Joined[])) {
+    events.push({ client_id: String(r.client_id), client_name: evName(r.clients?.first_name, r.clients?.last_name), at: String(r.created_at), kind: 'file', summary: `Document uploaded: ${evTrim(r.file_name, 80)} (${evTrim(r.category, 40) || 'uncategorized'})`, actor: null })
+  }
+  for (const r of ((moves || []) as Joined[])) {
+    events.push({ client_id: String(r.client_id), client_name: evName(r.clients?.first_name, r.clients?.last_name), at: String(r.occurred_at), kind: 'reassignment', summary: `Reassigned${r.reason ? ' (' + evTrim(r.reason, 80) + ')' : ''}`, actor: null })
+  }
+  return JSON.stringify(buildCaseloadChanges(days, events))
 }
 
 function executeComputeDeadline(input: Record<string, unknown>) {
@@ -2506,6 +2675,7 @@ TOOL 10 - propose_update_date: When the user asks to set, change, or update a de
 TOOL 11 - evaluate_client_readiness: Use when the user asks whether a client is ready to submit, what is blocking a POS, or what still needs doing before submission. Deterministic five-gate check plus manual reminders. Pass the uuid id. NEVER assess readiness yourself — always call this tool.
 TOOL 12 - get_previsit_brief: THE pre-visit tool. When the user asks to be briefed before a visit or call, "prep me for X", "what do I need to know before I see X", or wants the full picture of one client, call this ONCE — it bundles the snapshot, all 13 deadlines with status, contact recency, submission readiness, recent notes, and the document inventory in a single call. Do NOT chain get_client_notes + get_client_files + evaluate_client_readiness for pre-visit prep. Pass the uuid id.
 TOOL 13 - get_week_ahead: Use for "what's due this week", "what's coming up", or planning the next few days across the caseload. Returns every in-scope client with any deadline field overdue or due within the window (default 7 days, max 14), most urgent first. Role-scoped automatically.
+TOOL 14 - get_caseload_changes: Use for "what changed on my caseload", "what's new", "catch me up", or "what happened since <recently>". Returns date-field edits (old \u2192 new values), contacts logged, notes added, documents uploaded, and reassignments on in-scope clients within the window (default 7 days, max 30), grouped per client, newest first. Convert phrases like "since Friday" into a day count.
 
 ACTION RULES (TOOLS 8-10 — CRITICAL):
 - These tools only PROPOSE a change. NOTHING is saved until the user taps the Confirm button that appears under your reply.
@@ -2513,6 +2683,19 @@ ACTION RULES (TOOLS 8-10 — CRITICAL):
 - Propose ONE action per reply. If the user asks for several changes, do them one at a time.
 - Resolve "today"/"yesterday" from the Today date in your context. If details are missing (which client, which date, which field), ask instead of guessing.
 - If the user is viewing a client page (CURRENT CLIENT CONTEXT), use THAT client's id unless they clearly name a different client.
+
+=== VISIT NOTE DRAFTING (CO-WORKER MODE) ===
+When the user gives rough dictation about a visit or call (e.g. "just saw Hooks, she seemed fine, aide didn't show Tuesday, needs a new CSQ"), do the work for them:
+1. Convert the dictation into a polished, professional case note with this structure (plain text, hyphen bullets; omit empty sections):
+   Visit note \u2014 {date} ({type})
+   - Observations: ...
+   - Concerns: ...
+   - Actions taken: ...
+   - Follow-ups: ...
+2. Include ONLY facts the user stated \u2014 never invent observations, quotes, or clinical judgments.
+3. Then IMMEDIATELY call propose_add_note with the polished note so the user can one-tap Confirm \u2014 do not ask permission to draft first.
+4. After the note is proposed, if the dictation described a client contact, mention you can also log the contact (propose_log_contact) as a separate next step \u2014 one action per reply.
+=== END VISIT NOTE DRAFTING ===
 
 RULES:
 - If the user asks about eligibility, overdue dates, caseload numbers, or finding entries by criteria: YOU MUST call the appropriate tool. Do not attempt to answer from the data already in this prompt.
@@ -2648,6 +2831,7 @@ RULES:
         if (name === 'evaluate_client_readiness') return await executeEvaluateClientReadiness(supabase, input, userRole, userId)
         if (name === 'get_previsit_brief') return await executeGetPrevisitBrief(supabase, input, userRole, userId)
         if (name === 'get_week_ahead') return await executeGetWeekAhead(supabase, input, userRole, userId)
+        if (name === 'get_caseload_changes') return await executeGetCaseloadChanges(supabase, input, userRole, userId)
         if (name === 'propose_log_contact' || name === 'propose_add_note' || name === 'propose_update_date') {
           return await executeProposeAction(supabase, name, input, userRole, userId, proposalHolder)
         }

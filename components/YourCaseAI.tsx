@@ -50,6 +50,7 @@ interface Briefing {
 const PLANNER_DASHBOARD_PROMPTS = [
   'Which clients need attention today?',
   "What's due this week on my caseload?",
+  "What changed on my caseload this week?",
   'What should I do next today?',
   "What's my compliance score?",
   'Which clients have no contact in 7+ days?',
@@ -72,6 +73,7 @@ const MANAGER_DASHBOARD_PROMPTS = [
   'Who can take more clients right now?',
   'Give me a team compliance summary with next actions',
   "What's due this week across my team?",
+  "What changed across my team this week?",
   'Which clients need attention today?',
   'Which clients have no contact in 7+ days?',
   'What is the SPM deadline?',
@@ -89,6 +91,7 @@ const SUPERVISOR_DASHBOARD_PROMPTS = [
   'Give me a team compliance summary with next actions',
   'Who has the most overdue items?',
   "What's due this week across the org?",
+  "What changed across the org this week?",
   'Show me clients with eligibility ending soon',
   'What is the SPM deadline?',
   'What are the CFC service limitations?',

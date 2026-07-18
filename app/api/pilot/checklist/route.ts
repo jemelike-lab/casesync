@@ -38,9 +38,11 @@ export async function GET(req: NextRequest) {
       }
       const members = await withRlsContext(userId, async (sql) => {
         const roster = await sql`
-          SELECT r.user_id, r.cohort, r.started_at, r.ended_at, p.full_name, p.role
+          SELECT r.user_id, r.cohort, r.started_at, r.ended_at, p.full_name, p.role,
+                 up.last_seen_at
           FROM pilot_roster r
           LEFT JOIN profiles p ON p.id = r.user_id
+          LEFT JOIN user_presence up ON up.user_id = r.user_id
           WHERE r.ended_at IS NULL
           ORDER BY r.started_at ASC
         `
@@ -61,9 +63,14 @@ export async function GET(req: NextRequest) {
           list.push({ task_key: row.task_key, completed_at: row.completed_at })
           byUser.set(row.user_id, list)
         }
-        return (roster as unknown as { user_id: string; cohort: string; started_at: string; full_name: string | null; role: string | null }[]).map(r => {
+        return (roster as unknown as { user_id: string; cohort: string; started_at: string; full_name: string | null; role: string | null; last_seen_at: string | null }[]).map(r => {
           const list = byUser.get(r.user_id) ?? []
-          const lastActive = list.length ? list.map(x => x.completed_at).sort().slice(-1)[0] : null
+          const lastTaskAt = list.length ? list.map(x => x.completed_at).sort().slice(-1)[0] : null
+          // Measurement fix (handoff \u00a73): lastActive = REAL presence (the
+          // ~60s heartbeat behind the Activity Monitor) when the RLS policy
+          // grants it, falling back to last task completion. No longer
+          // conflates "completed a checklist task" with "was in the app".
+          const lastActive = r.last_seen_at ?? lastTaskAt
           return {
             userId: r.user_id,
             name: r.full_name,
@@ -73,6 +80,7 @@ export async function GET(req: NextRequest) {
             completed: list.map(x => x.task_key),
             completedAt: Object.fromEntries(list.map(x => [x.task_key, x.completed_at])),
             lastActive,
+            lastTaskAt,
             flags: flagMap.get(r.user_id) ?? 0,
           }
         })

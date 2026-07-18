@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     const data = await withRlsContext(userId, async (sql) => {
       const online = await sql`
         SELECT up.user_id, up.last_seen_at, up.session_started_at, up.current_path,
+               (up.last_seen_at > now() - interval '2 minutes') AS online_now,
                p.full_name, p.role
         FROM user_presence up
         LEFT JOIN profiles p ON p.id = up.user_id

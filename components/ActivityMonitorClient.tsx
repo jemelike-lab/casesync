@@ -75,7 +75,10 @@ export default function ActivityMonitorClient() {
 
   const withStatus = useMemo(() => online.map(o => {
     const ageMs = now - new Date(o.last_seen_at).getTime()
-    const status: 'on' | 'idle' | 'off' = ageMs < 2 * 60_000 ? 'on' : ageMs < 15 * 60_000 ? 'idle' : 'off'
+    // Measurement fix (handoff \u00a73): 'on' means currently online per the
+    // SERVER's clock (online_now), not merely a recent last-known presence row;
+    // the age check remains as a fallback for older payload shapes.
+    const status: 'on' | 'idle' | 'off' = ((o as { online_now?: boolean }).online_now === true || ageMs < 2 * 60_000) ? 'on' : ageMs < 15 * 60_000 ? 'idle' : 'off'
     const mins = Math.max(0, Math.round(ageMs / 60_000))
     const meta = status === 'on'
       ? `online${o.current_path ? ' on ' + o.current_path : ''}`
