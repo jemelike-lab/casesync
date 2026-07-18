@@ -16,11 +16,15 @@ export async function sendEmail({
   subject,
   html,
   attachments,
+  replyTo,
+  scheduledAt,
 }: {
   to: string
   subject: string
   html: string
   attachments?: { filename: string; content: string }[]
+  replyTo?: string
+  scheduledAt?: string
 }) {
   const key = process.env.RESEND_API_KEY
   if (!key) {
@@ -34,6 +38,10 @@ export async function sendEmail({
   // which handles large strings without recursion. All attachment-free
   // sends keep the SDK path unchanged.
   if (attachments && attachments.length) {
+    if (scheduledAt) {
+      // Resend limitation: emails with attachments cannot be scheduled.
+      throw new Error('Cannot schedule an email with attachments')
+    }
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -46,6 +54,7 @@ export async function sendEmail({
         subject,
         html,
         attachments,
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
     })
     if (!res.ok) {
@@ -65,5 +74,7 @@ export async function sendEmail({
     to,
     subject,
     html,
+    ...(replyTo ? { replyTo } : {}),
+    ...(scheduledAt ? { scheduledAt } : {}),
   })
 }

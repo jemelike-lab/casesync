@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isSupervisorLike } from '@/lib/roles'
+import { canSendMail } from '@/lib/email-send-access'
 import PilotScoreboardClient from '@/components/PilotScoreboardClient'
 
 export const dynamic = 'force-dynamic'
@@ -12,5 +13,5 @@ export default async function PilotScoreboardPage() {
   if (!user) redirect('/login')
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (!isSupervisorLike(String(profile?.role ?? '').toLowerCase())) redirect('/dashboard')
-  return <PilotScoreboardClient />
+  return <PilotScoreboardClient canSend={canSendMail(user.id)} />
 }

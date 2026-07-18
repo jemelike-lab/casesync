@@ -3,7 +3,7 @@
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://blhcasesync.com'
 
-function baseLayout(content: string): string {
+export function baseLayout(content: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">

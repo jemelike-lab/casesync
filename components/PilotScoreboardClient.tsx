@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PILOT_GROUPS } from '@/lib/pilot-tasks'
+import { ComposeEmailModal, SchedulePilotEmailsModal } from '@/components/ComposeEmailModal'
+import { getPilotDraft } from '@/lib/pilot-email-drafts'
 
 interface Member {
   userId: string
@@ -40,8 +42,11 @@ function ago(iso: string | null, now: number): string {
   return `${Math.round(m / 1440)}d ago`
 }
 
-export default function PilotScoreboardClient() {
+export default function PilotScoreboardClient({ canSend = false }: { canSend?: boolean }) {
   const [members, setMembers] = useState<Member[]>([])
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [composePrefill, setComposePrefill] = useState<{ toUserId?: string; toName?: string; subject?: string; body?: string } | undefined>(undefined)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [now, setNow] = useState(Date.now())
   const [err, setErr] = useState<string | null>(null)
 
@@ -78,6 +83,12 @@ export default function PilotScoreboardClient() {
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Pilot Scoreboard</h1>
           <p style={{ margin: '4px 0 0', fontSize: 12.5, opacity: 0.9 }}>{'Green = done. A column nobody fills is a task nobody understands \u2014 that\u2019s product feedback too.'}</p>
         </div>
+        {canSend ? (
+          <div style={{ marginLeft: 18, display: 'flex', gap: 8 }}>
+            <button onClick={() => { setComposePrefill(undefined); setComposeOpen(true) }} style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>{'\u2709'} Compose</button>
+            <button onClick={() => setScheduleOpen(true)} style={{ fontSize: 12, fontWeight: 600, color: '#1E7CFF', background: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>{'\ud83d\udcc5'} Schedule pilot emails</button>
+          </div>
+        ) : null}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 22, textAlign: 'center' }}>
           <div><div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{members.length}</div><div style={{ fontSize: 10.5, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 3 }}>In pilot</div></div>
           <div><div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{totals.activeToday}</div><div style={{ fontSize: 10.5, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '.05em', marginTop: 3 }}>Active today</div></div>
@@ -120,6 +131,17 @@ export default function PilotScoreboardClient() {
                           <div style={{ fontSize: 13, fontWeight: 750, color: 'var(--text)' }}>{m.name}{m.flags > 0 ? <span style={{ fontSize: 10.5, color: '#B45309', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '1px 6px', marginLeft: 7 }}>{'\u2691'} {m.flags}</span> : null}</div>
                           <div style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>Day {days} {'\u00b7'} {ago(m.lastActive, now)}</div>
                         </div>
+                        {canSend ? (
+                          <button
+                            title={`Email ${m.name ?? ''}`}
+                            onClick={() => {
+                              const d = getPilotDraft(m.userId)
+                              setComposePrefill({ toUserId: m.userId, toName: m.name ?? m.userId, subject: d?.subject ?? '', body: d?.body ?? '' })
+                              setComposeOpen(true)
+                            }}
+                            style={{ marginLeft: 'auto', marginRight: 10, fontSize: 14, color: '#1E7CFF', background: '#EEF3F9', border: '1px solid var(--border)', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 28px' }}
+                          >{'\u2709'}</button>
+                        ) : null}
                       </div>
                     </td>
                     <td style={{ borderBottom: '1px solid #F1F5FA', textAlign: 'center' }}>
@@ -150,6 +172,12 @@ export default function PilotScoreboardClient() {
           </table>
         )}
       </div>
+      {canSend ? (
+        <>
+          <ComposeEmailModal open={composeOpen} onClose={() => setComposeOpen(false)} prefill={composePrefill} />
+          <SchedulePilotEmailsModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} memberIds={members.map(m => m.userId)} />
+        </>
+      ) : null}
       <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '10px 4px 0' }}>{'Progress % counts the 15 core tasks. Mariama\u2019s team-manager tasks appear as extra columns and unlock when her planners are added.'}</p>
     </div>
   )
