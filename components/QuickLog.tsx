@@ -204,7 +204,7 @@ export default function QuickLog({ clientId, clientName, contextLine, variant = 
   )
 
   const body = desktop ? (
-    <div style={{ position: 'fixed', top: pos?.top ?? 0, left: pos?.left ?? 0, width: 270, zIndex: 71, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 12px 38px rgba(0,0,0,0.35)', padding: '14px 16px', visibility: pos ? 'visible' : 'hidden' }}>
+    <div style={{ position: 'fixed', top: pos?.top ?? 0, left: pos?.left ?? 0, width: 270, zIndex: 71, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 12px 38px rgba(0,0,0,0.35)', padding: '14px 16px', whiteSpace: 'normal', visibility: pos ? 'visible' : 'hidden' }}>
       <div style={{ ...lab, marginTop: 0 }}>When</div>
       {whenSeg}
       {pickInput}
@@ -229,7 +229,7 @@ export default function QuickLog({ clientId, clientName, contextLine, variant = 
       <div style={hint}>Writes last-contact + activity entry &middot; audited</div>
     </div>
   ) : (
-    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 71, background: 'var(--surface)', borderRadius: '22px 22px 0 0', borderTop: '1px solid var(--border)', padding: '10px 18px 22px', boxShadow: '0 -8px 30px rgba(0,0,0,0.35)' }}>
+    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 71, background: 'var(--surface)', borderRadius: '22px 22px 0 0', borderTop: '1px solid var(--border)', padding: '10px 18px 22px', boxShadow: '0 -8px 30px rgba(0,0,0,0.35)', whiteSpace: 'normal' }}>
       <div style={{ width: 38, height: 4, borderRadius: 99, background: 'var(--border)', margin: '0 auto 12px' }} />
       <div style={{ fontSize: 15.5, fontWeight: 800, color: 'var(--text)' }}>Log contact &mdash; {clientName}</div>
       {contextLine ? <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>{contextLine}</div> : null}
