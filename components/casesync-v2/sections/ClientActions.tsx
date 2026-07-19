@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, type CSSProperties } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Edit3, MoreVertical, RefreshCw, UserX, Printer, X, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isSupervisorLike } from '@/lib/roles'
+import QuickLog from '@/components/QuickLog'
 import { sendAssignmentEmail } from '@/app/actions/notifications'
 import type { Client, Profile } from '@/lib/types'
 
@@ -32,6 +33,7 @@ interface Props {
 export default function ClientActions({ client, currentUserId, currentProfile, planners }: Props) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [menuOpen, setMenuOpen] = useState(false)
   const [reassignOpen, setReassignOpen] = useState(false)
   const [assignedTo, setAssignedTo] = useState('')
@@ -146,6 +148,14 @@ export default function ClientActions({ client, currentUserId, currentProfile, p
   return (
     <div style={{ position: 'relative' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <QuickLog
+          variant="hero"
+          clientId={client.id}
+          clientName={`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}
+          contextLine={client.client_id ?? undefined}
+          autoOpen={searchParams.get('quicklog') === '1'}
+          onLogged={() => router.refresh()}
+        />
         <button onClick={goEdit} style={editBtn}><Edit3 size={13} /> Edit</button>
         <button aria-label="More actions" onClick={() => setMenuOpen(o => !o)} style={kebabBtn}><MoreVertical size={16} /></button>
       </div>

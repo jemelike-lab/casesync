@@ -282,7 +282,7 @@ export function dailyDigestEmail({
     ? focus.map(f => `
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
-            <a href="${BASE_URL}/clients/${f.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(f.name)}</a>
+            <a href="${BASE_URL}/clients/${f.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(f.name)}</a>&nbsp;&nbsp;<a href="${BASE_URL}/clients/${f.id}?quicklog=1" style="font-size:12px;font-weight:600;color:#30d158;text-decoration:none;">Log contact &rarr;</a>
             <span style="font-size:12px;color:#888;display:block;">${esc(f.reasons.join(' \u00b7 '))}</span>
           </td>
         </tr>`).join('')

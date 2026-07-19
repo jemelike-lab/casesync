@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import QuickLog from '@/components/QuickLog'
 
 type Focus = { id: string; name: string; reasons: string[] }
 type TodayData = {
@@ -26,6 +27,7 @@ const CHIP_DEFS: Array<{ key: keyof TodayData['counts']; label: string; color: s
 
 export default function TodayCard() {
   const [data, setData] = useState<TodayData | null>(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -34,7 +36,7 @@ export default function TodayCard() {
       .then(j => { if (alive && j && j.counts) setData(j) })
       .catch(() => {})
     return () => { alive = false }
-  }, [])
+  }, [reloadTick])
 
   if (!data) return null
 
@@ -84,11 +86,23 @@ export default function TodayCard() {
           </div>
           {data.focus.map(f => (
             <div key={f.id} style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
-              <Link href={`/clients/${f.id}`} style={{ fontSize: 13, fontWeight: 700, color: '#1E7CFF', textDecoration: 'none' }}>
-                {f.name}
-              </Link>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
-                {f.reasons.join(' \u00b7 ')}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <Link href={`/clients/${f.id}`} style={{ fontSize: 13, fontWeight: 700, color: '#1E7CFF', textDecoration: 'none' }}>
+                    {f.name}
+                  </Link>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
+                    {f.reasons.join(' \u00b7 ')}
+                  </div>
+                </div>
+                <span style={{ flex: 1 }} />
+                <QuickLog
+                  clientId={f.id}
+                  clientName={f.name}
+                  contextLine={f.reasons.join(' \u00b7 ')}
+                  variant="row"
+                  onLogged={() => setReloadTick(t => t + 1)}
+                />
               </div>
             </div>
           ))}

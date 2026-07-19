@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import LottieBlock from '@/components/ui/LottieBlock'
 import EmptyState from '@/components/ui/EmptyState'
+import QuickLog from '@/components/QuickLog'
 import { ANIM } from '@/lib/animations'
 import {
   Client,
@@ -110,6 +111,7 @@ export default function ClientIndexClient({
   const [sortField, setSortField] = useState<'name' | 'last_contact_date'>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const abortRef = useRef<AbortController | null>(null)
+  const [refreshTick, setRefreshTick] = useState(0)
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 300)
@@ -144,7 +146,7 @@ export default function ClientIndexClient({
       })
       .catch(e => { if (e?.name !== 'AbortError') setLoading(false) })
     return () => ac.abort()
-  }, [chip, page, debounced, sortField, sortDir, buildUrl])
+  }, [chip, page, debounced, sortField, sortDir, buildUrl, refreshTick])
 
   // chip counts — one lightweight limit=1 call per chip
   useEffect(() => {
@@ -158,7 +160,7 @@ export default function ClientIndexClient({
       ),
     ).then(pairs => { if (alive) setCounts(Object.fromEntries(pairs)) })
     return () => { alive = false }
-  }, [buildUrl, isPlannerRole])
+  }, [buildUrl, isPlannerRole, refreshTick])
 
   const sorted = useMemo(() => {
     const pin = rows.filter(r => pinned.has(r.id))
@@ -244,6 +246,7 @@ export default function ClientIndexClient({
                     ['Assigned To', null],
                     ['Status', null],
                     ['Last Contact', 'last_contact_date'],
+                    ['Log Contact', null],
                   ] as [string, 'name' | 'last_contact_date' | null][]).map(([h, sf]) => {
                     const isSortable = sf !== null
                     const isActive = isSortable && sortField === sf
@@ -316,6 +319,15 @@ export default function ClientIndexClient({
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', color: days !== null && days >= 7 ? '#DC2626' : 'var(--text-secondary)', fontWeight: days !== null && days >= 7 ? 700 : 400 }}>
                         {days === null ? '—' : days === 0 ? 'today' : `${days} day${days === 1 ? '' : 's'}`}
+                      </td>
+                      <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                        <QuickLog
+                          clientId={c.id}
+                          clientName={`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()}
+                          contextLine={[String(c.category ?? 'cfc').toUpperCase(), days === null ? 'never contacted' : days === 0 ? 'contacted today' : `last contact ${days}d ago`].join(' \u00b7 ')}
+                          variant="row"
+                          onLogged={() => setRefreshTick(t => t + 1)}
+                        />
                       </td>
                     </tr>
                   )

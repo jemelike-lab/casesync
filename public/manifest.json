@@ -124,6 +124,18 @@
           "sizes": "96x96"
         }
       ]
+    },
+    {
+      "name": "Log a contact",
+      "short_name": "Log contact",
+      "url": "/clients",
+      "description": "Find a client and log a contact",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   "related_applications": [],
