@@ -1090,6 +1090,13 @@ function SupervisorControlPanelInner({
   // ----- Scoped summary: sum per-assignee rows, fall back to global -----
   // (Behavior preserved verbatim from the legacy 940-line component.)
   const scopedSummary = useMemo(() => {
+    // 2026-07-18: prefer the org-authoritative globalSummary when the server
+    // provides it (Azure plane; includes unassigned clients and clients
+    // assigned to non-SP roles). Summing per-assignee rows undercounted the
+    // org hero (157 vs 176) because getPlanners() scopes rows to
+    // role = 'supports_planner' only. The sum remains the fallback for any
+    // render site that omits globalSummary.
+    if (globalSummary) return globalSummary
     const rows = Object.values(summaryByAssignee ?? {})
     if (rows.length === 0) {
       return (
