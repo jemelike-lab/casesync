@@ -38,8 +38,8 @@ export const PILOT_GROUPS: PilotGroup[] = [
       { key: 'live.deadline', t: 'Update a deadline after a visit' },
       { key: 'live.note', t: 'Add a note to a client record' },
       { key: 'live.search10', t: 'Find a client by name using search \u2014 under 10 seconds?' },
-      { key: 'live.calendar', t: 'Check tomorrow\u2019s deadlines on Calendar before you sign off' },
-      { key: 'live.left_app', t: 'Anything you had to leave CaseSync to do?', s: 'Excel, email, paper, a coworker\u2019s memory \u2014 tell us. This is the most valuable feedback you can give.' },
+      { key: 'live.calendar', t: 'Check tomorrow\u2019s deadlines on Calendar before you sign off', s: 'Calendar is in the top nav. Open it and look at tomorrow\u2019s date.' },
+      { key: 'live.left_app', t: 'While using CaseSync, did you need to leave to handle something in another platform?', s: 'What did you have to go elsewhere for? Excel, email, paper, a coworker\u2019s memory \u2014 tell us. This is the most valuable feedback you can give.' },
     ],
   },
   {
@@ -47,8 +47,8 @@ export const PILOT_GROUPS: PilotGroup[] = [
     color: 'linear-gradient(135deg,#7C3AED,#6D28D9)',
     icon: '3',
     tasks: [
-      { key: 'casey.ask', t: 'Ask Casey something you\u2019d normally ask your supervisor' },
-      { key: 'casey.briefing', t: 'Read your daily briefing \u2014 does it match what you already knew was urgent?' },
+      { key: 'casey.ask', t: 'Ask Casey something you\u2019d normally ask your supervisor', s: 'Open Clients \u2192 My Caseload, click a client, and Casey is on the right-hand side \u2014 scroll down a little.' },
+      { key: 'casey.briefing', t: 'Read your daily briefing \u2014 does it match what you already knew was urgent?', s: 'Open Casey on your Dashboard \u2014 your briefing sits at the top, and you can reopen it any time.' },
     ],
   },
   {

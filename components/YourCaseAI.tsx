@@ -437,7 +437,7 @@ export default function BLHAssistant() {
   // #418). Recompute when the page context or role changes.
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([])
   const [briefing, setBriefing] = useState<Briefing | null>(null)
-  const [briefingDismissed, setBriefingDismissed] = useState(false)
+  const [briefingCollapsed, setBriefingCollapsed] = useState(false)
   // Batch D: durable conversations. conversationId is server-issued
   // (X-Conversation-Id) — the client never invents one.
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -495,16 +495,16 @@ export default function BLHAssistant() {
     // which reset the once-per-day briefing gate every evening.
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    let seenToday = false
     try {
-      if (localStorage.getItem('blh-briefing-date') === today) return
-    } catch {
-      return
-    }
+      seenToday = localStorage.getItem('blh-briefing-date') === today
+    } catch {}
     fetch('/api/case-ai/briefing')
       .then(r => (r.ok ? r.json() : null))
       .then((j: Briefing | null) => {
         if (j && typeof j.ready_count === 'number') {
           setBriefing(j)
+          setBriefingCollapsed(seenToday)
           try { localStorage.setItem('blh-briefing-date', today) } catch {}
         }
       })
@@ -1088,7 +1088,35 @@ export default function BLHAssistant() {
                     </span>
                   </button>
                 )}
-                {briefing && !briefingDismissed && (
+                {briefing && briefingCollapsed && (
+                  <button
+                    onClick={() => setBriefingCollapsed(false)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(139,92,246,0.08)',
+                      border: '1px solid rgba(139,92,246,0.25)',
+                      borderRadius: 12,
+                      padding: '10px 13px',
+                      marginBottom: 14,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#c4b5fd', letterSpacing: 0.2 }}>
+                      Today&apos;s briefing
+                    </span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
+                      {briefing.total === 0
+                        ? 'No active clients'
+                        : `${briefing.not_ready_count} need attention \u00b7 ${briefing.ready_count} ready`}
+                    </span>
+                  </button>
+                )}
+                {briefing && !briefingCollapsed && (
                   <div style={{
                     background: 'rgba(139,92,246,0.08)',
                     border: '1px solid rgba(139,92,246,0.25)',
@@ -1101,8 +1129,8 @@ export default function BLHAssistant() {
                         Today&apos;s readiness
                       </div>
                       <button
-                        onClick={() => setBriefingDismissed(true)}
-                        aria-label="Dismiss briefing"
+                        onClick={() => setBriefingCollapsed(true)}
+                        aria-label="Collapse briefing"
                         style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}
                       >
                         ×
@@ -1350,7 +1378,7 @@ export default function BLHAssistant() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about your cases..."
+                placeholder={'Ask a full question \u2014 "When is the POS due?"'}
                 disabled={loading}
                 style={{
                   flex: 1,
