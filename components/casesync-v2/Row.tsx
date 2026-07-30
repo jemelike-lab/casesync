@@ -19,7 +19,7 @@
 import { useState } from 'react'
 import { Box, Text } from '@mantine/core'
 import type { LucideIcon } from 'lucide-react'
-import { type StatusLevel, getDateStatus, formatDate, URGENCY_LABELS, URGENCY_COLORS_RGB } from '@/lib/types'
+import { type StatusLevel, getDateStatus, formatDate, isNeverExpires, URGENCY_LABELS, URGENCY_COLORS_RGB } from '@/lib/types'
 
 // -------------------------------------------------------------------------
 // Chip palette (status chip in the row body, same as Deadlines).
@@ -191,15 +191,57 @@ export function DateRow({ Icon, color, label, value, isLast = false }: BaseProps
         minWidth: 64, textAlign: 'center',
         fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em',
       }}>
-        {shortDaysText(days)}
+        {isNeverExpires(value) ? 'No end date' : shortDaysText(days)}
       </Box>
       <HoverPopover
         visible={hovered}
-        kindLabel={URGENCY_LABELS[status]}
+        kindLabel={isNeverExpires(value) ? 'No end date' : URGENCY_LABELS[status]}
         kindColor={`rgb(${URGENCY_COLORS_RGB[status]})`}
-        bigText={longDaysText(days)}
+        bigText={isNeverExpires(value) ? 'No end date' : longDaysText(days)}
         subtitle={`${label} ${'·'} ${formatDate(value.split('T')[0])}`}
         cta={isOverdue ? '⚡ Action needed — update this date' : undefined}
+      />
+    </Box>
+  )
+}
+
+// -------------------------------------------------------------------------
+// EventRow — a date describing something that ALREADY HAPPENED (a completed
+// visit, a signed form). Never scored as a deadline; always renders neutral.
+// DateRow stays for dates that are genuinely due.
+// -------------------------------------------------------------------------
+export function EventRow({ Icon, color, label, value, isLast = false }: BaseProps & { value: string | null | undefined }) {
+  const [hovered, setHovered] = useState(false)
+  if (!value) return null
+  const days = daysFromToday(value)
+  const agoText = days === 0 ? 'today' : days < 0 ? `${Math.abs(days)}d ago` : `in ${days}d`
+
+  return (
+    <Box
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={baseStyle(isLast, '20px 1fr auto auto')}
+    >
+      <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
+      <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
+      <Text fz={12} fw={600} style={{ color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+        {formatDate(value.split('T')[0])}
+      </Text>
+      <Box style={{
+        background: CHIP.none.bg, color: CHIP.none.fg,
+        fontSize: 10, fontWeight: 600,
+        padding: '3px 8px', borderRadius: 4,
+        minWidth: 64, textAlign: 'center',
+        fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em',
+      }}>
+        {agoText}
+      </Box>
+      <HoverPopover
+        visible={hovered}
+        kindLabel="On record"
+        kindColor="rgb(99,115,129)"
+        bigText={agoText}
+        subtitle={`${label} · ${formatDate(value.split('T')[0])}`}
       />
     </Box>
   )

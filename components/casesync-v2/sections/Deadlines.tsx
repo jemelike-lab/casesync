@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { DateRow } from '../Row'
-import { type Client, getDateStatus } from '@/lib/types'
+import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate } from '@/lib/types'
 
 // Per-row identity colors (17 distinct hues, 600/700-level Tailwind).
 const FIELDS: Array<{
@@ -26,7 +26,6 @@ const FIELDS: Array<{
 }> = [
   { field: 'eligibility_end_date',    label: 'Eligibility ends',    Icon: Shield,     color: '#2563EB' },
   { field: 'three_month_visit_due',   label: '3-month visit',       Icon: Calendar,   color: '#7C3AED' },
-  { field: 'quarterly_waiver_date',   label: 'Quarterly waiver',    Icon: FileText,   color: '#0891B2' },
   { field: 'med_tech_redet_date',     label: 'Med-tech redet.',     Icon: Clock,      color: '#0D9488' },
   { field: 'pos_deadline',            label: 'POS deadline',        Icon: FileText,   color: '#D97706' },
   { field: 'assessment_due',          label: 'Assessment due',      Icon: FileCheck,  color: '#059669' },
@@ -40,13 +39,26 @@ const FIELDS: Array<{
   { field: 'two57_date',              label: '257 form',            Icon: FileText,   color: '#BE185D' },
   { field: 'poc_date',                label: 'POC',                 Icon: FileText,   color: '#9333EA' },
   { field: 'loc_date',                label: 'LOC',                 Icon: FileText,   color: '#0E7490' },
-  { field: 'drop_in_visit_date',      label: 'Drop-in visit',       Icon: Calendar,   color: '#4338CA' },
 ]
 
 export default function Deadlines({ client }: { client: Client }) {
-  const rows = FIELDS
+  const waiverActive = isWaiverValid(client.quarterly_waiver_date)
+  const waiverRenewal = waiverRenewalDate(client.quarterly_waiver_date)
+
+  const baseRows = FIELDS
     .map(f => ({ ...f, date: client[f.field] as string | null | undefined }))
     .filter((r): r is typeof r & { date: string } => Boolean(r.date))
+    .filter(r => !(r.field === 'three_month_visit_due' && waiverActive))
+
+  const rows = waiverRenewal
+    ? [...baseRows, {
+        field: 'quarterly_waiver_date' as keyof Client,
+        label: 'SP waiver renewal',
+        Icon: FileText,
+        color: '#0891B2',
+        date: waiverRenewal,
+      }]
+    : baseRows
 
   const overdueCount = rows.filter(r => {
     const s = getDateStatus(r.date)

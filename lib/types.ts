@@ -203,6 +203,7 @@ export type SortDir = 'asc' | 'desc'
 
 export function getDateStatus(dateStr: string | null): StatusLevel {
   if (!dateStr) return 'none'
+  if (isNeverExpires(dateStr)) return 'none'
   // Date-only comparison anchored to the America/New_York business day —
   // the same anchor as the dashboard SQL ((now() at time zone
   // 'America/New_York')::date), so badges and counters never disagree.
@@ -385,10 +386,53 @@ export function formatDate(dateStr: string | null): string {
   return `${month}/${day}/${year}`
 }
 
+/**
+ * Sentinel guard. Smartsheet carries 12/31/9999 to mean "no end date"; treating
+ * it as a real date produced badges like "2912234d left". Anything in year 9000+
+ * is a sentinel, not a deadline.
+ */
+export function isNeverExpires(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false
+  const y = Number(dateStr.split('T')[0].split('-')[0])
+  return Number.isFinite(y) && y >= 9000
+}
+
+/** Add months, clamping to the last valid day (Jan 31 + 3 months -> Apr 30). */
+export function addMonthsClamped(dateStr: string | null | undefined, months: number): string | null {
+  if (!dateStr) return null
+  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number)
+  if (!y || !m || !d) return null
+  const target = new Date(y, m - 1 + months, 1)
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  const day = Math.min(d, lastDay)
+  return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+/**
+ * quarterly_waiver_date is the date the client SIGNED the SP waiver, not a due
+ * date. The signature is good for one year and must be renewed before it lapses.
+ */
+export function waiverRenewalDate(signedDate: string | null | undefined): string | null {
+  return addMonthsClamped(signedDate, 12)
+}
+
+/** True while a signed SP waiver is still inside its one-year life. */
+export function isWaiverValid(signedDate: string | null | undefined): boolean {
+  const renewal = waiverRenewalDate(signedDate)
+  if (!renewal) return false
+  const e = dateStrToEpoch(renewal)
+  if (e === null) return false
+  return e >= businessTodayEpoch()
+}
+
+/** Next quarterly visit = three months after the last completed visit. */
+export function nextThreeMonthVisitDue(lastCompleted: string | null | undefined): string | null {
+  return addMonthsClamped(lastCompleted, 3)
+}
+
 export const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
   'eligibility_end_date',
   'three_month_visit_due',
-  'quarterly_waiver_date',
   'med_tech_redet_date',
   'pos_deadline',
   'assessment_due',
@@ -405,7 +449,7 @@ export const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
 export const PRIORITY_DATE_LABELS: Record<string, string> = {
   eligibility_end_date: 'Eligibility End',
   three_month_visit_due: '3-Month Visit',
-  quarterly_waiver_date: 'Quarterly Waiver',
+  quarterly_waiver_date: 'SP Waiver Signed',
   med_tech_redet_date: 'Med Tech Redet.',
   pos_deadline: 'POS Deadline',
   assessment_due: 'Assessment',
@@ -420,7 +464,9 @@ export const PRIORITY_DATE_LABELS: Record<string, string> = {
 
 export function clientPriorityScore(client: Client): number {
   let score = 0
+  const waiverActive = isWaiverValid(client.quarterly_waiver_date)
   for (const field of PRIORITY_DATE_FIELDS) {
+    if (field === 'three_month_visit_due' && waiverActive) continue
     const d = client[field] as string | null
     const status = getDateStatus(d)
     if (status === 'critical') score += 20
@@ -434,7 +480,9 @@ export function clientPriorityScore(client: Client): number {
 }
 
 export function getOverdueCount(client: Client): number {
+  const waiverActive = isWaiverValid(client.quarterly_waiver_date)
   return PRIORITY_DATE_FIELDS.filter(field => {
+    if (field === 'three_month_visit_due' && waiverActive) return false
     const d = client[field] as string | null
     const s = getDateStatus(d)
     return s === 'red' || s === 'critical'

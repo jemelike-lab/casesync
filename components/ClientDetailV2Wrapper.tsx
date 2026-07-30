@@ -46,6 +46,7 @@ import ClientAIRail from '@/components/casesync-v2/sections/ClientAIRail'
 import ClientEditFormV2 from '@/components/ClientEditFormV2'
 import ClientFiles from '@/components/ClientFiles'
 import type { Client, Profile } from '@/lib/types'
+import { isNeverExpires } from '@/lib/types'
 import { getEligibilityDescription } from '@/lib/eligibility-codes'
 import { daysFromBusinessToday } from '@/lib/business-date'
 
@@ -191,7 +192,8 @@ function StatusRow({ client }: { client: Client }) {
     goalPct >= 50 ? 'mid range' :
                     'needs attention'
 
-  const eligDays = client.eligibility_end_date ? daysFromNow(client.eligibility_end_date) : null
+  const eligNever = isNeverExpires(client.eligibility_end_date)
+  const eligDays = client.eligibility_end_date && !eligNever ? daysFromNow(client.eligibility_end_date) : null
   const eligStripe =
     eligDays === null ? STATUS.info :
     eligDays < 0      ? STATUS.critical :
