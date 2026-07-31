@@ -100,33 +100,40 @@ export function evaluateReadiness(
   }
 
   // 2 — Level of Care valid. Annual: expiry = loc_date + 1 year.
-  // Fail if absent, expired, or expiring within LOC_EXPIRY_WARN_DAYS.
+  // LOC date is conditional (Megan 07-31): when absent it is treated as
+  // identical to the POC date — only entered when it differs from POC.
+  // Fail only when both are absent, expired, or expiring within LOC_EXPIRY_WARN_DAYS.
   {
-    const s = dayEpoch(client.loc_date)
+    const locOwn = dayEpoch(client.loc_date)
+    const s = locOwn !== null ? locOwn : dayEpoch(client.poc_date)
+    const basis = locOwn !== null ? 'LOC' : 'LOC (≡ POC date)'
     if (s === null) {
-      gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: 'No LOC date on file (required).' })
+      gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: 'No LOC or POC date on file (LOC is only entered separately when it differs from POC).' })
     } else {
       const sd = new Date(s)
       const expiry = Date.UTC(sd.getUTCFullYear() + 1, sd.getUTCMonth(), sd.getUTCDate())
       const warnFrom = today + LOC_EXPIRY_WARN_DAYS * DAY_MS
       if (expiry <= today) {
-        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: `LOC expired ${fmt(expiry)} (started ${fmt(s)}; annual).` })
+        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: `${basis} expired ${fmt(expiry)} (started ${fmt(s)}; annual).` })
       } else if (expiry <= warnFrom) {
-        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: `LOC expires ${fmt(expiry)} — within ${LOC_EXPIRY_WARN_DAYS} days.` })
+        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'fail', detail: `${basis} expires ${fmt(expiry)} — within ${LOC_EXPIRY_WARN_DAYS} days.` })
       } else {
-        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'pass', detail: `LOC valid through ${fmt(expiry)}.` })
+        gates.push({ key: 'loc', label: 'Level of Care valid', status: 'pass', detail: `${basis} valid through ${fmt(expiry)}.` })
       }
     }
   }
 
-  // 3 — POS marked Completed.
+  // 3 — POS approved/active. An 'Active' or 'Approved' POS is a pass —
+  // it must never surface as a red alert (Megan 07-31). 'Completed' kept
+  // for legacy records.
   {
-    const ok = client.pos_status === 'Completed'
+    const v = (client.pos_status ?? '').trim().toLowerCase()
+    const ok = v === 'completed' || v === 'approved' || v === 'active'
     gates.push({
       key: 'pos_status',
-      label: 'POS marked Completed',
+      label: 'POS approved/active',
       status: ok ? 'pass' : 'fail',
-      detail: ok ? 'POS status is Completed.' : `POS status is ${client.pos_status ? `"${client.pos_status}"` : 'not set'}.`,
+      detail: ok ? `POS status is ${client.pos_status}.` : `POS status is ${client.pos_status ? `"${client.pos_status}"` : 'not set'}.`,
     })
   }
 

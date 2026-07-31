@@ -379,7 +379,7 @@ export default function DashboardClient({
                   <CsAlertTile href="/team?full=1&filter=overdue"                icon={AlertTriangle}  count={animOverdue}     label="Overdue"           color="#ef4444" />
                   <CsAlertTile href="/team?full=1&filter=due_this_week"          icon={CalendarClock}  count={animDueWeek}     label="Due This Week"     color="#f59e0b" />
                   <CsAlertTile href="/team?full=1&filter=eligibility_ending_soon" icon={CalendarDays}   count={animEligibility} label="Eligibility Ending" color="#06b6d4" />
-                  <CsAlertTile href="/team?full=1&filter=no_contact_7"            icon={Users}          count={animNoContact}   label="No Contact 7d"     color="#94a3b8" />
+                  <CsAlertTile href="/team?full=1&filter=no_contact_7"            icon={Users}          count={animNoContact}   label="No Contact 15d"     color="#94a3b8" />
                 </SimpleGrid>
 
                 {csPreview && csPreview.length > 0 && (

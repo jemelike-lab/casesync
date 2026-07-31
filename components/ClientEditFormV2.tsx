@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Save, X } from 'lucide-react'
 import EligibilityCodeSelect from '@/components/EligibilityCodeSelect'
 import type { Client, Profile } from '@/lib/types'
-import { businessDateOffsetStr } from '@/lib/business-date'
+import { spmNextDueAfterCompletionStr } from '@/lib/business-date'
 
 // ---------------------------------------------------------------------------
 // ClientEditFormV2 — Phase A Batch 3.5
@@ -15,7 +15,7 @@ import { businessDateOffsetStr } from '@/lib/business-date'
 //     (the route's allow-list mirrors this exact set — do not add keys
 //     without updating the route).
 //   - Activity-log diff entries for the same 9 tracked fields.
-//   - spm_completed=true auto-sets spm_next_due to today + 30 days.
+//   - spm_completed=true auto-sets spm_next_due to the 15th of the following month (Megan 07-31).
 // The form is always in edit state (it only renders under ?edit=1);
 // Cancel/Save both hand control back via onExitEdit.
 // ---------------------------------------------------------------------------
@@ -31,7 +31,18 @@ interface Props {
 interface SelectOption { value: string; label: string }
 
 const CONTACT_TYPE_OPTIONS: SelectOption[] = [{ value: 'Phone', label: 'Phone' }, { value: 'Home Visit', label: 'Home Visit' }, { value: 'Email', label: 'Email' }, { value: 'Office Visit', label: 'Office Visit' }]
-const POS_STATUS_OPTIONS: SelectOption[] = [{ value: 'Pending', label: 'Pending' }, { value: 'In-Progress', label: 'In-Progress' }, { value: 'Completed', label: 'Completed' }]
+const POS_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'Pending POS Decision', label: 'Pending POS Decision' },
+  { value: 'In Progress', label: 'In Progress' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'Active', label: 'Active' },
+  { value: 'Denied', label: 'Denied' },
+  { value: 'Appealing', label: 'Appealing' },
+  { value: 'Inactive', label: 'Inactive' },
+  { value: 'Completed', label: 'Completed (legacy)' },
+  { value: 'Pending', label: 'Pending (legacy)' },
+  { value: 'In-Progress', label: 'In-Progress (legacy)' },
+]
 const MED_TECH_STATUS_OPTIONS: SelectOption[] = [{ value: 'Active', label: 'Active' }, { value: 'Pending', label: 'Pending' }, { value: 'Expired', label: 'Expired' }, { value: 'Not Applicable', label: 'N/A' }]
 const ATP_OPTIONS: SelectOption[] = [{ value: 'Pending', label: 'Pending' }, { value: 'Approved', label: 'Approved' }, { value: 'Expired', label: 'Expired' }, { value: 'Not Applicable', label: 'N/A' }]
 const AUDIT_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Started' }, { value: 'Pending', label: 'Pending' }, { value: 'Passed', label: 'Passed' }, { value: 'Failed', label: 'Failed' }]
@@ -93,7 +104,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
     if (field === 'spm_completed') {
       const checked = Boolean(value)
       if (checked) {
-        setFormData(prev => ({ ...prev, spm_completed: true, spm_next_due: businessDateOffsetStr(30) }))
+        setFormData(prev => ({ ...prev, spm_completed: true, spm_next_due: spmNextDueAfterCompletionStr() }))
       } else {
         setFormData(prev => ({ ...prev, spm_completed: false }))
       }
@@ -220,7 +231,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
 
       <Section title="Plans & assessments">
         <Field label="POC date">{dateInput('poc_date')}</Field>
-        <Field label="LOC date">{dateInput('loc_date')}</Field>
+        <Field label="LOC date (only if different from POC)">{dateInput('loc_date')}</Field>
         <Field label="POS status">{selectInput('pos_status', POS_STATUS_OPTIONS)}</Field>
         <Field label="SPM completed">
           {boolInput('spm_completed')}

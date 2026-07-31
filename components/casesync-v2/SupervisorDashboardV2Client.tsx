@@ -680,7 +680,7 @@ export default function SupervisorDashboardV2Client({
           </Grid.Col>
           <Grid.Col span={{ base: 12, xs: 6, md: 3 }}>
             <KpiTile
-              label="No Contact 7+"
+              label="No Contact 15+"
               value={orgKpis.noContact7}
               deltaPct={orgKpis.noContact7DeltaPct}
               deltaInverted

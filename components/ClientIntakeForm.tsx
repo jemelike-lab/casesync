@@ -594,9 +594,13 @@ export default function ClientIntakeForm({ planners, currentUserId }: Props) {
                   style={{ ...inputStyle, cursor: 'pointer' }}
                 >
                   <option value="">— Select —</option>
-                  <option value="Pending">Pending</option>
-                  <option value="In-Progress">In-Progress</option>
-                  <option value="Completed">Completed</option>
+                  <option value="Pending POS Decision">Pending POS Decision</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Active">Active</option>
+                  <option value="Denied">Denied</option>
+                  <option value="Appealing">Appealing</option>
+                  <option value="Inactive">Inactive</option>
                 </select>
               </Field>
             </div>

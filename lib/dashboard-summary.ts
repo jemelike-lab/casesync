@@ -20,7 +20,7 @@ import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
  *   - is_active = true is restored (030 accidentally dropped 007's WHERE).
  *   - eligibility_ending_soon: eligibility_end_date within [today, today+30]
  *     (migration 030 semantics).
- *   - no_contact_7_days: never contacted OR last contact more than 7 days
+ *   - no_contact_7_days: never contacted OR last contact 15+ days (SPM compliance window)
  *     ago (migration 030 semantics).
  *   - 2026-07-04 audit: aggregates count client_classification = 'real' only
  *     (matching the cron, agenda, bot tools, and briefing), and "today" is
@@ -105,7 +105,7 @@ export async function getAssigneeSummaryMap(assignedTo?: string[]) {
             c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7
+            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 15
           ))::int AS no_contact_7_days_clients
         FROM clients c CROSS JOIN t
         WHERE ${whereSql}
@@ -179,7 +179,7 @@ export async function getGlobalSummary(): Promise<GlobalSummaryRow> {
             c.eligibility_end_date BETWEEN t.today AND t.today + 30
           ))::int AS eligibility_ending_soon_clients,
           (COUNT(*) FILTER (WHERE
-            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 7
+            c.last_contact_date IS NULL OR c.last_contact_date <= t.today - 15
           ))::int AS no_contact_7_days_clients
         FROM clients c CROSS JOIN t
         WHERE c.is_active = true AND c.client_classification = 'real'

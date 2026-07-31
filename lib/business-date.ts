@@ -89,6 +89,17 @@ export function businessDateOffsetStr(offsetDays: number, now: Date = new Date()
 }
 
 /** 'YYYY-MM-DD' plus n days (exact math on UTC-midnight epochs; DST-proof). */
+/**
+ * SPM next-due after completion: the 15th of the month following the
+ * business "today" (Megan 07-31 spec — replaces the old +30-day auto-set).
+ */
+export function spmNextDueAfterCompletionStr(now: Date = new Date()): string {
+  const [y, m] = businessTodayStr(now).split('-').map(Number)
+  const ny = m === 12 ? y + 1 : y
+  const nm = m === 12 ? 1 : m + 1
+  return `${ny}-${String(nm).padStart(2, '0')}-15`
+}
+
 export function dateStrAddDays(dateStr: string, days: number): string {
   const epoch = dateStrToEpoch(dateStr)
   if (epoch === null) throw new Error(`dateStrAddDays: unusable date string "${dateStr}"`)

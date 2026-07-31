@@ -327,7 +327,7 @@ export function dailyDigestEmail({
         <td width="2%"></td>
         ${tile(counts.due_this_week, 'Due This Week', '#ffcc00')}
         <td width="2%"></td>
-        ${tile(counts.no_contact_7, 'No Contact 7+', '#bf5af2')}
+        ${tile(counts.no_contact_7, 'No Contact 15+', '#bf5af2')}
       </tr>
     </table>
 

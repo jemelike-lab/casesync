@@ -52,7 +52,7 @@ function statusOf(c: Client): { label: string; bg: string } {
   if (isOverdue(c)) return { label: 'Overdue', bg: 'linear-gradient(135deg,#EF4444,#DC2626)' }
   if (isDueToday(c)) return { label: 'Due Today', bg: 'linear-gradient(135deg,#F97316,#EA580C)' }
   if (isDueThisWeek(c)) return { label: 'Due This Week', bg: 'linear-gradient(135deg,#F97316,#EA580C)' }
-  if (days === null || days >= 7) return { label: 'No Contact 7+', bg: 'linear-gradient(135deg,#EC4899,#DB2777)' }
+  if (days === null || days >= 15) return { label: 'No Contact 15+', bg: 'linear-gradient(135deg,#EC4899,#DB2777)' }
   return { label: 'On Track', bg: 'linear-gradient(135deg,#22C55E,#16A34A)' }
 }
 

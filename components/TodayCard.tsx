@@ -21,7 +21,7 @@ const CHIP_DEFS: Array<{ key: keyof TodayData['counts']; label: string; color: s
   { key: 'overdue', label: 'Overdue', color: '#DC2626' },
   { key: 'due_today', label: 'Due today', color: '#D97706' },
   { key: 'due_this_week', label: 'Due this week', color: '#1E7CFF' },
-  { key: 'no_contact_7', label: 'No contact 7+', color: '#7C3AED' },
+  { key: 'no_contact_7', label: 'No contact 15+', color: '#7C3AED' },
   { key: 'eligibility_soon_30', label: 'Elig. ends 30d', color: '#0D9488' },
 ]
 

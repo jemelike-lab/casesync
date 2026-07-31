@@ -67,7 +67,7 @@ export function computeTodayPacket(
 
     const lcDays = daysFromToday((r.last_contact_date as string | null) ?? null, todayStr)
     const daysSinceContact = lcDays === null ? null : Math.max(0, -lcDays)
-    const noContact7 = daysSinceContact === null || daysSinceContact >= 7
+    const noContact7 = daysSinceContact === null || daysSinceContact >= 15
     const eligDays = daysFromToday((r.eligibility_end_date as string | null) ?? null, todayStr)
     const eligSoon = eligDays !== null && eligDays >= 0 && eligDays <= 30
 

@@ -395,7 +395,7 @@ export default function TransferBoardClient({ clients: initialClients, planners 
       else if (category === 'cpas') penalty += 6
 
       if (!client.spm_completed && client.spm_next_due) penalty += 12
-      if (client.pos_status && String(client.pos_status).toLowerCase() !== 'complete') penalty += 6
+      if (client.pos_status && !['complete', 'completed', 'approved', 'active'].includes(String(client.pos_status).toLowerCase())) penalty += 6
       if (client.med_tech_status && String(client.med_tech_status).toLowerCase() !== 'complete') penalty += 6
 
       const goalPct = client.goal_pct ?? 0

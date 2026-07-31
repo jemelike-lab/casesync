@@ -269,13 +269,13 @@ export function getDaysSinceContact(dateStr: string | null): number | null {
 }
 
 /**
- * Canonical "no contact in 7+ days": never-contacted counts as no-contact.
+ * Canonical "no contact in 15+ days" (SPM compliance window, Megan 07-31): never-contacted counts as no-contact.
  * Must match the no_contact SQL aggregates (last_contact_date IS NULL OR
- * last_contact_date <= business_today - 7).
+ * last_contact_date <= business_today - 15).
  */
 export function isNoContact7Days(client: Client): boolean {
   const days = getDaysSinceContact(client.last_contact_date)
-  return days === null || days >= 7
+  return days === null || days >= 15
 }
 
 export function isOverdue(client: Client): boolean {
@@ -475,7 +475,7 @@ export function clientPriorityScore(client: Client): number {
     else if (status === 'yellow') score += 2
   }
   const daysSince = getDaysSinceContact(client.last_contact_date)
-  if (daysSince !== null && daysSince >= 7) score += 8
+  if (daysSince !== null && daysSince >= 15) score += 8
   return score
 }
 
@@ -564,9 +564,9 @@ export function getClientHealthScore(client: Client): number {
 
   const daysSince = getDaysSinceContact(client.last_contact_date)
   if (daysSince !== null) {
-    if (daysSince >= 14) {
+    if (daysSince >= 30) {
       score -= 20
-    } else if (daysSince >= 7) {
+    } else if (daysSince >= 15) {
       score -= 10
     }
   }

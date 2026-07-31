@@ -337,7 +337,7 @@ function CaseloadSnapshotSection({ scopedSummary }: { scopedSummary: ScopedSumma
   const donutData = [
     { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
     { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
-    { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+    { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
     { name: 'Healthy', value: healthy, color: '#10B981' },
   ].filter((d) => d.value > 0)
 
@@ -392,7 +392,7 @@ function CaseloadSnapshotSection({ scopedSummary }: { scopedSummary: ScopedSumma
             {[
               { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C', hint: 'past due, needs follow-up' },
               { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940', hint: 'next 7 days' },
-              { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF', hint: 'haven\u2019t reached in a week' },
+              { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF', hint: 'haven\u2019t reached in 15 days' },
               { name: 'Healthy', value: healthy, color: '#10B981', hint: 'on track' },
             ].map((row) => {
               const pct = scopedSummary.total_clients > 0 ? (row.value / scopedSummary.total_clients) * 100 : 0
@@ -458,7 +458,7 @@ const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = 
   { value: 'all', label: 'All', color: 'var(--v2-text)' },
   { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
   { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
-  { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
+  { value: 'no_contact_7', label: 'No Contact 15+', color: '#1E7CFF' },
 ]
 
 function ClientDrillDownSection() {
@@ -667,7 +667,7 @@ function Inner({ profile, myTeamManager, mySummary }: Props) {
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
-              label="No Contact 7+"
+              label="No Contact 15+"
               href="/dashboard?full=1&filter=no_contact_7"
               value={scopedSummary.no_contact_7_days_clients}
               subtitle="in last 7 days"

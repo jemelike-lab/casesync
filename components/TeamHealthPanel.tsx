@@ -15,7 +15,7 @@ type MetricTab = 'overdue' | 'caseload' | 'quiet'
 const TAB_CONFIG: Record<MetricTab, { label: string; color: string; colorRgb: string; key: keyof AssigneeSummaryRow; barLabel: string }> = {
   overdue: { label: 'Overdue Rate', color: '#ff453a', colorRgb: '255,69,58', key: 'overdue_clients', barLabel: 'Overdue' },
   caseload: { label: 'Caseload Size', color: '#007aff', colorRgb: '0,122,255', key: 'total_clients', barLabel: 'Clients' },
-  quiet: { label: 'No Contact 7d+', color: '#ffd60a', colorRgb: '255,214,10', key: 'no_contact_7_days_clients', barLabel: 'Quiet' },
+  quiet: { label: 'No Contact 15d+', color: '#ffd60a', colorRgb: '255,214,10', key: 'no_contact_7_days_clients', barLabel: 'Quiet' },
 }
 
 function getBarColor(metric: MetricTab, value: number): string {

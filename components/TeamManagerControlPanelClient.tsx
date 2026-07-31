@@ -384,7 +384,7 @@ function TeamHealthSection({
   const donutData = [
     { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
     { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
-    { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+    { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
     { name: 'Healthy', value: healthy, color: '#10B981' },
   ].filter((d) => d.value > 0)
 
@@ -440,7 +440,7 @@ function TeamHealthSection({
               {[
                 { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
                 { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
-                { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+                { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
                 { name: 'Healthy', value: healthy, color: '#10B981' },
               ].map((row) => (
                 <Group key={row.name} gap={8} wrap="nowrap" justify="space-between">
@@ -514,7 +514,7 @@ const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = 
   { value: 'all', label: 'All', color: 'var(--v2-text)' },
   { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
   { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
-  { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
+  { value: 'no_contact_7', label: 'No Contact 15+', color: '#1E7CFF' },
 ]
 
 function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
@@ -949,7 +949,7 @@ function Inner({ profile, planners, summaryByAssignee }: Props) {
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <KpiTile
-              label="No Contact 7+"
+              label="No Contact 15+"
               href="/team?filter=no_contact_7"
               value={scopedSummary.no_contact_7_days_clients}
               subtitle="in last 7 days"

@@ -16,7 +16,7 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'overdue', label: '🔴 Overdue' },
   { key: 'due_this_week', label: '🟠 Due This Week' },
-  { key: 'no_contact_7', label: '📵 No Contact 7+d' },
+  { key: 'no_contact_7', label: '📵 No Contact 15+d' },
   { key: 'eligibility_ending_soon', label: '⏳ Eligibility Ending' },
   { key: 'co', label: 'CO' },
   { key: 'cfc', label: 'CFC' },

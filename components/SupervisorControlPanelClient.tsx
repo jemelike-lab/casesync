@@ -9,7 +9,7 @@
  *
  * P1.1 ships:
  *   - Greeting block with /heroes/schedule.svg
- *   - 4 KPI tiles (Active / Overdue / Due-this-week / No-contact-7+) wired
+ *   - 4 KPI tiles (Active / Overdue / Due-this-week / No-contact-15+) wired
  *     to scopedSummary, derived from summaryByAssignee with globalSummary
  *     fallback (preserves legacy behavior)
  *   - 10-row Team Overview sourced from the canonical Workryn Departments
@@ -560,7 +560,7 @@ function TeamHealthSection({
   const flagData = [
     { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
     { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
-    { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+    { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
   ]
   const healthy = Math.max(0, scopedSummary.total_clients - Math.max(...flagData.map(f => f.value)))
   const donutData = flagData.filter((d) => d.value > 0)
@@ -598,7 +598,7 @@ function TeamHealthSection({
               {[
                 { name: 'Overdue', value: scopedSummary.overdue_clients, color: '#FF3B5C' },
                 { name: 'Due This Week', value: scopedSummary.due_this_week_clients, color: '#FFA940' },
-                { name: 'No Contact 7+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
+                { name: 'No Contact 15+', value: scopedSummary.no_contact_7_days_clients, color: '#1E7CFF' },
                 { name: 'Healthy (no flags)', value: healthy, color: '#10B981' },
               ].map((row) => (
                 <Stack key={row.name} gap={3}>
@@ -698,7 +698,7 @@ const CLIENT_FILTERS: { value: ClientFilter; label: string; color: string }[] = 
   { value: 'all', label: 'All', color: '#64748B' },
   { value: 'overdue', label: 'Overdue', color: '#FF3B5C' },
   { value: 'due_this_week', label: 'Due Week', color: '#FFA940' },
-  { value: 'no_contact_7', label: 'No Contact 7+', color: '#1E7CFF' },
+  { value: 'no_contact_7', label: 'No Contact 15+', color: '#1E7CFF' },
 ]
 
 function ClientDrillDownSection({ planners }: { planners: Profile[] }) {
@@ -1277,7 +1277,7 @@ function SupervisorControlPanelInner({
         </Grid.Col>
         <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
           <KpiTile
-            label="No Contact 7+ Days"
+            label="No Contact 15+ Days"
             href="/team?filter=no_contact_7"
             value={scopedSummary.no_contact_7_days_clients}
             subtitle="in last 7 days"

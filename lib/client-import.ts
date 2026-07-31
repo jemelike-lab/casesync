@@ -97,6 +97,26 @@ const TEXT_FIELDS = new Set([
 
 export type ClientImportHeader = (typeof CLIENT_IMPORT_HEADERS)[number]
 
+// Smartsheet exports carry human column titles. Normalize every header
+// (case/spacing/punctuation) and map known aliases onto canonical import
+// headers so fields like the Medicaid eligibility end date land instead of
+// silently dropping (Megan 07-31: "Medicaid eligibility end date is not
+// pulling over from Smartsheets").
+const HEADER_ALIASES: Record<string, ClientImportHeader> = {
+  medicaid_eligibility_end_date: 'eligibility_end_date',
+  medicaid_eligibility_end: 'eligibility_end_date',
+  medicaid_eligibility_date: 'eligibility_end_date',
+  medicaid_end_date: 'eligibility_end_date',
+  eligibility_end: 'eligibility_end_date',
+  medicaid_eligibility: 'eligibility_end_date',
+}
+
+export function normalizeImportHeader(raw: string): string {
+  const squashed = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+  if ((CLIENT_IMPORT_HEADERS as readonly string[]).includes(squashed)) return squashed
+  return HEADER_ALIASES[squashed] ?? squashed
+}
+
 export interface ClientImportError {
   rowNumber: number
   column?: string
@@ -246,7 +266,7 @@ export function parseClientImportCsv(csvText: string): ClientImportParseResult {
     }
   }
 
-  const headers = records[0].map(h => h.trim())
+  const headers = records[0].map(normalizeImportHeader)
   const missingHeaders = CLIENT_IMPORT_REQUIRED_HEADERS.filter(header => !headers.includes(header))
   const errors: ClientImportError[] = missingHeaders.map(header => ({
     rowNumber: 1,

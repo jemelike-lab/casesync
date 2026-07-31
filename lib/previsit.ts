@@ -197,7 +197,7 @@ export async function assemblePrevisitPacket(
       last_contact_date: lcRaw ? String(lcRaw).slice(0, 10) : null,
       last_contact_type: client.last_contact_type ?? null,
       days_since_contact: daysSinceContact,
-      no_contact_7_days: daysSinceContact === null || daysSinceContact >= 7,
+      no_contact_7_days: daysSinceContact === null || daysSinceContact >= 15,
     },
     deadline_summary: deadlineSummary,
     deadlines,

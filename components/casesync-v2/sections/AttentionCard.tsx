@@ -13,7 +13,7 @@ import type { Client } from '@/lib/types'
 // date fields and from lib/readiness.ts gates. Nothing here is LLM-guessed.
 //
 //   red   = overdue deadline, or no contact for >= 14 days
-//   amber = deadline within 7 days, contact 7-13 days, failed readiness gate
+//   amber = deadline within 7 days, contact 8-14 days, failed readiness gate
 //
 // Readiness gates need hasSignatureDoc, so the card renders date items
 // immediately and hydrates gate items once /api/sharepoint/files resolves.
@@ -93,9 +93,9 @@ function buildDateItems(client: Client): { items: AttnItem[]; dateItemFields: Se
   const contactDays = client.last_contact_date ? -1 * (daysFromToday(client.last_contact_date) ?? 0) : null
   if (contactDays === null) {
     items.push({ key: 'contact', severity: 'amber', text: 'No contact logged yet', actionLabel: 'Log contact', actionKind: 'edit' })
-  } else if (contactDays >= 14) {
+  } else if (contactDays >= 15) {
     items.push({ key: 'contact', severity: 'red', text: `Contact overdue — last logged ${contactDays} days ago`, actionLabel: 'Log contact', actionKind: 'edit' })
-  } else if (contactDays >= 7) {
+  } else if (contactDays >= 8) {
     items.push({ key: 'contact', severity: 'amber', text: `No contact in ${contactDays} days`, actionLabel: 'Log contact', actionKind: 'edit' })
   }
 
