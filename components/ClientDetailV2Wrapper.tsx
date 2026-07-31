@@ -33,6 +33,7 @@ import Deadlines from '@/components/casesync-v2/sections/Deadlines'
 import ContactDetails from '@/components/casesync-v2/sections/ContactDetails'
 import PlansAssessments from '@/components/casesync-v2/sections/PlansAssessments'
 import CoDetails from '@/components/casesync-v2/sections/CoDetails'
+import AuditDocuments from '@/components/casesync-v2/sections/AuditDocuments'
 import MedTech from '@/components/casesync-v2/sections/MedTech'
 import FormsSignatures from '@/components/casesync-v2/sections/FormsSignatures'
 import Authorizations from '@/components/casesync-v2/sections/Authorizations'
@@ -381,6 +382,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <Deadlines         client={props.client} />
           </div>
           <ContactDetails    client={props.client} />
+          <AuditDocuments    clientId={props.client.id} />
           <div id="cs-sec-plans">
           <PlansAssessments  client={props.client} />
           </div>
@@ -394,11 +396,13 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <Notes             client={props.client} currentUserId={props.currentUserId} />
           <Activity          client={props.client} />
 
+          <div id="cs-sec-files">
           <ClientFiles
             clientId={props.client.id}
             currentUserId={props.currentUserId}
             currentProfile={props.currentProfile}
           />
+          </div>
 
           {/* Legacy ClientEditForm fully retired from view mode (Phase A R2) */}
           </div>

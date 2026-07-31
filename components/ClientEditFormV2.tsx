@@ -61,6 +61,7 @@ function initialFormData(client: Client): FormShape {
     quarterly_waiver_date: client.quarterly_waiver_date, med_tech_redet_date: client.med_tech_redet_date,
     med_tech_status: client.med_tech_status, poc_date: client.poc_date, loc_date: client.loc_date,
     doc_mdh_date: client.doc_mdh_date, pos_deadline: client.pos_deadline, pos_status: client.pos_status,
+    pos_effective_date: client.pos_effective_date, foc_date: client.foc_date,
     assessment_due: client.assessment_due, spm_completed: client.spm_completed, spm_next_due: client.spm_next_due,
     foc: client.foc, provider_forms: client.provider_forms, signatures_needed: client.signatures_needed,
     schedule_docs: client.schedule_docs, atp: client.atp, snfs: client.snfs, lease: client.lease,
@@ -233,6 +234,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
         <Field label="POC date">{dateInput('poc_date')}</Field>
         <Field label="LOC date (only if different from POC)">{dateInput('loc_date')}</Field>
         <Field label="POS status">{selectInput('pos_status', POS_STATUS_OPTIONS)}</Field>
+        <Field label="POS effective date">{dateInput('pos_effective_date')}</Field>
         <Field label="SPM completed">
           {boolInput('spm_completed')}
           {Boolean(formData.spm_completed) && formData.spm_next_due ? (
@@ -244,6 +246,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
       <Section title="CO details">
         <Field label="CO financial redet">{dateInput('co_financial_redet_date')}</Field>
         <Field label="CO application">{dateInput('co_app_date')}</Field>
+        <Field label="Annual FOC date">{dateInput('foc_date')}</Field>
         <Field label="MFP consent">{dateInput('mfp_consent_date')}</Field>
         <Field label="257 date">{dateInput('two57_date')}</Field>
         <Field label="Request letter">{textInput('request_letter')}</Field>

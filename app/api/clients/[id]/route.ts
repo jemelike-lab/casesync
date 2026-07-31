@@ -29,6 +29,7 @@ const DATE_FIELDS = [
   'poc_date', 'loc_date', 'doc_mdh_date', 'pos_deadline', 'assessment_due',
   'spm_next_due', 'co_financial_redet_date', 'co_app_date', 'mfp_consent_date',
   'two57_date', 'thirty_day_letter_date', 'drop_in_visit_date',
+  'pos_effective_date', 'foc_date',
 ] as const
 
 // Everything PATCH may touch. Mirrors the legacy ClientEditForm formData set

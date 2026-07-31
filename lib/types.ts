@@ -60,6 +60,8 @@ export interface Client {
   doc_mdh_date: string | null
   pos_deadline: string | null
   pos_status: string | null
+  pos_effective_date: string | null
+  foc_date: string | null
   assessment_due: string | null
   foc: string | null
   provider_forms: string | null
@@ -417,6 +419,15 @@ export function waiverRenewalDate(signedDate: string | null | undefined): string
 }
 
 /** True while a signed SP waiver is still inside its one-year life. */
+/**
+ * Annual FOC expiry: signed date + 12 months, month-end clamped.
+ * CO clients are denied without a current FOC uploaded with the annual POS
+ * (Josh policy 07-27; date-beside-reference per Josh 07-31).
+ */
+export function focExpiryDate(focDate: string | null | undefined): string | null {
+  return addMonthsClamped(focDate, 12)
+}
+
 export function isWaiverValid(signedDate: string | null | undefined): boolean {
   const renewal = waiverRenewalDate(signedDate)
   if (!renewal) return false

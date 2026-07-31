@@ -17,7 +17,7 @@
 export const ALLOWED_CATEGORY_VALUES = [
   'general', 'consent_form', 'assessment', 'letter', 'authorization',
   'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
-  'co', 'forms_signatures', 'reporting_review',
+  'co', 'forms_signatures', 'reporting_review', 'waiver', 'snf',
 ] as const
 
 export const ALLOWED_CATEGORIES = new Set<string>(ALLOWED_CATEGORY_VALUES)
@@ -42,6 +42,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   co: 'CO',
   forms_signatures: 'Forms & Signatures',
   reporting_review: 'Reporting & Reviews',
+  waiver: 'SP Waiver',
+  snf: 'SNF',
 }
 
 /** Options the upload picker offers — 1:1 with the seven file folders. */
@@ -50,6 +52,8 @@ export const UPLOAD_CATEGORIES = [
   { value: 'co',               label: 'CO' },
   { value: 'plan',             label: 'Plans' },
   { value: 'forms_signatures', label: 'Forms & Signatures' },
+  { value: 'waiver',           label: 'SP Waiver' },
+  { value: 'snf',              label: 'SNF' },
   { value: 'authorization',    label: 'Authorizations' },
   { value: 'reporting_review', label: 'Reporting & Reviews' },
   { value: 'other',            label: 'Other' },
@@ -83,6 +87,8 @@ export const CATEGORY_TO_FOLDER: Record<string, string> = {
   assessment: 'plan',
   forms_signatures: 'forms_signatures',
   consent_form: 'forms_signatures',
+  waiver: 'forms_signatures',
+  snf: 'co',
   authorization: 'authorization',
   reporting_review: 'reporting_review',
   correspondence: 'reporting_review',
