@@ -117,21 +117,19 @@ export async function GET(req: NextRequest) {
         return (q as any).eq('assigned_to', userId) as T
       }
       if (role === 'team_manager') {
+        // TM scope = their direct reports' caseloads PLUS their own.
+        const tmScopeIds = [...(tmPlannerIds ?? []), userId]
         if (assignedTo) {
-          // Only honor the drill-down if it's a planner under this TM.
-          if (tmPlannerIds && tmPlannerIds.includes(assignedTo)) {
+          // Only honor the drill-down if it's in this TM's scope.
+          if (tmScopeIds.includes(assignedTo)) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (q as any).eq('assigned_to', assignedTo) as T
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return (q as any).eq('assigned_to', NO_SCOPE_SENTINEL) as T
         }
-        if (!tmPlannerIds || tmPlannerIds.length === 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (q as any).eq('assigned_to', NO_SCOPE_SENTINEL) as T
-        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (q as any).in('assigned_to', tmPlannerIds) as T
+        return (q as any).in('assigned_to', tmScopeIds) as T
       }
       if (isSupervisorLike(role)) {
         if (assignedTo) {

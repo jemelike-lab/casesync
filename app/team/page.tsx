@@ -50,6 +50,8 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const derivedPlanner = activeSavedView?.filter_definition?.assignedToUserId ?? planner
 
   const plannerIds = planners.map(planner => planner.id).filter(Boolean)
+  // A team manager's own caseload belongs in their team pool.
+  if (profile.role === 'team_manager') plannerIds.push(user.id)
   let clients: Client[] = []
 
   // Phase 3 data plane: team caseload reads come from Azure when configured,

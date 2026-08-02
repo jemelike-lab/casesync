@@ -79,6 +79,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .eq('team_manager_id', user.id)
       .eq('role', 'supports_planner')
     const teamPlannerIds = new Set((teamPlanners ?? []).map((p) => p.id))
+    // A TM's own caseload is in scope too — otherwise reminder-email deep
+    // links to their own clients 404.
+    teamPlannerIds.add(user.id)
     if (!client.assigned_to || !teamPlannerIds.has(client.assigned_to)) notFound()
   } else if (callerRole !== 'supervisor' && callerRole !== 'administrator') {
     notFound()

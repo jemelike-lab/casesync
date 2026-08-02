@@ -109,12 +109,17 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
       if (role === 'supports_planner') {
         scope = sql`c.assigned_to = ${userId}`
       } else if (role === 'team_manager') {
-        if (assignedTo && tmPlannerIds && tmPlannerIds.includes(assignedTo)) {
-          scope = sql`c.assigned_to = ${assignedTo}`
-        } else if (!tmPlannerIds || tmPlannerIds.length === 0) {
-          scope = sql`c.assigned_to = ${NO_SCOPE_SENTINEL}`
+        // A team manager carries their own caseload in addition to managing
+        // their reports', so their own id is always part of their scope. A TM
+        // with zero direct reports still sees their own clients (previously
+        // this collapsed to the deny sentinel and showed an empty list).
+        const tmScopeIds = [...(tmPlannerIds ?? []), userId]
+        if (assignedTo) {
+          scope = tmScopeIds.includes(assignedTo)
+            ? sql`c.assigned_to = ${assignedTo}`
+            : sql`c.assigned_to = ${NO_SCOPE_SENTINEL}`
         } else {
-          scope = sql`c.assigned_to = ANY(${tmPlannerIds}::uuid[])`
+          scope = sql`c.assigned_to = ANY(${tmScopeIds}::uuid[])`
         }
       } else if (isSupervisorLike(role)) {
         scope = assignedTo ? sql`c.assigned_to = ${assignedTo}` : sql`TRUE`
