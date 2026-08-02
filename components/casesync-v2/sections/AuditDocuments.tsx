@@ -75,13 +75,13 @@ export default function AuditDocuments({ clientId }: { clientId: string }) {
           <Box
             key={f.id}
             style={{
-              display: 'grid', gridTemplateColumns: '20px 1fr auto auto', gap: 12,
+              display: 'grid', gridTemplateColumns: '20px minmax(0, 1fr) auto auto', gap: 12,
               alignItems: 'center', padding: '10px 0',
               borderBottom: i === count - 1 ? 'none' : '0.5px solid var(--v2-border-soft)',
             }}
           >
             <FileText size={16} style={{ color: '#534AB7' }} />
-            <Text fz={13} fw={600} c="var(--v2-text)" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Text fz={13} fw={600} c="var(--v2-text)" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {f.file_name}
             </Text>
             <Text

@@ -144,7 +144,7 @@ export function TextRow({ Icon, color, label, value, isLast = false }: BaseProps
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px 1fr auto')}
+      style={baseStyle(isLast, '20px minmax(0, 1fr) auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
@@ -177,7 +177,7 @@ export function DateRow({ Icon, color, label, value, isLast = false }: BaseProps
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px 1fr auto auto')}
+      style={baseStyle(isLast, '20px minmax(0, 1fr) auto auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
@@ -220,7 +220,7 @@ export function EventRow({ Icon, color, label, value, isLast = false }: BaseProp
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px 1fr auto auto')}
+      style={baseStyle(isLast, '20px minmax(0, 1fr) auto auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
@@ -263,7 +263,7 @@ export function BooleanRow({ Icon, color, label, value, isLast = false }: BasePr
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px 1fr auto')}
+      style={baseStyle(isLast, '20px minmax(0, 1fr) auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
@@ -303,7 +303,7 @@ export function PercentRow({ Icon, color, label, value, isLast = false }: BasePr
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px 1fr auto')}
+      style={baseStyle(isLast, '20px minmax(0, 1fr) auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
       <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>

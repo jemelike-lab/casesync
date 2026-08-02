@@ -82,7 +82,7 @@ export default function RootLayout({
           <InstallBanner />
           <Analytics />
           <YourCaseAI />
-          {/* Tester feedback / issue reporting — edge tab, all authenticated routes incl. Workryn */}
+          {/* Tester feedback / issue reporting — edge tab, CaseSync routes only (hidden on /w/*) */}
           <FeedbackTab />
         </ThemeProvider>
       <script dangerouslySetInnerHTML={{__html: "if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});}"}} />

@@ -174,7 +174,8 @@ export default function ClientAIRail({ client, planners = [] }: { client: Client
       </div>
 
       <style>{`
-        .cs-detail-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+        .cs-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+        .cs-detail-grid > * { min-width: 0; }
         .cs-ai-root { display: block; }
         .cs-ai-rail { display: none; }
         .cs-ai-fabwrap { display: block; }

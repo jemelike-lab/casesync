@@ -260,9 +260,9 @@ export default function FeedbackTab() {
     }
   }
 
-  // Hidden on public/unauthenticated routes. Deliberately VISIBLE on /w/*:
-  // the SP test pass covers Workryn surfaces (Time Clock, Schedule) too.
-  const HIDDEN_PREFIXES = ['/login', '/onboarding', '/reset-password', '/accept-invite', '/auth', '/offline']
+  // Hidden on public/unauthenticated routes AND on Workryn (/w/*) — the
+  // feedback tab is a CaseSync surface only (Josh 08-02).
+  const HIDDEN_PREFIXES = ['/w', '/login', '/onboarding', '/reset-password', '/accept-invite', '/auth', '/offline']
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) return null
 
   const inputBase: React.CSSProperties = {

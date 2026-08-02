@@ -336,6 +336,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
             padding: '24px',
             width: 'calc(100% + 48px)',
             minHeight: 'calc(100dvh - 100px)',
+            overflowX: 'clip',
           }}
         >
           <Container size={1280} px={0} pb={80}>
@@ -355,6 +356,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           padding: '24px',
           width: 'calc(100% + 48px)',
           minHeight: 'calc(100dvh - 100px)',
+          overflowX: 'clip',
         }}
       >
         <Container size={1280} px={0} pb={80}>
