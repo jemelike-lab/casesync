@@ -22,6 +22,7 @@ const ORIGIN_CHECK_EXEMPT = [
   '/api/bot/',
   '/api/workryn/evaluations/cron',
   '/api/check-deadlines',
+  '/api/cron/',
   '/api/health',
   '/api/version',
 ]
@@ -30,10 +31,12 @@ const PUBLIC_PATHS = [
   '/login', '/accept-invite', '/reset-password', '/onboarding',
   '/offline', '/security', '/api/auth', '/api/health', '/api/webhooks',
   '/api/version', '/api/bot',
-  // Vercel cron invocations carry no session cookie — these two routes
-  // enforce their own Bearer CRON_SECRET check in-route, so they must pass
-  // the identity gate here or every scheduled run dies with an edge 401.
-  '/api/check-deadlines', '/api/workryn/evaluations/cron',
+  // Vercel cron invocations carry no session cookie — these routes enforce
+  // their own Bearer CRON_SECRET check in-route, so they must pass the
+  // identity gate here or every scheduled run dies with an edge 401.
+  // '/api/cron' covers the whole scheduled-job prefix; each route under it
+  // MUST do its own CRON_SECRET check.
+  '/api/check-deadlines', '/api/workryn/evaluations/cron', '/api/cron',
 ]
 
 const DATA_API_PREFIXES = [
