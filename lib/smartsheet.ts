@@ -89,6 +89,63 @@ export const SMARTSHEET_COLUMN_MAP: Record<string, string> = {
   qa_team_review: 'qa_review',
 }
 
+/**
+ * Columns that together identify a sheet as a client caseload. A caseload
+ * sheet must expose a Client ID column plus at least CASELOAD_MIN_SIGNALS of
+ * these. HR/evaluation/admin sheets share none of them, so they can never be
+ * mistaken for a caseload even when the sheet name matches a staff profile.
+ */
+const CASELOAD_SIGNAL_HEADERS = [
+  'eligibility_code', 'eligibility_end_date', 'last_contact_date',
+  'poc_date', 'pos_deadline', 'pos_status', 'three_month_visit_date',
+  'spm_completed', 'assessment_due', 'med_tech_status',
+]
+const CASELOAD_MIN_SIGNALS = 3
+
+export interface CaseloadCheck {
+  ok: boolean
+  reason?: string
+}
+
+/**
+ * Structural gate: is this sheet actually a client caseload?
+ * Deliberately checks the sheet's SHAPE, not its name — a name-based rule
+ * cannot distinguish "Jane Doe" the planner's caseload from "Jane Doe" the
+ * evaluation record.
+ */
+export function isCaseloadSheet(sheet: SmartsheetSheet): CaseloadCheck {
+  const mapped = new Set<string>()
+  for (const col of sheet.columns ?? []) {
+    const m = SMARTSHEET_COLUMN_MAP[squashTitle(col.title)]
+    if (m) mapped.add(m)
+  }
+  if (!mapped.has('client_id')) {
+    return { ok: false, reason: 'no Client ID column' }
+  }
+  const signals = CASELOAD_SIGNAL_HEADERS.filter(h => mapped.has(h)).length
+  if (signals < CASELOAD_MIN_SIGNALS) {
+    return { ok: false, reason: `only ${signals} caseload columns (need ${CASELOAD_MIN_SIGNALS})` }
+  }
+  return { ok: true }
+}
+
+/**
+ * Several planners keep client surnames in ALL CAPS. CaseSync stores them
+ * Title Cased (the original import transform did this), so syncing raw sheet
+ * text shouts every name. Only normalize strings that are entirely uppercase
+ * — never touch already-mixed case, which would break McPhaul, DeSanto,
+ * O'Brien and similar.
+ */
+export function normalizeLastName(raw: string): string {
+  const s = raw.trim()
+  if (!s) return s
+  const hasLower = /[a-z]/.test(s)
+  if (hasLower) return s
+  return s
+    .toLowerCase()
+    .replace(/(^|[\s\-'\u2019.,/])([a-z])/g, (_m, sep, ch) => sep + ch.toUpperCase())
+}
+
 export function squashTitle(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
 }
@@ -192,6 +249,10 @@ export function sheetToRows(sheet: SmartsheetSheet): SheetRowResult[] {
     for (const cell of row.cells ?? []) {
       const header = byId.get(cell.columnId)
       const raw = (cell.displayValue ?? cell.value ?? '') as string | number | boolean
+      // Smartsheet checkbox columns return boolean false when UNCHECKED.
+      // String()ing that writes the literal "false" into an otherwise blank
+      // field, so treat it as no value at all.
+      if (raw === false) continue
       const text = raw === null || raw === undefined ? '' : String(raw).trim()
       if (!header) {
         continue
@@ -215,7 +276,7 @@ export function sheetToRows(sheet: SmartsheetSheet): SheetRowResult[] {
         continue
       }
 
-      values[header] = text
+      values[header] = header === 'last_name' ? normalizeLastName(text) : text
     }
 
     // Contact attempts live in 1st/2nd/3rd Attempt columns — notes, not fields.

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { isAzureConfigured, withRlsTransaction, withRlsContext } from '@/lib/db/azure'
-import { listSheets, getSheet, sheetToRows } from '@/lib/smartsheet'
+import { listSheets, getSheet, sheetToRows, isCaseloadSheet } from '@/lib/smartsheet'
 import { parseClientImportText, buildClientInsertPayload, parseDelimitedRowsToCsv } from '@/lib/client-import'
 
 export const dynamic = 'force-dynamic'
@@ -99,8 +99,21 @@ export async function GET(request: Request) {
 
   const results: SyncCounts[] = []
   const unmatchedSheets: string[] = []
+  const skippedSheets: string[] = []
+
+  // Optional hard allowlist. When SMARTSHEET_SHEET_IDS is set (comma-separated
+  // sheet IDs) ONLY those sheets are considered — a kill switch that overrides
+  // name matching entirely.
+  const allowRaw = process.env.SMARTSHEET_SHEET_IDS?.trim()
+  const allowIds = allowRaw
+    ? new Set(allowRaw.split(',').map(x => x.trim()).filter(Boolean))
+    : null
 
   for (const listed of sheets) {
+    if (allowIds && !allowIds.has(String(listed.id))) {
+      skippedSheets.push(`${listed.name} (not in SMARTSHEET_SHEET_IDS)`)
+      continue
+    }
     const profile = byName.get(listed.name.trim().toLowerCase())
     if (!profile) { unmatchedSheets.push(listed.name); continue }
 
@@ -111,6 +124,14 @@ export async function GET(request: Request) {
 
     try {
       const sheet = await getSheet(listed.id)
+
+      // Structural gate — the sheet name matching a profile is NOT enough.
+      const check = isCaseloadSheet(sheet)
+      if (!check.ok) {
+        skippedSheets.push(`${listed.name} (${check.reason})`)
+        continue
+      }
+
       const rows = sheetToRows(sheet)
       if (rows.length === 0) { results.push(counts); continue }
 
@@ -236,6 +257,8 @@ export async function GET(request: Request) {
     results.push(counts)
   }
 
+  let runLogError: string | null = null
+
   const totals = results.reduce((a, r) => ({
     created: a.created + r.created,
     updated: a.updated + r.updated,
@@ -249,13 +272,22 @@ export async function GET(request: Request) {
         created: totals.created,
         updated: totals.updated,
         flagged: totals.flagged,
-        unmatched_sheets: unmatchedSheets.join(', ') || null,
+        unmatched_sheets: [
+          ...unmatchedSheets,
+          ...skippedSheets.map(x => `SKIPPED: ${x}`),
+        ].join(', ') || null,
         errors: results.flatMap(r => r.errors).join(' | ').slice(0, 4000) || null,
       })}`
-    ).catch(() => {})
+    ).catch((e) => {
+      // Never swallow this — a silent catch here hid two consecutive
+      // infrastructure faults (missing tables, then missing grants) while the
+      // sync happily wrote client data with no record of what it did.
+      console.error('[smartsheet-sync] run log write FAILED:', (e as Error).message)
+      runLogError = (e as Error).message
+    })
   }
 
   return NextResponse.json({
-    ok: true, dryRun, totals, unmatchedSheets, results,
+    ok: true, dryRun, totals, unmatchedSheets, skippedSheets, runLogError, results,
   })
 }

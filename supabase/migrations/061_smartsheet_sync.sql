@@ -47,6 +47,10 @@ CREATE POLICY ss_runs_elevated_all ON public.smartsheet_sync_runs
     (SELECT current_user_role()) = ANY (ARRAY['supervisor','it','administrator','team_manager'])
   );
 
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON public.smartsheet_sync_runs, public.smartsheet_review_queue
+  TO anon, authenticated, service_role;
+
 DROP POLICY IF EXISTS ss_review_elevated_all ON public.smartsheet_review_queue;
 CREATE POLICY ss_review_elevated_all ON public.smartsheet_review_queue
   FOR ALL USING (
