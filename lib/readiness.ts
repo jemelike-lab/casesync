@@ -14,6 +14,7 @@
 // the once-a-day briefing card can call it without duplicating the rules.
 
 import { businessTodayEpoch } from './business-date'
+import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays } from './types'
 
 export type GateStatus = 'pass' | 'fail' | 'paused'
 
@@ -38,6 +39,10 @@ export interface ReadinessClient {
   poc_date: string | null
   /** Optional — enables the appeal-aware paused state (08-05). */
   appeal_status?: string | null
+  appeal_received_date?: string | null
+  appeal_hearing_date?: string | null
+  appeal_decision_date?: string | null
+  appeal_status_changed_at?: string | null
 }
 
 // Attachment category values that resolve into the "Forms & Signatures" folder.
@@ -130,19 +135,26 @@ export function evaluateReadiness(
   // for legacy records.
   {
     const v = (client.pos_status ?? '').trim().toLowerCase()
-    const a = (client.appeal_status ?? '').trim().toLowerCase()
-    // Active appeal (structured status or the legacy "Appealing" dropdown
-    // value) renders PAUSED — flagged, never critical (Megan 08-05).
-    const appealActive = ['filed', 'received', 'hearing_scheduled'].includes(a) || v === 'appealing'
+    // Active appeal renders PAUSED — flagged, never critical (Megan 08-05) —
+    // until the decision clock runs out (08-05 follow-up): hearing+14d /
+    // received+90d / status-change+90d, plus a 14-day grace, after which the
+    // gate fails loud again.
+    const appealActive = isAppealActive(client)
+    const appealGating = isAppealGatingActive(client)
+    const decisionOverdue = appealDecisionOverdueDays(client)
     const ok = v === 'completed' || v === 'approved' || v === 'active'
     gates.push({
       key: 'pos_status',
       label: 'POS approved/active',
-      status: ok ? 'pass' : appealActive ? 'paused' : 'fail',
+      status: ok ? 'pass' : appealGating ? 'paused' : 'fail',
       detail: ok
         ? `POS status is ${client.pos_status}.`
+        : appealGating
+        ? decisionOverdue !== null
+          ? `Paused — appeal decision ${decisionOverdue}d past due. Confirm the outcome and enter the decision date.`
+          : 'Paused — appeal active. Next required action resumes after the appeal decision.'
         : appealActive
-        ? 'Paused — appeal active. Next required action resumes after the appeal decision.'
+        ? `Appeal unresolved — decision clock expired; POS tracking resumed. Confirm the outcome and enter the decision date.`
         : `POS status is ${client.pos_status ? `"${client.pos_status}"` : 'not set'}.`,
     })
   }

@@ -7,7 +7,7 @@
 // Show green, not just red: caught_up drives the "you're caught up" state.
 
 import { daysFromToday, PREVISIT_DEADLINE_FIELDS, deadlineLabel } from './previsit'
-import { isAppealActive, APPEAL_GATED_FIELDS } from './types'
+import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_GATED_FIELDS } from './types'
 
 export type TodayFocusClient = { id: string; name: string; score: number; reasons: string[] }
 
@@ -65,10 +65,13 @@ export function computeTodayPacket(
     let nextDueField = ''
     let nextDueDays = 99
     const staleItems: string[] = []
-    const appealActive = isAppealActive(r as { appeal_status?: string | null; pos_status?: string | null })
+    const appealClock = r as Parameters<typeof isAppealGatingActive>[0]
+    const appealActive = isAppealActive(appealClock)
+    const appealGating = isAppealGatingActive(appealClock, todayStr)
+    const decisionOverdueDays = appealDecisionOverdueDays(appealClock, todayStr)
 
     for (const f of PREVISIT_DEADLINE_FIELDS) {
-      if (appealActive && APPEAL_GATED_FIELDS.has(f)) continue
+      if (appealGating && APPEAL_GATED_FIELDS.has(f)) continue
       const days = daysFromToday((r[f] as string | null) ?? null, todayStr)
       if (days === null) continue
       if (days < 0) {
@@ -111,7 +114,8 @@ export function computeTodayPacket(
       dueWeekCount * 2 +
       (noContact7 ? 4 : 0) +
       (eligSoon ? 5 : 0) +
-      (appealActive ? 3 : 0)
+      (appealActive ? 3 : 0) +
+      (decisionOverdueDays !== null ? 8 : 0)
     if (score <= 0) continue
 
     const reasons: string[] = []
@@ -121,7 +125,9 @@ export function computeTodayPacket(
     if (dueTodayField) reasons.push(`${deadlineLabel(dueTodayField)} due today`)
     else if (nextDueField) reasons.push(`${deadlineLabel(nextDueField)} due in ${nextDueDays}d`)
     if (eligSoon) reasons.push(`Eligibility ends in ${eligDays}d`)
-    if (appealActive) reasons.push('Appeal active \u2014 POS items paused')
+    if (decisionOverdueDays !== null) reasons.push(`Appeal decision ${decisionOverdueDays}d past due \u2014 confirm outcome`)
+    else if (appealGating) reasons.push('Appeal active \u2014 POS items paused')
+    if (appealActive && !appealGating) reasons.push('Appeal unresolved \u2014 POS tracking resumed')
     if (noContact7) reasons.push(daysSinceContact === null ? 'Never contacted' : `No contact ${daysSinceContact}d`)
 
     scored.push({ id: String(r.id), name: rowName, score, reasons: reasons.slice(0, 3) })
@@ -139,4 +145,4 @@ export function computeTodayPacket(
 
 /** Columns the Today engine reads — shared by /api/today and the cron scan. */
 export const TODAY_CLIENT_COLS =
-  'id, client_id, first_name, last_name, last_contact_date, last_contact_type, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, pos_status, appeal_status, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due'
+  'id, client_id, first_name, last_name, last_contact_date, last_contact_type, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, pos_status, appeal_status, appeal_received_date, appeal_hearing_date, appeal_decision_date, appeal_status_changed_at, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due'

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-auth'
 import { auditLog } from '@/lib/audit'
 import { isAzureConfigured, withRlsContext } from '@/lib/db/azure'
+import { businessTodayStr } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -145,6 +146,40 @@ export const PATCH = withAuth(async (req, ctx, routeCtx) => {
 
   const { updates, error: vErr } = validateUpdates(body)
   if (vErr) return NextResponse.json({ error: vErr }, { status: 400 })
+
+  // Server-stamped appeal decision clock (08-05 follow-up): entering an active
+  // appeal status starts appeal_status_changed_at (the 90-day fallback anchor);
+  // clearing to 'none' resets it. Never client-settable — not in EDITABLE_FIELDS.
+  if (Object.prototype.hasOwnProperty.call(updates, 'appeal_status')) {
+    const ns = updates.appeal_status as string | null
+    if (ns === null || ns === 'none') {
+      updates.appeal_status_changed_at = null
+    } else if (['filed', 'received', 'hearing_scheduled'].includes(ns)) {
+      let curStatus: string | null = null
+      let curChangedAt: string | null = null
+      try {
+        if (isAzureConfigured()) {
+          const cur = await withRlsContext(ctx.user.id, (sql) =>
+            sql`SELECT appeal_status, appeal_status_changed_at FROM clients WHERE id = ${id} LIMIT 1`
+          )
+          const row = cur[0] as { appeal_status?: string | null; appeal_status_changed_at?: string | Date | null } | undefined
+          curStatus = row?.appeal_status ?? null
+          curChangedAt = row?.appeal_status_changed_at ? String(row.appeal_status_changed_at) : null
+        } else {
+          const { data } = await ctx.supabase
+            .from('clients')
+            .select('appeal_status, appeal_status_changed_at')
+            .eq('id', id)
+            .single()
+          curStatus = data?.appeal_status ?? null
+          curChangedAt = data?.appeal_status_changed_at ?? null
+        }
+      } catch { /* stamp fresh below */ }
+      const curActive = ['filed', 'received', 'hearing_scheduled'].includes((curStatus ?? '').trim().toLowerCase())
+      if (!curActive || !curChangedAt) updates.appeal_status_changed_at = businessTodayStr()
+    }
+  }
+
   const cols = Object.keys(updates)
   if (cols.length === 0) {
     return NextResponse.json({ error: 'No editable fields in body' }, { status: 400 })

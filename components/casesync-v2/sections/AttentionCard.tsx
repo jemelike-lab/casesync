@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 import type { Client } from '@/lib/types'
-import { isAppealActive, APPEAL_GATED_FIELDS, coEligibilityCodeIssue } from '@/lib/types'
+import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_GATED_FIELDS, coEligibilityCodeIssue } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // AttentionCard — Phase A Batch 3.4 (Direction B, approved 2026-07-04)
@@ -102,7 +102,13 @@ function buildDateItems(client: Client): { items: AttnItem[]; dateItemFields: Se
 
   // Appeal pause (08-05): gated items stay visible but never render critical.
   const appealActive = isAppealActive(client)
-  if (appealActive) {
+  const appealGating = isAppealGatingActive(client)
+  const decisionOverdueDays = appealDecisionOverdueDays(client)
+  if (decisionOverdueDays !== null && appealGating) {
+    items.push({ key: 'appeal-decision', severity: 'amber', text: `Appeal decision ${decisionOverdueDays}d past due — confirm the outcome and enter the decision date`, actionLabel: 'View plans', actionKind: 'scroll', actionTarget: 'cs-sec-plans' })
+  } else if (appealActive && !appealGating && !client.appeal_decision_date) {
+    items.push({ key: 'appeal-expired', severity: 'red', text: `Appeal outcome unconfirmed${decisionOverdueDays !== null ? ` — ${decisionOverdueDays}d past due` : ''}. POS tracking resumed — enter the decision date`, actionLabel: 'View plans', actionKind: 'scroll', actionTarget: 'cs-sec-plans' })
+  } else if (appealGating) {
     items.push({ key: 'appeal', severity: 'amber', text: 'Appeal active — POS items paused. Next required action resumes after the decision', actionLabel: 'View plans', actionKind: 'scroll', actionTarget: 'cs-sec-plans' })
   }
 
@@ -115,7 +121,7 @@ function buildDateItems(client: Client): { items: AttnItem[]; dateItemFields: Se
 
   // Deadlines: overdue or due within 7 days
   for (const { field, label } of ATTN_DEADLINE_FIELDS) {
-    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) continue
+    if (appealGating && APPEAL_GATED_FIELDS.has(String(field))) continue
     const d = daysFromToday(client[field] as string | null | undefined)
     if (d === null) continue
     if (d < 0) {
@@ -176,6 +182,10 @@ export default function AttentionCard({ client }: { client: Client }) {
             pos_status: (client as { pos_status?: string | null }).pos_status ?? null,
             poc_date: (client as { poc_date?: string | null }).poc_date ?? null,
             appeal_status: client.appeal_status ?? null,
+            appeal_received_date: client.appeal_received_date ?? null,
+            appeal_hearing_date: client.appeal_hearing_date ?? null,
+            appeal_decision_date: client.appeal_decision_date ?? null,
+            appeal_status_changed_at: (client as { appeal_status_changed_at?: string | null }).appeal_status_changed_at ?? null,
           },
           hasSig
         )

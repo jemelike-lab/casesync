@@ -164,6 +164,10 @@ export async function assemblePrevisitPacket(
       pos_status: (client.pos_status as string) ?? null,
       poc_date: (client.poc_date as string) ?? null,
       appeal_status: (client.appeal_status as string) ?? null,
+      appeal_received_date: (client.appeal_received_date as string) ?? null,
+      appeal_hearing_date: (client.appeal_hearing_date as string) ?? null,
+      appeal_decision_date: (client.appeal_decision_date as string) ?? null,
+      appeal_status_changed_at: (client.appeal_status_changed_at as string) ?? null,
     },
     hasSignatureDoc,
   )

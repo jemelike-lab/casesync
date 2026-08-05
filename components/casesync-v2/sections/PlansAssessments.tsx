@@ -6,7 +6,7 @@ import { FileText, ClipboardList, ClipboardCheck, TrendingUp, Scale } from 'luci
 import SectionPaper from '../SectionPaper'
 import { TextRow, DateRow, BooleanRow, PercentRow } from '../Row'
 import type { Client } from '@/lib/types'
-import { isAppealActive, APPEAL_STATUS_LABELS, formatDate } from '@/lib/types'
+import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_STATUS_LABELS, formatDate } from '@/lib/types'
 
 function scrollToFiles() {
   document.getElementById('cs-sec-files')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -28,6 +28,8 @@ export default function PlansAssessments({ client }: { client: Client }) {
   // POS appeal block (Megan 08-05): renders when any appeal field is set or
   // an appeal is active via the legacy pos_status "Appealing" value.
   const appealActive = isAppealActive(client)
+  const appealGating = isAppealGatingActive(client)
+  const appealDecisionOd = appealDecisionOverdueDays(client)
   const appealStatus = (client.appeal_status ?? '').trim().toLowerCase()
   const hasAppeal = appealActive || (!!appealStatus && appealStatus !== 'none')
     || !!client.appeal_received_date || !!client.appeal_hearing_date || !!client.appeal_decision_date
@@ -47,7 +49,21 @@ export default function PlansAssessments({ client }: { client: Client }) {
     <SectionPaper
       title="Plans & assessments"
       subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
-      action={appealActive ? (
+      action={appealActive && !appealGating && !client.appeal_decision_date ? (
+        <Text
+          fz={12} fw={600}
+          style={{ background: '#FBE6E5', color: '#7C1D1A', borderRadius: 999, padding: '3px 12px', whiteSpace: 'nowrap' }}
+        >
+          Tracking resumed {'\u2014'} confirm appeal outcome
+        </Text>
+      ) : appealGating && appealDecisionOd !== null ? (
+        <Text
+          fz={12} fw={600}
+          style={{ background: '#FAEEDA', color: '#633806', borderRadius: 999, padding: '3px 12px', whiteSpace: 'nowrap' }}
+        >
+          Decision overdue {'\u2014'} {appealDecisionOd}d
+        </Text>
+      ) : appealGating ? (
         <Text
           fz={12} fw={600}
           style={{ background: '#FAEEDA', color: '#633806', borderRadius: 999, padding: '3px 12px', whiteSpace: 'nowrap' }}

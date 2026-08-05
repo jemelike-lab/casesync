@@ -68,6 +68,7 @@ export interface Client {
   appeal_received_date: string | null
   appeal_hearing_date: string | null
   appeal_decision_date: string | null
+  appeal_status_changed_at: string | null
   services_continuing_during_appeal: boolean | null
   services_continuing_source: string | null
   med_tech_date: string | null
@@ -478,6 +479,75 @@ export function isAppealActive(client: Partial<Pick<Client, 'appeal_status' | 'p
 }
 
 // ---------------------------------------------------------------------------
+// Appeal decision clock (Josh 08-05, thresholds confirmed 08-05):
+//   decision due = earliest of hearing + 14d, received + 90d (the 42 CFR
+//   431.244 fair-hearing clock), or status-change + 90d when neither date
+//   was entered (appeal_status_changed_at is server-stamped + backfilled).
+//   Past due            -> "Confirm appeal outcome" flagged item; copy shifts.
+//   Past due + 14d grace -> gating EXPIRES: POS-gated items return to normal
+//                           critical scoring. The system fails back to loud.
+// ---------------------------------------------------------------------------
+export const APPEAL_DECISION_AFTER_HEARING_DAYS = 14
+export const APPEAL_DECISION_AFTER_RECEIPT_DAYS = 90
+export const APPEAL_GATING_GRACE_DAYS = 14
+
+export type AppealClockClient = Partial<Pick<Client,
+  'appeal_status' | 'pos_status' | 'appeal_received_date' | 'appeal_hearing_date' |
+  'appeal_decision_date' | 'appeal_status_changed_at'>>
+
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + days)
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
+}
+
+function diffDaysStr(a: string, b: string): number {
+  return Math.round((new Date(a + 'T12:00:00').getTime() - new Date(b + 'T12:00:00').getTime()) / 86400000)
+}
+
+function localTodayStr(): string {
+  const n = new Date()
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`
+}
+
+/** Date the appeal decision should exist by, or null when no anchor is known. */
+export function appealDecisionDue(client: AppealClockClient): string | null {
+  if (!isAppealActive(client)) return null
+  const candidates: string[] = []
+  if (client.appeal_hearing_date) candidates.push(addDaysStr(client.appeal_hearing_date, APPEAL_DECISION_AFTER_HEARING_DAYS))
+  if (client.appeal_received_date) candidates.push(addDaysStr(client.appeal_received_date, APPEAL_DECISION_AFTER_RECEIPT_DAYS))
+  if (candidates.length === 0 && client.appeal_status_changed_at) {
+    candidates.push(addDaysStr(client.appeal_status_changed_at, APPEAL_DECISION_AFTER_RECEIPT_DAYS))
+  }
+  return candidates.length ? candidates.sort()[0] : null
+}
+
+/** Days the decision is past due (>= 1), or null when not overdue / no anchor
+ *  / a decision date is already entered. */
+export function appealDecisionOverdueDays(client: AppealClockClient, todayStr?: string): number | null {
+  if (client.appeal_decision_date) return null
+  const due = appealDecisionDue(client)
+  if (!due) return null
+  const days = diffDaysStr(todayStr ?? localTodayStr(), due)
+  return days > 0 ? days : null
+}
+
+export function appealGatingExpired(client: AppealClockClient, todayStr?: string): boolean {
+  const od = appealDecisionOverdueDays(client, todayStr)
+  return od !== null && od > APPEAL_GATING_GRACE_DAYS
+}
+
+/** The gate scoring/alert/readiness paths must use: the appeal is active, no
+ *  decision date is entered, and the decision clock has not expired. Once the
+ *  clock runs out (or a decision date lands) POS items go loud again. */
+export function isAppealGatingActive(client: AppealClockClient, todayStr?: string): boolean {
+  if (!isAppealActive(client)) return false
+  if (client.appeal_decision_date) return false
+  return !appealGatingExpired(client, todayStr)
+}
+
+// ---------------------------------------------------------------------------
 // Pending-CO application source (Josh 08-05):
 //   community        — no MA eligibility code while pending (arrives at enrollment)
 //   nursing_facility — an LTC code is REQUIRED: L01 / L98 / L99
@@ -542,14 +612,15 @@ export const PRIORITY_DATE_LABELS: Record<string, string> = {
 export function clientPriorityScore(client: Client): number {
   let score = 0
   const waiverActive = isWaiverValid(client.quarterly_waiver_date)
-  const appealActive = isAppealActive(client)
+  const appealGating = isAppealGatingActive(client)
   for (const field of PRIORITY_DATE_FIELDS) {
     if (field === 'three_month_visit_due' && waiverActive) continue
     const d = client[field] as string | null
     const status = getDateStatus(d)
     // Appeal pause (08-05): gated items stay flagged but never carry critical
-    // weight — cap their contribution at the orange tier.
-    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) {
+    // weight — cap their contribution at the orange tier. Once the decision
+    // clock expires (08-05 follow-up) the cap is lifted and they score normally.
+    if (appealGating && APPEAL_GATED_FIELDS.has(String(field))) {
       if (status === 'critical' || status === 'red' || status === 'orange') score += 5
       else if (status === 'yellow') score += 2
       continue
@@ -561,16 +632,19 @@ export function clientPriorityScore(client: Client): number {
   }
   const daysSince = getDaysSinceContact(client.last_contact_date)
   if (daysSince !== null && daysSince >= 15) score += 8
+  // Overdue appeal decision is itself a flagged item.
+  if (appealDecisionOverdueDays(client) !== null) score += 8
   return score
 }
 
 export function getOverdueCount(client: Client): number {
   const waiverActive = isWaiverValid(client.quarterly_waiver_date)
-  const appealActive = isAppealActive(client)
+  const appealGating = isAppealGatingActive(client)
   return PRIORITY_DATE_FIELDS.filter(field => {
     if (field === 'three_month_visit_due' && waiverActive) return false
-    // Appeal pause (08-05): gated items are "Paused — appeal active", not overdue.
-    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) return false
+    // Appeal pause (08-05): gated items are "Paused — appeal active", not
+    // overdue — until the decision clock expires, then they count again.
+    if (appealGating && APPEAL_GATED_FIELDS.has(String(field))) return false
     const d = client[field] as string | null
     const s = getDateStatus(d)
     return s === 'red' || s === 'critical'

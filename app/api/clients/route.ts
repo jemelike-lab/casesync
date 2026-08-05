@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       return (q as any).eq('assigned_to', NO_SCOPE_SENTINEL) as T
     }
 
-    const clientSelect = 'id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, appeal_status, co_application_source, med_tech_date, profiles!clients_assigned_to_fkey(id, full_name, role)'
+    const clientSelect = 'id, client_id, first_name, last_name, category, assigned_to, is_active, last_contact_date, last_contact_type, goal_pct, eligibility_code, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due, pos_status, appeal_status, appeal_received_date, appeal_hearing_date, appeal_decision_date, appeal_status_changed_at, co_application_source, med_tech_date, profiles!clients_assigned_to_fkey(id, full_name, role)'
 
     let query = admin
       .from('clients')

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { DateRow, EventRow } from '../Row'
-import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, isAppealActive, APPEAL_GATED_FIELDS } from '@/lib/types'
+import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, isAppealGatingActive, APPEAL_GATED_FIELDS } from '@/lib/types'
 
 // Per-row identity colors (17 distinct hues, 600/700-level Tailwind).
 const FIELDS: Array<{
@@ -43,7 +43,7 @@ export default function Deadlines({ client }: { client: Client }) {
   const waiverRenewal = waiverRenewalDate(client.quarterly_waiver_date)
   // 08-05: while an appeal is active, gated deadlines render neutral with a
   // "(paused)" label — visible and tracked, never critical/overdue.
-  const appealActive = isAppealActive(client)
+  const appealActive = isAppealGatingActive(client)
 
   const baseRows = FIELDS
     .map(f => ({ ...f, date: client[f.field] as string | null | undefined }))

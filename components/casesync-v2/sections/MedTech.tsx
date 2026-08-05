@@ -9,7 +9,7 @@ import { Stethoscope, CalendarCheck, Clock } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { TextRow, EventRow, DateRow } from '../Row'
 import type { Client } from '@/lib/types'
-import { isAppealActive } from '@/lib/types'
+import { isAppealGatingActive } from '@/lib/types'
 
 export default function MedTech({ client }: { client: Client }) {
   const hasStatus = !!client.med_tech_status
@@ -19,7 +19,7 @@ export default function MedTech({ client }: { client: Client }) {
 
   if (count === 0) return null
 
-  const appealActive = isAppealActive(client)
+  const appealActive = isAppealGatingActive(client)
   const last = hasRedet ? 'redet' : hasDate ? 'date' : 'status'
 
   return (
