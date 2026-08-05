@@ -1656,17 +1656,24 @@ function buildReadinessPayload(client: Record<string, unknown>, hasSignatureDoc:
       loc_date: (client.loc_date as string) ?? null,
       pos_status: (client.pos_status as string) ?? null,
       poc_date: (client.poc_date as string) ?? null,
+      appeal_status: (client.appeal_status as string) ?? null,
     },
     hasSignatureDoc,
   );
   const name = [client.first_name, client.last_name].filter(Boolean).join(' ').trim();
   const blocking = result.gates.filter((g) => g.status === 'fail').map((g) => `${g.label}: ${g.detail}`);
+  const paused = result.gates.filter((g) => g.status === 'paused').map((g) => `${g.label}: ${g.detail}`);
   return {
     client: name || (client.client_id as string) || 'client',
     ready: result.ready,
-    summary: result.ready ? 'All five submission gates pass.' : `${blocking.length} of 5 gates failing.`,
+    summary: result.ready
+      ? 'All five submission gates pass.'
+      : paused.length > 0
+      ? `${blocking.length} of 5 gates failing; ${paused.length} paused by an active appeal.`
+      : `${blocking.length} of 5 gates failing.`,
     gates: result.gates,
     blocking,
+    paused,
     manual_reminders: result.reminders,
   };
 }

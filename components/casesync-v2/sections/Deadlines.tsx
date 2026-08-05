@@ -14,8 +14,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
-import { DateRow } from '../Row'
-import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate } from '@/lib/types'
+import { DateRow, EventRow } from '../Row'
+import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, isAppealActive, APPEAL_GATED_FIELDS } from '@/lib/types'
 
 // Per-row identity colors (17 distinct hues, 600/700-level Tailwind).
 const FIELDS: Array<{
@@ -41,6 +41,9 @@ const FIELDS: Array<{
 export default function Deadlines({ client }: { client: Client }) {
   const waiverActive = isWaiverValid(client.quarterly_waiver_date)
   const waiverRenewal = waiverRenewalDate(client.quarterly_waiver_date)
+  // 08-05: while an appeal is active, gated deadlines render neutral with a
+  // "(paused)" label — visible and tracked, never critical/overdue.
+  const appealActive = isAppealActive(client)
 
   const baseRows = FIELDS
     .map(f => ({ ...f, date: client[f.field] as string | null | undefined }))
@@ -58,6 +61,7 @@ export default function Deadlines({ client }: { client: Client }) {
     : baseRows
 
   const overdueCount = rows.filter(r => {
+    if (appealActive && APPEAL_GATED_FIELDS.has(String(r.field))) return false
     const s = getDateStatus(r.date)
     return s === 'critical' || s === 'red'
   }).length
@@ -75,14 +79,25 @@ export default function Deadlines({ client }: { client: Client }) {
       ) : (
         <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
           {rows.map((r, i) => (
-            <DateRow
-              key={String(r.field)}
-              Icon={r.Icon}
-              color={r.color}
-              label={r.label}
-              value={r.date}
-              isLast={i === rows.length - 1}
-            />
+            appealActive && APPEAL_GATED_FIELDS.has(String(r.field)) ? (
+              <EventRow
+                key={String(r.field)}
+                Icon={r.Icon}
+                color={r.color}
+                label={`${r.label} (paused \u2014 appeal)`}
+                value={r.date}
+                isLast={i === rows.length - 1}
+              />
+            ) : (
+              <DateRow
+                key={String(r.field)}
+                Icon={r.Icon}
+                color={r.color}
+                label={r.label}
+                value={r.date}
+                isLast={i === rows.length - 1}
+              />
+            )
           ))}
         </Box>
       )}

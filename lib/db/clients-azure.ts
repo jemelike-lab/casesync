@@ -231,7 +231,8 @@ export async function handleClientsViaAzure(req: NextRequest): Promise<Response>
           c.quarterly_waiver_date, c.med_tech_redet_date, c.pos_deadline,
           c.assessment_due, c.thirty_day_letter_date, c.co_financial_redet_date,
           c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date,
-          c.spm_next_due, c.pos_status,
+          c.spm_next_due, c.pos_status, c.appeal_status,
+          c.co_application_source, c.med_tech_date,
           CASE WHEN p.id IS NULL THEN NULL
                ELSE json_build_object('id', p.id, 'full_name', p.full_name, 'role', p.role)
           END AS profiles

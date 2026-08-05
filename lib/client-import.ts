@@ -20,6 +20,7 @@ export const CLIENT_IMPORT_HEADERS = [
   'loc_date',
   'med_tech_redet_date',
   'med_tech_status',
+  'med_tech_date',
   'pos_deadline',
   'pos_status',
   'assessment_due',
@@ -37,6 +38,7 @@ export const CLIENT_IMPORT_HEADERS = [
   'thirty_day_letter_date',
   'co_financial_redet_date',
   'co_app_date',
+  'co_application_source',
   'request_letter',
   'mfp_consent_date',
   'two57_date',
@@ -62,6 +64,7 @@ const DATE_FIELDS = new Set([
   'poc_date',
   'loc_date',
   'med_tech_redet_date',
+  'med_tech_date',
   'pos_deadline',
   'assessment_due',
   'spm_next_due',
@@ -109,6 +112,12 @@ const HEADER_ALIASES: Record<string, ClientImportHeader> = {
   medicaid_end_date: 'eligibility_end_date',
   eligibility_end: 'eligibility_end_date',
   medicaid_eligibility: 'eligibility_end_date',
+  med_tech_training_date: 'med_tech_date',
+  med_tech_completed: 'med_tech_date',
+  med_tech_last_completed: 'med_tech_date',
+  application_source: 'co_application_source',
+  co_source: 'co_application_source',
+  co_app_source: 'co_application_source',
 }
 
 export function normalizeImportHeader(raw: string): string {
@@ -164,6 +173,7 @@ export interface ClientImportNormalizedRow {
   loc_date: string | null
   med_tech_redet_date: string | null
   med_tech_status: string | null
+  med_tech_date: string | null
   pos_deadline: string | null
   pos_status: string | null
   assessment_due: string | null
@@ -181,6 +191,7 @@ export interface ClientImportNormalizedRow {
   thirty_day_letter_date: string | null
   co_financial_redet_date: string | null
   co_app_date: string | null
+  co_application_source: string | null
   request_letter: string | null
   mfp_consent_date: string | null
   two57_date: string | null
@@ -310,6 +321,16 @@ export function parseClientImportCsv(csvText: string): ClientImportParseResult {
   }
 
   return { headers, rows, errors, parseWarnings }
+}
+
+/** Pending-CO application source (Josh 08-05): community | nursing_facility.
+ *  Accepts human sheet values like "Nursing Facility", "NF", "SNF", "Community". */
+function normalizeCoApplicationSource(raw: unknown): string | null {
+  const v = String(raw ?? '').trim().toLowerCase().replace(/[^a-z]+/g, '_').replace(/^_+|_+$/g, '')
+  if (!v) return null
+  if (['community', 'comm', 'c'].includes(v)) return 'community'
+  if (['nursing_facility', 'nursing_home', 'nf', 'snf', 'facility'].includes(v)) return 'nursing_facility'
+  return null
 }
 
 function normalizeText(value: string | undefined): string | null {
@@ -621,6 +642,7 @@ export function validateClientImportRows(
       loc_date: dateValues.loc_date,
       med_tech_redet_date: dateValues.med_tech_redet_date,
       med_tech_status: normalizeText(raw.med_tech_status),
+      med_tech_date: dateValues.med_tech_date,
       pos_deadline: dateValues.pos_deadline,
       pos_status: normalizeText(raw.pos_status),
       assessment_due: dateValues.assessment_due,
@@ -638,6 +660,7 @@ export function validateClientImportRows(
       thirty_day_letter_date: dateValues.thirty_day_letter_date,
       co_financial_redet_date: dateValues.co_financial_redet_date,
       co_app_date: dateValues.co_app_date,
+      co_application_source: normalizeCoApplicationSource(raw.co_application_source),
       request_letter: normalizeText(raw.request_letter),
       mfp_consent_date: dateValues.mfp_consent_date,
       two57_date: dateValues.two57_date,
@@ -672,6 +695,7 @@ export function buildClientInsertPayload(row: ClientImportNormalizedRow) {
     loc_date: row.loc_date,
     med_tech_redet_date: row.med_tech_redet_date,
     med_tech_status: row.med_tech_status,
+    med_tech_date: row.med_tech_date,
     pos_deadline: row.pos_deadline,
     pos_status: row.pos_status,
     assessment_due: row.assessment_due,
@@ -689,6 +713,7 @@ export function buildClientInsertPayload(row: ClientImportNormalizedRow) {
     thirty_day_letter_date: row.thirty_day_letter_date,
     co_financial_redet_date: row.co_financial_redet_date,
     co_app_date: row.co_app_date,
+    co_application_source: row.co_application_source,
     request_letter: row.request_letter,
     mfp_consent_date: row.mfp_consent_date,
     two57_date: row.two57_date,

@@ -62,6 +62,16 @@ export interface Client {
   pos_status: string | null
   pos_effective_date: string | null
   foc_date: string | null
+  // POS appeals (Megan 08-05): one live appeal per client, modeled as columns.
+  // History persists in activity_log; `appeals` free text below is untouched.
+  appeal_status: string | null
+  appeal_received_date: string | null
+  appeal_hearing_date: string | null
+  appeal_decision_date: string | null
+  services_continuing_during_appeal: boolean | null
+  services_continuing_source: string | null
+  med_tech_date: string | null
+  co_application_source: string | null
   assessment_due: string | null
   foc: string | null
   provider_forms: string | null
@@ -441,6 +451,62 @@ export function nextThreeMonthVisitDue(lastCompleted: string | null | undefined)
   return addMonthsClamped(lastCompleted, 3)
 }
 
+// ---------------------------------------------------------------------------
+// POS appeals (Megan 08-05 spec, Josh-confirmed 08-05)
+// An active appeal pauses the critical tier on POS-gated items: they stay
+// visible and flagged, but never render or score as critical/overdue.
+// ---------------------------------------------------------------------------
+export const APPEAL_STATUS_VALUES = ['none', 'filed', 'received', 'hearing_scheduled', 'decision_issued'] as const
+export const ACTIVE_APPEAL_STATUSES = new Set<string>(['filed', 'received', 'hearing_scheduled'])
+export const APPEAL_STATUS_LABELS: Record<string, string> = {
+  none: 'None',
+  filed: 'Filed',
+  received: 'Received',
+  hearing_scheduled: 'Hearing scheduled',
+  decision_issued: 'Decision issued',
+}
+
+/** Fields whose critical tier is suppressed while an appeal is active. */
+export const APPEAL_GATED_FIELDS = new Set<string>(['pos_deadline', 'med_tech_redet_date'])
+
+/** Active appeal = structured status filed/received/hearing_scheduled, OR the
+ *  legacy POS-status dropdown value "Appealing" planners already use. */
+export function isAppealActive(client: Partial<Pick<Client, 'appeal_status' | 'pos_status'>>): boolean {
+  const s = (client.appeal_status ?? '').trim().toLowerCase()
+  if (ACTIVE_APPEAL_STATUSES.has(s)) return true
+  return (client.pos_status ?? '').trim().toLowerCase() === 'appealing'
+}
+
+// ---------------------------------------------------------------------------
+// Pending-CO application source (Josh 08-05):
+//   community        — no MA eligibility code while pending (arrives at enrollment)
+//   nursing_facility — an LTC code is REQUIRED: L01 / L98 / L99
+// ---------------------------------------------------------------------------
+export const CO_APPLICATION_SOURCES = ['community', 'nursing_facility'] as const
+export const LTC_ELIGIBILITY_CODES = new Set(['L01', 'L98', 'L99'])
+
+/** Strip MDH marker symbols (* and †) and whitespace, uppercase. */
+export function normalizeEligibilityCode(code: string | null | undefined): string {
+  return (code ?? '').replace(/[*\u2020]/g, '').trim().toUpperCase()
+}
+
+export function isLtcEligibilityCode(code: string | null | undefined): boolean {
+  return LTC_ELIGIBILITY_CODES.has(normalizeEligibilityCode(code))
+}
+
+/** Non-null when a CO client from a nursing facility is missing a valid LTC
+ *  code. Community-pending CO clients never flag on a missing code. */
+export function coEligibilityCodeIssue(
+  client: Partial<Pick<Client, 'category' | 'co_application_source' | 'eligibility_code'>>
+): string | null {
+  if (client.category !== 'co') return null
+  if (client.co_application_source !== 'nursing_facility') return null
+  const code = normalizeEligibilityCode(client.eligibility_code)
+  if (!code) return 'LTC eligibility code required (L01 / L98 / L99) — none on file'
+  if (!LTC_ELIGIBILITY_CODES.has(code)) return `LTC eligibility code required (L01 / L98 / L99) — "${code}" is not an LTC code`
+  return null
+}
+
 export const PRIORITY_DATE_FIELDS: (keyof Client)[] = [
   'eligibility_end_date',
   'three_month_visit_due',
@@ -476,10 +542,18 @@ export const PRIORITY_DATE_LABELS: Record<string, string> = {
 export function clientPriorityScore(client: Client): number {
   let score = 0
   const waiverActive = isWaiverValid(client.quarterly_waiver_date)
+  const appealActive = isAppealActive(client)
   for (const field of PRIORITY_DATE_FIELDS) {
     if (field === 'three_month_visit_due' && waiverActive) continue
     const d = client[field] as string | null
     const status = getDateStatus(d)
+    // Appeal pause (08-05): gated items stay flagged but never carry critical
+    // weight — cap their contribution at the orange tier.
+    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) {
+      if (status === 'critical' || status === 'red' || status === 'orange') score += 5
+      else if (status === 'yellow') score += 2
+      continue
+    }
     if (status === 'critical') score += 20
     else if (status === 'red') score += 10
     else if (status === 'orange') score += 5
@@ -492,8 +566,11 @@ export function clientPriorityScore(client: Client): number {
 
 export function getOverdueCount(client: Client): number {
   const waiverActive = isWaiverValid(client.quarterly_waiver_date)
+  const appealActive = isAppealActive(client)
   return PRIORITY_DATE_FIELDS.filter(field => {
     if (field === 'three_month_visit_due' && waiverActive) return false
+    // Appeal pause (08-05): gated items are "Paused — appeal active", not overdue.
+    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) return false
     const d = client[field] as string | null
     const s = getDateStatus(d)
     return s === 'red' || s === 'critical'

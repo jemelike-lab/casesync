@@ -243,10 +243,10 @@ export default function ClientIndexClient({
                     ['Program', null],
                     ['Next Deadline', null],
                     ['Deadline Type', null],
+                    ['Log Contact', null],
                     ['Assigned To', null],
                     ['Status', null],
                     ['Last Contact', 'last_contact_date'],
-                    ['Log Contact', null],
                   ] as [string, 'name' | 'last_contact_date' | null][]).map(([h, sf]) => {
                     const isSortable = sf !== null
                     const isActive = isSortable && sortField === sf
@@ -304,6 +304,15 @@ export default function ClientIndexClient({
                         {nd ? (<><b>{formatDate(nd.date)}</b><div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{relativeDays(nd.date)}</div></>) : '—'}
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{nd?.label ?? '—'}</td>
+                      <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                        <QuickLog
+                          clientId={c.id}
+                          clientName={`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()}
+                          contextLine={[String(c.category ?? 'cfc').toUpperCase(), days === null ? 'never contacted' : days === 0 ? 'contacted today' : `last contact ${days}d ago`].join(' \u00b7 ')}
+                          variant="row"
+                          onLogged={() => setRefreshTick(t => t + 1)}
+                        />
+                      </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
                         {c.profiles?.full_name ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -319,15 +328,6 @@ export default function ClientIndexClient({
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', color: days !== null && days >= 7 ? '#DC2626' : 'var(--text-secondary)', fontWeight: days !== null && days >= 7 ? 700 : 400 }}>
                         {days === null ? '—' : days === 0 ? 'today' : `${days} day${days === 1 ? '' : 's'}`}
-                      </td>
-                      <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                        <QuickLog
-                          clientId={c.id}
-                          clientName={`${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()}
-                          contextLine={[String(c.category ?? 'cfc').toUpperCase(), days === null ? 'never contacted' : days === 0 ? 'contacted today' : `last contact ${days}d ago`].join(' \u00b7 ')}
-                          variant="row"
-                          onLogged={() => setRefreshTick(t => t + 1)}
-                        />
                       </td>
                     </tr>
                   )

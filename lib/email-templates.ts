@@ -161,8 +161,12 @@ export function deadlineAlertEmail({
   daysUntil: number
   clientId: string
 }) {
-  const urgencyColor = daysUntil === 1 ? '#ff3b30' : daysUntil <= 3 ? '#ff9500' : '#ffcc00'
-  const daysLabel = daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`
+  const urgencyColor = daysUntil <= 1 ? '#ff3b30' : daysUntil <= 3 ? '#ff9500' : '#ffcc00'
+  const nextAction = daysUntil < 0
+    ? `Complete ${fieldLabel} \u2014 was due ${dueDate}`
+    : daysUntil === 0
+    ? `Complete ${fieldLabel} today`
+    : `Complete ${fieldLabel} by ${dueDate}${daysUntil === 1 ? ' (tomorrow)' : ` (in ${daysUntil} days)`}`
 
   const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${urgencyColor};text-transform:uppercase;letter-spacing:0.08em;">
@@ -187,8 +191,8 @@ export function deadlineAlertEmail({
       </tr>
       <tr>
         <td style="padding:8px 0;">
-          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Time remaining</span>
-          <span style="font-size:15px;font-weight:600;color:${urgencyColor};">${daysLabel.charAt(0).toUpperCase() + daysLabel.slice(1)}</span>
+          <span style="font-size:12px;color:#888;display:block;margin-bottom:2px;">Next required action</span>
+          <span style="font-size:15px;font-weight:600;color:${urgencyColor};">${nextAction}</span>
         </td>
       </tr>
     </table>
@@ -263,12 +267,21 @@ export function dailyDigestEmail({
   counts,
   focus,
   caughtUp,
+  spmsClients = [],
+  appealTracker = [],
+  longHorizon = [],
 }: {
   userName: string
   date: string
   counts: { overdue: number; due_today: number; due_this_week: number; no_contact_7: number }
   focus: Array<{ id: string; name: string; reasons: string[] }>
   caughtUp: boolean
+  /** SPMS-first (1st–15th): clients with no successful contact this month. */
+  spmsClients?: Array<{ id: string; name: string; lastContact: string | null }>
+  /** One line per client with an active appeal — POS items paused. */
+  appealTracker?: Array<{ id: string; name: string; note: string }>
+  /** Monday edition only: items overdue beyond the 60-day daily horizon. */
+  longHorizon?: Array<{ id: string; name: string; items: string[] }>
 }) {
   const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -308,6 +321,46 @@ export function dailyDigestEmail({
       ${focusRows}
     </table>`
 
+  const spmsSection = spmsClients.length === 0 ? '' : `
+    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#30d158;text-transform:uppercase;letter-spacing:0.05em;">&#128222; SPM contact needed this month</h2>
+    <p style="margin:0 0 10px;font-size:12.5px;color:#888;">Next required action: log a successful contact by the 15th for each client below.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;margin-bottom:24px;">
+      ${spmsClients.slice(0, 15).map(c => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
+            <a href="${BASE_URL}/clients/${c.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(c.name)}</a>&nbsp;&nbsp;<a href="${BASE_URL}/clients/${c.id}?quicklog=1" style="font-size:12px;font-weight:600;color:#30d158;text-decoration:none;">Log contact &rarr;</a>
+            <span style="font-size:12px;color:#888;display:block;">${c.lastContact ? `Last successful contact ${esc(c.lastContact)}` : 'No contact on record'}</span>
+          </td>
+        </tr>`).join('')}
+      ${spmsClients.length > 15 ? `<tr><td style="padding:10px 0;font-size:12px;color:#888;">+${spmsClients.length - 15} more in your Today view</td></tr>` : ''}
+    </table>`
+
+  const appealSection = appealTracker.length === 0 ? '' : `
+    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#ff9f0a;text-transform:uppercase;letter-spacing:0.05em;">&#9878;&#65039; Appeal tracker</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;margin-bottom:24px;">
+      ${appealTracker.map(c => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
+            <a href="${BASE_URL}/clients/${c.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(c.name)}</a>
+            <span style="font-size:12px;color:#888;display:block;">${esc(c.note)}</span>
+          </td>
+        </tr>`).join('')}
+    </table>`
+
+  const longHorizonSection = longHorizon.length === 0 ? '' : `
+    <h2 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;">&#128197; Long-horizon and stale items (weekly review)</h2>
+    <p style="margin:0 0 10px;font-size:12.5px;color:#888;">Items more than 60 days past due. Reviewed Mondays only \u2014 they no longer repeat in daily emails.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1e;border-radius:8px;padding:0 20px;margin-bottom:24px;">
+      ${longHorizon.slice(0, 20).map(c => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #2a2a2e;">
+            <a href="${BASE_URL}/clients/${c.id}" style="font-size:13px;font-weight:600;color:#0a84ff;text-decoration:none;">${esc(c.name)}</a>
+            <span style="font-size:12px;color:#888;display:block;">${esc(c.items.join(' \u00b7 '))}</span>
+          </td>
+        </tr>`).join('')}
+      ${longHorizon.length > 20 ? `<tr><td style="padding:10px 0;font-size:12px;color:#888;">+${longHorizon.length - 20} more</td></tr>` : ''}
+    </table>`
+
   const content = `
     <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#007aff;text-transform:uppercase;letter-spacing:0.08em;">
       &#9728;&#65039; Your Morning Digest
@@ -331,7 +384,13 @@ export function dailyDigestEmail({
       </tr>
     </table>
 
+    ${spmsSection}
+
     ${focusSection}
+
+    ${appealSection}
+
+    ${longHorizonSection}
 
     ${ctaButton(`${BASE_URL}/dashboard`, 'Open Your Today View')}
   `

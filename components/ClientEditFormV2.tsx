@@ -31,6 +31,21 @@ interface Props {
 interface SelectOption { value: string; label: string }
 
 const CONTACT_TYPE_OPTIONS: SelectOption[] = [{ value: 'Phone', label: 'Phone' }, { value: 'Home Visit', label: 'Home Visit' }, { value: 'Email', label: 'Email' }, { value: 'Office Visit', label: 'Office Visit' }]
+const APPEAL_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'none', label: 'None' },
+  { value: 'filed', label: 'Filed' },
+  { value: 'received', label: 'Received' },
+  { value: 'hearing_scheduled', label: 'Hearing scheduled' },
+  { value: 'decision_issued', label: 'Decision issued' },
+]
+const CO_APPLICATION_SOURCE_OPTIONS: SelectOption[] = [
+  { value: 'community', label: 'Community' },
+  { value: 'nursing_facility', label: 'Nursing facility' },
+]
+const SERVICES_CONTINUING_OPTIONS: SelectOption[] = [
+  { value: 'true', label: 'Yes \u2014 services continuing' },
+  { value: 'false', label: 'No \u2014 services stopped' },
+]
 const POS_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Pending POS Decision', label: 'Pending POS Decision' },
   { value: 'In Progress', label: 'In Progress' },
@@ -49,7 +64,7 @@ const AUDIT_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Start
 const QA_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Started' }, { value: 'Pending', label: 'Pending' }, { value: 'Passed', label: 'Passed' }, { value: 'Failed', label: 'Failed' }]
 
 // Fields whose changes are appended to the activity log (legacy parity).
-const TRACKED_FIELDS = ['pos_status', 'eligibility_end_date', 'last_contact_date', 'assessment_due', 'goal_pct', 'med_tech_status', 'atp', 'spm_completed', 'pos_deadline'] as const
+const TRACKED_FIELDS = ['pos_status', 'eligibility_end_date', 'last_contact_date', 'assessment_due', 'goal_pct', 'med_tech_status', 'atp', 'spm_completed', 'pos_deadline', 'appeal_status', 'appeal_hearing_date', 'co_application_source'] as const
 
 type FormShape = Record<string, string | number | boolean | null>
 
@@ -62,6 +77,11 @@ function initialFormData(client: Client): FormShape {
     med_tech_status: client.med_tech_status, poc_date: client.poc_date, loc_date: client.loc_date,
     doc_mdh_date: client.doc_mdh_date, pos_deadline: client.pos_deadline, pos_status: client.pos_status,
     pos_effective_date: client.pos_effective_date, foc_date: client.foc_date,
+    appeal_status: client.appeal_status, appeal_received_date: client.appeal_received_date,
+    appeal_hearing_date: client.appeal_hearing_date, appeal_decision_date: client.appeal_decision_date,
+    services_continuing_during_appeal: client.services_continuing_during_appeal,
+    services_continuing_source: client.services_continuing_source,
+    med_tech_date: client.med_tech_date, co_application_source: client.co_application_source,
     assessment_due: client.assessment_due, spm_completed: client.spm_completed, spm_next_due: client.spm_next_due,
     foc: client.foc, provider_forms: client.provider_forms, signatures_needed: client.signatures_needed,
     schedule_docs: client.schedule_docs, atp: client.atp, snfs: client.snfs, lease: client.lease,
@@ -235,6 +255,21 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
         <Field label="LOC date (only if different from POC)">{dateInput('loc_date')}</Field>
         <Field label="POS status">{selectInput('pos_status', POS_STATUS_OPTIONS)}</Field>
         <Field label="POS effective date">{dateInput('pos_effective_date')}</Field>
+        <Field label="Appeal status">{selectInput('appeal_status', APPEAL_STATUS_OPTIONS)}</Field>
+        <Field label="Appeal received (LTSS)">{dateInput('appeal_received_date')}</Field>
+        <Field label="Hearing date">{dateInput('appeal_hearing_date')}</Field>
+        <Field label="Appeal decision date">{dateInput('appeal_decision_date')}</Field>
+        <Field label="Services continuing during appeal">
+          <select
+            value={formData.services_continuing_during_appeal === null || formData.services_continuing_during_appeal === undefined ? '' : String(formData.services_continuing_during_appeal)}
+            onChange={e => set('services_continuing_during_appeal', e.target.value === '' ? null : e.target.value === 'true')}
+            style={inputStyle}
+          >
+            <option value="">Not set</option>
+            {SERVICES_CONTINUING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </Field>
+        <Field label="Services-continuing source">{textInput('services_continuing_source')}</Field>
         <Field label="SPM completed">
           {boolInput('spm_completed')}
           {Boolean(formData.spm_completed) && formData.spm_next_due ? (
@@ -244,6 +279,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
       </Section>
 
       <Section title="CO details">
+        <Field label="Application source">{selectInput('co_application_source', CO_APPLICATION_SOURCE_OPTIONS)}</Field>
         <Field label="CO financial redet">{dateInput('co_financial_redet_date')}</Field>
         <Field label="CO application">{dateInput('co_app_date')}</Field>
         <Field label="Annual FOC date">{dateInput('foc_date')}</Field>
@@ -254,6 +290,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
 
       <Section title="Med tech">
         <Field label="Med/tech status">{selectInput('med_tech_status', MED_TECH_STATUS_OPTIONS)}</Field>
+        <Field label="Med/tech last completed">{dateInput('med_tech_date')}</Field>
       </Section>
 
       <Section title="Forms & signatures">

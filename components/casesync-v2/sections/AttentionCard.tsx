@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 import type { Client } from '@/lib/types'
+import { isAppealActive, APPEAL_GATED_FIELDS, coEligibilityCodeIssue } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // AttentionCard — Phase A Batch 3.4 (Direction B, approved 2026-07-04)
@@ -99,8 +100,22 @@ function buildDateItems(client: Client): { items: AttnItem[]; dateItemFields: Se
     items.push({ key: 'contact', severity: 'amber', text: `No contact in ${contactDays} days`, actionLabel: 'Log contact', actionKind: 'edit' })
   }
 
+  // Appeal pause (08-05): gated items stay visible but never render critical.
+  const appealActive = isAppealActive(client)
+  if (appealActive) {
+    items.push({ key: 'appeal', severity: 'amber', text: 'Appeal active — POS items paused. Next required action resumes after the decision', actionLabel: 'View plans', actionKind: 'scroll', actionTarget: 'cs-sec-plans' })
+  }
+
+  // Pending-CO LTC code requirement (Josh 08-05): nursing-facility applicants
+  // must carry L01 / L98 / L99; community applicants never flag on a missing code.
+  const ltcIssue = coEligibilityCodeIssue(client)
+  if (ltcIssue) {
+    items.push({ key: 'ltc-code', severity: 'red', text: ltcIssue, actionLabel: 'Edit client', actionKind: 'edit' })
+  }
+
   // Deadlines: overdue or due within 7 days
   for (const { field, label } of ATTN_DEADLINE_FIELDS) {
+    if (appealActive && APPEAL_GATED_FIELDS.has(String(field))) continue
     const d = daysFromToday(client[field] as string | null | undefined)
     if (d === null) continue
     if (d < 0) {
@@ -160,13 +175,14 @@ export default function AttentionCard({ client }: { client: Client }) {
             loc_date: (client as { loc_date?: string | null }).loc_date ?? null,
             pos_status: (client as { pos_status?: string | null }).pos_status ?? null,
             poc_date: (client as { poc_date?: string | null }).poc_date ?? null,
+            appeal_status: client.appeal_status ?? null,
           },
           hasSig
         )
         if (cancelled) return
         const items: AttnItem[] = []
         for (const g of result.gates) {
-          if (g.status !== 'fail') continue
+          if (g.status === 'pass') continue
           const dedupField = GATE_DEDUP[g.key]
           if (dedupField && dateItemFields.has(dedupField)) continue
           items.push({

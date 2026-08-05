@@ -30,9 +30,21 @@ export const ELIGIBILITY_CODES: EligibilityCode[] = [
   { code: '*E05', description: 'Former Foster Care 21 up to 26 years old' },
   { code: '*†S01', description: 'Public Assistance to Adults (PAA)' },
   { code: '*†S02', description: 'SSI Recipients' },
+  { code: '†L01', description: 'SSI Recipient in LTC (Aged, Blind or Disabled Long Term Care)' },
+  { code: '†L98', description: 'ABD Long Term Care' },
+  { code: '†L99', description: 'ABD Long Term Care With Spend-down' },
 ]
+
+/** Strip the MDH marker symbols (* and †) so sheet values like "L98" match "†L98". */
+function stripMarkers(code: string | null | undefined): string {
+  return (code ?? '').replace(/[*\u2020]/g, '').trim().toUpperCase()
+}
 
 export function getEligibilityDescription(code: string): string {
   const norm = (code ?? '').trim().toUpperCase()
-  return ELIGIBILITY_CODES.find(e => e.code.trim().toUpperCase() === norm)?.description ?? ''
+  const exact = ELIGIBILITY_CODES.find(e => e.code.trim().toUpperCase() === norm)
+  if (exact) return exact.description
+  const stripped = stripMarkers(code)
+  if (!stripped) return ''
+  return ELIGIBILITY_CODES.find(e => stripMarkers(e.code) === stripped)?.description ?? ''
 }

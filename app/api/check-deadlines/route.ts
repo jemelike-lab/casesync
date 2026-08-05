@@ -5,6 +5,7 @@ import { upsertAzureIdentity } from '@/lib/db/identity-sync'
 import { sendEmail } from '@/lib/email'
 import { deadlineAlertEmail, dailyDigestEmail, teamManagerPlannerAlertEmail } from '@/lib/email-templates'
 import { computeTodayPacket } from '@/lib/today'
+import { isAppealActive, APPEAL_GATED_FIELDS } from '@/lib/types'
 import { businessTodayStr, businessTodayEpoch, daysFromBusinessToday, DAY_MS } from '@/lib/business-date'
 
 export const dynamic = 'force-dynamic'
@@ -46,15 +47,26 @@ const DEADLINE_FIELDS = [
 ]
 
 /**
- * Notify on approach AND on overdue milestones.
+ * Notify on approach AND on bounded overdue milestones.
  * Approaching: 1, 3, 7 days before due.
- * Overdue: 0 (due today), then every 7 days overdue (7, 14, 21, 28...).
+ * Overdue: 0 (due today), then 7, 14, 21, and 30 days overdue — THEN STOP.
+ * (Megan 08-05: the old `diffDays % 7 === 0` re-fired every stale item weekly
+ * forever — a field 266 days overdue still emailed. Long-stale items now live
+ * in the Monday long-horizon digest section instead of daily alert emails.)
  */
 function shouldNotify(diffDays: number): boolean {
   if ([1, 3, 7].includes(diffDays)) return true
   if (diffDays === 0) return true
-  if (diffDays < 0 && diffDays % 7 === 0) return true
+  if (diffDays < 0 && [7, 14, 21, 30].includes(Math.abs(diffDays))) return true
   return false
+}
+
+/** "Next required action" statement (Megan 08-05 copy spec — replaces
+ *  time-remaining phrasing in notifications and alert emails). */
+function nextRequiredAction(label: string, dateStr: string, diffDays: number): string {
+  if (diffDays < 0) return `Next required action: complete ${label} — was due ${dateStr}`
+  if (diffDays === 0) return `Next required action: complete ${label} today (${dateStr})`
+  return `Next required action: complete ${label} by ${dateStr}`
 }
 
 function getNotifLabel(diffDays: number): string {
@@ -180,7 +192,7 @@ export async function GET(request: Request) {
     }
     try {
       clients = await withRlsContext(supervisorId, async (sql) => {
-        const rows = await sql`SELECT id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date FROM clients WHERE is_active = true AND client_classification = 'real'`
+        const rows = await sql`SELECT id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date, last_contact_type, pos_status, appeal_status FROM clients WHERE is_active = true AND client_classification = 'real'`
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return rows as unknown as any[]
       })
@@ -195,7 +207,7 @@ export async function GET(request: Request) {
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date')
+        .select('id, client_id, first_name, last_name, assigned_to, client_classification, eligibility_end_date, three_month_visit_due, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, quarterly_waiver_date, med_tech_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, last_contact_date, last_contact_type, pos_status, appeal_status')
         .eq('is_active', true)
         .eq('client_classification', 'real')
         .order('id', { ascending: true })
@@ -294,9 +306,25 @@ export async function GET(request: Request) {
   const notifCandidates: Array<{ dedupeKey: string; row: NotifRow }> = []
   const emailCandidates: Array<{ dedupeKey: string; to: string; subject: string; html: string }> = []
 
+  // Appeal tracker (Megan 08-05): while an appeal is active, POS-gated items
+  // send NO individual alerts — each affected client gets exactly one tracker
+  // line in the morning digest instead.
+  const appealTrackerByPlanner = new Map<string, Array<{ id: string; name: string; note: string }>>()
+
   for (const client of clients ?? []) {
     if (!client.assigned_to) continue
+    const appealActive = isAppealActive(client)
+    if (appealActive) {
+      const list = appealTrackerByPlanner.get(client.assigned_to) ?? []
+      list.push({
+        id: String(client.id),
+        name: `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`,
+        note: 'Appeal active — POS items paused. Next required action resumes after the appeal decision.',
+      })
+      appealTrackerByPlanner.set(client.assigned_to, list)
+    }
     for (const { key, label } of DEADLINE_FIELDS) {
+      if (appealActive && APPEAL_GATED_FIELDS.has(String(key))) continue
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dateStr = (client as any)[key] as string | null
       if (!dateStr) continue
@@ -308,7 +336,7 @@ export async function GET(request: Request) {
       const clientName = `${client.last_name}${client.first_name ? ', ' + client.first_name : ''}`
       const daysLabel = getNotifLabel(diffDays)
       const emoji = getNotifEmoji(diffDays)
-      const notifBody = `${label} is ${diffDays < 0 ? '' : 'due '}${daysLabel} (${dateStr})`
+      const notifBody = `${nextRequiredAction(label, dateStr, diffDays)} (${daysLabel})`
       const fieldKey = String(key)
       const targetSection = SECTION_BY_FIELD[fieldKey] ?? 'section-plans-assessments'
       const deepLink = `/clients/${client.id}?highlight=${encodeURIComponent(fieldKey)}#${targetSection}`
@@ -392,8 +420,10 @@ export async function GET(request: Request) {
     const issues: Array<{ clientName: string; issue: string; dueDate: string; severity: number }> = []
     let clientOverdue = false
     let clientDueThisWeek = false
+    const escAppealActive = isAppealActive(client)
 
     for (const { key, label } of DEADLINE_FIELDS) {
+      if (escAppealActive && APPEAL_GATED_FIELDS.has(String(key))) continue
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dateStr = (client as any)[key] as string | null
       if (!dateStr) continue
@@ -496,7 +526,9 @@ export async function GET(request: Request) {
     for (const client of unassignedClients) {
       let clientOverdue = false
       let clientDueThisWeek = false
+      const unAppealActive = isAppealActive(client)
       for (const { key, label } of DEADLINE_FIELDS) {
+        if (unAppealActive && APPEAL_GATED_FIELDS.has(String(key))) continue
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dateStr = (client as any)[key] as string | null
         if (!dateStr) continue
@@ -614,6 +646,13 @@ export async function GET(request: Request) {
     type DigestJob = { dedupeKey: string; to: string; subject: string; html: string }
     const digestJobs: DigestJob[] = []
 
+    // Megan 08-05 cadence: SPMS contact is the 1st–15th signal; long-horizon
+    // (>60d overdue) items surface only in the Monday edition.
+    const monthPrefix = todayStr.slice(0, 7)
+    const dayOfMonth = Number(todayStr.slice(8, 10))
+    const isSpmsWindow = dayOfMonth >= 1 && dayOfMonth <= 15
+    const isMonday = new Date(todayEpoch).getUTCDay() === 1
+
     for (const [plannerId, plannerClients] of Object.entries(clientsByPlanner)) {
       const profile = profileMap.get(plannerId)
       if (!profile?.email) continue
@@ -626,7 +665,26 @@ export async function GET(request: Request) {
       const overdueCount = packet.counts.overdue
       const dueThisWeekCount = packet.counts.due_this_week
 
+      // SPMS-first: clients with no SUCCESSFUL contact logged this calendar
+      // month (a logged "Attempt" does not count — Josh-confirmed 08-05).
+      const spmsClients = !isSpmsWindow ? [] : (plannerClients ?? [])
+        .filter(c => {
+          const d = (c.last_contact_date ?? '') as string
+          const t = ((c.last_contact_type ?? '') as string).trim().toLowerCase()
+          const successfulThisMonth = d.slice(0, 7) === monthPrefix && t !== 'attempt'
+          return !successfulThisMonth
+        })
+        .map(c => ({
+          id: String(c.id),
+          name: `${c.last_name}${c.first_name ? ', ' + c.first_name : ''}`,
+          lastContact: (c.last_contact_date ?? null) as string | null,
+        }))
+        .sort((a, b) => (a.lastContact ?? '').localeCompare(b.lastContact ?? ''))
+
+      const appealTracker = appealTrackerByPlanner.get(plannerId) ?? []
+
       const digestEnabled = profile.prefs.daily_digest === true || overdueCount > 0 || packet.counts.due_today > 0
+        || (isSpmsWindow && spmsClients.length > 0) || appealTracker.length > 0
       if (!digestEnabled) continue
 
       const userName = profile.full_name?.split(' ')[0] ?? 'there'
@@ -643,9 +701,14 @@ export async function GET(request: Request) {
         counts: packet.counts,
         focus: packet.focus,
         caughtUp: packet.caught_up,
+        spmsClients,
+        appealTracker,
+        longHorizon: isMonday ? packet.long_horizon : [],
       })
 
-      const finalSubject = packet.caught_up
+      const finalSubject = isSpmsWindow && spmsClients.length > 0
+        ? `📞 Good morning ${userName} — ${spmsClients.length} client${spmsClients.length === 1 ? '' : 's'} need${spmsClients.length === 1 ? 's' : ''} SPM contact this month`
+        : packet.caught_up
         ? `☀️ Good morning ${userName} — you're caught up`
         : `📋 Good morning ${userName} — ${totalNeedAttention} clients need attention today`
 

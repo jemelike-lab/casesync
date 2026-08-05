@@ -7,6 +7,7 @@
 // Show green, not just red: caught_up drives the "you're caught up" state.
 
 import { daysFromToday, PREVISIT_DEADLINE_FIELDS, deadlineLabel } from './previsit'
+import { isAppealActive, APPEAL_GATED_FIELDS } from './types'
 
 export type TodayFocusClient = { id: string; name: string; score: number; reasons: string[] }
 
@@ -17,12 +18,22 @@ export type TodayCounts = {
   due_this_week: number
   no_contact_7: number
   eligibility_soon_30: number
+  appeal_active: number
 }
+
+export type LongHorizonItem = { id: string; name: string; items: string[] }
 
 export type TodayPacket = {
   counts: TodayCounts
   focus: TodayFocusClient[]
   caught_up: boolean
+  long_horizon: LongHorizonItem[]
+}
+
+export type TodayOptions = {
+  /** Items overdue by more than this many days leave the daily focus and move
+   *  to long_horizon (Megan 08-05 proximity filter). */
+  horizonDays?: number
 }
 
 /**
@@ -35,12 +46,15 @@ export function computeTodayPacket(
   rows: Array<Record<string, unknown>>,
   todayStr: string,
   focusLimit = 5,
+  options: TodayOptions = {},
 ): TodayPacket {
+  const horizonDays = options.horizonDays ?? 60
   const counts: TodayCounts = {
     total: rows.length, overdue: 0, due_today: 0, due_this_week: 0,
-    no_contact_7: 0, eligibility_soon_30: 0,
+    no_contact_7: 0, eligibility_soon_30: 0, appeal_active: 0,
   }
   const scored: TodayFocusClient[] = []
+  const longHorizon: LongHorizonItem[] = []
 
   for (const r of rows) {
     let overdueFields = 0
@@ -50,11 +64,18 @@ export function computeTodayPacket(
     let dueWeekCount = 0
     let nextDueField = ''
     let nextDueDays = 99
+    const staleItems: string[] = []
+    const appealActive = isAppealActive(r as { appeal_status?: string | null; pos_status?: string | null })
 
     for (const f of PREVISIT_DEADLINE_FIELDS) {
+      if (appealActive && APPEAL_GATED_FIELDS.has(f)) continue
       const days = daysFromToday((r[f] as string | null) ?? null, todayStr)
       if (days === null) continue
       if (days < 0) {
+        if (-days > horizonDays) {
+          staleItems.push(`${deadlineLabel(f)} ${-days}d overdue`)
+          continue
+        }
         overdueFields++
         if (-days > worstOverdueDays) { worstOverdueDays = -days; worstOverdueField = f }
       } else if (days === 0) {
@@ -76,6 +97,12 @@ export function computeTodayPacket(
     if (!overdueFields && (dueTodayField || dueWeekCount > 0)) counts.due_this_week++
     if (noContact7) counts.no_contact_7++
     if (eligSoon) counts.eligibility_soon_30++
+    if (appealActive) counts.appeal_active++
+
+    const rowName = [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || String(r.client_id ?? 'client')
+    if (staleItems.length > 0) {
+      longHorizon.push({ id: String(r.id), name: rowName, items: staleItems.slice(0, 4) })
+    }
 
     const score =
       overdueFields * 10 +
@@ -83,7 +110,8 @@ export function computeTodayPacket(
       (dueTodayField ? 6 : 0) +
       dueWeekCount * 2 +
       (noContact7 ? 4 : 0) +
-      (eligSoon ? 5 : 0)
+      (eligSoon ? 5 : 0) +
+      (appealActive ? 3 : 0)
     if (score <= 0) continue
 
     const reasons: string[] = []
@@ -93,20 +121,22 @@ export function computeTodayPacket(
     if (dueTodayField) reasons.push(`${deadlineLabel(dueTodayField)} due today`)
     else if (nextDueField) reasons.push(`${deadlineLabel(nextDueField)} due in ${nextDueDays}d`)
     if (eligSoon) reasons.push(`Eligibility ends in ${eligDays}d`)
+    if (appealActive) reasons.push('Appeal active \u2014 POS items paused')
     if (noContact7) reasons.push(daysSinceContact === null ? 'Never contacted' : `No contact ${daysSinceContact}d`)
 
-    const name = [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || String(r.client_id ?? 'client')
-    scored.push({ id: String(r.id), name, score, reasons: reasons.slice(0, 3) })
+    scored.push({ id: String(r.id), name: rowName, score, reasons: reasons.slice(0, 3) })
   }
 
   scored.sort((a, b) => b.score - a.score || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  longHorizon.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   return {
     counts,
     focus: scored.slice(0, focusLimit),
     caught_up: counts.overdue === 0 && counts.due_today === 0,
+    long_horizon: longHorizon,
   }
 }
 
 /** Columns the Today engine reads — shared by /api/today and the cron scan. */
 export const TODAY_CLIENT_COLS =
-  'id, client_id, first_name, last_name, last_contact_date, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due'
+  'id, client_id, first_name, last_name, last_contact_date, last_contact_type, eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, pos_status, appeal_status, assessment_due, thirty_day_letter_date, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, spm_next_due'

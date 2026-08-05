@@ -15,7 +15,7 @@
 
 import { businessTodayEpoch } from './business-date'
 
-export type GateStatus = 'pass' | 'fail'
+export type GateStatus = 'pass' | 'fail' | 'paused'
 
 export interface ReadinessGate {
   key: string
@@ -36,6 +36,8 @@ export interface ReadinessClient {
   loc_date: string | null
   pos_status: string | null
   poc_date: string | null
+  /** Optional — enables the appeal-aware paused state (08-05). */
+  appeal_status?: string | null
 }
 
 // Attachment category values that resolve into the "Forms & Signatures" folder.
@@ -128,12 +130,20 @@ export function evaluateReadiness(
   // for legacy records.
   {
     const v = (client.pos_status ?? '').trim().toLowerCase()
+    const a = (client.appeal_status ?? '').trim().toLowerCase()
+    // Active appeal (structured status or the legacy "Appealing" dropdown
+    // value) renders PAUSED — flagged, never critical (Megan 08-05).
+    const appealActive = ['filed', 'received', 'hearing_scheduled'].includes(a) || v === 'appealing'
     const ok = v === 'completed' || v === 'approved' || v === 'active'
     gates.push({
       key: 'pos_status',
       label: 'POS approved/active',
-      status: ok ? 'pass' : 'fail',
-      detail: ok ? `POS status is ${client.pos_status}.` : `POS status is ${client.pos_status ? `"${client.pos_status}"` : 'not set'}.`,
+      status: ok ? 'pass' : appealActive ? 'paused' : 'fail',
+      detail: ok
+        ? `POS status is ${client.pos_status}.`
+        : appealActive
+        ? 'Paused — appeal active. Next required action resumes after the appeal decision.'
+        : `POS status is ${client.pos_status ? `"${client.pos_status}"` : 'not set'}.`,
     })
   }
 

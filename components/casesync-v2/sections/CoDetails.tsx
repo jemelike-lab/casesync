@@ -6,11 +6,13 @@
 // own signed/expiry dates cross-checked against the annual POS. CO clients
 // are denied without a current FOC uploaded with the annual POS, so the
 // cross-check renders as an explicit banner rather than a buried date.
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Box, Group, Stack, Text, Paper } from '@mantine/core'
-import { Briefcase, Calendar, FileCheck, AlertTriangle, Check } from 'lucide-react'
+import { Briefcase, Calendar, FileCheck, AlertTriangle, Check, Building2 } from 'lucide-react'
 import { DateRow, TextRow } from '../Row'
 import type { Client } from '@/lib/types'
-import { focExpiryDate, formatDate } from '@/lib/types'
+import { focExpiryDate, formatDate, coEligibilityCodeIssue } from '@/lib/types'
 
 function dayEpoch(d: string | null | undefined): number | null {
   if (!d) return null
@@ -20,8 +22,29 @@ function dayEpoch(d: string | null | undefined): number | null {
 }
 
 export default function CoDetails({ client }: { client: Client }) {
+  const router = useRouter()
+  const [srcSaving, setSrcSaving] = useState(false)
   const c = client as Client & { pos_effective_date?: string | null; foc_date?: string | null }
   const isCo = client.category === 'co'
+
+  // Pending-CO application source (Josh 08-05): community applicants need no
+  // MA code while pending; nursing-facility applicants require an LTC code
+  // (L01 / L98 / L99).
+  const ltcIssue = coEligibilityCodeIssue(client)
+  async function saveSource(value: string) {
+    if (srcSaving) return
+    setSrcSaving(true)
+    try {
+      await fetch(`/api/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ co_application_source: value || null }),
+      })
+      router.refresh()
+    } finally {
+      setSrcSaving(false)
+    }
+  }
   const hasAny = isCo || !!(
     client.co_app_date || client.co_financial_redet_date ||
     c.pos_effective_date || c.foc_date || client.request_letter
@@ -95,6 +118,41 @@ export default function CoDetails({ client }: { client: Client }) {
         </Stack>
       </Group>
       <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+        {isCo && (
+          <Box style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid var(--v2-border-soft)' }}>
+            <Building2 size={16} style={{ color: '#EA580C', flexShrink: 0 }} strokeWidth={2.25} />
+            <Text fz={14} fw={600} style={{ color: '#EA580C', letterSpacing: '-0.005em' }}>Application source</Text>
+            <select
+              value={client.co_application_source ?? ''}
+              disabled={srcSaving}
+              onChange={e => saveSource(e.target.value)}
+              style={{
+                marginLeft: 'auto', maxWidth: 200, fontSize: 13, padding: '5px 8px',
+                background: 'transparent', color: 'var(--v2-text)',
+                border: '1px solid var(--v2-border-soft)', borderRadius: 8,
+              }}
+            >
+              <option value="">Not set</option>
+              <option value="community">Community</option>
+              <option value="nursing_facility">Nursing facility</option>
+            </select>
+          </Box>
+        )}
+        {isCo && ltcIssue && (
+          <Box style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', borderBottom: '0.5px solid var(--v2-border-soft)' }}>
+            <AlertTriangle size={15} style={{ color: '#A32D2D', flexShrink: 0 }} />
+            <Text fz={12.5} fw={600} style={{ background: '#FCEBEB', color: '#791F1F', borderRadius: 6, padding: '3px 10px' }}>
+              {ltcIssue}
+            </Text>
+          </Box>
+        )}
+        {isCo && client.co_application_source === 'community' && !client.eligibility_code && (
+          <Box style={{ padding: '8px 0', borderBottom: '0.5px solid var(--v2-border-soft)' }}>
+            <Text fz={12.5} c="var(--v2-text-muted)">
+              No eligibility code expected while pending {'\u2014'} the MA code arrives at enrollment.
+            </Text>
+          </Box>
+        )}
         {client.co_app_date && (
           <DateRow Icon={Briefcase} color="#C026D3" label="CO application" value={client.co_app_date} isLast={lastRow === 'app' && !focDate} />
         )}

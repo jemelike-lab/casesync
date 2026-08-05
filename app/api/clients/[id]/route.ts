@@ -30,6 +30,8 @@ const DATE_FIELDS = [
   'spm_next_due', 'co_financial_redet_date', 'co_app_date', 'mfp_consent_date',
   'two57_date', 'thirty_day_letter_date', 'drop_in_visit_date',
   'pos_effective_date', 'foc_date',
+  'appeal_received_date', 'appeal_hearing_date', 'appeal_decision_date',
+  'med_tech_date',
 ] as const
 
 // Everything PATCH may touch. Mirrors the legacy ClientEditForm formData set
@@ -38,6 +40,8 @@ const EDITABLE_FIELDS = new Set<string>([
   ...DATE_FIELDS,
   'first_name', 'last_name', 'category', 'eligibility_code',
   'last_contact_type', 'med_tech_status', 'pos_status',
+  'appeal_status', 'services_continuing_during_appeal', 'services_continuing_source',
+  'co_application_source',
   'spm_completed', 'schedule_docs',
   'foc', 'provider_forms', 'signatures_needed', 'atp', 'snfs', 'lease',
   'request_letter', 'reportable_events', 'appeals', 'audit_review', 'qa_review',
@@ -64,6 +68,19 @@ function validateUpdates(body: Record<string, unknown>): { updates: Record<strin
       value = n
     } else if (key === 'spm_completed' || key === 'schedule_docs') {
       value = Boolean(value)
+    } else if (key === 'services_continuing_during_appeal') {
+      if (value === '' || value === null) value = null
+      else value = Boolean(value)
+    } else if (key === 'appeal_status') {
+      if (value === '') value = null
+      if (value !== null && (typeof value !== 'string' || !['none', 'filed', 'received', 'hearing_scheduled', 'decision_issued'].includes(value))) {
+        return { updates: {}, error: 'appeal_status must be one of none, filed, received, hearing_scheduled, decision_issued' }
+      }
+    } else if (key === 'co_application_source') {
+      if (value === '') value = null
+      if (value !== null && (typeof value !== 'string' || !['community', 'nursing_facility'].includes(value))) {
+        return { updates: {}, error: 'co_application_source must be community or nursing_facility' }
+      }
     } else if (typeof value === 'string') {
       if (value.length > 2000) return { updates: {}, error: `${key} exceeds 2000 characters` }
     } else if (value !== null && typeof value !== 'boolean' && typeof value !== 'number') {

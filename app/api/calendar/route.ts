@@ -20,6 +20,7 @@ const DEADLINE_FIELDS = [
   { key: 'mfp_consent_date', label: 'MFP Consent' },
   { key: 'two57_date', label: '257 Date' },
   { key: 'doc_mdh_date', label: 'MDH Documentation' },
+  { key: 'appeal_hearing_date', label: 'Appeal Hearing' },
 ] as const
 
 function getUrgency(dateStr: string, todayKey: string) {
@@ -93,7 +94,8 @@ export async function GET(req: Request) {
                  p.id AS p_id, p.full_name AS p_full_name, p.role AS p_role,
                  c.eligibility_end_date, c.three_month_visit_due, c.quarterly_waiver_date, c.med_tech_redet_date,
                  c.pos_deadline, c.assessment_due, c.thirty_day_letter_date, c.spm_next_due,
-                 c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date
+                 c.co_financial_redet_date, c.co_app_date, c.mfp_consent_date, c.two57_date, c.doc_mdh_date,
+                 c.appeal_hearing_date
           FROM clients c
           LEFT JOIN profiles p ON p.id = c.assigned_to
           WHERE c.is_active = true AND c.client_classification = 'real' ${scope}
@@ -111,7 +113,7 @@ export async function GET(req: Request) {
 
       let query = admin
         .from('clients')
-        .select('id, client_id, first_name, last_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role), eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date')
+        .select('id, client_id, first_name, last_name, assigned_to, profiles!clients_assigned_to_fkey(id, full_name, role), eligibility_end_date, three_month_visit_due, quarterly_waiver_date, med_tech_redet_date, pos_deadline, assessment_due, thirty_day_letter_date, spm_next_due, co_financial_redet_date, co_app_date, mfp_consent_date, two57_date, doc_mdh_date, appeal_hearing_date')
         .eq('is_active', true)
         .eq('client_classification', 'real')
 

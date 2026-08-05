@@ -212,6 +212,7 @@ export async function GET(req: NextRequest) {
         loc_date: c.loc_date ?? null,
         pos_status: c.pos_status ?? null,
         poc_date: c.poc_date ?? null,
+        appeal_status: (c as { appeal_status?: string | null }).appeal_status ?? null,
       },
       sigSet.has(c.id),
       now,
