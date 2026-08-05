@@ -10,6 +10,11 @@ import { Send } from 'lucide-react'
 import type { Client, ClientNote } from '@/lib/types'
 import SectionPaper from '../SectionPaper'
 
+// Notes written by the nightly Smartsheet sync are prefixed at insert time
+// (see app/api/cron/smartsheet-sync). Render them with explicit provenance so
+// imported material is never mistaken for a planner's own note (Megan 08-05).
+const SYNC_PREFIX = 'Smartsheet sync: '
+
 interface Props {
   client: Client
   currentUserId: string
@@ -129,6 +134,7 @@ export default function Notes({ client }: Props) {
 
       {/* Note list */}
       {notes.map((note, idx) => {
+        const isSync = note.content.startsWith(SYNC_PREFIX)
         const hue = hueFromName(note.profiles?.full_name)
         const initials = getInitials(note.profiles?.full_name)
         const isLast = idx === notes.length - 1
@@ -155,15 +161,22 @@ export default function Notes({ client }: Props) {
             </Box>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Group justify="space-between" gap={8} mb={3} wrap="nowrap">
-                <Text fz={12} fw={600} c="#185FA5" style={{ letterSpacing: '-0.005em' }}>
-                  {note.profiles?.full_name ?? 'Unknown'}
-                </Text>
+                <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                  <Text fz={12} fw={600} c="#185FA5" style={{ letterSpacing: '-0.005em' }}>
+                    {isSync ? 'Smartsheet sync' : (note.profiles?.full_name ?? 'Unknown')}
+                  </Text>
+                  {isSync && (
+                    <Text fz={10} fw={600} style={{ background: 'var(--v2-surface-soft, #F1EFE8)', color: 'var(--v2-text-muted)', borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>
+                      Imported
+                    </Text>
+                  )}
+                </Group>
                 <Text fz={11} c="var(--v2-text-muted)" style={{ fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
                   {formatNoteDate(note.created_at)}
                 </Text>
               </Group>
               <Text fz={13} c="var(--v2-text)" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
-                {note.content}
+                {isSync ? note.content.slice(SYNC_PREFIX.length) : note.content}
               </Text>
             </Box>
           </Box>

@@ -100,6 +100,28 @@ export function spmNextDueAfterCompletionStr(now: Date = new Date()): string {
   return `${ny}-${String(nm).padStart(2, '0')}-15`
 }
 
+/**
+ * MDH 30-day shadow date (Josh 08-05 ruling): the 15th-of-month rule is the
+ * HARD rule everywhere; the MDH 30-days-from-previous-due standard is kept as
+ * a quiet background indicator only — never scored, never alerted.
+ * previous due = the 15th of the month before spm_next_due; shadow = +30 days.
+ * Returns null when spm_next_due is absent or unparsable.
+ */
+export function mdhSpmShadowDateStr(spmNextDue: string | null | undefined): string | null {
+  if (!spmNextDue) return null
+  const parts = spmNextDue.split('-').map(Number)
+  if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return null
+  const [y, m] = parts
+  const py = m === 1 ? y - 1 : y
+  const pm = m === 1 ? 12 : m - 1
+  const prevDue = `${py}-${String(pm).padStart(2, '0')}-15`
+  try {
+    return dateStrAddDays(prevDue, 30)
+  } catch {
+    return null
+  }
+}
+
 export function dateStrAddDays(dateStr: string, days: number): string {
   const epoch = dateStrToEpoch(dateStr)
   if (epoch === null) throw new Error(`dateStrAddDays: unusable date string "${dateStr}"`)

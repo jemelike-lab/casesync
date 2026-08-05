@@ -14,7 +14,7 @@ import { TextRow, DateRow, EventRow } from '../Row'
 import QuickLog from '@/components/QuickLog'
 import type { Client } from '@/lib/types'
 import { nextThreeMonthVisitDue, waiverRenewalDate, isWaiverValid, formatDate } from '@/lib/types'
-import { spmNextDueAfterCompletionStr } from '@/lib/business-date'
+import { spmNextDueAfterCompletionStr , mdhSpmShadowDateStr } from '@/lib/business-date'
 
 function scrollToFiles() {
   document.getElementById('cs-sec-files')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -60,6 +60,7 @@ export default function ContactDetails({ client }: { client: Client }) {
   const hasDrop  = !!c.drop_in_visit_date
   const hasThree = !!c.three_month_visit_date
   const hasSpm   = !!client.spm_next_due
+  const mdhShadow = mdhSpmShadowDateStr(client.spm_next_due)
 
   const waiverSigned  = c.quarterly_waiver_date
   const waiverActive  = isWaiverValid(waiverSigned)
@@ -130,6 +131,13 @@ export default function ContactDetails({ client }: { client: Client }) {
             label="SPM next due" value={client.spm_next_due}
             isLast={last === 'spm'}
           />
+        )}
+        {hasSpm && mdhShadow && (
+          <Box style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 0 8px 27px' }}>
+            <Text fz={11.5} c="var(--v2-text-muted)">
+              MDH 30-day shadow: {formatDate(mdhShadow)} — BLH 15th-of-month rule governs
+            </Text>
+          </Box>
         )}
         <Box style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
           <ClipboardCheck size={17} style={{ color: '#DB2777', flexShrink: 0 }} strokeWidth={2.25} />

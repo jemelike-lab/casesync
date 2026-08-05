@@ -67,13 +67,14 @@ export function AIAskClient({ clientId }: { clientId: string }) {
     <div>
       <div style={{ display: 'flex', gap: 6 }}>
         <input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask() }}
-          placeholder="Ask about this client…" style={{ ...inputStyle, flex: 1, fontSize: 12, borderColor: 'rgba(191,90,242,0.2)' }} />
+          placeholder={'Ask a full question \u2014 "What is the due date for the POS?"'} style={{ ...inputStyle, flex: 1, fontSize: 12, borderColor: 'rgba(191,90,242,0.2)' }} />
         <button onClick={ask} disabled={loading || !question.trim()} style={{
           background: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.2)', borderRadius: 10,
           color: '#bf5af2', fontSize: 11, fontWeight: 600, padding: '6px 10px', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 4, opacity: loading ? 0.6 : 1, whiteSpace: 'nowrap',
         }}>{loading ? <><RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> …</> : <><Brain size={12} /> Ask</>}</button>
       </div>
+      <div style={{ marginTop: 4, fontSize: 10.5, color: 'var(--text-muted, #8e8e93)', lineHeight: 1.4 }}>Tip: full questions get the best answers — “POS deadline” alone won’t.</div>
       {error && <div style={{ marginTop: 6, fontSize: 11, color: '#ff453a' }}>⚠️ {error}</div>}
       {answer && <div style={{ marginTop: 8, background: 'rgba(191,90,242,0.04)', border: '1px solid rgba(191,90,242,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{answer}</div>}
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
