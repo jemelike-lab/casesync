@@ -144,11 +144,11 @@ export function TextRow({ Icon, color, label, value, isLast = false }: BaseProps
     <Box
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={baseStyle(isLast, '20px minmax(0, 1fr) auto')}
+      style={baseStyle(isLast, '20px max-content minmax(0, 1fr)')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
-      <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
-      <Text fz={13} fw={600} c="var(--v2-text)">{value}</Text>
+      <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em', whiteSpace: 'nowrap' }}>{label}</Text>
+      <Text fz={13} fw={600} c="var(--v2-text)" style={{ textAlign: 'right', overflowWrap: 'anywhere', whiteSpace: 'normal', minWidth: 0 }}>{value}</Text>
       <HoverPopover
         visible={hovered}
         kindLabel="On record"
