@@ -290,13 +290,13 @@ export default function ClientIndexClient({
                               style={{ color: isPin ? '#F59E0B' : 'var(--border)', fontSize: 15, userSelect: 'none' }}>★</span>
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
-                        <Link href={`/clients/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <ClientAvatar seed={String(c.client_id ?? c.id)} size={32} />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                        <Link href={`/clients/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <ClientAvatar seed={String(c.client_id ?? c.id)} size={26} />
+                          <div style={{ minWidth: 0, maxWidth: 168 }}>
+                            <div style={{ color: 'var(--accent)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {c.last_name}{c.first_name ? `, ${c.first_name}` : ''}
                             </div>
-                            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{c.client_id}</div>
+                            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.client_id}</div>
                           </div>
                         </Link>
                       </td>

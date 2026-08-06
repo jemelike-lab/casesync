@@ -32,6 +32,11 @@ export default function PlansAssessments({ client }: { client: Client }) {
   const appealDecisionOd = appealDecisionOverdueDays(client)
   const appealStatus = (client.appeal_status ?? '').trim().toLowerCase()
   const hasAppeal = appealActive || (!!appealStatus && appealStatus !== 'none')
+  // Discoverability (Megan 08-06): a denied POS is exactly when a planner
+  // needs the appeal tracker, so the section must be visible BEFORE any
+  // appeal fields are entered - otherwise the feature is invisible.
+  const posDenied = (client.pos_status ?? '').trim().toLowerCase() === 'denied'
+  const showAppealSection = hasAppeal || posDenied
     || !!client.appeal_received_date || !!client.appeal_hearing_date || !!client.appeal_decision_date
     || client.services_continuing_during_appeal !== null && client.services_continuing_during_appeal !== undefined
 
@@ -109,6 +114,31 @@ export default function PlansAssessments({ client }: { client: Client }) {
           />
         )}
       </Box>
+      {showAppealSection && !hasAppeal && (
+        <Box
+          style={{
+            marginTop: 12, border: '0.5px solid var(--v2-border-soft)', borderRadius: 10,
+            padding: '12px 14px', background: 'var(--v2-surface-2, transparent)',
+          }}
+        >
+          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Text fz={14} fw={600} c="var(--v2-text)">Appeal</Text>
+              <Text
+                fz={11} fw={600}
+                style={{ background: 'var(--v2-surface-soft, #F1EFE8)', color: 'var(--v2-text-muted)', borderRadius: 999, padding: '2px 10px' }}
+              >
+                None on file
+              </Text>
+            </Box>
+          </Box>
+          <Text fz={12} c="var(--v2-text-muted)" mt={6}>
+            POS denied {'\u2014'} once an appeal is filed, track it here: set the appeal status,
+            received / hearing / decision dates, and services-continuing in Edit. Tracked
+            appeals pause POS criticals until the decision.
+          </Text>
+        </Box>
+      )}
       {hasAppeal && (
         <Box
           style={{

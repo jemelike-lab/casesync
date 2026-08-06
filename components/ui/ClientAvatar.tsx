@@ -41,11 +41,11 @@ export default function ClientAvatar({ seed, size = 32 }: { seed: string; size?:
   // Golden-angle hue spread across the entire wheel.
   const hue = Math.round((h * 137.508) % 360)
   // Vary saturation and figure lightness bands too, so even close hues differ.
-  const sat = 42 + (h % 4) * 8            // 42–66%
-  const ringL = 90 + (h % 3)              // 90–92% — soft ring in light and dark
-  const figL = 34 + ((h >> 3) % 4) * 4    // 34–46%
+  const sat = 40 + (h % 3) * 8            // 40–56%
+  const ringL = 92 + (h % 3)              // 92–94% — soft ring in light and dark
+  const figL = 40 + ((h >> 3) % 4) * 3    // 40–49% — avoids muddy near-black figures
   const ring = `hsl(${hue}, ${sat}%, ${ringL}%)`
-  const fig = `hsl(${hue}, ${sat + 8}%, ${figL}%)`
+  const fig = `hsl(${hue}, ${sat}%, ${figL}%)`
   const delay = ((h % 43) / 10).toFixed(1) // 0.0–4.2s stagger
   return (
     <svg
