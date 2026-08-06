@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import LottieBlock from '@/components/ui/LottieBlock'
+import ClientAvatar, { ClientAvatarStyles } from '@/components/ui/ClientAvatar'
 import EmptyState from '@/components/ui/EmptyState'
 import QuickLog from '@/components/QuickLog'
 import { ANIM } from '@/lib/animations'
@@ -175,9 +176,10 @@ export default function ClientIndexClient({
 
   return (
     <div style={{ maxWidth: 1220, margin: '0 auto', padding: '24px 20px' }}>
+      <ClientAvatarStyles />
       {/* Page hero */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-        <LottieBlock src={ANIM.gTeam} size={54} trigger="mount" />
+        <LottieBlock src={ANIM.gProfile} size={54} trigger="mount" />
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', margin: 0 }}>Clients</h1>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -288,11 +290,14 @@ export default function ClientIndexClient({
                               style={{ color: isPin ? '#F59E0B' : 'var(--border)', fontSize: 15, userSelect: 'none' }}>★</span>
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
-                        <Link href={`/clients/${c.id}`} style={{ textDecoration: 'none' }}>
-                          <div style={{ color: 'var(--accent)', fontWeight: 700 }}>
-                            {c.last_name}{c.first_name ? `, ${c.first_name}` : ''}
+                        <Link href={`/clients/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <ClientAvatar seed={String(c.client_id ?? c.id)} size={32} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                              {c.last_name}{c.first_name ? `, ${c.first_name}` : ''}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{c.client_id}</div>
                           </div>
-                          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{c.client_id}</div>
                         </Link>
                       </td>
                       <td style={{ padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
