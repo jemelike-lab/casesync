@@ -48,6 +48,7 @@ export default function QuickLog({ clientId, clientName, contextLine, variant = 
   const [open, setOpen] = useState(false)
   const [desktop, setDesktop] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
   const [when, setWhen] = useState<'today' | 'yesterday' | 'pick'>('today')
   const [pickDate, setPickDate] = useState('')
   const [type, setType] = useState<string | null>(null)
@@ -81,16 +82,29 @@ export default function QuickLog({ clientId, clientName, contextLine, variant = 
     if (!r) return
     const width = 270
     const left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8))
-    setPos({ top: r.bottom + 8, left })
+    // Measure the rendered panel when we can; fall back to a conservative
+    // estimate on the very first paint.
+    const h = panelRef.current?.offsetHeight || 320
+    const margin = 8
+    let top = r.bottom + margin
+    if (top + h > window.innerHeight - margin) {
+      const above = r.top - margin - h
+      top = above >= margin ? above : Math.max(margin, window.innerHeight - margin - h)
+    }
+    setPos({ top, left })
   }, [])
 
   useEffect(() => {
     if (!open || !desktop) return
     place()
+    // Second pass once the panel is in the DOM and has a real height, so the
+    // flip decision uses the true measurement rather than the estimate.
+    const raf = requestAnimationFrame(() => place())
     const onMove = () => place()
     window.addEventListener('scroll', onMove, true)
     window.addEventListener('resize', onMove)
     return () => {
+      cancelAnimationFrame(raf)
       window.removeEventListener('scroll', onMove, true)
       window.removeEventListener('resize', onMove)
     }
@@ -204,7 +218,7 @@ export default function QuickLog({ clientId, clientName, contextLine, variant = 
   )
 
   const body = desktop ? (
-    <div style={{ position: 'fixed', top: pos?.top ?? 0, left: pos?.left ?? 0, width: 270, zIndex: 71, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 12px 38px rgba(0,0,0,0.35)', padding: '14px 16px', whiteSpace: 'normal', visibility: pos ? 'visible' : 'hidden' }}>
+    <div ref={panelRef} style={{ position: 'fixed', top: pos?.top ?? 0, left: pos?.left ?? 0, width: 270, maxHeight: 'calc(100dvh - 16px)', overflowY: 'auto', zIndex: 71, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 12px 38px rgba(0,0,0,0.35)', padding: '14px 16px', whiteSpace: 'normal', visibility: pos ? 'visible' : 'hidden' }}>
       <div style={{ ...lab, marginTop: 0 }}>When</div>
       {whenSeg}
       {pickInput}

@@ -295,7 +295,7 @@ export function isOverdue(client: Client): boolean {
   const datesToCheck = [
     client.eligibility_end_date,
     client.three_month_visit_due,
-    client.quarterly_waiver_date,
+    waiverRenewalDate(client.quarterly_waiver_date),
     client.med_tech_redet_date,
     client.pos_deadline,
     client.assessment_due,
@@ -317,7 +317,7 @@ export function isDueToday(client: Client): boolean {
   const datesToCheck = [
     client.eligibility_end_date,
     client.three_month_visit_due,
-    client.quarterly_waiver_date,
+    waiverRenewalDate(client.quarterly_waiver_date),
     client.med_tech_redet_date,
     client.pos_deadline,
     client.assessment_due,
@@ -338,7 +338,7 @@ export function isDueThisWeek(client: Client): boolean {
   const datesToCheck = [
     client.eligibility_end_date,
     client.three_month_visit_due,
-    client.quarterly_waiver_date,
+    waiverRenewalDate(client.quarterly_waiver_date),
     client.med_tech_redet_date,
     client.pos_deadline,
     client.assessment_due,
@@ -360,7 +360,7 @@ export function isDueNext14Days(client: Client): boolean {
   const datesToCheck = [
     client.eligibility_end_date,
     client.three_month_visit_due,
-    client.quarterly_waiver_date,
+    waiverRenewalDate(client.quarterly_waiver_date),
     client.med_tech_redet_date,
     client.pos_deadline,
     client.assessment_due,
@@ -742,7 +742,7 @@ export function getRiskLevel(client: Client): RiskLevel {
   const datesToCheck = [
     client.eligibility_end_date,
     client.three_month_visit_due,
-    client.quarterly_waiver_date,
+    waiverRenewalDate(client.quarterly_waiver_date),
     client.med_tech_redet_date,
     client.pos_deadline,
     client.assessment_due,

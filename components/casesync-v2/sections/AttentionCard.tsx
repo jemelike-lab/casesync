@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { evaluateReadiness, SIGNATURE_CATEGORIES } from '@/lib/readiness'
 import type { Client } from '@/lib/types'
-import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_GATED_FIELDS, coEligibilityCodeIssue } from '@/lib/types'
+import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_GATED_FIELDS, coEligibilityCodeIssue, waiverRenewalDate, focExpiryDate } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // AttentionCard — Phase A Batch 3.4 (Direction B, approved 2026-07-04)
@@ -46,7 +46,11 @@ interface AttnItem {
 const ATTN_DEADLINE_FIELDS: Array<{ field: keyof Client; label: string }> = [
   { field: 'eligibility_end_date',    label: 'Eligibility'      },
   { field: 'three_month_visit_due',   label: '3-month visit'    },
-  { field: 'quarterly_waiver_date',   label: 'Quarterly waiver' },
+  // Stored value is the SIGNATURE date; the deadline is signature + 12 months.
+  // Resolved via waiverRenewalDate in the loop so a live SP waiver never reads
+  // overdue (Josh 08-07).
+  { field: 'quarterly_waiver_date',   label: 'SP waiver renewal' },
+  { field: 'foc_date',                label: 'FOC renewal'      },
   { field: 'med_tech_redet_date',     label: 'Med-tech redet.'  },
   { field: 'pos_deadline',            label: 'POS deadline'     },
   { field: 'assessment_due',          label: 'Assessment'       },
@@ -122,7 +126,14 @@ function buildDateItems(client: Client): { items: AttnItem[]; dateItemFields: Se
   // Deadlines: overdue or due within 7 days
   for (const { field, label } of ATTN_DEADLINE_FIELDS) {
     if (appealGating && APPEAL_GATED_FIELDS.has(String(field))) continue
-    const d = daysFromToday(client[field] as string | null | undefined)
+    // Signature-style fields carry the date the form was SIGNED; their
+    // deadline is one year later. Everything else is already a due date.
+    const raw = client[field] as string | null | undefined
+    const effective =
+      field === 'quarterly_waiver_date' ? waiverRenewalDate(raw)
+      : field === 'foc_date'            ? focExpiryDate(raw)
+      : raw
+    const d = daysFromToday(effective)
     if (d === null) continue
     if (d < 0) {
       items.push({ key: `dl-${String(field)}`, severity: 'red', text: `${label} overdue — ${Math.abs(d)} ${Math.abs(d) === 1 ? 'day' : 'days'}`, actionLabel: 'View deadlines', actionKind: 'scroll', actionTarget: 'cs-sec-deadlines' })

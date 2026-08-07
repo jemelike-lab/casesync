@@ -161,16 +161,9 @@ export default function Notes({ client }: Props) {
             </Box>
             <Box style={{ flex: 1, minWidth: 0 }}>
               <Group justify="space-between" gap={8} mb={3} wrap="nowrap">
-                <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-                  <Text fz={12} fw={600} c="#185FA5" style={{ letterSpacing: '-0.005em' }}>
-                    {isSync ? 'Smartsheet sync' : (note.profiles?.full_name ?? 'Unknown')}
-                  </Text>
-                  {isSync && (
-                    <Text fz={10} fw={600} style={{ background: 'var(--v2-surface-soft, #F1EFE8)', color: 'var(--v2-text-muted)', borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>
-                      Imported
-                    </Text>
-                  )}
-                </Group>
+                <Text fz={12} fw={600} c="#185FA5" style={{ letterSpacing: '-0.005em' }}>
+                  {note.profiles?.full_name ?? 'Unknown'}
+                </Text>
                 <Text fz={11} c="var(--v2-text-muted)" style={{ fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
                   {formatNoteDate(note.created_at)}
                 </Text>

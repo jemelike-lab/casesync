@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { DateRow, EventRow } from '../Row'
-import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, isAppealGatingActive, APPEAL_GATED_FIELDS } from '@/lib/types'
+import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, focExpiryDate, isAppealGatingActive, APPEAL_GATED_FIELDS } from '@/lib/types'
 
 // Per-row identity colors (17 distinct hues, 600/700-level Tailwind).
 const FIELDS: Array<{
@@ -50,15 +50,31 @@ export default function Deadlines({ client }: { client: Client }) {
     .filter((r): r is typeof r & { date: string } => Boolean(r.date))
     .filter(r => !(r.field === 'three_month_visit_due' && waiverActive))
 
-  const rows = waiverRenewal
-    ? [...baseRows, {
-        field: 'quarterly_waiver_date' as keyof Client,
-        label: 'SP waiver renewal',
-        Icon: FileText,
-        color: '#0891B2',
-        date: waiverRenewal,
-      }]
-    : baseRows
+  // FOC is completed annually, so the tracked deadline is signature + 12 months
+  // (Josh 08-07). Same derived-row treatment as the SP waiver renewal.
+  const focRenewal = focExpiryDate(client.foc_date)
+
+  const derived: Array<{ field: keyof Client; label: string; Icon: typeof FileText; color: string; date: string }> = []
+  if (waiverRenewal) {
+    derived.push({
+      field: 'quarterly_waiver_date' as keyof Client,
+      label: 'SP waiver renewal',
+      Icon: FileText,
+      color: '#0891B2',
+      date: waiverRenewal,
+    })
+  }
+  if (focRenewal) {
+    derived.push({
+      field: 'foc_date' as keyof Client,
+      label: 'FOC renewal',
+      Icon: FileCheck,
+      color: '#0F766E',
+      date: focRenewal,
+    })
+  }
+
+  const rows = [...baseRows, ...derived]
 
   const overdueCount = rows.filter(r => {
     if (appealActive && APPEAL_GATED_FIELDS.has(String(r.field))) return false
