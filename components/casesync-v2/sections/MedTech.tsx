@@ -6,7 +6,7 @@
 // appeal is active.
 import { Box, Text } from '@mantine/core'
 import { Stethoscope, CalendarCheck, Clock } from 'lucide-react'
-import SectionPaper from '../SectionPaper'
+import SectionPaper, { SectionEmpty } from '../SectionPaper'
 import { TextRow, EventRow, DateRow } from '../Row'
 import type { Client } from '@/lib/types'
 import { isAppealGatingActive } from '@/lib/types'
@@ -17,7 +17,7 @@ export default function MedTech({ client }: { client: Client }) {
   const hasRedet = !!client.med_tech_redet_date
   const count = [hasStatus, hasDate, hasRedet].filter(Boolean).length
 
-  if (count === 0) return null
+  const isEmpty = count === 0
 
   const appealActive = isAppealGatingActive(client)
   const last = hasRedet ? 'redet' : hasDate ? 'date' : 'status'
@@ -25,7 +25,7 @@ export default function MedTech({ client }: { client: Client }) {
   return (
     <SectionPaper
       title="Med tech"
-      subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
+      subtitle={isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
       action={appealActive && hasRedet ? (
         <Text
           fz={12} fw={600}
@@ -35,7 +35,8 @@ export default function MedTech({ client }: { client: Client }) {
         </Text>
       ) : undefined}
     >
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && <SectionEmpty text={'No med-tech details on file yet.'} />}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {hasStatus && (
           <TextRow
             Icon={Stethoscope} color="#D97706"

@@ -4,7 +4,7 @@
 // Four fields: reportable_events, appeals (text), audit_review, qa_review (select-as-text).
 import { Box } from '@mantine/core'
 import { AlertTriangle, Gavel, Search, BadgeCheck } from 'lucide-react'
-import SectionPaper from '../SectionPaper'
+import SectionPaper, { SectionEmpty } from '../SectionPaper'
 import { TextRow } from '../Row'
 import type { Client } from '@/lib/types'
 
@@ -15,7 +15,7 @@ export default function ReportingReviews({ client }: { client: Client }) {
   const hasQa     = !!client.qa_review
   const count = [hasEvents, hasAppeal, hasAudit, hasQa].filter(Boolean).length
 
-  if (count === 0) return null
+  const isEmpty = count === 0
 
   const last =
     hasQa     ? 'qa'     :
@@ -25,9 +25,10 @@ export default function ReportingReviews({ client }: { client: Client }) {
   return (
     <SectionPaper
       title="Reporting & reviews"
-      subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
+      subtitle={isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
     >
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && <SectionEmpty text={'No reporting or reviews on file yet.'} />}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {hasEvents && (
           <TextRow
             Icon={AlertTriangle} color="#DC2626"

@@ -6,7 +6,7 @@
 // a client with no real data doesn't surface a phantom "Schedule docs: No" row.
 import { Box } from '@mantine/core'
 import { FileText, Building2, PenLine, CalendarCheck } from 'lucide-react'
-import SectionPaper from '../SectionPaper'
+import SectionPaper, { SectionEmpty } from '../SectionPaper'
 import { TextRow, BooleanRow } from '../Row'
 import type { Client } from '@/lib/types'
 
@@ -17,7 +17,7 @@ export default function FormsSignatures({ client }: { client: Client }) {
   const hasSchedule = client.schedule_docs === true
   const count = [hasFoc, hasProvider, hasSigs, hasSchedule].filter(Boolean).length
 
-  if (count === 0) return null
+  const isEmpty = count === 0
 
   const last =
     hasSchedule ? 'schedule' :
@@ -27,9 +27,10 @@ export default function FormsSignatures({ client }: { client: Client }) {
   return (
     <SectionPaper
       title="Forms & signatures"
-      subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
+      subtitle={isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
     >
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && <SectionEmpty text={'No forms or signatures on file yet.'} />}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {hasFoc && (
           <TextRow
             Icon={FileText} color="#0891B2"

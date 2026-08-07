@@ -3,13 +3,36 @@
 // Plans & assessments — Phase A extracted section
 import { Box, Text } from '@mantine/core'
 import { FileText, ClipboardList, ClipboardCheck, TrendingUp, Scale, CalendarCheck } from 'lucide-react'
-import SectionPaper from '../SectionPaper'
+import SectionPaper, { SectionEmpty } from '../SectionPaper'
 import { TextRow, DateRow, BooleanRow, PercentRow, EventRow } from '../Row'
 import type { Client } from '@/lib/types'
 import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_STATUS_LABELS, formatDate } from '@/lib/types'
 
 function scrollToFiles() {
   document.getElementById('cs-sec-files')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+/** Scroll to Client Files AND open the upload picker with the category
+ *  preselected (Josh 08-07: the appeal section had no upload affordance at
+ *  all, so planners had no way to file a denial or appeal letter from here). */
+function uploadWithCategory(category: string) {
+  scrollToFiles()
+  window.setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('cs:open-upload', { detail: { category } }))
+  }, 350)
+}
+
+function UploadLetterButtons() {
+  const btn: React.CSSProperties = {
+    background: 'transparent', border: '1px solid var(--v2-border-soft)', borderRadius: 8,
+    color: 'var(--v2-text-muted)', padding: '4px 10px', fontSize: 12, cursor: 'pointer',
+  }
+  return (
+    <Box style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <button style={btn} onClick={() => uploadWithCategory('denial')}>Upload denial letter</button>
+      <button style={btn} onClick={() => uploadWithCategory('appeal')}>Upload appeal letter</button>
+    </Box>
+  )
 }
 
 export default function PlansAssessments({ client }: { client: Client }) {
@@ -56,7 +79,7 @@ export default function PlansAssessments({ client }: { client: Client }) {
   const count = [hasPoc, hasLoc, hasStatus, hasPosEff, hasSpm, hasGoal].filter(Boolean).length
     + (showAppealSection ? 1 : 0)
 
-  if (count === 0) return null
+  const isEmpty = count === 0
 
   const last =
     hasGoal   ? 'goal'   :
@@ -68,7 +91,7 @@ export default function PlansAssessments({ client }: { client: Client }) {
   return (
     <SectionPaper
       title="Plans & assessments"
-      subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
+      subtitle={isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
       action={appealActive && !appealGating && !client.appeal_decision_date ? (
         <Text
           fz={12} fw={600}
@@ -92,7 +115,8 @@ export default function PlansAssessments({ client }: { client: Client }) {
         </Text>
       ) : undefined}
     >
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && <SectionEmpty text={'No plan or assessment details on file yet.'} />}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {hasPoc && (appealActive ? (
           <EventRow
             Icon={FileText} color="#9333EA"
@@ -190,11 +214,14 @@ export default function PlansAssessments({ client }: { client: Client }) {
               <Text fz={13} fw={600} c="var(--v2-text)">{client.services_continuing_source || '\u2014'}</Text>
             </Box>
           </Box>
-          <Text fz={12} c="var(--v2-text-muted)" style={{ borderTop: '0.5px solid var(--v2-border-soft)', paddingTop: 8 }}>
-            {posDenied ? 'POS denied' : 'POS needs attention'} {'\u2014'} no appeal on file yet.
-            Enter the appeal status and dates in Edit; a tracked appeal pauses POS, med-tech,
-            and POC criticals until the decision.
-          </Text>
+          <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)', paddingTop: 8 }}>
+            <Text fz={12} c="var(--v2-text-muted)" mb={8}>
+              {posDenied ? 'POS denied' : 'POS needs attention'} {'\u2014'} no appeal on file yet.
+              Enter the appeal status and dates in Edit; a tracked appeal pauses POS, med-tech,
+              and POC criticals until the decision.
+            </Text>
+            <UploadLetterButtons />
+          </Box>
         </Box>
       )}
       {hasAppeal && (
@@ -251,17 +278,9 @@ export default function PlansAssessments({ client }: { client: Client }) {
               {client.services_continuing_source ? <Text component="span" fz={12} c="var(--v2-text-muted)"> {'\u00b7'} source: {client.services_continuing_source}</Text> : null}
             </Text>
           )}
-          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '0.5px solid var(--v2-border-soft)', paddingTop: 8 }}>
-            <Text fz={12.5} c="var(--v2-text-muted)">Appeal letter uploads file under Plans</Text>
-            <button
-              onClick={scrollToFiles}
-              style={{
-                background: 'transparent', border: '1px solid var(--v2-border-soft)', borderRadius: 8,
-                color: 'var(--v2-text-muted)', padding: '4px 10px', fontSize: 12, cursor: 'pointer',
-              }}
-            >
-              Upload appeal letter
-            </button>
+          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', borderTop: '0.5px solid var(--v2-border-soft)', paddingTop: 8 }}>
+            <Text fz={12.5} c="var(--v2-text-muted)">Denial and appeal letters file under Plans</Text>
+            <UploadLetterButtons />
           </Box>
           {appealActive && (
             <Text fz={12} c="var(--v2-text-muted)" style={{ marginTop: 8 }}>

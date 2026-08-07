@@ -49,7 +49,7 @@ export default function CoDetails({ client }: { client: Client }) {
     client.co_app_date || client.co_financial_redet_date ||
     c.pos_effective_date || c.foc_date || client.request_letter
   )
-  if (!hasAny) return null
+  const isEmpty = !hasAny
 
   const posEff = c.pos_effective_date ?? null
   const focDate = c.foc_date ?? null
@@ -113,11 +113,16 @@ export default function CoDetails({ client }: { client: Client }) {
             </Text>
           </Group>
           <Text fz={12} fw={500} c="var(--v2-text-muted)">
-            {count} {count === 1 ? 'entry' : 'entries'}
+            {isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
           </Text>
         </Stack>
       </Group>
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && (
+        <Text fz={13} c="var(--v2-text-muted)" style={{ paddingTop: 2 }}>
+          No CO details on file yet.
+        </Text>
+      )}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {isCo && (
           <Box style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid var(--v2-border-soft)' }}>
             <Building2 size={16} style={{ color: '#EA580C', flexShrink: 0 }} strokeWidth={2.25} />

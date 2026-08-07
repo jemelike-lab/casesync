@@ -4,7 +4,7 @@
 // Three fields: atp (select), snfs, lease (text).
 import { Box } from '@mantine/core'
 import { ShieldCheck, Building2, Home } from 'lucide-react'
-import SectionPaper from '../SectionPaper'
+import SectionPaper, { SectionEmpty } from '../SectionPaper'
 import { TextRow } from '../Row'
 import type { Client } from '@/lib/types'
 
@@ -14,7 +14,7 @@ export default function Authorizations({ client }: { client: Client }) {
   const hasLease = !!client.lease
   const count = [hasAtp, hasSnfs, hasLease].filter(Boolean).length
 
-  if (count === 0) return null
+  const isEmpty = count === 0
 
   const last =
     hasLease ? 'lease' :
@@ -23,9 +23,10 @@ export default function Authorizations({ client }: { client: Client }) {
   return (
     <SectionPaper
       title="Authorizations"
-      subtitle={`${count} ${count === 1 ? 'entry' : 'entries'}`}
+      subtitle={isEmpty ? 'None on file' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
     >
-      <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
+      {isEmpty && <SectionEmpty text={'No authorizations on file yet.'} />}
+      <Box style={{ borderTop: isEmpty ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
         {hasAtp && (
           <TextRow
             Icon={ShieldCheck} color="#7C3AED"

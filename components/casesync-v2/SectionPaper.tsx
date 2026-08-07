@@ -43,3 +43,18 @@ export default function SectionPaper({ title, subtitle, action, children, bare =
     </Paper>
   )
 }
+
+/**
+ * SectionEmpty — the one-line body an otherwise-empty section renders instead
+ * of disappearing (Josh 08-07, option 1A). Sections used to `return null`
+ * when they had no data, so on sparse clients the page simply ended early and
+ * planners reported "the rest of the sections aren't viewable". Every section
+ * now always renders; this is what an empty one shows.
+ */
+export function SectionEmpty({ text }: { text: string }) {
+  return (
+    <Text fz={13} c="var(--v2-text-muted)" style={{ paddingTop: 2 }}>
+      {text}
+    </Text>
+  )
+}

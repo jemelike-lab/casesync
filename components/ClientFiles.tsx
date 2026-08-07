@@ -431,6 +431,20 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
 
   useEffect(() => { fetchFiles() }, [fetchFiles])
 
+  // Deep-link from section cards (e.g. the Appeal card's "Upload denial
+  // letter" / "Upload appeal letter" buttons, Josh 08-07). The section
+  // scrolls here and fires this event; we open the picker with the right
+  // category preselected so the planner never hunts for it.
+  useEffect(() => {
+    function onOpenUpload(e: Event) {
+      const detail = (e as CustomEvent<{ category?: string }>).detail
+      if (detail?.category) setCategory(detail.category)
+      setShowUpload(true)
+    }
+    window.addEventListener('cs:open-upload', onOpenUpload)
+    return () => window.removeEventListener('cs:open-upload', onOpenUpload)
+  }, [])
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return

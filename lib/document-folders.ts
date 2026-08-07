@@ -18,6 +18,7 @@ export const ALLOWED_CATEGORY_VALUES = [
   'general', 'consent_form', 'assessment', 'letter', 'authorization',
   'intake', 'plan', 'correspondence', 'medical', 'financial', 'ltss', 'other',
   'co', 'forms_signatures', 'reporting_review', 'waiver', 'snf', 'appeal',
+  'denial',
 ] as const
 
 export const ALLOWED_CATEGORIES = new Set<string>(ALLOWED_CATEGORY_VALUES)
@@ -45,6 +46,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   waiver: 'SP Waiver',
   snf: 'SNF',
   appeal: 'Appeal Letter',
+  denial: 'Denial Letter',
 }
 
 /** Options the upload picker offers — 1:1 with the seven file folders. */
@@ -54,6 +56,7 @@ export const UPLOAD_CATEGORIES = [
   { value: 'plan',             label: 'Plans' },
   { value: 'forms_signatures', label: 'Forms & Signatures' },
   { value: 'waiver',           label: 'SP Waiver' },
+  { value: 'denial',           label: 'Denial Letter' },
   { value: 'appeal',           label: 'Appeal Letter' },
   { value: 'snf',              label: 'SNF' },
   { value: 'authorization',    label: 'Authorizations' },
@@ -91,6 +94,7 @@ export const CATEGORY_TO_FOLDER: Record<string, string> = {
   consent_form: 'forms_signatures',
   waiver: 'forms_signatures',
   appeal: 'plan',
+  denial: 'plan',
   snf: 'co',
   authorization: 'authorization',
   reporting_review: 'reporting_review',
