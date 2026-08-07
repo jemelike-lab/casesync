@@ -2,7 +2,7 @@
 
 // Plans & assessments — Phase A extracted section
 import { Box, Text } from '@mantine/core'
-import { FileText, ClipboardList, ClipboardCheck, TrendingUp, Scale } from 'lucide-react'
+import { FileText, ClipboardList, ClipboardCheck, TrendingUp, Scale, CalendarCheck } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { TextRow, DateRow, BooleanRow, PercentRow, EventRow } from '../Row'
 import type { Client } from '@/lib/types'
@@ -22,6 +22,7 @@ export default function PlansAssessments({ client }: { client: Client }) {
   const hasPoc    = !!c.poc_date
   const hasLoc    = !!c.loc_date
   const hasStatus = !!c.pos_status
+  const hasPosEff = !!client.pos_effective_date
   const hasSpm    = c.spm_completed !== null && c.spm_completed !== undefined
   const hasGoal   = c.goal_pct !== null && c.goal_pct !== undefined
 
@@ -52,13 +53,15 @@ export default function PlansAssessments({ client }: { client: Client }) {
     || !!client.appeal_received_date || !!client.appeal_hearing_date || !!client.appeal_decision_date
     || client.services_continuing_during_appeal !== null && client.services_continuing_during_appeal !== undefined
 
-  const count = [hasPoc, hasLoc, hasStatus, hasSpm, hasGoal].filter(Boolean).length + (hasAppeal ? 1 : 0)
+  const count = [hasPoc, hasLoc, hasStatus, hasPosEff, hasSpm, hasGoal].filter(Boolean).length
+    + (showAppealSection ? 1 : 0)
 
   if (count === 0) return null
 
   const last =
     hasGoal   ? 'goal'   :
     hasSpm    ? 'spm'    :
+    hasPosEff ? 'poseff' :
     hasStatus ? 'status' :
     hasLoc    ? 'loc'    : 'poc'
 
@@ -117,6 +120,13 @@ export default function PlansAssessments({ client }: { client: Client }) {
             isLast={last === 'status'}
           />
         )}
+        {hasPosEff && (
+          <DateRow
+            Icon={CalendarCheck} color="#D97706"
+            label="POS effective date" value={client.pos_effective_date}
+            isLast={last === 'poseff'}
+          />
+        )}
         {hasSpm && (
           <BooleanRow
             Icon={ClipboardCheck} color="#059669"
@@ -139,22 +149,51 @@ export default function PlansAssessments({ client }: { client: Client }) {
             padding: '12px 14px', background: 'var(--v2-surface-2, transparent)',
           }}
         >
-          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Scale size={16} style={{ color: '#7C3AED' }} strokeWidth={2.25} />
               <Text fz={14} fw={600} c="var(--v2-text)">Appeal</Text>
-              <Text
-                fz={11} fw={600}
-                style={{ background: 'var(--v2-surface-soft, #F1EFE8)', color: 'var(--v2-text-muted)', borderRadius: 999, padding: '2px 10px' }}
-              >
-                None on file
+            </Box>
+            <Text
+              fz={12} fw={600}
+              style={{ background: '#F1EFE8', color: '#444441', borderRadius: 999, padding: '2px 10px' }}
+            >
+              None on file
+            </Text>
+          </Box>
+          <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 8 }}>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Appeal status</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{'\u2014'}</Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Appeal received (LTSS)</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{client.appeal_received_date ? formatDate(client.appeal_received_date) : '\u2014'}</Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Hearing date</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{client.appeal_hearing_date ? formatDate(client.appeal_hearing_date) : '\u2014'}</Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Decision date</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{client.appeal_decision_date ? formatDate(client.appeal_decision_date) : '\u2014'}</Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Services continuing</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">
+                {client.services_continuing_during_appeal === true ? 'Yes'
+                  : client.services_continuing_during_appeal === false ? 'No' : 'Not set'}
               </Text>
             </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Services-continuing source</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{client.services_continuing_source || '\u2014'}</Text>
+            </Box>
           </Box>
-          <Text fz={12} c="var(--v2-text-muted)" mt={6}>
-            {posDenied ? 'POS denied' : 'POS needs attention'} {'\u2014'} once an appeal is filed,
-            track it here: set the appeal status, received / hearing / decision dates, and
-            services-continuing in Edit. A tracked appeal pauses POS, med-tech, and POC
-            criticals until the decision.
+          <Text fz={12} c="var(--v2-text-muted)" style={{ borderTop: '0.5px solid var(--v2-border-soft)', paddingTop: 8 }}>
+            {posDenied ? 'POS denied' : 'POS needs attention'} {'\u2014'} no appeal on file yet.
+            Enter the appeal status and dates in Edit; a tracked appeal pauses POS, med-tech,
+            and POC criticals until the decision.
           </Text>
         </Box>
       )}
@@ -193,6 +232,17 @@ export default function PlansAssessments({ client }: { client: Client }) {
             <Box>
               <Text fz={11.5} c="var(--v2-text-muted)">Decision date</Text>
               <Text fz={13} fw={600} c="var(--v2-text)">{client.appeal_decision_date ? formatDate(client.appeal_decision_date) : '\u2014'}</Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Services continuing</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">
+                {client.services_continuing_during_appeal === true ? 'Yes'
+                  : client.services_continuing_during_appeal === false ? 'No' : 'Not set'}
+              </Text>
+            </Box>
+            <Box>
+              <Text fz={11.5} c="var(--v2-text-muted)">Services-continuing source</Text>
+              <Text fz={13} fw={600} c="var(--v2-text)">{client.services_continuing_source || '\u2014'}</Text>
             </Box>
           </Box>
           {client.services_continuing_during_appeal !== null && client.services_continuing_during_appeal !== undefined && (
