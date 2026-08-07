@@ -4,7 +4,7 @@
 import { Box, Text } from '@mantine/core'
 import { FileText, ClipboardList, ClipboardCheck, TrendingUp, Scale } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
-import { TextRow, DateRow, BooleanRow, PercentRow } from '../Row'
+import { TextRow, DateRow, BooleanRow, PercentRow, EventRow } from '../Row'
 import type { Client } from '@/lib/types'
 import { isAppealActive, isAppealGatingActive, appealDecisionOverdueDays, APPEAL_STATUS_LABELS, formatDate } from '@/lib/types'
 
@@ -36,7 +36,19 @@ export default function PlansAssessments({ client }: { client: Client }) {
   // needs the appeal tracker, so the section must be visible BEFORE any
   // appeal fields are entered - otherwise the feature is invisible.
   const posDenied = (client.pos_status ?? '').trim().toLowerCase() === 'denied'
-  const showAppealSection = hasAppeal || posDenied
+  // Josh 08-06: the tracker surfaces on any client whose POS is in bad shape,
+  // not only denials \u2014 a set-but-not-good status or an overdue POS deadline.
+  const posStatusVal = (client.pos_status ?? '').trim().toLowerCase()
+  const posOk = ['active', 'approved', 'completed'].includes(posStatusVal)
+  const posDeadlineOverdue = (() => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(client.pos_deadline ?? '')
+    if (!m) return false
+    const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    const now = new Date()
+    return t < Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  })()
+  const posTroubled = (!!posStatusVal && !posOk) || posDeadlineOverdue
+  const showAppealSection = hasAppeal || posDenied || posTroubled
     || !!client.appeal_received_date || !!client.appeal_hearing_date || !!client.appeal_decision_date
     || client.services_continuing_during_appeal !== null && client.services_continuing_during_appeal !== undefined
 
@@ -78,13 +90,19 @@ export default function PlansAssessments({ client }: { client: Client }) {
       ) : undefined}
     >
       <Box style={{ borderTop: '0.5px solid var(--v2-border-soft)' }}>
-        {hasPoc && (
+        {hasPoc && (appealActive ? (
+          <EventRow
+            Icon={FileText} color="#9333EA"
+            label={'POC date (paused \u2014 appeal)'} value={c.poc_date}
+            isLast={last === 'poc'}
+          />
+        ) : (
           <DateRow
             Icon={FileText} color="#9333EA"
             label="POC date" value={c.poc_date}
             isLast={last === 'poc'}
           />
-        )}
+        ))}
         {hasLoc && (
           <DateRow
             Icon={FileText} color="#0E7490"
@@ -133,9 +151,10 @@ export default function PlansAssessments({ client }: { client: Client }) {
             </Box>
           </Box>
           <Text fz={12} c="var(--v2-text-muted)" mt={6}>
-            POS denied {'\u2014'} once an appeal is filed, track it here: set the appeal status,
-            received / hearing / decision dates, and services-continuing in Edit. Tracked
-            appeals pause POS criticals until the decision.
+            {posDenied ? 'POS denied' : 'POS needs attention'} {'\u2014'} once an appeal is filed,
+            track it here: set the appeal status, received / hearing / decision dates, and
+            services-continuing in Edit. A tracked appeal pauses POS, med-tech, and POC
+            criticals until the decision.
           </Text>
         </Box>
       )}

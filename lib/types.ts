@@ -468,7 +468,7 @@ export const APPEAL_STATUS_LABELS: Record<string, string> = {
 }
 
 /** Fields whose critical tier is suppressed while an appeal is active. */
-export const APPEAL_GATED_FIELDS = new Set<string>(['pos_deadline', 'med_tech_redet_date'])
+export const APPEAL_GATED_FIELDS = new Set<string>(['pos_deadline', 'med_tech_redet_date', 'poc_date'])
 
 /** Active appeal = structured status filed/received/hearing_scheduled, OR the
  *  legacy POS-status dropdown value "Appealing" planners already use. */

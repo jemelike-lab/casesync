@@ -170,11 +170,17 @@ export function evaluateReadiness(
   // 5 — Plan of Care on file (a POC must precede a POS).
   {
     const p = dayEpoch(client.poc_date)
+    const pocA = (client.appeal_status ?? '').trim().toLowerCase()
+    const pocAppealActive = ['filed', 'received', 'hearing_scheduled'].includes(pocA) || (client.pos_status ?? '').trim().toLowerCase() === 'appealing'
     gates.push({
       key: 'poc',
       label: 'Plan of Care on file',
-      status: p === null ? 'fail' : 'pass',
-      detail: p === null ? 'No POC date on file (required before a POS).' : `POC on file (${fmt(p)}).`,
+      status: p === null ? (pocAppealActive ? 'paused' : 'fail') : 'pass',
+      detail: p === null
+        ? (pocAppealActive
+          ? 'Paused \u2014 appeal active. POC requirement resumes after the appeal decision.'
+          : 'No POC date on file (required before a POS).')
+        : `POC on file (${fmt(p)}).`,
     })
   }
 
