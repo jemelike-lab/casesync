@@ -799,8 +799,8 @@ export default function ClientFiles({ clientId, clientCategory, currentUserId, c
                                     onClick={() => setOpenFolders(s2 => ({ ...s2, snf: !snfOpen }))}
                                     style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', border: 'none', cursor: 'pointer', padding: '8px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}
                                   >
-                                    <span style={{ fontSize: 10, color: 'var(--text-secondary)', display: 'inline-block', transform: snfOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>\u25b6</span>
-                                    <span style={{ fontSize: 15 }}>\ud83d\udcc1</span>
+                                    <span style={{ fontSize: 10, color: 'var(--text-secondary)', display: 'inline-block', transform: snfOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>{'\u25b6'}</span>
+                                    <span style={{ fontSize: 15 }}>{'\ud83d\udcc1'}</span>
                                     <span>SNF</span>
                                     <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 10, padding: '1px 8px' }}>{snfRows.length}</span>
                                   </button>
