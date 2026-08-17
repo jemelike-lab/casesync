@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import SectionPaper from '../SectionPaper'
 import { DateRow, EventRow } from '../Row'
-import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, focExpiryDate, isAppealGatingActive, APPEAL_GATED_FIELDS } from '@/lib/types'
+import { type Client, getDateStatus, isWaiverValid, waiverRenewalDate, focExpiryDate, locRenewalDate, isAppealGatingActive, APPEAL_GATED_FIELDS } from '@/lib/types'
 
 // Per-row identity colors (17 distinct hues, 600/700-level Tailwind).
 const FIELDS: Array<{
@@ -35,7 +35,6 @@ const FIELDS: Array<{
   { field: 'mfp_consent_date',        label: 'MFP consent',         Icon: FileText,   color: '#0284C7' },
   { field: 'two57_date',              label: '257 form',            Icon: FileText,   color: '#BE185D' },
   { field: 'poc_date',                label: 'POC',                 Icon: FileText,   color: '#9333EA' },
-  { field: 'loc_date',                label: 'LOC',                 Icon: FileText,   color: '#0E7490' },
 ]
 
 export default function Deadlines({ client }: { client: Client }) {
@@ -72,6 +71,22 @@ export default function Deadlines({ client }: { client: Client }) {
       color: '#0F766E',
       date: focRenewal,
     })
+  }
+
+  // LOC renewals (Megan 08-16): NF and CPAS each carry annual validity; the
+  // tracked deadline is the effective date + 12 months, same derived-row
+  // treatment as the SP waiver / FOC renewals. foc_submission_date is the
+  // audit-timeliness record of when FOC was submitted.
+  const nfLocRenewal = locRenewalDate(client.nf_loc_date)
+  const cpasLocRenewal = locRenewalDate(client.cpas_loc_date)
+  if (nfLocRenewal) {
+    derived.push({ field: 'nf_loc_date' as keyof Client, label: 'LOC renewal (NF)', Icon: FileText, color: '#0E7490', date: nfLocRenewal })
+  }
+  if (cpasLocRenewal) {
+    derived.push({ field: 'cpas_loc_date' as keyof Client, label: 'LOC renewal (CPAS)', Icon: FileText, color: '#0E7490', date: cpasLocRenewal })
+  }
+  if (client.foc_submission_date) {
+    derived.push({ field: 'foc_submission_date' as keyof Client, label: 'FOC submitted', Icon: FileCheck, color: '#0F766E', date: client.foc_submission_date })
   }
 
   const rows = [...baseRows, ...derived]

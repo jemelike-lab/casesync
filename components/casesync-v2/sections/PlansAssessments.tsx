@@ -43,7 +43,9 @@ export default function PlansAssessments({ client }: { client: Client }) {
   }
 
   const hasPoc    = !!c.poc_date
-  const hasLoc    = !!c.loc_date
+  const nfLoc     = (c.nf_loc_date ?? c.loc_date) ?? null
+  const cpasLoc   = c.cpas_loc_date ?? null
+  const hasLoc    = !!nfLoc || !!cpasLoc
   const hasStatus = !!c.pos_status
   const hasPosEff = !!client.pos_effective_date
   const hasSpm    = c.spm_completed !== null && c.spm_completed !== undefined
@@ -131,11 +133,19 @@ export default function PlansAssessments({ client }: { client: Client }) {
           />
         ))}
         {hasLoc && (
-          <DateRow
-            Icon={FileText} color="#0E7490"
-            label="LOC date" value={c.loc_date}
-            isLast={last === 'loc'}
-          />
+          <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '12px 0', borderBottom: last === 'loc' ? 'none' : '0.5px solid var(--v2-border-soft)' }}>
+            <Box style={{ border: '0.5px solid var(--v2-border-soft)', borderRadius: 8, padding: '10px 12px' }}>
+              <Text fz={11} c="var(--v2-text-muted)" mb={2}>NF LOC</Text>
+              <Text fz={15} fw={500}>{nfLoc ?? '\u2014'}</Text>
+              {c.loc_status && (
+                <Text fz={11} mt={6} span style={{ display: 'inline-block', background: '#FAEEDA', color: '#633806', borderRadius: 6, padding: '2px 8px' }}>{c.loc_status}</Text>
+              )}
+            </Box>
+            <Box style={{ border: '0.5px solid var(--v2-border-soft)', borderRadius: 8, padding: '10px 12px' }}>
+              <Text fz={11} c="var(--v2-text-muted)" mb={2}>CPAS LOC</Text>
+              <Text fz={15} fw={500}>{cpasLoc ?? '\u2014'}</Text>
+            </Box>
+          </Box>
         )}
         {hasStatus && (
           <TextRow

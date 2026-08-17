@@ -57,11 +57,15 @@ export interface Client {
   med_tech_status: string | null
   poc_date: string | null
   loc_date: string | null
+  nf_loc_date: string | null
+  cpas_loc_date: string | null
+  loc_status: string | null
   doc_mdh_date: string | null
   pos_deadline: string | null
   pos_status: string | null
   pos_effective_date: string | null
   foc_date: string | null
+  foc_submission_date: string | null
   // POS appeals (Megan 08-05): one live appeal per client, modeled as columns.
   // History persists in activity_log; `appeals` free text below is untouched.
   appeal_status: string | null
@@ -437,6 +441,14 @@ export function waiverRenewalDate(signedDate: string | null | undefined): string
  */
 export function focExpiryDate(focDate: string | null | undefined): string | null {
   return addMonthsClamped(focDate, 12)
+}
+
+/**
+ * LOC annual renewal: effective date + 12 months, month-end clamped.
+ * Applies to both the NF and CPAS level-of-care tracks (Megan 08-16).
+ */
+export function locRenewalDate(locDate: string | null | undefined): string | null {
+  return addMonthsClamped(locDate, 12)
 }
 
 export function isWaiverValid(signedDate: string | null | undefined): boolean {
