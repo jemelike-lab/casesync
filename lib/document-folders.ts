@@ -95,7 +95,7 @@ export const CATEGORY_TO_FOLDER: Record<string, string> = {
   waiver: 'forms_signatures',
   appeal: 'plan',
   denial: 'plan',
-  snf: 'co',
+  snf: 'snf',
   authorization: 'authorization',
   reporting_review: 'reporting_review',
   correspondence: 'reporting_review',

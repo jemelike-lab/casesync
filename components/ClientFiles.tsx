@@ -25,6 +25,7 @@ interface ClientFile {
 
 interface Props {
   clientId: string
+  clientCategory?: string | null
   currentUserId: string
   currentProfile: Profile
 }
@@ -383,7 +384,7 @@ function FileViewer({
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export default function ClientFiles({ clientId, currentUserId, currentProfile }: Props) {
+export default function ClientFiles({ clientId, clientCategory, currentUserId, currentProfile }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<ClientFile[]>([])
   const [loading, setLoading] = useState(true)
@@ -732,9 +733,17 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
               const k = folderOf(f.category)
               ;(byFolder[k] ??= []).push(f)
             }
-            const folders = q
-              ? FILE_FOLDERS.filter(fld => (byFolder[fld.key]?.length ?? 0) > 0)
+            // SNF nests under the client's program folder (Megan 08-16): CO/CFC/CPAS
+            // clients each keep SNF in their own program context, never defaulting to CO.
+            const programKey = ['co', 'cfc', 'cpas'].includes(clientCategory ?? '') ? (clientCategory as string) : 'co'
+            const programLabel = programKey.toUpperCase()
+            const snfRows = byFolder['snf'] ?? []
+            const baseFolders = programKey !== 'co' && !FILE_FOLDERS.some(f => f.key === programKey)
+              ? (() => { const i = FILE_FOLDERS.findIndex(f => f.key === 'co'); const e = { key: programKey, label: programLabel }; return i >= 0 ? [...FILE_FOLDERS.slice(0, i + 1), e, ...FILE_FOLDERS.slice(i + 1)] : [e, ...FILE_FOLDERS] })()
               : FILE_FOLDERS
+            const folders = q
+              ? baseFolders.filter(fld => (byFolder[fld.key]?.length ?? 0) > 0 || (fld.key === programKey && snfRows.length > 0))
+              : baseFolders
             return (
               <>
                 {toolbar}
@@ -770,7 +779,8 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                         </div>
                         {isOpen && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 10px', background: 'var(--surface)' }}>
-                            {rows.length > 0 ? rows.map(renderRow) : (
+                            {rows.length > 0 && rows.map(renderRow)}
+                            {rows.length === 0 && !(fld.key === programKey && snfRows.length > 0) && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', fontSize: 12.5, color: 'var(--text-secondary)' }}>
                                 <span>Nothing in {fld.label} yet.</span>
                                 <button
@@ -781,6 +791,37 @@ export default function ClientFiles({ clientId, currentUserId, currentProfile }:
                                 </button>
                               </div>
                             )}
+                            {fld.key === programKey && (() => {
+                              const snfOpen = openFolders['snf'] ?? snfRows.length > 0
+                              return (
+                                <div style={{ marginLeft: 18, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                                  <button
+                                    onClick={() => setOpenFolders(s2 => ({ ...s2, snf: !snfOpen }))}
+                                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', border: 'none', cursor: 'pointer', padding: '8px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}
+                                  >
+                                    <span style={{ fontSize: 10, color: 'var(--text-secondary)', display: 'inline-block', transform: snfOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>\u25b6</span>
+                                    <span style={{ fontSize: 15 }}>\ud83d\udcc1</span>
+                                    <span>SNF</span>
+                                    <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', background: 'var(--surface)', borderRadius: 10, padding: '1px 8px' }}>{snfRows.length}</span>
+                                  </button>
+                                  {snfOpen && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 10px', background: 'var(--surface)' }}>
+                                      {snfRows.length > 0 ? snfRows.map(renderRow) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                                          <span>No SNF documents yet.</span>
+                                          <button
+                                            onClick={() => { setCategory('snf'); setShowUpload(true); setError('') }}
+                                            style={{ background: 'transparent', border: 'none', color: 'var(--accent, #2563eb)', fontSize: 12.5, cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                                          >
+                                            Upload an SNF document
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })()}
                           </div>
                         )}
                       </div>

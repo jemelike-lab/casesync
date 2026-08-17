@@ -401,6 +401,7 @@ export default function ClientDetailV2Wrapper(props: ClientDetailV2WrapperProps)
           <div id="cs-sec-files">
           <ClientFiles
             clientId={props.client.id}
+            clientCategory={props.client.category}
             currentUserId={props.currentUserId}
             currentProfile={props.currentProfile}
           />
