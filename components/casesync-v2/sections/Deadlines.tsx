@@ -127,6 +127,10 @@ export default function Deadlines({ client }: { client: Client }) {
                 label={r.label}
                 value={r.date}
                 isLast={i === rows.length - 1}
+                inProgress={
+                  (r.field === 'med_tech_redet_date' && (client.med_tech_status ?? '').toLowerCase() === 'in progress') ||
+                  ((r.field === 'nf_loc_date' || r.field === 'cpas_loc_date') && (client.loc_status ?? '').toLowerCase() === 'in progress')
+                }
               />
             )
           ))}

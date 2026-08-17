@@ -163,7 +163,7 @@ export function TextRow({ Icon, color, label, value, isLast = false }: BaseProps
 // -------------------------------------------------------------------------
 // DateRow — same look + popover as legacy Deadlines DateTile.
 // -------------------------------------------------------------------------
-export function DateRow({ Icon, color, label, value, isLast = false }: BaseProps & { value: string | null | undefined }) {
+export function DateRow({ Icon, color, label, value, isLast = false, inProgress = false }: BaseProps & { value: string | null | undefined; inProgress?: boolean }) {
   const [hovered, setHovered] = useState(false)
   if (!value) return null
   const status = getDateStatus(value)
@@ -180,7 +180,12 @@ export function DateRow({ Icon, color, label, value, isLast = false }: BaseProps
       style={baseStyle(isLast, '20px minmax(0, 1fr) auto auto')}
     >
       <Icon size={17} style={{ color, flexShrink: 0 }} strokeWidth={2.25} />
-      <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em' }}>{label}</Text>
+      <Box style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <Text fz={14} fw={600} style={{ color, letterSpacing: '-0.005em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</Text>
+        {inProgress && (
+          <Text fz={10} fw={600} style={{ background: '#FAEEDA', color: '#633806', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap', flexShrink: 0 }}>In progress</Text>
+        )}
+      </Box>
       <Text fz={12} fw={600} style={{ color: dateColor, fontVariantNumeric: 'tabular-nums' }}>
         {formatDate(value.split('T')[0])}
       </Text>
