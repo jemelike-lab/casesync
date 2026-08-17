@@ -59,12 +59,13 @@ const POS_STATUS_OPTIONS: SelectOption[] = [
   { value: 'In-Progress', label: 'In-Progress (legacy)' },
 ]
 const MED_TECH_STATUS_OPTIONS: SelectOption[] = [{ value: 'Active', label: 'Active' }, { value: 'Pending', label: 'Pending' }, { value: 'Expired', label: 'Expired' }, { value: 'Not Applicable', label: 'N/A' }]
+const LOC_STATUS_OPTIONS: SelectOption[] = [{ value: 'Completed', label: 'Completed' }, { value: 'In progress', label: 'In progress' }, { value: 'Not started', label: 'Not started' }]
 const ATP_OPTIONS: SelectOption[] = [{ value: 'Pending', label: 'Pending' }, { value: 'Approved', label: 'Approved' }, { value: 'Expired', label: 'Expired' }, { value: 'Not Applicable', label: 'N/A' }]
 const AUDIT_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Started' }, { value: 'Pending', label: 'Pending' }, { value: 'Passed', label: 'Passed' }, { value: 'Failed', label: 'Failed' }]
 const QA_OPTIONS: SelectOption[] = [{ value: 'Not Started', label: 'Not Started' }, { value: 'Pending', label: 'Pending' }, { value: 'Passed', label: 'Passed' }, { value: 'Failed', label: 'Failed' }]
 
 // Fields whose changes are appended to the activity log (legacy parity).
-const TRACKED_FIELDS = ['pos_status', 'eligibility_end_date', 'last_contact_date', 'assessment_due', 'goal_pct', 'med_tech_status', 'atp', 'spm_completed', 'pos_deadline', 'appeal_status', 'appeal_hearing_date', 'co_application_source'] as const
+const TRACKED_FIELDS = ['pos_status', 'eligibility_end_date', 'last_contact_date', 'assessment_due', 'goal_pct', 'med_tech_status', 'atp', 'spm_completed', 'pos_deadline', 'appeal_status', 'appeal_hearing_date', 'co_application_source', 'nf_loc_date', 'cpas_loc_date', 'loc_status', 'foc_submission_date'] as const
 
 type FormShape = Record<string, string | number | boolean | null>
 
@@ -75,6 +76,8 @@ function initialFormData(client: Client): FormShape {
     three_month_visit_date: client.three_month_visit_date, three_month_visit_due: client.three_month_visit_due,
     quarterly_waiver_date: client.quarterly_waiver_date, med_tech_redet_date: client.med_tech_redet_date,
     med_tech_status: client.med_tech_status, poc_date: client.poc_date, loc_date: client.loc_date,
+    nf_loc_date: client.nf_loc_date, cpas_loc_date: client.cpas_loc_date, loc_status: client.loc_status,
+    foc_submission_date: client.foc_submission_date,
     doc_mdh_date: client.doc_mdh_date, pos_deadline: client.pos_deadline, pos_status: client.pos_status,
     pos_effective_date: client.pos_effective_date, foc_date: client.foc_date,
     appeal_status: client.appeal_status, appeal_received_date: client.appeal_received_date,
@@ -252,7 +255,9 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
 
       <Section title="Plans & assessments">
         <Field label="POC date">{dateInput('poc_date')}</Field>
-        <Field label="LOC date (only if different from POC)">{dateInput('loc_date')}</Field>
+        <Field label="NF LOC date">{dateInput('nf_loc_date')}</Field>
+        <Field label="CPAS LOC date">{dateInput('cpas_loc_date')}</Field>
+        <Field label="LOC status">{selectInput('loc_status', LOC_STATUS_OPTIONS)}</Field>
         <Field label="POS status">{selectInput('pos_status', POS_STATUS_OPTIONS)}</Field>
         <Field label="POS effective date">{dateInput('pos_effective_date')}</Field>
         <Field label="Appeal status">{selectInput('appeal_status', APPEAL_STATUS_OPTIONS)}</Field>
@@ -283,6 +288,7 @@ export default function ClientEditFormV2({ client, currentUserId: _uid, currentP
         <Field label="CO financial redet">{dateInput('co_financial_redet_date')}</Field>
         <Field label="CO application">{dateInput('co_app_date')}</Field>
         <Field label="Annual FOC date">{dateInput('foc_date')}</Field>
+        <Field label="FOC submission date">{dateInput('foc_submission_date')}</Field>
         <Field label="MFP consent">{dateInput('mfp_consent_date')}</Field>
         <Field label="257 date">{dateInput('two57_date')}</Field>
         <Field label="Request letter">{textInput('request_letter')}</Field>

@@ -33,6 +33,7 @@ const DATE_FIELDS = [
   'pos_effective_date', 'foc_date',
   'appeal_received_date', 'appeal_hearing_date', 'appeal_decision_date',
   'med_tech_date',
+  'nf_loc_date', 'cpas_loc_date', 'foc_submission_date',
 ] as const
 
 // Everything PATCH may touch. Mirrors the legacy ClientEditForm formData set
@@ -40,7 +41,7 @@ const DATE_FIELDS = [
 const EDITABLE_FIELDS = new Set<string>([
   ...DATE_FIELDS,
   'first_name', 'last_name', 'category', 'eligibility_code',
-  'last_contact_type', 'med_tech_status', 'pos_status',
+  'last_contact_type', 'med_tech_status', 'loc_status', 'pos_status',
   'appeal_status', 'services_continuing_during_appeal', 'services_continuing_source',
   'co_application_source',
   'spm_completed', 'schedule_docs',
